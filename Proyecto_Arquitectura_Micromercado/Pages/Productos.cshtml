@@ -1,0 +1,36 @@
+﻿@page
+@model Proyecto_Arquitectura_Micromercado.Pages.ProductosModel
+@{
+    ViewData["Title"] = "Lista de Productos";
+}
+
+<h1>Lista de Productos</h1>
+
+<a class="btn btn-primary my-2" asp-page="ProductoNuevo">+ Agregar Producto</a>
+
+@if (!string.IsNullOrEmpty(Model.Mensaje))
+{
+    <p class="text-danger">@Model.Mensaje</p>
+}
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Categoría</th>
+            <th>Precio (Bs.)</th>
+            <th>Stock</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.ListProductos)
+        {
+            <tr>
+                <td>@item.Nombre</td>
+                <td>@item.Categoria</td>
+                <td>@item.Precio.ToString("0.00")</td>
+                <td>@item.Stock</td>
+            </tr>
+        }
+    </tbody>
+</table>
