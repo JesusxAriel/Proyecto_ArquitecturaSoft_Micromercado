@@ -31,6 +31,7 @@ CREATE TABLE `PROVEEDOR` (
   `numeroEmpresa` INT NOT NULL,
   `correoReferencia` VARCHAR(150) DEFAULT NULL,
   `tipoConsigna` BOOLEAN NOT NULL DEFAULT 0,
+  `estado` VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
   `idUsuarioAdmi` INT NOT NULL,
   `fechaCreacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `fechaActualizacion` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -48,6 +49,7 @@ CREATE TABLE `PRODUCTO` (
   `categoria` VARCHAR(100) NOT NULL,
   `precio` DOUBLE NOT NULL DEFAULT 0,
   `stock` INT NOT NULL DEFAULT 0,
+  `estado` VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
   `idProveedor` INT NOT NULL,
   `idUsuarioAdmi` INT NOT NULL,
   `fechaCreacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -94,53 +96,53 @@ INSERT INTO `CATEGORIAS` (`nombre`, `descripcion`, `codigo`, `pasilloUbicacion`,
 ('Panadería y Repostería', 'Pan fresco, kekes, tostadas y harinas', 'CAT-PAN', 'Pasillo 8', 'ACTIVA', 1);
 
 -- 2. Insertar PROVEEDORES
-INSERT INTO `PROVEEDOR` (`nombreEmpresa`, `numeroEmpresa`, `correoReferencia`, `tipoConsigna`, `idUsuarioAdmi`) VALUES
-('PIL Andina S.A.', 44112233, 'ventas.cbba@pilandina.com.bo', 0, 1),
-('EMBOL S.A. (Coca-Cola)', 44556677, 'pedidos.cbba@embol.com.bo', 0, 1),
-('Sofía SHE S.A.', 44889900, 'contacto.cbba@sofia.com.bo', 1, 1),
-('CBN (Cervecería Boliviana Nacional)', 44224466, 'distribucion@cbn.com.bo', 0, 1),
-('Unilever Bolivia', 44335577, 'atencion@unilever.com', 0, 1),
-('Industrias Venado S.A. (Kris)', 44118899, 'ventas@venado.com.bo', 0, 1),
-('Arcor Bolivia', 44778811, 'pedidos@arcor.com.bo', 0, 1);
+INSERT INTO `PROVEEDOR` (`nombreEmpresa`, `numeroEmpresa`, `correoReferencia`, `tipoConsigna`, `estado`, `idUsuarioAdmi`) VALUES
+('PIL Andina S.A.', 44112233, 'ventas.cbba@pilandina.com.bo', 0, 'ACTIVO', 1),
+('EMBOL S.A. (Coca-Cola)', 44556677, 'pedidos.cbba@embol.com.bo', 0, 'ACTIVO', 1),
+('Sofía SHE S.A.', 44889900, 'contacto.cbba@sofia.com.bo', 1, 'ACTIVO', 1),
+('CBN (Cervecería Boliviana Nacional)', 44224466, 'distribucion@cbn.com.bo', 0, 'ACTIVO', 1),
+('Unilever Bolivia', 44335577, 'atencion@unilever.com', 0, 'ACTIVO', 1),
+('Industrias Venado S.A. (Kris)', 44118899, 'ventas@venado.com.bo', 0, 'ACTIVO', 1),
+('Arcor Bolivia', 44778811, 'pedidos@arcor.com.bo', 0, 'ACTIVO', 1);
 
 -- 3. Insertar PRODUCTOS (Stock total)
-INSERT INTO `PRODUCTO` (`nombre`, `categoria`, `precio`, `stock`, `idProveedor`, `idUsuarioAdmi`) VALUES
+INSERT INTO `PRODUCTO` (`nombre`, `categoria`, `precio`, `stock`, `estado`, `idProveedor`, `idUsuarioAdmi`) VALUES
 -- Lácteos y Derivados (IDs: 1, 2, 3)
-('Leche Entera PIL 1L Bag', 'Lácteos y Derivados', 6.50, 120, 1, 1),
-('Yogurt Frutado PIL 1kg', 'Lácteos y Derivados', 12.00, 45, 1, 1),
-('Mantequilla con Sal PIL 200g', 'Lácteos y Derivados', 14.50, 30, 1, 1),
+('Leche Entera PIL 1L Bag', 'Lácteos y Derivados', 6.50, 120, 'ACTIVO', 1, 1),
+('Yogurt Frutado PIL 1kg', 'Lácteos y Derivados', 12.00, 45, 'ACTIVO', 1, 1),
+('Mantequilla con Sal PIL 200g', 'Lácteos y Derivados', 14.50, 30, 'ACTIVO', 1, 1),
 
 -- Bebidas y Gaseosas (IDs: 4, 5, 6, 7)
-('Coca-Cola Sabor Original 2L', 'Bebidas y Gaseosas', 11.00, 80, 2, 1),
-('Fanta Naranja 2L', 'Bebidas y Gaseosas', 10.50, 50, 2, 1),
-('Agua Vital Sin Gas 2L', 'Bebidas y Gaseosas', 6.00, 100, 2, 1),
-('Cerveza Paceña 620ml', 'Bebidas y Gaseosas', 12.00, 150, 4, 1),
+('Coca-Cola Sabor Original 2L', 'Bebidas y Gaseosas', 11.00, 80, 'ACTIVO', 2, 1),
+('Fanta Naranja 2L', 'Bebidas y Gaseosas', 10.50, 50, 'ACTIVO', 2, 1),
+('Agua Vital Sin Gas 2L', 'Bebidas y Gaseosas', 6.00, 100, 'ACTIVO', 2, 1),
+('Cerveza Paceña 620ml', 'Bebidas y Gaseosas', 12.00, 150, 'ACTIVO', 4, 1),
 
 -- Abarrotes (IDs: 8, 9, 10)
-('Mayonesa Kris Doypack 500g', 'Abarrotes', 14.00, 60, 6, 1),
-('Ketchup Kris Doypack 500g', 'Abarrotes', 12.50, 55, 6, 1),
-('Salsa de Tomate Kris 400g', 'Abarrotes', 8.00, 70, 6, 1),
+('Mayonesa Kris Doypack 500g', 'Abarrotes', 14.00, 60, 'ACTIVO', 6, 1),
+('Ketchup Kris Doypack 500g', 'Abarrotes', 12.50, 55, 'ACTIVO', 6, 1),
+('Salsa de Tomate Kris 400g', 'Abarrotes', 8.00, 70, 'ACTIVO', 6, 1),
 
 -- Embutidos y Frial (IDs: 11, 12, 13)
-('Chorizo Parrillero Sofía 500g', 'Embutidos y Frial', 28.50, 25, 3, 1),
-('Jamón Premium Sofía 200g', 'Embutidos y Frial', 18.00, 40, 3, 1),
-('Salchicha de Pollo Sofía 500g', 'Embutidos y Frial', 16.50, 35, 3, 1),
+('Chorizo Parrillero Sofía 500g', 'Embutidos y Frial', 28.50, 25, 'ACTIVO', 3, 1),
+('Jamón Premium Sofía 200g', 'Embutidos y Frial', 18.00, 40, 'ACTIVO', 3, 1),
+('Salchicha de Pollo Sofía 500g', 'Embutidos y Frial', 16.50, 35, 'ACTIVO', 3, 1),
 
 -- Snacks y Galletas (IDs: 14, 15)
-('Galletas Moka Arcor 110g', 'Snacks y Galletas', 4.50, 90, 7, 1),
-('Bon o Bon Leche Display x 18 u', 'Snacks y Galletas', 27.00, 30, 7, 1),
+('Galletas Moka Arcor 110g', 'Snacks y Galletas', 4.50, 90, 'ACTIVO', 7, 1),
+('Bon o Bon Leche Display x 18 u', 'Snacks y Galletas', 27.00, 30, 'ACTIVO', 7, 1),
 
 -- Limpieza del Hogar (IDs: 16, 17)
-('Detergente OMO Multiacción 800g', 'Limpieza del Hogar', 15.00, 60, 5, 1),
-('Lavavajillas Ola Limón 500ml', 'Limpieza del Hogar', 8.50, 40, 5, 1),
+('Detergente OMO Multiacción 800g', 'Limpieza del Hogar', 15.00, 60, 'ACTIVO', 5, 1),
+('Lavavajillas Ola Limón 500ml', 'Limpieza del Hogar', 8.50, 40, 'ACTIVO', 5, 1),
 
 -- Cuidado Personal (IDs: 18, 19)
-('Jabón Lux Suave 125g', 'Cuidado Personal', 5.50, 80, 5, 1),
-('Crema Dental Colgate Triple Acción 90g', 'Cuidado Personal', 9.00, 50, 5, 1),
+('Jabón Lux Suave 125g', 'Cuidado Personal', 5.50, 80, 'ACTIVO', 5, 1),
+('Crema Dental Colgate Triple Acción 90g', 'Cuidado Personal', 9.00, 50, 'ACTIVO', 5, 1),
 
 -- Panadería y Repostería (IDs: 20, 21)
-('Tostadas Trigo PIL 200g', 'Panadería y Repostería', 7.50, 40, 1, 1),
-('Royal Polvo de Hornear 100g', 'Panadería y Repostería', 6.00, 65, 6, 1);
+('Tostadas Trigo PIL 200g', 'Panadería y Repostería', 7.50, 40, 'ACTIVO', 1, 1),
+('Royal Polvo de Hornear 100g', 'Panadería y Repostería', 6.00, 65, 'ACTIVO', 6, 1);
 
 -- 4. Insertar LOTES con sus fechas de vencimiento correspondientes
 INSERT INTO `LOTE` (`idProducto`, `codigoLote`, `cantidadInicial`, `cantidadDisponible`, `fechaVencimiento`, `estado`, `idUsuarioAdmi`) VALUES
