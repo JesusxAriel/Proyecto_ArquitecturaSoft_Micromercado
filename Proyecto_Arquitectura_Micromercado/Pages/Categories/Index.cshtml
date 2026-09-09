@@ -5,12 +5,11 @@
     ViewData["Title"] = "Categorías";
 }
 
-<h1>Categorías</h1>
+<h1 class="page-heading mb-4">Categorías</h1>
 
 <div class="mb-3">
-    <a asp-page="/Categories/Create"
-       class="btn btn-primary">
-        + Agregar categoría
+    <a asp-page="/Categories/Create" class="btn btn-primary">
+    <i class="bi bi-plus-lg"></i> Agregar categoría
     </a>
 </div>
 
@@ -50,20 +49,78 @@ else
                     <td>@(category.Description ?? "Sin descripción")</td>
 
                     <td>
-                        <a asp-page="/Categories/Edit"
-                           asp-route-id="@category.Id"
-                           class="btn btn-warning btn-sm">
-                            Editar
-                        </a>
+                        <button type="button" class="btn btn-outline-primary btn-sm edit-category-button"
+                                title="Editar" aria-label="Editar @category.Name"
+                                data-bs-toggle="modal" data-bs-target="#editCategoryModal"
+                                data-id="@category.Id" data-name="@category.Name"
+                                data-code="@category.Code" data-aisle="@category.AisleLocation"
+                                data-description="@category.Description">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
 
                         <a asp-page="/Categories/Delete"
                            asp-route-id="@category.Id"
-                           class="btn btn-danger btn-sm">
-                            Eliminar
+                           class="btn btn-outline-danger btn-sm" title="Eliminar" aria-label="Eliminar @category.Name">
+                            <i class="bi bi-trash"></i>
                         </a>
                     </td>
                 </tr>
             }
         </tbody>
     </table>
+}
+
+<div class="modal fade" id="editCategoryModal" tabindex="-1" aria-labelledby="editCategoryLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Edit" class="modal-form">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="editCategoryLabel">Editar categoría</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" asp-for="EditCategory.Id" id="editCategoryId" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div class="mb-3">
+                        <label asp-for="EditCategory.Name" class="form-label">Nombre *</label>
+                        <input asp-for="EditCategory.Name" id="editCategoryName" class="form-control" required data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
+                        <div class="input-error text-danger small d-none"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="EditCategory.Code" class="form-label">Código *</label>
+                        <input asp-for="EditCategory.Code" id="editCategoryCode" class="form-control" required data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
+                        <div class="input-error text-danger small d-none"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="EditCategory.AisleLocation" class="form-label">Ubicación en pasillo</label>
+                        <input asp-for="EditCategory.AisleLocation" id="editCategoryAisle" class="form-control" data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
+                        <div class="input-error text-danger small d-none"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="EditCategory.Description" class="form-label">Descripción</label>
+                        <input asp-for="EditCategory.Description" id="editCategoryDescription" class="form-control" data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
+                        <div class="input-error text-danger small d-none"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary modal-save-button">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $('.edit-category-button').on('click', function () {
+            const button = $(this);
+            $('#editCategoryId').val(button.data('id'));
+            $('#editCategoryName').val(button.data('name'));
+            $('#editCategoryCode').val(button.data('code'));
+            $('#editCategoryAisle').val(button.data('aisle') || '');
+            $('#editCategoryDescription').val(button.data('description') || '');
+        });
+    </script>
 }
