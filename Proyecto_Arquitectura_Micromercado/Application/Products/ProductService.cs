@@ -17,6 +17,10 @@ public sealed class ProductService(IProductRepository repository) : IProductServ
     public Task<IReadOnlyList<LookupOption>> GetSuppliersAsync(CancellationToken cancellationToken = default) =>
         repository.GetSuppliersAsync(cancellationToken);
 
+    public Task<IReadOnlyList<ProductPriceHistory>> GetPriceHistoryAsync(
+        CancellationToken cancellationToken = default) =>
+        repository.GetPriceHistoryAsync(cancellationToken);
+
     public Task<int> CreateAsync(Product product, CancellationToken cancellationToken = default)
     {
         Validate(product);
