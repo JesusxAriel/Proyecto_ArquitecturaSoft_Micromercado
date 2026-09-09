@@ -1,0 +1,52 @@
+@model Proyecto_Arquitectura_Micromercado.Pages.Products.ProductFormModel
+
+<form method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Product.Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="row g-3">
+        <div class="col-md-8">
+            <label asp-for="Product.Nombre" class="form-label"></label>
+            <input asp-for="Product.Nombre" class="form-control" />
+            <span asp-validation-for="Product.Nombre" class="text-danger"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="Product.EmpaquePresentacion" class="form-label"></label>
+            <input asp-for="Product.EmpaquePresentacion" class="form-control" />
+            <span asp-validation-for="Product.EmpaquePresentacion" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Product.PrecioVenta" class="form-label"></label>
+            <input asp-for="Input.PrecioVentaInput" class="form-control" type="text" inputmode="decimal" placeholder="0,00" />
+            <span asp-validation-for="Input.PrecioVentaInput" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Product.PrecioCosto" class="form-label"></label>
+            <input asp-for="Input.PrecioCostoInput" class="form-control" type="text" inputmode="decimal" placeholder="0,00" />
+            <span asp-validation-for="Input.PrecioCostoInput" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Product.StockMinimo" class="form-label"></label>
+            <input asp-for="Product.StockMinimo" class="form-control" type="text" inputmode="numeric" />
+            <span asp-validation-for="Product.StockMinimo" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Product.IdCategoria" class="form-label">Categoría</label>
+            <select asp-for="Product.IdCategoria" asp-items="Model.Categories" class="form-select">
+                <option value="0">Seleccione...</option>
+            </select>
+            <span asp-validation-for="Product.IdCategoria" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Product.IdProveedor" class="form-label">Proveedor</label>
+            <select asp-for="Product.IdProveedor" asp-items="Model.Suppliers" class="form-select">
+                <option value="0">Seleccione...</option>
+            </select>
+            <span asp-validation-for="Product.IdProveedor" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a asp-page="/Products/Index" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>

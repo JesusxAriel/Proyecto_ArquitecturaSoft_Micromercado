@@ -1,0 +1,18 @@
+@page
+@model Proyecto_Arquitectura_Micromercado.Pages.Products.DeleteModel
+@{
+    ViewData["Title"] = "Eliminar producto";
+}
+
+<h1>Eliminar producto</h1>
+<div class="alert alert-warning">
+    ¿Está seguro de eliminar el producto <strong>@Model.Product.Nombre</strong>?
+    El registro se conservará mediante eliminación lógica.
+</div>
+
+<form method="post">
+    <input type="hidden" asp-for="Product.Id" />
+    @Html.AntiForgeryToken()
+    <button type="submit" class="btn btn-danger">Eliminar</button>
+    <a asp-page="Index" class="btn btn-secondary">Cancelar</a>
+</form>

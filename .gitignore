@@ -1,3 +1,10 @@
 .vs/ 
+<<<<<<< HEAD
 bin/
 obj/
+=======
+
+bin/
+obj/
+doc/
+>>>>>>> origin/main
