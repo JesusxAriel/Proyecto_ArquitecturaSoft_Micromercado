@@ -1,11 +1,14 @@
-using Proyecto_Arquitectura_Micromercado.Repositories;
+using Proyecto_Arquitectura_Micromercado.Application.Categories;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
 
-builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+builder.Services.AddScoped<ICategoryRepository, MySqlCategoryRepository>();
+
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 
 var app = builder.Build();
 

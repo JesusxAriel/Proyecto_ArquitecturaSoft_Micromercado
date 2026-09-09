@@ -2,60 +2,62 @@
 @model Proyecto_Arquitectura_Micromercado.Pages.Categories.EditModel
 
 @{
-    ViewData["Title"] = "Edit Category";
+    ViewData["Title"] = "Editar categoría";
 }
 
-<h1>Edit Category</h1>
+<h1>Editar categoría</h1>
 
-@if (!string.IsNullOrEmpty(Model.MensajeError))
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
 {
-    <p class="text-danger">@Model.MensajeError</p>
+    <p class="text-danger">
+        @Model.ErrorMessage
+    </p>
 }
 
 <form method="post">
 
-    <input type="hidden" asp-for="Categoria.Id" />
+    <input type="hidden" asp-for="Category.Id" />
 
     <div class="mb-3">
-        <label class="form-label">Name *</label>
-        <input asp-for="Categoria.Nombre"
+        <label class="form-label">Nombre *</label>
+        <input asp-for="Category.Name"
                class="form-control" />
-        <span asp-validation-for="Categoria.Nombre"
+        <span asp-validation-for="Category.Name"
               class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label class="form-label">Code *</label>
-        <input asp-for="Categoria.Codigo"
+        <label class="form-label">Código *</label>
+        <input asp-for="Category.Code"
                class="form-control" />
-        <span asp-validation-for="Categoria.Codigo"
+        <span asp-validation-for="Category.Code"
               class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label class="form-label">Aisle Location</label>
-        <input asp-for="Categoria.PasilloUbicacion"
+        <label class="form-label">Ubicación en pasillo</label>
+        <input asp-for="Category.AisleLocation"
                class="form-control" />
-        <span asp-validation-for="Categoria.PasilloUbicacion"
+        <span asp-validation-for="Category.AisleLocation"
               class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label class="form-label">Description</label>
-        <input asp-for="Categoria.Descripcion"
+        <label class="form-label">Descripción</label>
+        <input asp-for="Category.Description"
                class="form-control" />
-        <span asp-validation-for="Categoria.Descripcion"
+        <span asp-validation-for="Category.Description"
               class="text-danger"></span>
     </div>
 
     <button type="submit"
             class="btn btn-primary">
-        Save Changes
+        Guardar cambios
     </button>
 
     <a asp-page="/Categories/Index"
        class="btn btn-secondary">
-        Cancel
+        Cancelar
     </a>
 
 </form>

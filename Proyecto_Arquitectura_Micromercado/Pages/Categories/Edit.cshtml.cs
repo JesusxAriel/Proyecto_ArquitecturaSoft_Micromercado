@@ -1,39 +1,35 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Proyecto_Arquitectura_Micromercado.Models;
-using Proyecto_Arquitectura_Micromercado.Repositories;
-using Proyecto_Arquitectura_Micromercado.Validations;
+using Proyecto_Arquitectura_Micromercado.Application.Categories;
+using Proyecto_Arquitectura_Micromercado.Domain.Categories;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 {
     public class EditModel : PageModel
     {
-        private readonly ICategoriaRepository categoriaRepository;
-        private readonly CategoriaValidation categoriaValidation;
+        private readonly ICategoryService categoryService;
 
         [BindProperty]
-        public Categoria Categoria { get; set; } = new Categoria();
+        public Category Category { get; set; } = new Category();
 
-        public string MensajeError { get; set; } = string.Empty;
+        public string ErrorMessage { get; set; } = string.Empty;
 
-        public EditModel(
-            ICategoriaRepository categoriaRepository)
+        public EditModel(ICategoryService categoryService)
         {
-            this.categoriaRepository = categoriaRepository;
-            categoriaValidation = new CategoriaValidation();
+            this.categoryService = categoryService;
         }
 
         public IActionResult OnGet(int id)
         {
-            Categoria? categoriaEncontrada =
-                categoriaRepository.ObtenerPorId(id);
+            Category? category =
+                categoryService.GetById(id);
 
-            if (categoriaEncontrada == null)
+            if (category == null)
             {
                 return NotFound();
             }
 
-            Categoria = categoriaEncontrada;
+            Category = category;
 
             return Page();
         }
@@ -45,24 +41,14 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
                 return Page();
             }
 
-            if (!categoriaValidation.EsCategoriaValida(Categoria))
-            {
-                MensajeError =
-                    "Los datos ingresados no son válidos.";
-
-                return Page();
-            }
-
             try
             {
-                Categoria.IdUsuarioAdmin = 1;
+                bool updated =
+                    categoryService.Update(Category);
 
-                bool actualizado =
-                    categoriaRepository.Actualizar(Categoria);
-
-                if (!actualizado)
+                if (!updated)
                 {
-                    MensajeError =
+                    ErrorMessage =
                         "No se pudo actualizar la categoría.";
 
                     return Page();
@@ -72,7 +58,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
             }
             catch (Exception)
             {
-                MensajeError =
+                ErrorMessage =
                     "Ocurrió un error al actualizar la categoría.";
 
                 return Page();

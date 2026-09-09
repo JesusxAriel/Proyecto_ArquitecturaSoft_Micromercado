@@ -1,46 +1,44 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Proyecto_Arquitectura_Micromercado.Models;
-using Proyecto_Arquitectura_Micromercado.Repositories;
+using Proyecto_Arquitectura_Micromercado.Application.Categories;
+using Proyecto_Arquitectura_Micromercado.Domain.Categories;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 {
     public class IndexModel : PageModel
     {
-        private readonly ICategoriaRepository categoriaRepository;
+        private readonly ICategoryService categoryService;
 
-        public string MensajeError { get; set; } = string.Empty;
+        public List<Category> Categories { get; set; } =
+            new List<Category>();
 
-        public List<Categoria> ListCategorias { get; set; } =
-            new List<Categoria>();
+        public string ErrorMessage { get; set; } = string.Empty;
 
-        public IndexModel(ICategoriaRepository categoriaRepository)
+        public IndexModel(ICategoryService categoryService)
         {
-            this.categoriaRepository = categoriaRepository;
+            this.categoryService = categoryService;
         }
 
         public void OnGet()
         {
-            CargarCategorias();
+            LoadCategories();
         }
 
-        public IActionResult OnPostEliminar(int id)
+        public IActionResult OnPostDelete(int id)
         {
             try
             {
-                int idUsuarioAdmin = 1;
+                int adminUserId = 1;
 
-                bool eliminado =
-                    categoriaRepository.Desactivar(
-                        id,
-                        idUsuarioAdmin);
+                bool deleted =
+                    categoryService.Delete(id, adminUserId);
 
-                if (!eliminado)
+                if (!deleted)
                 {
-                    MensajeError =
+                    ErrorMessage =
                         "No se pudo eliminar la categoría.";
 
-                    CargarCategorias();
+                    LoadCategories();
                     return Page();
                 }
 
@@ -48,26 +46,24 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
             }
             catch (Exception)
             {
-                MensajeError =
+                ErrorMessage =
                     "Ocurrió un error al eliminar la categoría.";
 
-                CargarCategorias();
+                LoadCategories();
                 return Page();
             }
         }
 
-        private void CargarCategorias()
+        private void LoadCategories()
         {
             try
             {
-                ListCategorias =
-                    categoriaRepository.ObtenerActivas();
+                Categories = categoryService.GetActive();
             }
             catch (Exception ex)
             {
-                MensajeError =
-                    "Error al cargar categorías: "
-                    + ex.Message;
+                ErrorMessage =
+                    "Error al cargar las categorías: " + ex.Message;
             }
         }
     }

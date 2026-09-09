@@ -1,22 +1,22 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using MySql.Data.MySqlClient;
-using Proyecto_Arquitectura_Micromercado.Models;
+using Proyecto_Arquitectura_Micromercado.Application.Categories;
+using Proyecto_Arquitectura_Micromercado.Domain.Categories;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 {
     public class CreateModel : PageModel
     {
-        private readonly IConfiguration configuration;
+        private readonly ICategoryService categoryService;
 
         [BindProperty]
-        public Categoria Categoria { get; set; } = new Categoria();
+        public Category Category { get; set; } = new Category();
 
-        public string MensajeError { get; set; } = string.Empty;
+        public string ErrorMessage { get; set; } = string.Empty;
 
-        public CreateModel(IConfiguration configuration)
+        public CreateModel(ICategoryService categoryService)
         {
-            this.configuration = configuration;
+            this.categoryService = categoryService;
         }
 
         public void OnGet()
@@ -30,51 +30,26 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
                 return Page();
             }
 
-            string connectionString =
-                configuration.GetConnectionString("MySqlConnection")!;
-
-            string query = @"
-                INSERT INTO CATEGORIAS
-                (nombre, descripcion, codigo, pasilloUbicacion, idUsuarioAdmin)
-                VALUES
-                (@nombre, @descripcion, @codigo, @pasilloUbicacion, @idUsuarioAdmin);";
-
             try
             {
-                using MySqlConnection connection =
-                    new MySqlConnection(connectionString);
+                bool created =
+                    categoryService.Create(Category);
 
-                using MySqlCommand command =
-                    new MySqlCommand(query, connection);
+                if (!created)
+                {
+                    ErrorMessage =
+                        "No se pudo crear la categoría.";
 
-                command.Parameters.AddWithValue(
-                    "@nombre",
-                    Categoria.Nombre);
-
-                command.Parameters.AddWithValue(
-                    "@descripcion",
-                    (object?)Categoria.Descripcion ?? DBNull.Value);
-
-                command.Parameters.AddWithValue(
-                    "@codigo",
-                    Categoria.Codigo);
-
-                command.Parameters.AddWithValue(
-                    "@pasilloUbicacion",
-                    (object?)Categoria.PasilloUbicacion ?? DBNull.Value);
-
-                command.Parameters.AddWithValue(
-                    "@idUsuarioAdmin",
-                    1);
-
-                connection.Open();
-                command.ExecuteNonQuery();
+                    return Page();
+                }
 
                 return RedirectToPage("/Categories/Index");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                MensajeError = ex.Message;
+                ErrorMessage =
+                    "Ocurrió un error al crear la categoría.";
+
                 return Page();
             }
         }
