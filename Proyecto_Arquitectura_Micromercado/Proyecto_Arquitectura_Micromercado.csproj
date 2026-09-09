@@ -10,8 +10,4 @@
     <PackageReference Include="MySql.Data" Version="26.7.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Pages\Proveedores\" />
-  </ItemGroup>
-
 </Project>

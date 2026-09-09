@@ -1,14 +1,15 @@
 
-using Proyecto_Arquitectura_Micromercado.Data;
-using Proyecto_Arquitectura_Micromercado.Validations;
+using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
+
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
 
-builder.Services.AddScoped<IProveedorRepository, ProveedorRepository>();
-builder.Services.AddScoped<ProveedorValidation>();
+builder.Services.AddScoped<ISupplierRepository, MySqlSupplierRepository>();
+builder.Services.AddScoped<ISupplierService, SupplierService>();
 
 var app = builder.Build();
 
