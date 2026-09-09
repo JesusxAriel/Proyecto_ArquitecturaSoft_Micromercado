@@ -1,421 +1,393 @@
-# Estructura y arquitectura del módulo de Productos
+# Estructura y arquitectura del Micromercado
 
-## 1. Alcance y estado actual
+## 1. Alcance y propósito
 
-Este documento describe la versión actual del proyecto
-`Proyecto_Arquitectura_Micromercado` después de los últimos cambios. La interfaz
-del CRUD está ubicada en `Pages/Products/`; no existe una carpeta
-`Pages/Productos/` en la versión vigente. El módulo usa Razor Pages, ADO.NET
-con `MySql.Data` y no expone controladores REST.
+El proyecto `Proyecto_Arquitectura_Micromercado` es una aplicación web ASP.NET Core Razor Pages para administrar productos de un micromercado. El alcance implementado comprende:
 
-El flujo principal es:
+- Consulta de productos activos con stock calculado.
+- Alta, edición y eliminación lógica de productos.
+- Carga de categorías y proveedores para los formularios.
+- Validación y normalización de datos de producto.
+- Registro y consulta del historial de cambios de precios.
+- Persistencia en MySQL mediante ADO.NET puro (`MySqlConnection`, `MySqlCommand` y `MySqlDataReader`).
 
-```text
-Razor Page (.cshtml)
-        |
-PageModel (.cshtml.cs)
-        |
-IProductService -> ProductService
-        |
-IProductRepository -> MySqlProductRepository
-        |
-MySQL: PRODUCTO, CATEGORIAS, PROVEEDOR, vw_productos_con_stock
-```
-
-La separación física actual es:
+La solución y el script de base de datos están en la raíz del repositorio:
 
 ```text
-Proyecto_Arquitectura_Micromercado/
-├── Application/Products/
-│   ├── IProductRepository.cs
-│   ├── IProductService.cs
-│   └── ProductService.cs
-├── Domain/Products/
-│   ├── Product.cs
-│   └── ProductDtos.cs
-├── Infrastructure/
-│   ├── Persistence/MySqlProductRepository.cs
-│   └── Web/DecimalModelBinder.cs
-├── Pages/
-│   ├── Products/
-│   │   ├── Index.cshtml
-│   │   ├── Index.cshtml.cs
-│   │   ├── Create.cshtml
-│   │   ├── Create.cshtml.cs
-│   │   ├── Edit.cshtml
-│   │   ├── Edit.cshtml.cs
-│   │   ├── Delete.cshtml
-│   │   ├── Delete.cshtml.cs
-│   │   ├── ProductFormModel.cs
-│   │   └── _ProductForm.cshtml
-│   ├── Shared/
-│   │   ├── _Layout.cshtml
-│   │   └── _ValidationScriptsPartial.cshtml
-│   ├── Index.cshtml
-│   ├── Index.cshtml.cs
-│   ├── Privacy.cshtml
-│   ├── Privacy.cshtml.cs
-│   ├── Error.cshtml
-│   ├── Error.cshtml.cs
-│   ├── _ViewImports.cshtml
-│   └── _ViewStart.cshtml
-├── Program.cs
-├── appsettings.json
-└── Proyecto_Arquitectura_Micromercado.csproj
+C:\Users\usuario\Documents\UCB\Arquitectura\Proyecto_Arquitectura_Micromercado - copia\
 ```
 
-## 2. Responsabilidad de cada archivo
+## 2. Árbol completo del proyecto
+
+Se omiten únicamente artefactos generados (`bin/`, `obj/`) y dependencias estáticas de terceros bajo `wwwroot/lib/`.
+
+```text
+Proyecto_Arquitectura_Micromercado - copia/
+├── ESTRUCTURA_Y_ARQUITECTURA.md
+├── Proyecto_Arquitectura_Micromercado.slnx
+├── bdMicroMercadoArqui.sql
+└── Proyecto_Arquitectura_Micromercado/
+    ├── Proyecto_Arquitectura_Micromercado.csproj
+    ├── Proyecto_Arquitectura_Micromercado.csproj.user
+    ├── Program.cs
+    ├── appsettings.json
+    ├── appsettings.Development.json
+    ├── Application/
+    │   └── Products/
+    │       ├── IProductRepository.cs
+    │       ├── IProductService.cs
+    │       └── ProductService.cs
+    ├── Domain/
+    │   └── Products/
+    │       ├── Product.cs
+    │       ├── ProductDtos.cs
+    │       └── ProductPriceHistory.cs
+    ├── Infrastructure/
+    │   ├── Persistence/
+    │   │   └── MySqlProductRepository.cs
+    │   └── Web/
+    │       └── DecimalModelBinder.cs
+    ├── Pages/
+    │   ├── _ViewImports.cshtml
+    │   ├── _ViewStart.cshtml
+    │   ├── Index.cshtml
+    │   ├── Index.cshtml.cs
+    │   ├── Privacy.cshtml
+    │   ├── Privacy.cshtml.cs
+    │   ├── Error.cshtml
+    │   ├── Error.cshtml.cs
+    │   ├── Products/
+    │   │   ├── Index.cshtml
+    │   │   ├── Index.cshtml.cs
+    │   │   ├── Create.cshtml
+    │   │   ├── Create.cshtml.cs
+    │   │   ├── Edit.cshtml
+    │   │   ├── Edit.cshtml.cs
+    │   │   ├── Delete.cshtml
+    │   │   ├── Delete.cshtml.cs
+    │   │   ├── History.cshtml
+    │   │   ├── History.cshtml.cs
+    │   │   ├── ProductFormModel.cs
+    │   │   └── _ProductForm.cshtml
+    │   └── Shared/
+    │       ├── _Layout.cshtml
+    │       ├── _Layout.cshtml.css
+    │       └── _ValidationScriptsPartial.cshtml
+    ├── Properties/
+    │   └── launchSettings.json
+    └── wwwroot/
+        ├── css/site.css
+        ├── js/site.js
+        └── favicon.ico
+```
+
+## 3. Responsabilidad de los archivos
 
 ### Raíz y configuración
 
-#### `Program.cs`
+- `Proyecto_Arquitectura_Micromercado.slnx`: solución que agrupa el proyecto web.
+- `Proyecto_Arquitectura_Micromercado/Proyecto_Arquitectura_Micromercado.csproj`: proyecto SDK web dirigido a `net10.0`, con `Nullable` e `ImplicitUsings` habilitados y referencia a `MySql.Data` 26.7.0.
+- `bdMicroMercadoArqui.sql`: creación, relaciones, vista y datos iniciales de la base de datos.
+- `appsettings.json`: cadena `MySqlConnection`, logging y hosts permitidos. La cadena contiene credenciales locales y no debe publicarse.
+- `appsettings.Development.json`: configuración específica del entorno de desarrollo.
+- `Properties/launchSettings.json`: perfiles y URLs de ejecución local.
 
-Pertenece al namespace global de la aplicación y configura el host ASP.NET
-Core. Registra Razor Pages, el `DecimalModelBinderProvider`, el mensaje
-español para errores numéricos y las implementaciones de las interfaces:
+### Composición de la aplicación
+
+- `Program.cs`, namespace global de la aplicación: crea el host, configura Razor Pages, registra `DecimalModelBinderProvider`, establece la cultura `es-BO`, registra las dependencias y configura el pipeline HTTP.
+  - `IProductRepository` se enlaza con `MySqlProductRepository`.
+  - `IProductService` se enlaza con `ProductService`.
+- `Pages/_ViewImports.cshtml`: imports Razor, namespace de páginas y Tag Helpers.
+- `Pages/_ViewStart.cshtml`: establece la configuración común de vistas.
+- `Pages/Shared/_Layout.cshtml`: layout Bootstrap, navegación y scripts. Incluye enlaces a `/Products/Index` y `/Products/History`.
+- `Pages/Shared/_Layout.cshtml.css`: estilos específicos del layout.
+- `Pages/Shared/_ValidationScriptsPartial.cshtml`: jQuery Validation, jQuery Unobtrusive Validation y aceptación de punto o coma decimal en cliente.
+- `wwwroot/css/site.css` y `wwwroot/js/site.js`: recursos estáticos globales.
+
+### Dominio: `Proyecto_Arquitectura_Micromercado.Domain.Products`
+
+- `Domain/Products/Product.cs`
+  - `Product`: entidad editable con `Id`, nombre, presentación, precios, stock mínimo, categoría, proveedor y estado activo.
+  - `ProductListItem`: DTO de lectura para la tabla de productos, incluyendo nombres de categoría/proveedor y stock calculado.
+  - `LookupOption`: record para opciones de categorías y proveedores.
+- `Domain/Products/ProductDtos.cs`
+  - `ProductPriceValidation`: patrón decimal y mensajes compartidos.
+  - `ProductTextAttribute`: rechaza caracteres de control.
+  - `SalePriceAttribute`: exige precio de venta positivo con precisión de décimas.
+  - `CostPriceAttribute`: exige precio de costo positivo.
+- `Domain/Products/ProductPriceHistory.cs`
+  - `ProductPriceHistory`: DTO de auditoría con `Id`, `IdProducto`, `NombreProducto`, precios anterior/nuevo de venta y costo, `MotivoCambio`, `IdUsuario` y `FechaCambio`.
+  - No contiene acceso a datos ni lógica de presentación; representa el registro que circula entre aplicación, persistencia y vista.
+
+### Aplicación: `Proyecto_Arquitectura_Micromercado.Application.Products`
+
+- `IProductRepository.cs`: contrato de persistencia:
+  - `GetAllAsync`
+  - `GetByIdAsync`
+  - `GetCategoriesAsync`
+  - `GetSuppliersAsync`
+  - `GetPriceHistoryAsync`
+  - `AddPriceHistoryAsync`
+  - `CreateAsync`
+  - `UpdateAsync`
+  - `SoftDeleteAsync`
+- `IProductService.cs`: contrato de casos de uso, incluyendo `GetPriceHistoryAsync`.
+- `ProductService.cs`: coordina validación, normalización y delegación al repositorio.
+  - `CreateAsync` y `UpdateAsync` llaman a `Validate`.
+  - `GetPriceHistoryAsync` delega en `repository.GetPriceHistoryAsync(cancellationToken)`.
+  - Normaliza nombre y presentación a Title Case, elimina espacios extra y redondea precios a dos decimales.
+
+### Infraestructura
+
+- `Infrastructure/Persistence/MySqlProductRepository.cs`
+  - Implementa `IProductRepository`.
+  - Abre conexiones con `OpenConnectionAsync`.
+  - Usa consultas SQL explícitas, parámetros y `await using`.
+  - `GetAllAsync` consulta `vw_productos_con_stock`.
+  - `GetByIdAsync` obtiene un producto activo.
+  - `GetCategoriesAsync` y `GetSuppliersAsync` reutilizan `GetLookupAsync`.
+  - `CreateAsync` inserta un producto y obtiene `LAST_INSERT_ID()`.
+  - `SoftDeleteAsync` cambia `estaActivo` a cero.
+  - `GetPriceHistoryAsync` consulta `HISTORIAL_PRECIO` con `INNER JOIN PRODUCTO`, proyectando `p.nombre AS NombreProducto`, y ordena por `h.fechaCambio DESC`.
+  - `AddPriceHistoryAsync` ejecuta el `INSERT` parametrizado de auditoría.
+  - `UpdateAsync` usa una transacción: bloquea y lee los precios actuales con `FOR UPDATE`, actualiza el producto y, si cambia venta o costo, inserta el historial antes de confirmar.
+- `Infrastructure/Web/DecimalModelBinder.cs`
+  - `DecimalModelBinder`: acepta formatos con punto o coma, valida hasta dos decimales y convierte usando cultura invariante.
+  - `DecimalModelBinderProvider`: aplica el binder a propiedades `decimal`.
+
+### Presentación: `Proyecto_Arquitectura_Micromercado.Pages`
+
+- `Pages/Index.cshtml` y `Index.cshtml.cs`: página inicial.
+- `Pages/Privacy.cshtml` y `Privacy.cshtml.cs`: página informativa.
+- `Pages/Error.cshtml` y `Error.cshtml.cs`: página de errores de producción.
+
+#### CRUD de productos
+
+- `Pages/Products/Index.cshtml` y `Index.cshtml.cs`
+  - Ruta `/Products/Index`.
+  - Lista productos activos, precios, proveedores, categorías y stock.
+  - Enlaza a crear, editar, eliminar e historial.
+- `Pages/Products/Create.cshtml` y `Create.cshtml.cs`
+  - Ruta `/Products/Create`.
+  - Inicializa entradas de precios y carga catálogos.
+  - En POST parsea precios, valida el estado del modelo y llama a `ProductService.CreateAsync`.
+- `Pages/Products/Edit.cshtml` y `Edit.cshtml.cs`
+  - Ruta `/Products/Edit?id=...`.
+  - Carga el producto, rellena `ProductPriceInput`, reutiliza catálogos y llama a `ProductService.UpdateAsync`.
+- `Pages/Products/Delete.cshtml` y `Delete.cshtml.cs`
+  - Ruta `/Products/Delete?id=...`.
+  - Confirma eliminación lógica mediante `SoftDeleteAsync`.
+- `Pages/Products/ProductFormModel.cs`
+  - Clase abstracta base de Create y Edit.
+  - Expone `Product`, `ProductPriceInput`, categorías y proveedores.
+  - Centraliza `LoadLookupsAsync`, `TryParsePrices`, `SetPriceInputs` y validación de entradas decimales.
+- `Pages/Products/_ProductForm.cshtml`
+  - Partial compartida por Create y Edit mediante `<partial name="_ProductForm" model="Model" />`.
+  - Contiene una única definición del formulario, anti-forgery token, controles, mensajes de validación y botones.
+  - Esta reutilización aplica DRY y evita divergencias entre alta y edición.
+
+#### Historial de auditoría
+
+- `Pages/Products/History.cshtml.cs`
+  - `HistoryModel` inyecta `IProductService`.
+  - `OnGetAsync` llama a `GetPriceHistoryAsync(cancellationToken)`.
+  - Expone `IReadOnlyList<ProductPriceHistory> PriceHistory { get; private set; }`.
+- `Pages/Products/History.cshtml`
+  - Ruta `/Products/History`.
+  - Presenta una tabla Bootstrap con producto, precios anteriores/nuevos, motivo, usuario y fecha.
+  - Formatea importes como `Bs. N2`, fechas como `dd/MM/yyyy HH:mm` y costos nulos como `—`.
+
+## 4. Flujo CRUD y flujo de auditoría
+
+### Lectura
+
+1. El navegador solicita `/Products/Index`.
+2. `IndexModel.OnGetAsync` recibe `IProductService`.
+3. `ProductService.GetAllAsync` delega a `MySqlProductRepository.GetAllAsync`.
+4. El repositorio consulta `vw_productos_con_stock` y materializa `ProductListItem`.
+5. La vista renderiza la tabla y acciones.
+
+### Alta
+
+1. `CreateModel.OnGetAsync` carga categorías/proveedores y valores iniciales.
+2. `_ProductForm.cshtml` envía `Product` y `ProductPriceInput`.
+3. `CreateModel.OnPostAsync` ejecuta `TryParsePrices` y verifica `ModelState`.
+4. `ProductService.Validate` normaliza y valida.
+5. `MySqlProductRepository.CreateAsync` ejecuta un `INSERT` parametrizado.
+
+### Edición y auditoría
+
+1. `EditModel.OnGetAsync` carga el producto activo y muestra sus precios.
+2. En POST, `TryParsePrices` acepta punto o coma y obtiene los valores decimales.
+3. `ProductService.UpdateAsync` valida y delega.
+4. `MySqlProductRepository.UpdateAsync` inicia una transacción y obtiene `precioVenta` y `precioCosto` actuales con `SELECT ... FOR UPDATE`.
+5. Ejecuta el `UPDATE PRODUCTO`.
+6. Si cambia cualquiera de los precios, crea `ProductPriceHistory` con:
+   - `IdProducto`: producto editado.
+   - `PrecioVentaAnterior` y `PrecioVentaNuevo`.
+   - `PrecioCostoAnterior` y `PrecioCostoNuevo`.
+   - `MotivoCambio`: `"Actualización de precio"`.
+   - `IdUsuario`: `SystemAdminId`, actualmente `1`.
+   - `FechaCambio`: la genera MySQL con `CURRENT_TIMESTAMP`.
+7. Inserta el historial en la misma transacción.
+8. Confirma únicamente cuando la actualización afecta una fila; de lo contrario revierte.
+
+La transacción evita que el producto quede actualizado sin su auditoría correspondiente o que se registre un cambio cuando la actualización no se realizó.
+
+### Consulta del historial
+
+1. El usuario entra a `/Products/History`.
+2. `HistoryModel.OnGetAsync` invoca `IProductService.GetPriceHistoryAsync`.
+3. El repositorio ejecuta:
+
+```sql
+SELECT h.id, h.idProducto, p.nombre AS NombreProducto,
+       h.precioVentaAnterior, h.precioVentaNuevo,
+       h.precioCostoAnterior, h.precioCostoNuevo,
+       h.motivoCambio, h.idUsuario, h.fechaCambio
+FROM HISTORIAL_PRECIO h
+INNER JOIN PRODUCTO p ON p.id = h.idProducto
+ORDER BY h.fechaCambio DESC;
+```
+
+4. `History.cshtml` muestra los registros más recientes primero.
+
+## 5. Base de datos y persistencia
+
+`bdMicroMercadoArqui.sql` define, entre otras, las siguientes estructuras:
+
+- `PRODUCTO`: entidad principal, con precios `DECIMAL(10,2)`, referencias a categoría/proveedor, estado lógico y usuario administrador.
+- `CATEGORIAS` y `PROVEEDOR`: fuentes de los catálogos de formularios.
+- `LOTE`: existencias que alimentan el stock calculado.
+- `HISTORIAL_PRECIO`:
+
+| Campo | Tipo | Propósito |
+|---|---|---|
+| `id` | `INT AUTO_INCREMENT` | Identificador del evento |
+| `idProducto` | `INT` | Producto afectado y FK a `PRODUCTO` |
+| `precioVentaAnterior` | `DECIMAL(10,2)` | Valor anterior de venta |
+| `precioVentaNuevo` | `DECIMAL(10,2)` | Valor nuevo de venta |
+| `precioCostoAnterior` | `DECIMAL(10,2) NULL` | Valor anterior de costo |
+| `precioCostoNuevo` | `DECIMAL(10,2) NULL` | Valor nuevo de costo |
+| `motivoCambio` | `VARCHAR(255)` | Motivo del cambio |
+| `idUsuario` | `INT` | Usuario responsable |
+| `fechaCambio` | `DATETIME` | Fecha, por defecto `CURRENT_TIMESTAMP` |
+
+La FK `FK_HistorialPrecio_Producto` usa `ON DELETE CASCADE`. En la aplicación, la operación normal es eliminación lógica de `PRODUCTO`, por lo que el historial permanece consultable.
+
+La vista `vw_productos_con_stock` combina producto, categoría, proveedor y lotes para entregar `stockCalculado`, evitando almacenar stock derivado en `PRODUCTO`.
+
+## 6. Patrones de diseño, SOLID y Clean Code
+
+### SRP
+
+- Las vistas `.cshtml` se encargan de renderizar HTML y formularios.
+- Los Code-Behind `.cshtml.cs` coordinan solicitudes HTTP y PageModel.
+- `Product` y `ProductPriceHistory` representan datos del dominio.
+- `ProductService` aplica reglas de aplicación y delega casos de uso.
+- `MySqlProductRepository` encapsula SQL y acceso a MySQL.
+- `DecimalModelBinder` resuelve exclusivamente el binding decimal.
+
+### OCP y DIP
+
+`ProductService` depende de `IProductRepository`, no de MySQL directamente. Los PageModels dependen de `IProductService`. `Program.cs` conecta abstracciones con implementaciones mediante:
 
 ```csharp
 builder.Services.AddScoped<IProductRepository, MySqlProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
 ```
 
-También configura la cultura `es-BO`, el middleware HTTP, archivos estáticos,
-autorización y `MapRazorPages()`. No registra `AddControllers()` ni
-`MapControllers()`, por lo que no hay una ruta REST duplicada. La página `/`
-continúa siendo la página Home estándar; Productos se abre explícitamente en
-`/Products/Index`.
-
-#### `appsettings.json`
-
-Contiene la cadena de conexión nombrada `MySqlConnection`, además de logging y
-`AllowedHosts`. La contraseña real no se documenta aquí por seguridad. El
-repositorio obtiene esta configuración mediante `IConfiguration`.
-
-#### `Proyecto_Arquitectura_Micromercado.csproj`
-
-Define el proyecto web .NET 10 con nullable reference types e implicit usings.
-La única dependencia externa declarada es `MySql.Data` 26.7.0, utilizada por la
-persistencia ADO.NET. No se usa Entity Framework.
-
-#### `bdMicroMercadoArqui.sql`
-
-Define el esquema MySQL consumido por el módulo: `PRODUCTO`, `CATEGORIAS`,
-`PROVEEDOR`, `LOTE`, `HISTORIAL_PRECIO` y la vista
-`vw_productos_con_stock`. Las tablas manejan `estaActivo` para eliminación
-lógica. La vista filtra productos activos, calcula el stock a partir de lotes
-activos y entrega los campos que usa `ProductListItem`.
-
-### Dominio: `Domain/Products/`
-
-Namespace: `Proyecto_Arquitectura_Micromercado.Domain.Products`.
-
-#### `Product.cs`
-
-Define:
-
-- `Product`: entidad editable del dominio, con identidad, nombre,
-  presentación, precios, stock mínimo, categoría, proveedor y estado activo.
-- `ProductListItem`: proyección de lectura para la tabla de Productos,
-  incluyendo nombres de categoría/proveedor y `StockCalculado`.
-- `LookupOption`: record para opciones simples de categorías y proveedores.
-
-Las propiedades editables tienen `Display`, `Required`, `StringLength`,
-`Range`, `RegularExpression`, `ProductText`, `SalePrice` y `CostPrice`.
-Estas anotaciones producen metadatos para validación server-side y mensajes
-para Razor/Unobtrusive.
-
-#### `ProductDtos.cs`
-
-Aunque el archivo contiene reglas y atributos compartidos más que DTOs
-tradicionales, concentra la política reutilizable:
-
-- `ProductPriceValidation.DecimalPattern` acepta dígitos con separador `.` o
-  `,` y hasta dos decimales.
-- `SaleMessage` y `CostMessage` son mensajes cortos compartidos.
-- `ProductTextAttribute` rechaza caracteres de control.
-- `SalePriceAttribute` exige un precio positivo en múltiplos de `0.10`.
-- `CostPriceAttribute` exige un precio positivo y permite cualquier centavo
-  con hasta dos decimales.
-
-### Aplicación: `Application/Products/`
-
-Namespace: `Proyecto_Arquitectura_Micromercado.Application.Products`.
-
-#### `IProductRepository.cs`
-
-Abstrae el acceso a datos. Expone consultas de listado, producto individual,
-categorías y proveedores, además de crear, actualizar y eliminar lógicamente.
-Usa `Task`, listas de solo lectura y `CancellationToken`, sin acoplar la capa
-de aplicación a MySQL.
-
-#### `IProductService.cs`
-
-Define el caso de uso del módulo para que los PageModels dependan de una
-abstracción. Replica las operaciones públicas del CRUD y de los catálogos.
-
-#### `ProductService.cs`
-
-Implementa `IProductService` y coordina reglas antes de persistir:
-
-1. Verifica que la entidad no sea nula.
-2. Normaliza nombre y presentación.
-3. Redondea precios a dos decimales con
-   `MidpointRounding.AwayFromZero`.
-4. Comprueba campos obligatorios, precio de venta mínimo y múltiplo de
-   `0.10`, precio de costo positivo, stock no negativo y claves de catálogo
-   positivas.
-5. Delega la operación validada en `IProductRepository`.
-
-`ToTitleCase` elimina espacios repetidos con
-`string.Join(" ", text.Split(..., StringSplitOptions.RemoveEmptyEntries))` y
-aplica `CultureInfo.CurrentCulture.TextInfo.ToTitleCase` sobre texto en
-minúsculas. Así la normalización queda centralizada y no depende únicamente
-del navegador.
-
-### Infraestructura: `Infrastructure/`
-
-#### `Infrastructure/Persistence/MySqlProductRepository.cs`
-
-Namespace: `Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence`.
-
-Implementa `IProductRepository` con `MySqlConnection`, `MySqlCommand` y
-lectores ADO.NET:
-
-- `GetAllAsync` consulta `vw_productos_con_stock` y ordena por nombre.
-- `GetByIdAsync` consulta `PRODUCTO` únicamente si `estaActivo = 1`.
-- `GetCategoriesAsync` y `GetSuppliersAsync` cargan catálogos activos.
-- `CreateAsync` inserta el producto y devuelve `LAST_INSERT_ID()`.
-- `UpdateAsync` actualiza únicamente registros activos.
-- `SoftDeleteAsync` cambia `estaActivo` a `0`.
-
-Los parámetros SQL se agregan mediante `AddProductParameters`, evitando
-concatenar valores del usuario. Las conexiones y lectores se liberan con
-`await using`, y las operaciones aceptan cancelación.
-
-#### `Infrastructure/Web/DecimalModelBinder.cs`
-
-Namespace: `Proyecto_Arquitectura_Micromercado.Infrastructure.Web`.
-
-`DecimalModelBinder` valida y convierte bindings `decimal` directos. Acepta
-coma o punto, rechaza separadores de miles, notación científica y más de dos
-decimales, normaliza a punto y convierte con `CultureInfo.InvariantCulture`.
-`DecimalModelBinderProvider` lo aplica a propiedades cuyo tipo es exactamente
-`decimal`.
-
-Las páginas Create/Edit usan además strings (`ProductPriceInput`) para que la
-entrada de formulario no sea bloqueada por la validación HTML5 o por la
-cultura del navegador; el binder permanece disponible para otros bindings
-decimales de la aplicación.
-
-### Interfaz Razor: `Pages/`
-
-Los PageModels usan el namespace
-`Proyecto_Arquitectura_Micromercado.Pages.Products` y reciben
-`IProductService` por inyección de dependencias.
-
-#### `Pages/Products/Index.cshtml` y `Index.cshtml.cs`
-
-`Index.cshtml` declara `@page` sin ruta literal y muestra la tabla de productos,
-precios, categoría, proveedor y stock calculado. Marca `Stock bajo` cuando el
-stock es menor o igual al stock mínimo y ofrece enlaces a Create, Edit y
-Delete.
-
-`IndexModel` llama a `IProductService.GetAllAsync()` en `OnGetAsync` y expone
-`IReadOnlyList<ProductListItem>`. No contiene SQL ni reglas de persistencia.
-
-#### `Pages/Products/Create.cshtml` y `Create.cshtml.cs`
-
-La vista define el título y reutiliza `_ProductForm`; carga
-`_ValidationScriptsPartial` en la sección `Scripts`.
-
-`CreateModel` inicializa los precios como `"0,00"`, carga catálogos en GET y,
-en POST, ejecuta `TryParsePrices()` antes de comprobar `ModelState`. Si falla,
-recarga los catálogos y devuelve la página. Si todo es válido, llama a
-`CreateAsync` y redirige a `/Products/Index`.
-
-#### `Pages/Products/Edit.cshtml` y `Edit.cshtml.cs`
-
-La vista tiene la misma composición que Create, pero usa `EditModel`.
-`OnGetAsync` busca el producto por id, devuelve `NotFound()` si no existe,
-precarga `Product` y formatea los precios con `"0.00"` e
-`InvariantCulture`.
-
-En POST se valida el id oculto, se procesan los precios con el mismo flujo
-compartido y se llama a `UpdateAsync`. Si el registro ya no está activo o no
-existe, devuelve `NotFound()`; en éxito redirige a `/Products/Index`.
-
-#### `Pages/Products/Delete.cshtml` y `Delete.cshtml.cs`
-
-La vista muestra una confirmación, incluye `Product.Id` como campo oculto y
-`@Html.AntiForgeryToken()`. El usuario es informado de que la eliminación es
-lógica.
-
-`DeleteModel` carga el producto activo en GET. En POST valida que el id sea
-positivo, llama a `SoftDeleteAsync` y redirige al listado; no borra físicamente
-filas de MySQL.
-
-#### `Pages/Products/ProductFormModel.cs`
-
-Es la clase base abstracta compartida por Create y Edit:
-`Proyecto_Arquitectura_Micromercado.Pages.Products.ProductFormModel`.
-
-Centraliza:
-
-- La propiedad `Product` enlazada con el formulario.
-- La propiedad `Input` de tipo `ProductPriceInput`.
-- La carga de `Categories` y `Suppliers`.
-- `TryParsePrices`, que elimina el estado decimal automático, sustituye coma
-  por punto, valida el patrón, convierte con `InvariantCulture`, exige
-  valores positivos, aplica el múltiplo de `0.10` solamente a venta y redondea.
-- `SetPriceInputs`, que prepara los valores existentes para Edit.
-
-`ProductPriceInput` contiene `PrecioVentaInput` y `PrecioCostoInput` como
-strings, decisión que permite aceptar `"30,90"` y `"30.90"` de forma uniforme.
-
-#### `Pages/Products/_ProductForm.cshtml`
-
-Es un partial fuertemente tipado con
-`ProductFormModel`. Contiene una sola copia del HTML de los campos, etiquetas,
-mensajes de validación, token antiforgery, id oculto, selects y botones.
-Create y Edit lo invocan con:
-
-```razor
-<partial name="_ProductForm" model="Model" />
-```
-
-Esto aplica DRY: cambios de layout, nombres, validaciones visuales o
-redirección de cancelar se realizan en un solo lugar. Los precios son inputs
-`type="text"` con `inputmode="decimal"` para evitar conflictos de locale y el
-stock usa `inputmode="numeric"`.
-
-#### `Pages/Shared/_Layout.cshtml`
-
-Es el layout global de Razor Pages. Define navegación Home, Privacy y
-Productos mediante `/Products/Index`, carga Bootstrap/jQuery y renderiza la
-sección opcional `Scripts`. La página Home sigue siendo `Pages/Index.cshtml`.
-
-#### `Pages/Shared/_ValidationScriptsPartial.cshtml`
-
-Carga jQuery Validate y jQuery Validate Unobtrusive. Sobrescribe el método
-`number` para admitir tanto `,` como `.` como separador decimal antes de que la
-validación cliente bloquee el formulario.
-
-#### `Pages/_ViewImports.cshtml`
-
-Registra los tag helpers y los usings globales, incluido:
-
-```razor
-@using Proyecto_Arquitectura_Micromercado.Pages.Products
-```
-
-#### `Pages/_ViewStart.cshtml`
-
-Selecciona `_Layout` como layout común de las páginas Razor.
-
-#### `Pages/Index.cshtml` y `Pages/Index.cshtml.cs`
-
-Son la página Home estándar de la plantilla Razor Pages. No redirigen
-automáticamente al CRUD; el usuario llega a Productos desde el menú.
-
-#### `Pages/Privacy.cshtml` y `Privacy.cshtml.cs`
-
-Conservan la página informativa estándar del proyecto y no participan en el
-CRUD.
-
-#### `Pages/Error.cshtml` y `Error.cshtml.cs`
-
-Proporcionan la página de error usada por `UseExceptionHandler("/Error")` en
-entornos que no son Development.
-
-## 3. SOLID, Clean Code y patrones aplicados
-
-### SRP
-
-- Las vistas `.cshtml` se ocupan de presentación, binding de controles y
-  mensajes visuales.
-- Los PageModels `.cshtml.cs` coordinan el ciclo HTTP de cada pantalla.
-- `Product` y los atributos del dominio expresan datos y reglas de validación.
-- `ProductService` aplica reglas de negocio y normalización.
-- `MySqlProductRepository` se ocupa exclusivamente de persistencia MySQL.
-- `DecimalModelBinder` se ocupa del binding de decimales.
-- `_ProductForm.cshtml` mantiene una única responsabilidad de renderizar el
-  formulario compartido.
-
-### OCP y DIP
-
-Los PageModels dependen de `IProductService`, y `ProductService` depende de
-`IProductRepository`. Las implementaciones concretas se conectan en
-`Program.cs` mediante DI. Es posible sustituir la persistencia o probar la
-capa de aplicación con otra implementación sin modificar las páginas.
+Esto permite sustituir persistencia o servicio sin modificar las páginas consumidoras.
 
 ### DRY
 
-El formulario compartido, `ProductFormModel`, `ProductPriceInput`,
-`ProductPriceValidation` y los atributos de validación evitan duplicar
-marcado, parsing, mensajes y reglas entre Create y Edit.
+- `_ProductForm.cshtml` evita duplicar el formulario entre Create y Edit.
+- `ProductFormModel` concentra la lógica compartida de ambos flujos.
+- `ProductPriceInput` separa el texto introducido por el usuario del `decimal` de dominio.
+- `ProductPriceValidation`, `ProductTextAttribute`, `SalePriceAttribute` y `CostPriceAttribute` centralizan validaciones.
+- `GetLookupAsync` evita duplicar la lectura de categorías y proveedores.
+- `AddPriceHistoryParameters` reutiliza el mapeo parametrizado para inserciones de auditoría.
 
-### Clean Code y Clean Architecture
+### Clean Architecture y ADO.NET
 
-Las dependencias apuntan hacia abstracciones: Domain no conoce MySQL ni Razor;
-Application coordina casos de uso; Infrastructure contiene detalles externos;
-Pages es el adaptador de presentación. Los nombres `GetAllAsync`,
-`SoftDeleteAsync`, `TryParsePrices` y `LoadLookupsAsync` expresan intención,
-las operaciones son asíncronas y se usan tipos de solo lectura donde
-corresponde.
+La dirección de dependencias es:
 
-## 4. Validación y reglas de negocio
+```text
+Pages -> Application -> Domain
+Infrastructure -> Application + Domain
+Program.cs -> compone todas las implementaciones
+```
 
-### Capa de formulario y JavaScript
+El dominio no conoce Razor ni MySQL. La infraestructura implementa los contratos de aplicación con ADO.NET puro, consultas parametrizadas y liberación asíncrona mediante `await using`.
 
-Los Tag Helpers generan nombres, mensajes y atributos de validación para
-Unobtrusive. `_ValidationScriptsPartial.cshtml` permite separadores `,` y `.`.
-Los precios no usan `type="number"`: se envían como texto con teclado decimal.
-Los campos de categoría y proveedor comienzan en valor `0` para activar
-`[Range(1, int.MaxValue)]`.
+## 7. Reglas de negocio y validaciones
 
-### DataAnnotations y atributos del dominio
+### Validación en frontend
 
-`Product` exige nombre y presentación, limita longitudes, valida claves de
-catálogo, impide stock negativo y aplica expresiones regulares de precios.
-`SalePriceAttribute` exige venta positiva y múltiplo de `0.10`; `CostPriceAttribute`
-solo exige costo positivo. `ProductTextAttribute` bloquea caracteres de control.
+`Pages/Shared/_ValidationScriptsPartial.cshtml` habilita jQuery Validation y jQuery Unobtrusive Validation. Sobrescribe el validador numérico para aceptar `10,50` y `10.50`.
 
-### Server Logic
+`_ProductForm.cshtml` muestra mensajes por campo y envía anti-forgery token.
 
-`ProductFormModel.TryParsePrices` normaliza coma/punto y valida manualmente
-antes de `ModelState.IsValid`. `ProductService.Validate` es la última barrera:
-redondea a dos decimales, normaliza texto y rechaza combinaciones inválidas
-antes de tocar la base de datos. Por ello las reglas no dependen solamente de
-JavaScript o de un cliente específico.
+### Validación de modelo
 
-### Reglas bolivianas implementadas
+`Product` usa DataAnnotations:
 
-1. **Precio de venta:** debe ser positivo, tener como máximo dos decimales y
-   estar en múltiplos de `0.10 Bs` (`10,50`, `10.90`, `30,00`).
-2. **Precio de costo:** debe ser positivo y tener como máximo dos decimales;
-   valores como `6,99` y `15.43` son válidos.
-3. **Separador decimal:** se aceptan punto y coma en formularios y bindings.
-   No se aceptan notación científica, separadores de miles ni más de dos
-   decimales.
-4. **Redondeo:** los valores persistidos se redondean a dos decimales con
-   `MidpointRounding.AwayFromZero`.
-5. **Texto:** nombre y presentación se recortan conceptualmente al eliminar
-   espacios vacíos repetidos y se convierten a Title Case antes de guardar.
-6. **Stock mínimo:** es entero mayor o igual que cero.
-7. **Categoría y proveedor:** deben corresponder a opciones seleccionadas con
-   identificador positivo.
-8. **Eliminación:** siempre es lógica (`estaActivo = 0`).
+- Nombre y presentación obligatorios, con longitudes máximas.
+- Categoría y proveedor mayores que cero.
+- Stock mínimo no negativo.
+- Precio de venta con patrón decimal y `SalePriceAttribute`.
+- Precio de costo con patrón decimal y `CostPriceAttribute`.
+- Texto sin caracteres de control mediante `ProductTextAttribute`.
 
-## 5. Rutas funcionales
+### Validación de servidor
 
-| Operación | Ruta | PageModel |
+`ProductFormModel.TryParsePrices`:
+
+- acepta punto o coma decimal;
+- rechaza valores vacíos, formatos inválidos y más de dos decimales;
+- exige valores positivos;
+- exige que el precio de venta sea múltiplo de `0.10`;
+- redondea a dos decimales con `MidpointRounding.AwayFromZero`.
+
+`ProductService.Validate`:
+
+- verifica que el producto no sea nulo;
+- elimina espacios duplicados y extremos;
+- convierte nombre y presentación a Title Case;
+- redondea ambos precios;
+- exige precio de venta mínimo de `0.10`;
+- exige precio de costo positivo;
+- valida stock, categoría y proveedor.
+
+### Binding decimal
+
+`DecimalModelBinderProvider` se registra en `Program.cs` con prioridad cero para propiedades `decimal`. `DecimalModelBinder` normaliza la coma a punto y usa `CultureInfo.InvariantCulture`, mientras la aplicación usa `es-BO` para la cultura de solicitudes y presentación.
+
+### Auditoría
+
+Solo se genera una entrada de `HISTORIAL_PRECIO` cuando `precioVenta` o `precioCosto` difieren del valor almacenado. Los cambios de nombre, presentación, stock, categoría o proveedor no generan por sí mismos un evento de precio.
+
+Los valores anterior y nuevo se capturan en el mismo flujo transaccional. El motivo y usuario se asignan actualmente en infraestructura (`"Actualización de precio"` y `SystemAdminId = 1`), y la fecha la asigna MySQL.
+
+## 8. Rutas principales
+
+| Ruta | Página | Operación |
 |---|---|---|
-| Listar | `/Products/Index` | `IndexModel` |
-| Crear | `/Products/Create` | `CreateModel` |
-| Editar | `/Products/Edit?id={id}` | `EditModel` |
-| Eliminar | `/Products/Delete?id={id}` | `DeleteModel` |
-| Inicio | `/` | `Pages.IndexModel` |
+| `/` | `Pages/Index.cshtml` | Inicio |
+| `/Products/Index` | `Pages/Products/Index.cshtml` | Listar productos |
+| `/Products/Create` | `Pages/Products/Create.cshtml` | Crear producto |
+| `/Products/Edit?id={id}` | `Pages/Products/Edit.cshtml` | Editar producto |
+| `/Products/Delete?id={id}` | `Pages/Products/Delete.cshtml` | Eliminación lógica |
+| `/Products/History` | `Pages/Products/History.cshtml` | Consultar auditoría de precios |
+| `/Privacy` | `Pages/Privacy.cshtml` | Privacidad |
 
-Las cuatro páginas CRUD empiezan con `@page` sin rutas hardcodeadas, evitando
-ambigüedad de endpoints. Las redirecciones exitosas apuntan explícitamente a
-`/Products/Index`.
+## 9. Flujo de ejecución
+
+1. `Program.cs` registra servicios y middleware.
+2. Razor Pages resuelve un PageModel por solicitud.
+3. El PageModel usa `IProductService`.
+4. El servicio valida o delega el caso de uso mediante `IProductRepository`.
+5. La infraestructura abre `MySqlConnection`, ejecuta SQL parametrizado y materializa DTOs.
+6. La página renderiza el resultado mediante el layout y componentes parciales.
+
+Este diseño mantiene aislados dominio, casos de uso, persistencia y presentación, y deja la auditoría integrada en el punto donde efectivamente se modifica el precio.
