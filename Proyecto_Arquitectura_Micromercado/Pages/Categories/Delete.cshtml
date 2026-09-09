@@ -1,0 +1,69 @@
+﻿@page
+@model Proyecto_Arquitectura_Micromercado.Pages.Categories.DeleteModel
+
+@{
+    ViewData["Title"] = "Eliminar categoría";
+}
+
+<h1>Eliminar categoría</h1>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">
+        @Model.ErrorMessage
+    </div>
+}
+
+<div class="alert alert-warning">
+    ¿Está seguro de que desea eliminar esta categoría?
+</div>
+
+<dl class="row">
+
+    <dt class="col-sm-3">
+        Nombre
+    </dt>
+    <dd class="col-sm-9">
+        @Model.Category.Name
+    </dd>
+
+    <dt class="col-sm-3">
+        Código
+    </dt>
+    <dd class="col-sm-9">
+        @Model.Category.Code
+    </dd>
+
+    <dt class="col-sm-3">
+        Ubicación
+    </dt>
+    <dd class="col-sm-9">
+        @(Model.Category.AisleLocation ?? "Sin ubicación")
+    </dd>
+
+    <dt class="col-sm-3">
+        Descripción
+    </dt>
+    <dd class="col-sm-9">
+        @(Model.Category.Description ?? "Sin descripción")
+    </dd>
+
+</dl>
+
+<form method="post">
+
+    <input type="hidden"
+           name="id"
+           value="@Model.Category.Id" />
+
+    <button type="submit"
+            class="btn btn-danger">
+        Confirmar eliminación
+    </button>
+
+    <a asp-page="/Categories/Index"
+       class="btn btn-secondary">
+        Cancelar
+    </a>
+
+</form>

@@ -1,0 +1,25 @@
+﻿@model Proyecto_Arquitectura_Micromercado.Domain.Categories.Category
+
+<div class="mb-3">
+    <label asp-for="Name" class="form-label">Nombre *</label>
+    <input asp-for="Name" class="form-control" />
+    <span asp-validation-for="Name" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Code" class="form-label">Código *</label>
+    <input asp-for="Code" class="form-control" />
+    <span asp-validation-for="Code" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="AisleLocation" class="form-label">Ubicación en pasillo</label>
+    <input asp-for="AisleLocation" class="form-control" />
+    <span asp-validation-for="AisleLocation" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Description" class="form-label">Descripción</label>
+    <input asp-for="Description" class="form-control" />
+    <span asp-validation-for="Description" class="text-danger"></span>
+</div>

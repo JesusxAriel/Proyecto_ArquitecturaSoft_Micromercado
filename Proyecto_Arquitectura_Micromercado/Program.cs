@@ -1,8 +1,11 @@
+
+using Proyecto_Arquitectura_Micromercado.Application.Categories;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Localization;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
-using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
 using System.Globalization;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +18,10 @@ builder.Services.AddRazorPages()
     });
 builder.Services.AddScoped<IProductRepository, MySqlProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
+
+builder.Services.AddScoped<ICategoryRepository, MySqlCategoryRepository>();
+
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 
 var app = builder.Build();
 var boliviaCulture = new CultureInfo("es-BO");

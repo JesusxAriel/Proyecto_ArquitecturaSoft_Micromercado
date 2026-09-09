@@ -1,0 +1,36 @@
+@page
+@model Proyecto_Arquitectura_Micromercado.Pages.Categories.CreateModel
+
+@{
+    ViewData["Title"] = "Agregar categoría";
+}
+
+<h1>Agregar categoría</h1>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">
+        @Model.ErrorMessage
+    </div>
+}
+
+<form method="post">
+
+    <partial name="_CategoryForm"
+             model="Model.Category" />
+
+    <button type="submit"
+            class="btn btn-primary">
+        Guardar
+    </button>
+
+    <a asp-page="/Categories/Index"
+       class="btn btn-secondary">
+        Cancelar
+    </a>
+
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

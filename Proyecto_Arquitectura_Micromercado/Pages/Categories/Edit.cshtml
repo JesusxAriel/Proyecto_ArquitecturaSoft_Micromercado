@@ -1,0 +1,39 @@
+﻿@page
+@model Proyecto_Arquitectura_Micromercado.Pages.Categories.EditModel
+
+@{
+    ViewData["Title"] = "Editar categoría";
+}
+
+<h1>Editar categoría</h1>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">
+        @Model.ErrorMessage
+    </div>
+}
+
+<form method="post">
+
+    <input type="hidden"
+           asp-for="Category.Id" />
+
+    <partial name="_CategoryForm"
+             model="Model.Category" />
+
+    <button type="submit"
+            class="btn btn-primary">
+        Guardar cambios
+    </button>
+
+    <a asp-page="/Categories/Index"
+       class="btn btn-secondary">
+        Cancelar
+    </a>
+
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
