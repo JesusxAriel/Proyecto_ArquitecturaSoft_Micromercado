@@ -30,32 +30,48 @@ namespace Proyecto_Arquitectura_Micromercado.Pages
                 return Page();
             }
 
-            string connectionString = configuration.GetConnectionString("MySqlConnection")!;
+            string connectionString =
+                configuration.GetConnectionString("MySqlConnection")!;
 
-            string query = @"INSERT INTO CATEGORIAS 
-                            (nombre, descripcion, codigo, pasilloUbicacion, estado, idUsuarioAdmin, fechaCreacion) 
-                            VALUES 
-                            (@nombre, @descripcion, @codigo, @pasilloUbicacion, @estado, @idUsuarioAdmin, @fechaCreacion)";
+            string query = @"
+                INSERT INTO CATEGORIAS
+                (nombre, descripcion, codigo, pasilloUbicacion, idUsuarioAdmin)
+                VALUES
+                (@nombre, @descripcion, @codigo, @pasilloUbicacion, @idUsuarioAdmin);";
 
             try
             {
-                using (MySqlConnection connection = new MySqlConnection(connectionString))
+                using (MySqlConnection connection =
+                    new MySqlConnection(connectionString))
                 {
-                    MySqlCommand command = new MySqlCommand(query, connection);
+                    MySqlCommand command =
+                        new MySqlCommand(query, connection);
 
-                    command.Parameters.AddWithValue("@nombre", Categoria.Nombre);
-                    command.Parameters.AddWithValue("@descripcion", (object?)Categoria.Descripcion ?? DBNull.Value);
-                    command.Parameters.AddWithValue("@codigo", Categoria.Codigo);
-                    command.Parameters.AddWithValue("@pasilloUbicacion", (object?)Categoria.PasilloUbicacion ?? DBNull.Value);
-                    command.Parameters.AddWithValue("@estado", "ACTIVA");
-                    command.Parameters.AddWithValue("@idUsuarioAdmin", 1);
-                    command.Parameters.AddWithValue("@fechaCreacion", DateTime.Now);
+                    command.Parameters.AddWithValue(
+                        "@nombre",
+                        Categoria.Nombre);
+
+                    command.Parameters.AddWithValue(
+                        "@descripcion",
+                        (object?)Categoria.Descripcion ?? DBNull.Value);
+
+                    command.Parameters.AddWithValue(
+                        "@codigo",
+                        Categoria.Codigo);
+
+                    command.Parameters.AddWithValue(
+                        "@pasilloUbicacion",
+                        (object?)Categoria.PasilloUbicacion ?? DBNull.Value);
+
+                    command.Parameters.AddWithValue(
+                        "@idUsuarioAdmin",
+                        1);
 
                     connection.Open();
                     command.ExecuteNonQuery();
                 }
 
-                return RedirectToPage("Categorias");
+                return RedirectToPage("/Categorias");
             }
             catch (Exception ex)
             {

@@ -19,7 +19,7 @@ namespace Proyecto_Arquitectura_Micromercado.Models
         [StringLength(20, ErrorMessage = "El pasillo de ubicación no debe superar los 20 caracteres.")]
         public string? PasilloUbicacion { get; set; }
 
-        public string Estado { get; set; } = "ACTIVA";
+        public bool EstaActivo { get; set; } = true;
         public int IdUsuarioAdmin { get; set; } = 1;
         public DateTime FechaCreacion { get; set; } = DateTime.Now;
         public DateTime? FechaActualizacion { get; set; }

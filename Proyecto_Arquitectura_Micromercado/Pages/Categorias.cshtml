@@ -1,0 +1,75 @@
+@page
+@model Proyecto_Arquitectura_Micromercado.Pages.CategoriasModel
+
+@{
+    ViewData["Title"] = "Categorías";
+}
+
+<h1>Lista de Categorías</h1>
+
+<div class="mb-3">
+    <a asp-page="/CategoriaNueva"
+       class="btn btn-primary">
+        + Agregar Categoría
+    </a>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.MensajeError))
+{
+    <div class="alert alert-danger">
+        @Model.MensajeError
+    </div>
+}
+
+@if (Model.ListCategorias.Count == 0)
+{
+    <div class="alert alert-info">
+        No existen categorías activas registradas.
+    </div>
+}
+else
+{
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Código</th>
+                <th>Pasillo</th>
+                <th>Descripción</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var categoria in Model.ListCategorias)
+            {
+                <tr>
+                    <td>@categoria.Nombre</td>
+                    <td>@categoria.Codigo</td>
+                    <td>@(categoria.PasilloUbicacion ?? "Sin ubicación")</td>
+                    <td>@(categoria.Descripcion ?? "Sin descripción")</td>
+
+                    <td>
+                        <a asp-page="/CategoriaEditar"
+                           asp-route-id="@categoria.Id"
+                           class="btn btn-warning btn-sm">
+                            Editar
+                        </a>
+
+                        <form method="post"
+                              asp-page-handler="Eliminar"
+                              asp-route-id="@categoria.Id"
+                              class="d-inline">
+
+                            <button type="submit"
+                                    class="btn btn-danger btn-sm"
+                                    onclick="return confirm('¿Está seguro de eliminar esta categoría?');">
+                                Eliminar
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
