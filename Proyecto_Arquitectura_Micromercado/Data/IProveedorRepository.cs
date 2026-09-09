@@ -4,10 +4,10 @@ namespace Proyecto_Arquitectura_Micromercado.Data
 {
     public interface IProveedorRepository
     {
-        List<Proveedor> ObtenerActivos();
-        Proveedor? ObtenerPorId(int id);
-        void Insertar(Proveedor proveedor);
-        void Actualizar(Proveedor proveedor);
-        void Eliminar(int id);
+        List<Proveedor> GetActive();
+        Proveedor? GetById(int id);
+        void Add(Proveedor proveedor);
+        void Update(Proveedor proveedor);
+        void Delete(int id);
     }
 }
