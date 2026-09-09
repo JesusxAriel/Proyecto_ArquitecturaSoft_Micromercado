@@ -1,7 +1,14 @@
+
+using Proyecto_Arquitectura_Micromercado.Data;
+using Proyecto_Arquitectura_Micromercado.Validations;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
+
+builder.Services.AddScoped<IProveedorRepository, ProveedorRepository>();
+builder.Services.AddScoped<ProveedorValidation>();
 
 var app = builder.Build();
 

@@ -68,6 +68,13 @@ namespace Proyecto_Arquitectura_Micromercado.Data
             return null;
         }
 
+        bool IProveedorRepository.ExistsCompanyName(string nombreEmpresa, int idExcluido)
+        {
+            throw new NotImplementedException();
+        }
+
+
+
         public void Add(Proveedor proveedor)
         {
             string query = @"INSERT INTO PROVEEDOR
@@ -165,5 +172,6 @@ namespace Proyecto_Arquitectura_Micromercado.Data
                 FechaActualizacion = row.IsDBNull(row.GetOrdinal("fechaActualizacion")) ? null : row.GetDateTime("fechaActualizacion")
             };
         }
+
     }
 }
