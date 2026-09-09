@@ -1,0 +1,12 @@
+@page
+@model Proyecto_Arquitectura_Micromercado.Pages.Products.CreateModel
+@{
+    ViewData["Title"] = "Nuevo producto";
+}
+
+<h1>Nuevo producto</h1>
+<partial name="_ProductForm" model="Model" />
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
