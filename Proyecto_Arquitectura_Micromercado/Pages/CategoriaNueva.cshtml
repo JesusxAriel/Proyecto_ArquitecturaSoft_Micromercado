@@ -1,0 +1,45 @@
+@page
+@model Proyecto_Arquitectura_Micromercado.Pages.CategoriaNuevaModel
+@{
+    ViewData["Title"] = "Agregar Categoría";
+}
+
+<h1>Agregar Categoría</h1>
+
+@if (!string.IsNullOrEmpty(Model.MensajeError))
+{
+    <p class="text-danger">@Model.MensajeError</p>
+}
+
+<form method="post">
+    <div class="mb-3">
+        <label class="form-label">Nombre *</label>
+        <input asp-for="Categoria.Nombre" class="form-control" />
+        <span asp-validation-for="Categoria.Nombre" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Código *</label>
+        <input asp-for="Categoria.Codigo" class="form-control" />
+        <span asp-validation-for="Categoria.Codigo" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Pasillo Ubicación</label>
+        <input asp-for="Categoria.PasilloUbicacion" class="form-control" />
+        <span asp-validation-for="Categoria.PasilloUbicacion" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Descripción</label>
+        <input asp-for="Categoria.Descripcion" class="form-control" />
+        <span asp-validation-for="Categoria.Descripcion" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <a class="btn btn-secondary" asp-page="Categorias">Cancelar</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
