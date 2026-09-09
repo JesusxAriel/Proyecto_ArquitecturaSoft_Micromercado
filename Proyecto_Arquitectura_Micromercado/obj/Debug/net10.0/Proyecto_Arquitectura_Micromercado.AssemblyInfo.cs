@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Proyecto_Arquitectura_Micromercado")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e4360f5a665ac57f15df980e425e4187abfc2311")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+89ddcd289434ea4fb368f9b53cdd50082be28418")]
 [assembly: System.Reflection.AssemblyProductAttribute("Proyecto_Arquitectura_Micromercado")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Proyecto_Arquitectura_Micromercado")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
