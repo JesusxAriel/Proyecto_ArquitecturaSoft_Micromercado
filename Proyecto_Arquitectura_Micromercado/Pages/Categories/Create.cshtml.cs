@@ -1,22 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
-using Proyecto_Arquitectura_Micromercado.Domain.Categories;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 {
-    public class CreateModel : PageModel
+    public class CreateModel : CategoryFormModel
     {
-        private readonly ICategoryService categoryService;
-
-        [BindProperty]
-        public Category Category { get; set; } = new Category();
-
-        public string ErrorMessage { get; set; } = string.Empty;
-
         public CreateModel(ICategoryService categoryService)
+            : base(categoryService)
         {
-            this.categoryService = categoryService;
         }
 
         public void OnGet()
@@ -32,14 +23,11 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 
             try
             {
-                bool created =
-                    categoryService.Create(Category);
+                bool created = CategoryService.Create(Category);
 
                 if (!created)
                 {
-                    ErrorMessage =
-                        "No se pudo crear la categoría.";
-
+                    ErrorMessage = "No se pudo crear la categoría.";
                     return Page();
                 }
 

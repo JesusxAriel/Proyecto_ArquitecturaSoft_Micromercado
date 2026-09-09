@@ -1,28 +1,20 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Domain.Categories;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 {
-    public class EditModel : PageModel
+    public class EditModel : CategoryFormModel
     {
-        private readonly ICategoryService categoryService;
-
-        [BindProperty]
-        public Category Category { get; set; } = new Category();
-
-        public string ErrorMessage { get; set; } = string.Empty;
-
         public EditModel(ICategoryService categoryService)
+            : base(categoryService)
         {
-            this.categoryService = categoryService;
         }
 
         public IActionResult OnGet(int id)
         {
             Category? category =
-                categoryService.GetById(id);
+                CategoryService.GetById(id);
 
             if (category == null)
             {
@@ -44,7 +36,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
             try
             {
                 bool updated =
-                    categoryService.Update(Category);
+                    CategoryService.Update(Category);
 
                 if (!updated)
                 {

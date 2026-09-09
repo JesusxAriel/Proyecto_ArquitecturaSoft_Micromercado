@@ -9,44 +9,15 @@
 
 @if (!string.IsNullOrEmpty(Model.ErrorMessage))
 {
-    <p class="text-danger">
+    <div class="alert alert-danger">
         @Model.ErrorMessage
-    </p>
+    </div>
 }
 
 <form method="post">
 
-    <div class="mb-3">
-        <label class="form-label">Nombre *</label>
-        <input asp-for="Category.Name"
-               class="form-control" />
-        <span asp-validation-for="Category.Name"
-              class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label">Código *</label>
-        <input asp-for="Category.Code"
-               class="form-control" />
-        <span asp-validation-for="Category.Code"
-              class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label">Ubicación en pasillo</label>
-        <input asp-for="Category.AisleLocation"
-               class="form-control" />
-        <span asp-validation-for="Category.AisleLocation"
-              class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label">Descripción</label>
-        <input asp-for="Category.Description"
-               class="form-control" />
-        <span asp-validation-for="Category.Description"
-              class="text-danger"></span>
-    </div>
+    <partial name="_CategoryForm"
+             model="Model.Category" />
 
     <button type="submit"
             class="btn btn-primary">
