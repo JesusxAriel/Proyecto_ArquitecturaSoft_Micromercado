@@ -1,9 +1,29 @@
+using Microsoft.AspNetCore.Localization;
+using Proyecto_Arquitectura_Micromercado.Application.Products;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
+using System.Globalization;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddRazorPages();
+builder.Services.AddRazorPages()
+    .AddMvcOptions(options =>
+    {
+        options.ModelBinderProviders.Insert(0, new DecimalModelBinderProvider());
+        options.ModelBindingMessageProvider.SetValueMustBeANumberAccessor(
+            _ => "Ingrese un número válido.");
+    });
+builder.Services.AddScoped<IProductRepository, MySqlProductRepository>();
+builder.Services.AddScoped<IProductService, ProductService>();
 
 var app = builder.Build();
+var boliviaCulture = new CultureInfo("es-BO");
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(boliviaCulture),
+    SupportedCultures = [boliviaCulture],
+    SupportedUICultures = [boliviaCulture]
+});
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

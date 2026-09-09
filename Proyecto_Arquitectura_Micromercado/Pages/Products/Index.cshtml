@@ -1,0 +1,52 @@
+@page
+@model Proyecto_Arquitectura_Micromercado.Pages.Products.IndexModel
+@{
+    ViewData["Title"] = "Productos";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Productos</h1>
+    <a class="btn btn-primary" asp-page="/Products/Create">Nuevo producto</a>
+</div>
+
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Presentación</th>
+            <th>Categoría</th>
+            <th>Proveedor</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var product in Model.Products)
+    {
+        <tr>
+            <td>@product.Nombre</td>
+            <td>@product.EmpaquePresentacion</td>
+            <td>@product.NombreCategoria</td>
+            <td>@product.NombreProveedor</td>
+            <td>@product.PrecioVenta.ToString("N2")</td>
+            <td>
+                @product.StockCalculado
+                @if (product.StockCalculado <= product.StockMinimo)
+                {
+                    <span class="badge text-bg-warning">Stock bajo</span>
+                }
+            </td>
+            <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary" asp-page="/Products/Edit" asp-route-id="@product.Id">Editar</a>
+                <a class="btn btn-sm btn-outline-danger" asp-page="/Products/Delete" asp-route-id="@product.Id">Eliminar</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@if (Model.Products.Count == 0)
+{
+    <p class="text-muted">No hay productos activos registrados.</p>
+}
