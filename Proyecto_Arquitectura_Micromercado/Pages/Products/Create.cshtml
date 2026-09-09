@@ -4,8 +4,19 @@
     ViewData["Title"] = "Nuevo producto";
 }
 
-<h1>Nuevo producto</h1>
-<partial name="_ProductForm" model="Model" />
+<div class="modal d-block modal-shell" tabindex="-1" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content shadow">
+            <div class="modal-header">
+                <h1 class="modal-title h5">Nuevo producto</h1>
+                <a asp-page="/Products/Index" class="btn-close" aria-label="Cerrar"></a>
+            </div>
+            <div class="modal-body">
+                <partial name="_ProductForm" model="Model" />
+            </div>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

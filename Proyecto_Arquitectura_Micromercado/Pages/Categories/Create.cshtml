@@ -5,7 +5,11 @@
     ViewData["Title"] = "Agregar categoría";
 }
 
-<h1>Agregar categoría</h1>
+<div class="modal d-block modal-shell" tabindex="-1" aria-modal="true" role="dialog">
+<div class="modal-dialog modal-dialog-centered"><div class="modal-content shadow"><div class="modal-header">
+<h1 class="modal-title h5">Agregar categoría</h1>
+<a asp-page="/Categories/Index" class="btn-close" aria-label="Cerrar"></a>
+</div><div class="modal-body">
 
 @if (!string.IsNullOrEmpty(Model.ErrorMessage))
 {
@@ -14,7 +18,7 @@
     </div>
 }
 
-<form method="post">
+<form method="post" class="needs-validation modal-form">
 
     <partial name="_CategoryForm"
              model="Model.Category" />
@@ -29,7 +33,7 @@
         Cancelar
     </a>
 
-</form>
+</form></div></div></div></div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

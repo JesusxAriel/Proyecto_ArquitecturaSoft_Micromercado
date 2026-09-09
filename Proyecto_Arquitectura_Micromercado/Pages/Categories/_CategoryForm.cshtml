@@ -2,24 +2,28 @@
 
 <div class="mb-3">
     <label asp-for="Name" class="form-label">Nombre *</label>
-    <input asp-for="Name" class="form-control" />
+    <input asp-for="Name" class="form-control" required data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" title="Usa letras, números, espacios, puntos, comas o guiones." />
+    <div class="input-error text-danger small d-none"></div>
     <span asp-validation-for="Name" class="text-danger"></span>
 </div>
 
 <div class="mb-3">
     <label asp-for="Code" class="form-label">Código *</label>
-    <input asp-for="Code" class="form-control" />
+    <input asp-for="Code" class="form-control" required data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" title="Usa letras, números, espacios, puntos, comas o guiones." />
+    <div class="input-error text-danger small d-none"></div>
     <span asp-validation-for="Code" class="text-danger"></span>
 </div>
 
 <div class="mb-3">
     <label asp-for="AisleLocation" class="form-label">Ubicación en pasillo</label>
-    <input asp-for="AisleLocation" class="form-control" />
+    <input asp-for="AisleLocation" class="form-control" data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" title="Usa letras, números, espacios, puntos, comas o guiones." />
+    <div class="input-error text-danger small d-none"></div>
     <span asp-validation-for="AisleLocation" class="text-danger"></span>
 </div>
 
 <div class="mb-3">
     <label asp-for="Description" class="form-label">Descripción</label>
-    <input asp-for="Description" class="form-control" />
+    <input asp-for="Description" class="form-control" data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" title="La descripción contiene caracteres no permitidos." />
+    <div class="input-error text-danger small d-none"></div>
     <span asp-validation-for="Description" class="text-danger"></span>
 </div>

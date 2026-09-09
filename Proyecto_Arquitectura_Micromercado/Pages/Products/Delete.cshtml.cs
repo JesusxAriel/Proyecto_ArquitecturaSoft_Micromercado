@@ -9,6 +9,8 @@ public sealed class DeleteModel(IProductService productService) : PageModel
 {
     [BindProperty]
     public Product Product { get; set; } = new();
+    [BindProperty]
+    public string ConfirmationName { get; set; } = string.Empty;
 
     public async Task<IActionResult> OnGetAsync(int id, CancellationToken cancellationToken)
     {
@@ -24,9 +26,10 @@ public sealed class DeleteModel(IProductService productService) : PageModel
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
-        if (Product.Id <= 0)
+        if (Product.Id <= 0 || !string.Equals(Product.Nombre, ConfirmationName, StringComparison.Ordinal))
         {
-            return BadRequest();
+            ModelState.AddModelError(nameof(ConfirmationName), "El nombre de confirmación no coincide exactamente.");
+            return Page();
         }
 
         if (!await productService.SoftDeleteAsync(Product.Id, cancellationToken))
