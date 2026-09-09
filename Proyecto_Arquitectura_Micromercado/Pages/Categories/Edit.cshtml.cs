@@ -2,24 +2,25 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Proyecto_Arquitectura_Micromercado.Models;
 using Proyecto_Arquitectura_Micromercado.Repositories;
-using Proyecto_Arquitectura_Micromercado.Validaciones;
+using Proyecto_Arquitectura_Micromercado.Validations;
 
-namespace Proyecto_Arquitectura_Micromercado.Pages
+namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 {
-    public class CategoriaEditarModel : PageModel
+    public class EditModel : PageModel
     {
         private readonly ICategoriaRepository categoriaRepository;
-        private readonly ValidacionCategoria validacionCategoria;
+        private readonly CategoriaValidation categoriaValidation;
 
         [BindProperty]
         public Categoria Categoria { get; set; } = new Categoria();
 
         public string MensajeError { get; set; } = string.Empty;
 
-        public CategoriaEditarModel(ICategoriaRepository categoriaRepository)
+        public EditModel(
+            ICategoriaRepository categoriaRepository)
         {
             this.categoriaRepository = categoriaRepository;
-            validacionCategoria = new ValidacionCategoria();
+            categoriaValidation = new CategoriaValidation();
         }
 
         public IActionResult OnGet(int id)
@@ -44,9 +45,11 @@ namespace Proyecto_Arquitectura_Micromercado.Pages
                 return Page();
             }
 
-            if (!validacionCategoria.EsCategoriaValida(Categoria))
+            if (!categoriaValidation.EsCategoriaValida(Categoria))
             {
-                MensajeError = "Los datos ingresados no son válidos.";
+                MensajeError =
+                    "Los datos ingresados no son válidos.";
+
                 return Page();
             }
 
@@ -65,7 +68,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages
                     return Page();
                 }
 
-                return RedirectToPage("Categorias");
+                return RedirectToPage("/Categories/Index");
             }
             catch (Exception)
             {

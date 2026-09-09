@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Proyecto_Arquitectura_Micromercado.Models;
 using Proyecto_Arquitectura_Micromercado.Repositories;
 
-namespace Proyecto_Arquitectura_Micromercado.Pages
+namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 {
-    public class CategoriasModel : PageModel
+    public class IndexModel : PageModel
     {
         private readonly ICategoriaRepository categoriaRepository;
 
@@ -14,8 +14,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages
         public List<Categoria> ListCategorias { get; set; } =
             new List<Categoria>();
 
-        public CategoriasModel(
-            ICategoriaRepository categoriaRepository)
+        public IndexModel(ICategoriaRepository categoriaRepository)
         {
             this.categoriaRepository = categoriaRepository;
         }
@@ -45,7 +44,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages
                     return Page();
                 }
 
-                return RedirectToPage("/Categorias");
+                return RedirectToPage("/Categories/Index");
             }
             catch (Exception)
             {

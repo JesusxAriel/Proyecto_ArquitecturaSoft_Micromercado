@@ -1,8 +1,8 @@
 ﻿using Proyecto_Arquitectura_Micromercado.Models;
 
-namespace Proyecto_Arquitectura_Micromercado.Validaciones
+namespace Proyecto_Arquitectura_Micromercado.Validations
 {
-    public class ValidacionCategoria
+    public class CategoriaValidation
     {
         public bool EsNombreValido(string nombre)
         {

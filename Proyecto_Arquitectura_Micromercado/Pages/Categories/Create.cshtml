@@ -1,10 +1,11 @@
 @page
-@model Proyecto_Arquitectura_Micromercado.Pages.CategoriaNuevaModel
+@model Proyecto_Arquitectura_Micromercado.Pages.Categories.CreateModel
+
 @{
-    ViewData["Title"] = "Agregar Categoría";
+    ViewData["Title"] = "Add Category";
 }
 
-<h1>Agregar Categoría</h1>
+<h1>Add Category</h1>
 
 @if (!string.IsNullOrEmpty(Model.MensajeError))
 {
@@ -13,31 +14,37 @@
 
 <form method="post">
     <div class="mb-3">
-        <label class="form-label">Nombre *</label>
+        <label class="form-label">Name *</label>
         <input asp-for="Categoria.Nombre" class="form-control" />
         <span asp-validation-for="Categoria.Nombre" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label class="form-label">Código *</label>
+        <label class="form-label">Code *</label>
         <input asp-for="Categoria.Codigo" class="form-control" />
         <span asp-validation-for="Categoria.Codigo" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label class="form-label">Pasillo Ubicación</label>
+        <label class="form-label">Aisle Location</label>
         <input asp-for="Categoria.PasilloUbicacion" class="form-control" />
         <span asp-validation-for="Categoria.PasilloUbicacion" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label class="form-label">Descripción</label>
+        <label class="form-label">Description</label>
         <input asp-for="Categoria.Descripcion" class="form-control" />
         <span asp-validation-for="Categoria.Descripcion" class="text-danger"></span>
     </div>
 
-    <button type="submit" class="btn btn-primary">Guardar</button>
-    <a class="btn btn-secondary" asp-page="Categorias">Cancelar</a>
+    <button type="submit" class="btn btn-primary">
+        Save
+    </button>
+
+    <a class="btn btn-secondary"
+       asp-page="/Categories/Index">
+        Cancel
+    </a>
 </form>
 
 @section Scripts {
