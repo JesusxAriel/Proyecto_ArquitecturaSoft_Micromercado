@@ -1,4 +1,5 @@
-﻿using Proyecto_Arquitectura_Micromercado.Domain.Categories;
+﻿using System.Text.RegularExpressions;
+using Proyecto_Arquitectura_Micromercado.Domain.Categories;
 
 namespace Proyecto_Arquitectura_Micromercado.Application.Categories
 {
@@ -82,6 +83,14 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
                 return false;
             }
 
+            if (!Regex.IsMatch(
+                    category.Name,
+                    CategoryValidation.NamePattern,
+                    RegexOptions.CultureInvariant))
+            {
+                return false;
+            }
+
             if (string.IsNullOrWhiteSpace(category.Code))
             {
                 return false;
@@ -92,12 +101,36 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
                 return false;
             }
 
+            if (!Regex.IsMatch(
+                    category.Code,
+                    CategoryValidation.CodePattern,
+                    RegexOptions.CultureInvariant))
+            {
+                return false;
+            }
+
             if (category.Description?.Length > 255)
             {
                 return false;
             }
 
+            if (category.Description is not null &&
+                !category.Description.Any(char.IsLetterOrDigit))
+            {
+                return false;
+            }
+
             if (category.AisleLocation?.Length > 20)
+            {
+                return false;
+            }
+
+            if (category.AisleLocation is not null &&
+                !Regex.IsMatch(
+                    category.AisleLocation,
+                    CategoryValidation.AislePattern,
+                    RegexOptions.IgnoreCase |
+                    RegexOptions.CultureInvariant))
             {
                 return false;
             }
