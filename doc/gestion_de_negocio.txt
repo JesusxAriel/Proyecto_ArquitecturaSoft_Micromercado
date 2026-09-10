@@ -1,0 +1,94 @@
+================================================================================
+                    SISTEMA DE GESTIÓN: PUNTO CASERO POS
+                    DOCUMENTO DE LÓGICA DE NEGOCIO (ENTREGABLE 1)
+================================================================================
+
+1. RESUMEN GENERAL DEL PROYECTO
+--------------------------------------------------------------------------------
+- Nombre del Sistema: Punto Casero POS.
+- Tipo de Aplicación: Sistema interno administrativo de escritorio/web enfocado en 
+  la gestión operativa del micromercado.
+- Objetivo del Entregable 1: Demostrar el funcionamiento completo del mantenimiento 
+  del catálogo básico mediante un sistema CRUD sobre 3 tablas principales 
+  (CATEGORIAS, PROVEEDOR, PRODUCTO), el soporte de control de Lotes/Vencimientos, 
+  y la trazabilidad completa en la tabla de AUDITORIA_PRODUCTO.
+- Arquitectura Visual: Navegación por menú superior desplegable (estilo portal UCB) 
+  con opciones activas para el entregable actual y opciones deshabilitadas/proyectadas 
+  marcadas como "En Desarrollo".
+
+
+2. ESTRUCTURA DE LA BASE DE DATOS Y TABLAS ASOCIADAS
+--------------------------------------------------------------------------------
+El sistema opera sobre la base de datos `bdMicroMercadoArqui` con el siguiente 
+esquema funcional:
+
+2.1. Tabla CATEGORIAS (CRUD Activo)
+     - Propósito: Clasificar los productos en las secciones del micromercado.
+     - Campos: id, nombre, descripcion, codigo, pasilloUbicacion, estado, 
+       idUsuarioAdmin, fechaCreacion, fechaActualizacion.
+     - Lógica asociada: Permite agrupar los productos por pasillo (Pasillo 1 a 8).
+
+2.2. Tabla PROVEEDOR (CRUD Activo)
+     - Propósito: Registrar las empresas que surten mercancía al micromercado.
+     - Campos: idProveedor, nombreEmpresa, numeroEmpresa, correoReferencia, 
+       tipoConsigna, estado, idUsuarioAdmin, fechaCreacion, fechaActualizacion.
+     - Lógica de Consigna (`tipoConsigna`):
+       * 0 = Proveedor Regular (Compra directa de stock).
+       * 1 = Proveedor en Consigna (El proveedor autogestiona y repone su 
+         mercancía directamente, ej. Sofía SHE S.A.).
+
+2.3. Tabla PRODUCTO (CRUD Activo)
+     - Propósito: Catálogo principal de artículos a la venta.
+     - Campos: id, nombre, idCategoria, precio, stock, estado, idProveedor, 
+       idUsuarioAdmin, fechaCreacion, fechaActualizacion.
+     - Relaciones: Se vincula directamente con `CATEGORIAS` y `PROVEEDOR`.
+
+2.4. Tabla LOTE (Soporte de Inventario)
+     - Propósito: Desglosar el stock global de un producto por fechas de vencimiento.
+     - Campos: idLote, idProducto, codigoLote, cantidadInicial, cantidadDisponible, 
+       fechaVencimiento, estado, idUsuarioAdmin, fechaCreacion, fechaActualizacion.
+
+2.5. Tabla AUDITORIA_PRODUCTO (Trazabilidad y Control)
+     - Propósito: Registrar cada modificación realizada sobre los productos.
+     - Campos: idAuditoria, idProducto, accion, nombreAnterior, nombreNuevo, 
+       precioAnterior, precioNuevo, stockAnterior, stockNuevo, idUsuarioAdmin, 
+       fechaRegistro.
+
+
+3. LÓGICA DE NEGOCIO POR MÓDULO
+--------------------------------------------------------------------------------
+
+3.1. NAVEGACIÓN Y ESTRUCTURA DE PANTALLA (FRONT-END)
+- La pantalla principal contendrá una barra superior con menús desplegables:
+  * [Categorías ▾] -> Gestión de Categorías (Activo) | Ubicación por Pasillo (Activo).
+  * [Proveedores ▾] -> Gestión de Proveedores (Activo) | Filtro Consigna (Activo).
+  * [Inventario ▾] -> CRUD Productos (Activo) | Control de Lotes (Activo) | 
+    Histórico Auditoría (Activo).
+  * [Control de Cajas ▾] -> Registro de Ventas (En Desarrollo) | Arqueo Diario 
+    (En Desarrollo).
+
+3.2. REGLAS DE AUDITORÍA AUTOMÁTICA
+Cada vez que el usuario cree, modifique o elimine un registro en la tabla `PRODUCTO`:
+- Operación INSERT: Guarda la acción 'INSERT', los datos iniciales y el usuario que 
+  creó el producto.
+- Operación UPDATE: Compara los valores previos y nuevos (`nombre`, `precio`, `stock`). 
+  Si existen cambios, registra una nueva fila en `AUDITORIA_PRODUCTO` guardando 
+  ambos estados para fines de control interno.
+- Operación DELETE: Registra la eliminación o cambio de estado a 'INACTIVO' para 
+  evitar pérdidas inadvertidas de información.
+
+3.3. REGLAS DE VENCIMIENTO Y ROTACIÓN (MÉTODOLOGÍA FIFO / PEPS)
+- Salida de Stock: El sistema descuenta unidades priorizando los lotes con la fecha 
+  de vencimiento más próxima (`fechaVencimiento` ascendente).
+- Alertas Visuales de Vencimiento:
+  * Alerta Amarilla (Reorden/Atención): Productos cuyo lote venza en 30 días o menos.
+  * Alerta Roja (Remate/Oferta): Productos cuyo lote venza en 21 días o menos.
+
+3.4. PROYECCIÓN OPERATIVA PARA ENTREGABLES FUTUROS (SISTEMA DE CAJA)
+- Fondo Fijo de Caja: Se establece un saldo en caja de 300.00 BOB para entrega de cambio.
+- Arqueo de Cajas: El contador realiza 2 arqueos al día (mediodía y cierre).
+- Cobros QR: Generación e integración de cobro QR con confirmación en pantalla antes 
+  del registro final.
+- Detección de Irregularidades: Si el efectivo contado no coincide con las ventas 
+  registradas restando el fondo fijo, el sistema emite una alerta de irregularidad.
+================================================================================
