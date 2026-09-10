@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\usuario\\Documents\\UCB\\Arquitectura\\Proyecto_Arquitectura_Micromercado\\Proyecto_Arquitectura_Micromercado\\Proyecto_Arquitectura_Micromercado.csproj": {}
+    "C:\\Users\\usuario\\Documents\\UCB\\Arquitectura\\Proyecto_Arquitectura_Micromercado - copia\\Proyecto_Arquitectura_Micromercado\\Proyecto_Arquitectura_Micromercado.csproj": {}
   },
   "projects": {
-    "C:\\Users\\usuario\\Documents\\UCB\\Arquitectura\\Proyecto_Arquitectura_Micromercado\\Proyecto_Arquitectura_Micromercado\\Proyecto_Arquitectura_Micromercado.csproj": {
+    "C:\\Users\\usuario\\Documents\\UCB\\Arquitectura\\Proyecto_Arquitectura_Micromercado - copia\\Proyecto_Arquitectura_Micromercado\\Proyecto_Arquitectura_Micromercado.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\usuario\\Documents\\UCB\\Arquitectura\\Proyecto_Arquitectura_Micromercado\\Proyecto_Arquitectura_Micromercado\\Proyecto_Arquitectura_Micromercado.csproj",
+        "projectUniqueName": "C:\\Users\\usuario\\Documents\\UCB\\Arquitectura\\Proyecto_Arquitectura_Micromercado - copia\\Proyecto_Arquitectura_Micromercado\\Proyecto_Arquitectura_Micromercado.csproj",
         "projectName": "Proyecto_Arquitectura_Micromercado",
-        "projectPath": "C:\\Users\\usuario\\Documents\\UCB\\Arquitectura\\Proyecto_Arquitectura_Micromercado\\Proyecto_Arquitectura_Micromercado\\Proyecto_Arquitectura_Micromercado.csproj",
+        "projectPath": "C:\\Users\\usuario\\Documents\\UCB\\Arquitectura\\Proyecto_Arquitectura_Micromercado - copia\\Proyecto_Arquitectura_Micromercado\\Proyecto_Arquitectura_Micromercado.csproj",
         "packagesPath": "C:\\Users\\usuario\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\usuario\\Documents\\UCB\\Arquitectura\\Proyecto_Arquitectura_Micromercado\\Proyecto_Arquitectura_Micromercado\\obj\\",
+        "outputPath": "C:\\Users\\usuario\\Documents\\UCB\\Arquitectura\\Proyecto_Arquitectura_Micromercado - copia\\Proyecto_Arquitectura_Micromercado\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -52,6 +52,12 @@
         "net10.0": {
           "framework": "net10.0",
           "targetAlias": "net10.0",
+          "dependencies": {
+            "MySql.Data": {
+              "target": "Package",
+              "version": "[26.7.0, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",
@@ -71,7 +77,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

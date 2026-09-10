@@ -14,11 +14,11 @@ public sealed class Supplier : IValidatableObject
 
     [Display(Name = "Teléfono de contacto")]
     [Required(ErrorMessage = "Campo obligatorio.")]
-    [RegularExpression(SupplierValidation.TelefonoPattern, ErrorMessage = SupplierValidation.TelefonoMessage)]
+    [Telefono(ErrorMessage = SupplierValidation.TelefonoMessage)]
     public string NumeroEmpresa { get; set; } = string.Empty;
 
     [Display(Name = "Correo de referencia")]
-    [RegularExpression(SupplierValidation.CorreoPattern, ErrorMessage = SupplierValidation.CorreoMessage)]
+    [EmailAddress(ErrorMessage = SupplierValidation.CorreoMessage)]
     [StringLength(150)]
     public string? CorreoReferencia { get; set; }
 

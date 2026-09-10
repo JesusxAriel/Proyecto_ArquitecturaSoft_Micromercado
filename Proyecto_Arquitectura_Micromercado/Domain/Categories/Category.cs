@@ -6,32 +6,40 @@ namespace Proyecto_Arquitectura_Micromercado.Domain.Categories
     {
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "Category name is required.")]
+        [Display(Name = "Nombre de la categoría")]
+        [Required(ErrorMessage = "Campo obligatorio.")]
         [StringLength(
             150,
-            ErrorMessage = "Category name cannot exceed 150 characters.")]
+            ErrorMessage = "El nombre no puede exceder los 150 caracteres.")]
+        [CategoryName]
         public string Name { get; set; } = string.Empty;
 
         private string? description;
 
+        [Display(Name = "Descripción")]
         [StringLength(
             255,
-            ErrorMessage = "Description cannot exceed 255 characters.")]
+            ErrorMessage = "La descripción no puede exceder los 255 caracteres.")]
+        [CategoryDescription]
         public string? Description
         {
             get => description;
             set => description = CapitalizeFirstLetter(value);
         }
 
-        [Required(ErrorMessage = "Category code is required.")]
+        [Display(Name = "Código")]
+        [Required(ErrorMessage = "Campo obligatorio.")]
         [StringLength(
             20,
-            ErrorMessage = "Category code cannot exceed 20 characters.")]
+            ErrorMessage = "El código no puede exceder los 20 caracteres.")]
+        [CategoryCode]
         public string Code { get; set; } = string.Empty;
 
+        [Display(Name = "Ubicación en pasillo")]
         [StringLength(
             20,
-            ErrorMessage = "Aisle location cannot exceed 20 characters.")]
+            ErrorMessage = "La ubicación no puede exceder los 20 caracteres.")]
+        [AisleLocation]
         public string? AisleLocation { get; set; }
 
         public bool IsActive { get; set; } = true;
