@@ -1,4 +1,30 @@
 ﻿@page
 @model Proyecto_Arquitectura_Micromercado.Pages.Suppliers.DeleteModel
 @{
+    ViewData["Title"] = "Eliminar proveedor";
 }
+
+<h1>Eliminar proveedor</h1>
+<div class="alert alert-warning">
+    ¿Está seguro de dar de baja al proveedor <strong>@Model.Supplier.NombreEmpresa</strong>?
+    El registro se conservará mediante eliminación lógica, para no afectar a los
+    productos que ya lo referencian.
+</div>
+
+<dl class="row">
+    <dt class="col-sm-3">Teléfono</dt>
+    <dd class="col-sm-9">@Model.Supplier.NumeroEmpresa</dd>
+
+    <dt class="col-sm-3">Correo de referencia</dt>
+    <dd class="col-sm-9">@(string.IsNullOrEmpty(Model.Supplier.CorreoReferencia) ? "—" : Model.Supplier.CorreoReferencia)</dd>
+
+    <dt class="col-sm-3">Modalidad</dt>
+    <dd class="col-sm-9">@(Model.Supplier.EsAutogestionado ? "Autogestionado" : "Compra directa")</dd>
+</dl>
+
+<form method="post">
+    <input type="hidden" asp-for="Supplier.Id" />
+    @Html.AntiForgeryToken()
+    <button type="submit" class="btn btn-danger">Eliminar</button>
+    <a asp-page="/Suppliers/Index" class="btn btn-secondary">Cancelar</a>
+</form>

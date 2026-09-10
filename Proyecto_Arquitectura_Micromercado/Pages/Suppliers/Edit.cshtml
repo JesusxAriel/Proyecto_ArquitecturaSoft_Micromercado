@@ -1,4 +1,12 @@
 ﻿@page
 @model Proyecto_Arquitectura_Micromercado.Pages.Suppliers.EditModel
 @{
+    ViewData["Title"] = "Editar proveedor";
+}
+
+<h1>Editar proveedor</h1>
+<partial name="_SupplierForm" model="Model" />
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
 }
