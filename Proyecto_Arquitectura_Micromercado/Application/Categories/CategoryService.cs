@@ -115,7 +115,10 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
             }
 
             if (category.Description is not null &&
-                !category.Description.Any(char.IsLetterOrDigit))
+                !Regex.IsMatch(
+                    category.Description,
+                    CategoryValidation.DescriptionPattern,
+                    RegexOptions.CultureInvariant))
             {
                 return false;
             }

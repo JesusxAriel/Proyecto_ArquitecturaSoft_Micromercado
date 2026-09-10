@@ -14,6 +14,9 @@ namespace Proyecto_Arquitectura_Micromercado.Domain.Categories
         public const string AislePattern =
             @"^Pasillo\s[1-8]$";
 
+        public const string DescriptionPattern =
+            @"^[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s.,\-()]+$";
+
         public const string NameMessage =
             "El nombre debe contener letras y solo puede incluir letras, números, espacios, guiones y &.";
 
@@ -24,7 +27,8 @@ namespace Proyecto_Arquitectura_Micromercado.Domain.Categories
             "La ubicación debe tener el formato Pasillo 1 hasta Pasillo 8.";
 
         public const string DescriptionMessage =
-            "La descripción no puede contener solo caracteres especiales.";
+            "La descripción solo puede contener letras, números, espacios, puntos, comas, guiones y paréntesis.";
+
     }
 
     public sealed class CategoryNameAttribute : ValidationAttribute
@@ -96,6 +100,11 @@ namespace Proyecto_Arquitectura_Micromercado.Domain.Categories
 
     public sealed class CategoryDescriptionAttribute : ValidationAttribute
     {
+        private static readonly Regex Pattern =
+            new(
+                CategoryValidation.DescriptionPattern,
+                RegexOptions.CultureInvariant);
+
         public override bool IsValid(object? value)
         {
             if (value is not string text ||
@@ -104,7 +113,7 @@ namespace Proyecto_Arquitectura_Micromercado.Domain.Categories
                 return true;
             }
 
-            return text.Any(char.IsLetterOrDigit);
+            return Pattern.IsMatch(text.Trim());
         }
 
         public override string FormatErrorMessage(string name) =>
