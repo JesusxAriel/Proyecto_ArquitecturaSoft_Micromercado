@@ -14,18 +14,12 @@ namespace Proyecto_Arquitectura_Micromercado.Domain.Categories
         [CategoryName]
         public string Name { get; set; } = string.Empty;
 
-        private string? description;
-
         [Display(Name = "Descripción")]
         [StringLength(
             255,
             ErrorMessage = "La descripción no puede exceder los 255 caracteres.")]
         [CategoryDescription]
-        public string? Description
-        {
-            get => description;
-            set => description = CapitalizeFirstLetter(value);
-        }
+        public string? Description { get; set; }
 
         [Display(Name = "Código")]
         [Required(ErrorMessage = "Campo obligatorio.")]
