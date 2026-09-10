@@ -6,6 +6,9 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 {
     public class EditModel : CategoryFormModel
     {
+        [TempData]
+        public string? StatusMessage { get; set; }
+
         public EditModel(ICategoryService categoryService)
             : base(categoryService)
         {
@@ -46,6 +49,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
                     return Page();
                 }
 
+                StatusMessage = "Categoría actualizada correctamente.";
                 return RedirectToPage("/Categories/Index");
             }
             catch (Exception)

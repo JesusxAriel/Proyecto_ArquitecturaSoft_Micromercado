@@ -1,52 +1,278 @@
-
 @page
 @model Proyecto_Arquitectura_Micromercado.Pages.Suppliers.IndexModel
+
 @{
     ViewData["Title"] = "Proveedores";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>Proveedores</h1>
-    <a class="btn btn-primary" asp-page="/Suppliers/Create">Nuevo proveedor</a>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <h1 class="page-heading mb-0">Proveedores</h1>
+    <button type="button" class="btn btn-warning fw-semibold px-3"
+            data-bs-toggle="modal" data-bs-target="#createSupplierModal">
+        <i class="bi bi-plus-lg me-1"></i>Añadir
+    </button>
 </div>
 
-<table class="table table-striped align-middle">
-    <thead>
-        <tr>
-            <th>Empresa</th>
-            <th>Teléfono</th>
-            <th>Correo de referencia</th>
-            <th>Modalidad</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-    @foreach (var supplier in Model.Suppliers)
-    {
-        <tr>
-            <td>@supplier.NombreEmpresa</td>
-            <td>@supplier.NumeroEmpresa</td>
-            <td>@(string.IsNullOrEmpty(supplier.CorreoReferencia) ? "—" : supplier.CorreoReferencia)</td>
-            <td>
-                @if (supplier.EsAutogestionado)
-                {
-                    <span class="badge text-bg-info">Autogestionado</span>
-                }
-                else
-                {
-                    <span class="badge text-bg-secondary">Compra directa</span>
-                }
-            </td>
-            <td class="text-end">
-                <a class="btn btn-sm btn-outline-primary" asp-page="/Suppliers/Edit" asp-route-id="@supplier.Id">Editar</a>
-                <a class="btn btn-sm btn-outline-danger" asp-page="/Suppliers/Delete" asp-route-id="@supplier.Id">Eliminar</a>
-            </td>
-        </tr>
-    }
-    </tbody>
-</table>
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <div class="alert alert-success shadow-sm" role="alert">@Model.StatusMessage</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.DatabaseWarning))
+{
+    <div class="alert alert-warning shadow-sm" role="alert">@Model.DatabaseWarning</div>
+}
+
+<div class="mb-3">
+    <label for="supplierSearch" class="visually-hidden">Buscar proveedores</label>
+    <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+        <input id="supplierSearch" class="form-control" type="search"
+               placeholder="Buscar por empresa, teléfono o correo..." autocomplete="off" />
+    </div>
+</div>
+
+<div class="table-responsive shadow-sm rounded-3">
+    <table id="suppliersTable" class="table table-hover align-middle mb-0">
+        <thead>
+            <tr>
+                <th>Empresa</th>
+                <th>Teléfono</th>
+                <th>Correo de referencia</th>
+                <th>Modalidad</th>
+                <th class="text-end pe-3">ACCIONES</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var supplier in Model.Suppliers)
+        {
+            <tr>
+                <td>@supplier.NombreEmpresa</td>
+                <td>@supplier.NumeroEmpresa</td>
+                <td>@(string.IsNullOrEmpty(supplier.CorreoReferencia) ? "—" : supplier.CorreoReferencia)</td>
+                <td>
+                    @if (supplier.EsAutogestionado)
+                    {
+                        <span class="badge badge-ok">Autogestionado</span>
+                    }
+                    else
+                    {
+                        <span class="badge text-bg-secondary">Compra directa</span>
+                    }
+                </td>
+                <td class="text-end pe-3">
+                    <div class="d-flex justify-content-end align-items-center gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-warning edit-supplier-button"
+                                data-bs-toggle="modal" data-bs-target="#editSupplierModal"
+                                data-id="@supplier.Id" data-name="@supplier.NombreEmpresa"
+                                data-phone="@supplier.NumeroEmpresa" data-email="@supplier.CorreoReferencia"
+                                data-self-managed="@supplier.EsAutogestionado"
+                                title="Editar" aria-label="Editar @supplier.NombreEmpresa">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger delete-supplier-button"
+                                data-bs-toggle="modal" data-bs-target="#deleteSupplierModal"
+                                data-id="@supplier.Id" data-name="@supplier.NombreEmpresa"
+                                title="Eliminar" aria-label="Eliminar @supplier.NombreEmpresa">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
 
 @if (Model.Suppliers.Count == 0)
 {
     <p class="text-muted">No hay proveedores activos registrados.</p>
+}
+
+<div class="modal fade" id="createSupplierModal" tabindex="-1"
+     aria-labelledby="createSupplierLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Create" class="modal-form">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="createSupplierLabel">Añadir proveedor</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div class="mb-3">
+                        <label for="CreateSupplier_NombreEmpresa" class="form-label">Nombre de la empresa</label>
+                        <input asp-for="CreateSupplier.NombreEmpresa" id="CreateSupplier_NombreEmpresa" class="form-control"
+                               required data-sanitize="text" data-validate-input
+                               pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
+                        <span asp-validation-for="CreateSupplier.NombreEmpresa" class="text-danger"></span>
+                        <div class="input-error text-danger small d-none"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="CreateSupplier_NumeroEmpresa" class="form-label">Teléfono de contacto</label>
+                        <input asp-for="CreateSupplier.NumeroEmpresa" id="CreateSupplier_NumeroEmpresa" class="form-control"
+                               required data-validate-input pattern="^\d{7,15}$"
+                               data-validation-message="El teléfono debe contener entre 7 y 15 dígitos numéricos."
+                               inputmode="numeric" />
+                        <span asp-validation-for="CreateSupplier.NumeroEmpresa" class="text-danger"></span>
+                        <div class="input-error text-danger small d-none"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="CreateSupplier_CorreoReferencia" class="form-label">Correo de referencia</label>
+                        <input asp-for="CreateSupplier.CorreoReferencia" id="CreateSupplier_CorreoReferencia" class="form-control"
+                               type="email" data-validate-input
+                               data-validation-message="Ingrese un correo electrónico válido con dominio (ejemplo@dominio.com)." />
+                        <span asp-validation-for="CreateSupplier.CorreoReferencia" class="text-danger"></span>
+                        <div class="input-error text-danger small d-none"></div>
+                    </div>
+                    <div class="form-check">
+                        <input asp-for="CreateSupplier.EsAutogestionado" id="CreateSupplier_EsAutogestionado" class="form-check-input" />
+                        <label for="CreateSupplier_EsAutogestionado" class="form-check-label">
+                            Proveedor autogestionado
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary modal-save-button">
+                        Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editSupplierModal" tabindex="-1"
+     aria-labelledby="editSupplierLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Edit" class="modal-form">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="editSupplierLabel">Editar proveedor</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" asp-for="EditSupplier.Id" id="EditSupplier_Id" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div class="mb-3">
+                        <label for="EditSupplier_NombreEmpresa" class="form-label">Nombre de la empresa</label>
+                        <input asp-for="EditSupplier.NombreEmpresa" id="EditSupplier_NombreEmpresa"
+                               class="form-control" required data-sanitize="text"
+                               data-validate-input
+                               pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
+                        <span asp-validation-for="EditSupplier.NombreEmpresa" class="text-danger"></span>
+                        <div class="input-error text-danger small d-none"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="EditSupplier_NumeroEmpresa" class="form-label">Teléfono de contacto</label>
+                        <input asp-for="EditSupplier.NumeroEmpresa" id="EditSupplier_NumeroEmpresa"
+                               class="form-control" required data-validate-input
+                               pattern="^\d{7,15}$"
+                               data-validation-message="El teléfono debe contener entre 7 y 15 dígitos numéricos."
+                               inputmode="numeric" />
+                        <span asp-validation-for="EditSupplier.NumeroEmpresa" class="text-danger"></span>
+                        <div class="input-error text-danger small d-none"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="EditSupplier_CorreoReferencia" class="form-label">Correo de referencia</label>
+                        <input asp-for="EditSupplier.CorreoReferencia" id="EditSupplier_CorreoReferencia"
+                               class="form-control" type="email" data-validate-input
+                               data-validation-message="Ingrese un correo electrónico válido con dominio (ejemplo@dominio.com)." />
+                        <span asp-validation-for="EditSupplier.CorreoReferencia" class="text-danger"></span>
+                        <div class="input-error text-danger small d-none"></div>
+                    </div>
+                    <div class="form-check">
+                        <input asp-for="EditSupplier.EsAutogestionado"
+                               id="EditSupplier_EsAutogestionado" class="form-check-input" />
+                        <label for="EditSupplier_EsAutogestionado" class="form-check-label">
+                            Proveedor autogestionado
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary modal-save-button">
+                        Guardar cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteSupplierModal" tabindex="-1"
+     aria-labelledby="deleteSupplierLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Delete">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="deleteSupplierLabel">Eliminar proveedor</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" asp-for="DeleteSupplierId" id="deleteSupplierId" />
+                    <input type="hidden" asp-for="DeleteSupplierName" id="deleteSupplierName" />
+                    <p>Escribe exactamente <strong id="deleteSupplierNameLabel"></strong> para confirmar.</p>
+                    <label for="deleteSupplierConfirmation" class="form-label">Nombre del proveedor</label>
+                    <input asp-for="DeleteConfirmation" id="deleteSupplierConfirmation"
+                           class="form-control" autocomplete="off" required />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" id="confirmSupplierDelete"
+                            class="btn btn-danger" disabled>
+                        <i class="bi bi-trash"></i> Eliminar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $('.edit-supplier-button').on('click', function () {
+            const button = $(this);
+            $('#EditSupplier_Id').val(button.attr('data-id'));
+            $('#EditSupplier_NombreEmpresa').val(button.attr('data-name'));
+            $('#EditSupplier_NumeroEmpresa').val(button.attr('data-phone'));
+            $('#EditSupplier_CorreoReferencia').val(button.attr('data-email') || '');
+            $('#EditSupplier_EsAutogestionado').prop(
+                'checked',
+                button.attr('data-self-managed') === 'True');
+            $('#editSupplierModal [data-validate-input]').trigger('input');
+        });
+
+        $('.delete-supplier-button').on('click', function () {
+            const button = $(this);
+            $('#deleteSupplierId').val(button.attr('data-id'));
+            $('#deleteSupplierName').val(button.attr('data-name'));
+            $('#deleteSupplierNameLabel').text(button.attr('data-name'));
+            $('#deleteSupplierConfirmation').val('');
+            $('#confirmSupplierDelete').prop('disabled', true);
+        });
+
+        $('#deleteSupplierConfirmation').on('input', function () {
+            $('#confirmSupplierDelete').prop(
+                'disabled',
+                this.value !== $('#deleteSupplierName').val());
+        });
+
+        $('#supplierSearch').on('input', function () {
+            const query = $(this).val().toString().toLocaleLowerCase();
+            $('#suppliersTable tbody tr').each(function () {
+                $(this).toggle($(this).text().toLocaleLowerCase().includes(query));
+            });
+        });
+    </script>
 }

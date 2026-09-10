@@ -119,24 +119,60 @@ body {
   letter-spacing: -0.02em;
 }
 
-.navbar .nav-link,
-.navbar .dropdown-toggle {
-  color: rgba(255, 255, 255, .85) !important;
+.navbar-dark .navbar-nav .nav-link {
+  background-color: transparent !important;
+  color: rgba(255, 255, 255, .75) !important;
   font-size: 1.05rem;
-  font-weight: 600;
+  font-weight: 500;
+  padding: .5rem .85rem;
+  border-radius: .375rem;
+  transition: all .2s ease-in-out;
 }
 
-.navbar .nav-link:hover,
-.navbar .nav-link:focus,
-.navbar .nav-link:active,
-.navbar .nav-link:visited,
-.navbar .nav-link.dropdown-toggle.show,
-.navbar .dropdown-toggle:hover,
-.navbar .dropdown-toggle:focus,
-.navbar .dropdown-toggle:active,
-.navbar .dropdown-toggle:visited,
-.navbar .dropdown-toggle.show {
-  color: rgba(255, 255, 255, .85) !important;
+.navbar-dark .navbar-nav .nav-link:hover,
+.navbar-dark .navbar-nav .nav-link:focus,
+.navbar-dark .navbar-nav .nav-link.active,
+.navbar-dark .navbar-nav .dropdown.show .nav-link {
+  background-color: #334155 !important;
+  color: #FFFFFF !important;
+  font-weight: 500;
+}
+
+.user-profile-dropdown {
+  background-color: transparent !important;
+  border-radius: .375rem;
+  padding: .4rem .75rem;
+  transition: all .2s ease-in-out;
+}
+
+.user-profile-dropdown:hover,
+.user-profile-dropdown:focus,
+.user-profile-dropdown:active,
+.user-profile-dropdown.show {
+  background-color: #334155 !important;
+  color: #FFFFFF !important;
+}
+
+.user-profile-dropdown .user-name,
+.user-profile-dropdown .user-role {
+  color: rgba(255, 255, 255, .75) !important;
+}
+
+.user-profile-dropdown:hover .user-name,
+.user-profile-dropdown:focus .user-name,
+.user-profile-dropdown:active .user-name,
+.user-profile-dropdown.show .user-name {
+  color: #FFFFFF !important;
+}
+
+.navbar .user-profile-dropdown .user-role {
+  color: rgba(255, 255, 255, .75) !important;
+}
+
+.navbar .user-profile-dropdown.show {
+  background-color: #334155 !important;
+  color: #FFFFFF !important;
+  border-radius: .375rem;
 }
 
 .dropdown:hover .dropdown-menu {
@@ -164,8 +200,8 @@ body {
 
 .dropdown-item:active,
 .dropdown-item:hover {
-  background-color: #FEF3C7;
-  color: #92400E;
+  background-color: #334155;
+  color: #FFFFFF;
 }
 
 .user-avatar {

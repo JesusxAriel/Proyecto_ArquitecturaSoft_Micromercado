@@ -13,6 +13,11 @@
     </button>
 </div>
 
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <div class="alert alert-success shadow-sm" role="alert">@Model.StatusMessage</div>
+}
+
 <div class="mb-3">
     <label for="productSearch" class="visually-hidden">Buscar productos</label>
     <div class="input-group">
@@ -83,6 +88,7 @@
                 <div class="modal-body">
                     <input type="hidden" asp-for="EditProduct.Id" id="editProductId" />
                     <input type="hidden" asp-for="EditProduct.MotivoCambio" id="editProductReason" />
+                    <input type="hidden" id="PriceChangeReason" name="PriceChangeReason" />
                     <span asp-validation-for="PriceChangeReason" class="text-danger"></span>
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                     <div class="row g-3">
@@ -141,8 +147,7 @@
                 <p class="text-muted">Indica por qué se modificó el precio de venta o costo.</p>
                 <label for="priceChangeReason" class="form-label">Motivo del cambio</label>
                 <input id="priceChangeReason" class="form-control" type="text" maxlength="255"
-                       autocomplete="off" required
-                       pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
+                       autocomplete="off" required minlength="3" />
                 <div id="priceChangeReasonError" class="text-danger small d-none"></div>
             </div>
             <div class="modal-footer">
@@ -227,23 +232,26 @@
         });
 
         function normalizeReason(value) {
-            return value.trim().replace(/  +/g, ' ');
+            const normalized = value.trimStart().replace(/\s+/g, ' ');
+            const firstLetterIndex = normalized.search(/\p{L}/u);
+            if (firstLetterIndex < 0) {
+                return normalized;
+            }
+
+            return normalized.slice(0, firstLetterIndex) +
+                normalized.charAt(firstLetterIndex).toLocaleUpperCase() +
+                normalized.slice(firstLetterIndex + 1);
         }
 
         function validatePriceReason() {
             const input = $('#priceChangeReason');
             let value = normalizeReason(input.val().toString());
-            if (value) {
-                value = value.charAt(0).toLocaleUpperCase() + value.slice(1);
-                input.val(value);
-            }
-            const valid = value.length > 0 &&
-                /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.,\-]+$/.test(value) &&
-                /^[A-ZÁÉÍÓÚÑÜ]/.test(value);
             input.val(value);
+            const valid = value.length >= 3 &&
+                !/[<>"'`;\\\u0000-\u001F\u007F]/.test(value);
             $('#confirmPriceChangeReason').prop('disabled', !valid);
             $('#priceChangeReasonError').toggleClass('d-none', valid).text(
-                valid ? '' : 'Ingresa una justificación válida, iniciando con mayúscula y sin caracteres especiales.');
+                valid ? '' : 'Ingresa una justificación de al menos 3 caracteres.');
             return valid;
         }
 
@@ -253,7 +261,9 @@
                 return;
             }
 
-            $('#editProductReason').val(normalizeReason($('#priceChangeReason').val().toString()));
+            const reason = normalizeReason($('#priceChangeReason').val().toString());
+            $('#PriceChangeReason').val(reason);
+            $('#editProductReason').val(reason);
             reasonConfirmed = true;
             bootstrap.Modal.getOrCreateInstance(document.getElementById('priceChangeReasonModal')).hide();
             document.getElementById('editProductForm').requestSubmit();

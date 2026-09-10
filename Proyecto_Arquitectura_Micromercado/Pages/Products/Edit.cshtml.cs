@@ -5,6 +5,9 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Products;
 
 public sealed class EditModel(IProductService productService) : ProductFormModel(productService)
 {
+    [TempData]
+    public string? StatusMessage { get; set; }
+
     public async Task<IActionResult> OnGetAsync(int id, CancellationToken cancellationToken)
     {
         var product = await ProductService.GetByIdAsync(id, cancellationToken);
@@ -38,6 +41,7 @@ public sealed class EditModel(IProductService productService) : ProductFormModel
             return NotFound();
         }
 
+        StatusMessage = "Producto actualizado correctamente.";
         return RedirectToPage("/Products/Index");
     }
 }
