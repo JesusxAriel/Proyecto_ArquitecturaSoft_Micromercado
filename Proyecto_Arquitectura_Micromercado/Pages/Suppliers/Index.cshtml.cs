@@ -12,11 +12,11 @@ public sealed class IndexModel(
 {
     public IReadOnlyList<SupplierListItem> Suppliers { get; private set; } = [];
     public string? DatabaseWarning { get; private set; }
+    [TempData]
+    public string? StatusMessage { get; set; }
 
-    [BindProperty]
     public Supplier CreateSupplier { get; set; } = new();
 
-    [BindProperty]
     public Supplier EditSupplier { get; set; } = new();
 
     [BindProperty]
@@ -33,12 +33,16 @@ public sealed class IndexModel(
         await LoadSuppliersAsync(cancellationToken);
     }
 
-    public async Task<IActionResult> OnPostCreateAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> OnPostCreateAsync(
+        [FromForm] Supplier createSupplier,
+        CancellationToken cancellationToken)
     {
+        CreateSupplier = createSupplier;
         RemoveDeleteModelState();
 
         if (!ModelState.IsValid)
         {
+            LogModelStateErrors("crear");
             await LoadSuppliersAsync(cancellationToken);
             return Page();
         }
@@ -53,6 +57,7 @@ public sealed class IndexModel(
         try
         {
             await supplierService.CreateAsync(CreateSupplier, cancellationToken);
+            StatusMessage = "Proveedor creado correctamente.";
             return RedirectToPage();
         }
         catch (ArgumentException ex)
@@ -69,8 +74,11 @@ public sealed class IndexModel(
         }
     }
 
-    public async Task<IActionResult> OnPostEditAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> OnPostEditAsync(
+        [FromForm] Supplier editSupplier,
+        CancellationToken cancellationToken)
     {
+        EditSupplier = editSupplier;
         RemoveDeleteModelState();
 
         if (!ModelState.IsValid || EditSupplier.Id <= 0)
@@ -94,6 +102,7 @@ public sealed class IndexModel(
                 return NotFound();
             }
 
+            StatusMessage = "Proveedor actualizado correctamente.";
             return RedirectToPage();
         }
         catch (ArgumentException ex)
@@ -140,14 +149,15 @@ public sealed class IndexModel(
         ModelState.Remove(nameof(DeleteSupplierId));
     }
 
-    private void LogModelStateErrors()
+    private void LogModelStateErrors(string operation = "editar")
     {
         foreach (var entry in ModelState)
         {
             foreach (var error in entry.Value.Errors)
             {
                 logger.LogWarning(
-                    "Error de validación al editar proveedor. Campo: {Field}. Error: {Error}",
+                    "Error de validación al {Operation} proveedor. Campo: {Field}. Error: {Error}",
+                    operation,
                     entry.Key,
                     error.ErrorMessage);
             }

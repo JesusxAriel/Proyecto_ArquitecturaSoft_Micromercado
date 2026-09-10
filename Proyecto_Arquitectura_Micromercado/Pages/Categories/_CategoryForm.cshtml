@@ -62,19 +62,6 @@
 <div class="mb-3">
     <label asp-for="Description" class="form-label">Descripción</label>
     <input asp-for="Description" class="form-control" data-sanitize="text" data-capitalize="true" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" title="La descripción contiene caracteres no permitidos." />
-    <label asp-for="Description"
-           class="form-label">
-        Descripción
-    </label>
-
-    <input asp-for="Description"
-           class="form-control"
-           maxlength="255"
-           data-validate-input
-           data-category-description="true"
-           pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s.,\-()]+$"
-           title="La descripción debe contener al menos una letra o número." />
-
     <div class="input-error text-danger small d-none"></div>
 
     <span asp-validation-for="Description"

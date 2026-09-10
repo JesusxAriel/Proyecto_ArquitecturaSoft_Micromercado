@@ -14,6 +14,9 @@
     @if (ViewContext.RouteData.Values["page"]?.ToString() != "/Login")
     {
     <header>
+        @{
+            var currentPage = ViewContext.RouteData.Values["page"]?.ToString() ?? string.Empty;
+        }
         <nav class="navbar navbar-expand-lg navbar-dark bg-navy fixed-top shadow-sm py-3">
             <div class="container-fluid px-4 navbar-main-grid">
                 <a class="navbar-brand" asp-area="" asp-page="/Index">
@@ -26,21 +29,23 @@
                 <div class="collapse navbar-collapse" id="mainNavigation">
                     <ul class="navbar-nav navbar-center mx-auto mb-2 mb-lg-0">
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Categorías</a>
+                            <a class="nav-link dropdown-toggle @(currentPage.StartsWith("/Categories", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)"
+                               href="#" role="button" data-bs-toggle="dropdown">Categorías</a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" asp-page="/Categories/Index">Listado de Categorías</a></li>
                                 <li><a class="dropdown-item" href="javascript:void(0)">Distribución por Pasillos</a></li>
                             </ul>
-                        </li>
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Proveedores</a>
+                            <a class="nav-link dropdown-toggle @(currentPage.StartsWith("/Suppliers", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)"
+                               href="#" role="button" data-bs-toggle="dropdown">Proveedores</a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" asp-page="/Suppliers/Index">Directorio de Proveedores</a></li>
                                 <li><a class="dropdown-item" href="javascript:void(0)">Productos por Proveedor</a></li>
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Inventario</a>
+                            <a class="nav-link dropdown-toggle @(currentPage.StartsWith("/Products", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)"
+                               href="#" role="button" data-bs-toggle="dropdown">Inventario</a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" asp-page="/Products/Index">Lista de productos</a></li>
                                 <li><a class="dropdown-item" asp-page="/Products/History">Historial de Cambios</a></li>
@@ -57,11 +62,13 @@
                     </ul>
                 </div>
                 <div class="dropdown ms-auto navbar-user">
-                    <button type="button" class="btn btn-link text-white text-decoration-none dropdown-toggle d-flex align-items-center gap-2"
+                    <button type="button" id="userDropdown"
+                            class="btn btn-link text-white text-decoration-none dropdown-toggle user-profile-dropdown d-flex align-items-center gap-2"
                             data-bs-toggle="dropdown" aria-expanded="false">
                         <span class="user-avatar" aria-label="Usuario Juan Pérez">JP</span>
                         <span class="d-none d-md-block text-start">
-                            <span class="d-block small fw-semibold">Admin: Juan Pérez</span>
+                            <span class="d-block fw-semibold user-name">Juan Pérez</span>
+                            <small class="d-block user-role">Admin</small>
                             <span class="badge badge-ok">Caja Abierta</span>
                         </span>
                     </button>

@@ -16,6 +16,9 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 
         public string ErrorMessage { get; set; } = string.Empty;
 
+        [TempData]
+        public string? StatusMessage { get; set; }
+
         public DeleteModel(ICategoryService categoryService)
         {
             this.categoryService = categoryService;
@@ -68,6 +71,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
                     return Page();
                 }
 
+                StatusMessage = "Categoría eliminada correctamente.";
                 return RedirectToPage("/Categories/Index");
             }
             catch (Exception)

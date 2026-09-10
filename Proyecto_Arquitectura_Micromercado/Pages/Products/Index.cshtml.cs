@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
-using System.Text.RegularExpressions;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Products;
 
@@ -14,6 +13,8 @@ public sealed class IndexModel(
     public IReadOnlyList<ProductListItem> Products { get; private set; } = [];
     public IReadOnlyList<LookupOption> Categories { get; private set; } = [];
     public IReadOnlyList<LookupOption> Suppliers { get; private set; } = [];
+    [TempData]
+    public string? StatusMessage { get; set; }
     [BindProperty]
     public Product EditProduct { get; set; } = new();
     [BindProperty]
@@ -65,12 +66,10 @@ public sealed class IndexModel(
             if (pricesChanged)
             {
                 PriceChangeReason = NormalizeReason(PriceChangeReason);
-                if (string.IsNullOrWhiteSpace(PriceChangeReason) ||
-                    !Regex.IsMatch(PriceChangeReason, @"^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.,\-]+$") ||
-                    !char.IsUpper(PriceChangeReason[0]))
+                if (!IsValidReason(PriceChangeReason))
                 {
                     ModelState.AddModelError(nameof(PriceChangeReason),
-                        "Ingresa una justificación válida para el cambio de precio.");
+                        "Ingresa una justificación de al menos 3 caracteres. Evita etiquetas HTML, comillas y caracteres de control.");
                     await ReloadProductsAsync(cancellationToken);
                     return Page();
                 }
@@ -88,6 +87,7 @@ public sealed class IndexModel(
                 return NotFound();
             }
 
+            StatusMessage = "Producto actualizado correctamente.";
             return RedirectToPage();
         }
         catch (ArgumentException ex)
@@ -116,11 +116,41 @@ public sealed class IndexModel(
     {
         var normalized = string.Join(
             " ",
-            (value ?? string.Empty).Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries));
+            (value ?? string.Empty).TrimStart().Split(
+                [' ', '\t', '\r', '\n'],
+                StringSplitOptions.RemoveEmptyEntries));
 
-        return string.IsNullOrEmpty(normalized)
-            ? string.Empty
-            : char.ToUpper(normalized[0]) + normalized[1..];
+        if (string.IsNullOrEmpty(normalized))
+        {
+            return string.Empty;
+        }
+
+        var firstLetterIndex = normalized
+            .Select((character, index) => (character, index))
+            .FirstOrDefault(item => char.IsLetter(item.character))
+            .index;
+
+        if (firstLetterIndex == 0 && char.IsLetter(normalized[0]))
+        {
+            return char.ToUpperInvariant(normalized[0]) + normalized[1..];
+        }
+
+        if (firstLetterIndex > 0)
+        {
+            return normalized[..firstLetterIndex] +
+                char.ToUpperInvariant(normalized[firstLetterIndex]) +
+                normalized[(firstLetterIndex + 1)..];
+        }
+
+        return normalized;
+    }
+
+    private static bool IsValidReason(string value)
+    {
+        return value.Length >= 3 &&
+            !value.Any(character =>
+                char.IsControl(character) ||
+                character is '<' or '>' or '"' or '\'' or '`' or '\\' or ';');
     }
 
     public async Task<IActionResult> OnPostDeleteAsync(CancellationToken cancellationToken)
@@ -135,6 +165,7 @@ public sealed class IndexModel(
             return NotFound();
         }
 
+        StatusMessage = "Producto eliminado correctamente.";
         return RedirectToPage();
     }
 

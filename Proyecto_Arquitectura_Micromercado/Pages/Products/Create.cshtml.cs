@@ -6,6 +6,9 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Products;
 
 public sealed class CreateModel(IProductService productService) : ProductFormModel(productService)
 {
+    [TempData]
+    public string? StatusMessage { get; set; }
+
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         Input.PrecioVentaInput = "0,00";
@@ -23,6 +26,7 @@ public sealed class CreateModel(IProductService productService) : ProductFormMod
         }
 
         await ProductService.CreateAsync(Product, cancellationToken);
+        StatusMessage = "Producto creado correctamente.";
         return RedirectToPage("/Products/Index");
     }
 }

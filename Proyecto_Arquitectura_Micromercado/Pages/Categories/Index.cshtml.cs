@@ -14,6 +14,9 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 
         public string ErrorMessage { get; set; } = string.Empty;
 
+        [TempData]
+        public string? StatusMessage { get; set; }
+
         [BindProperty]
         public Category EditCategory { get; set; } = new Category();
 
@@ -59,6 +62,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
                     return Page();
                 }
 
+                StatusMessage = "Categoría actualizada correctamente.";
                 return RedirectToPage();
             }
             catch (Exception)
