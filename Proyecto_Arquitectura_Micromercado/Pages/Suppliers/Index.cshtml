@@ -1,0 +1,52 @@
+﻿
+@page
+@model Proyecto_Arquitectura_Micromercado.Pages.Suppliers.IndexModel
+@{
+    ViewData["Title"] = "Proveedores";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Proveedores</h1>
+    <a class="btn btn-primary" asp-page="/Suppliers/Create">Nuevo proveedor</a>
+</div>
+
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Empresa</th>
+            <th>Teléfono</th>
+            <th>Correo de referencia</th>
+            <th>Modalidad</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var supplier in Model.Suppliers)
+    {
+        <tr>
+            <td>@supplier.NombreEmpresa</td>
+            <td>@supplier.NumeroEmpresa</td>
+            <td>@(string.IsNullOrEmpty(supplier.CorreoReferencia) ? "—" : supplier.CorreoReferencia)</td>
+            <td>
+                @if (supplier.EsAutogestionado)
+                {
+                    <span class="badge text-bg-info">Autogestionado</span>
+                }
+                else
+                {
+                    <span class="badge text-bg-secondary">Compra directa</span>
+                }
+            </td>
+            <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary" asp-page="/Suppliers/Edit" asp-route-id="@supplier.Id">Editar</a>
+                <a class="btn btn-sm btn-outline-danger" asp-page="/Suppliers/Delete" asp-route-id="@supplier.Id">Eliminar</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@if (Model.Suppliers.Count == 0)
+{
+    <p class="text-muted">No hay proveedores activos registrados.</p>
+}

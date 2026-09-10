@@ -1,0 +1,36 @@
+﻿@model Proyecto_Arquitectura_Micromercado.Pages.Suppliers.SupplierFormModel
+
+<form method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Supplier.Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="row g-3">
+        <div class="col-md-8">
+            <label asp-for="Supplier.NombreEmpresa" class="form-label"></label>
+            <input asp-for="Supplier.NombreEmpresa" class="form-control" />
+            <span asp-validation-for="Supplier.NombreEmpresa" class="text-danger"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="Supplier.NumeroEmpresa" class="form-label"></label>
+            <input asp-for="Supplier.NumeroEmpresa" class="form-control" type="text" inputmode="numeric" placeholder="44112233" />
+            <span asp-validation-for="Supplier.NumeroEmpresa" class="text-danger"></span>
+        </div>
+        <div class="col-md-8">
+            <label asp-for="Supplier.CorreoReferencia" class="form-label"></label>
+            <input asp-for="Supplier.CorreoReferencia" class="form-control" type="text" placeholder="ventas@empresa.com.bo" />
+            <span asp-validation-for="Supplier.CorreoReferencia" class="text-danger"></span>
+        </div>
+        <div class="col-md-12">
+            <div class="form-check">
+                <input asp-for="Supplier.EsAutogestionado" class="form-check-input" />
+                <label asp-for="Supplier.EsAutogestionado" class="form-check-label">
+                    Proveedor autogestionado (deja mercadería en consigna y repone por su cuenta)
+                </label>
+            </div>
+        </div>
+    </div>
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a asp-page="/Suppliers/Index" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>
