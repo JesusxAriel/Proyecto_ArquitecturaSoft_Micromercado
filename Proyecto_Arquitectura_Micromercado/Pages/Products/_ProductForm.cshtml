@@ -1,0 +1,57 @@
+@model Proyecto_Arquitectura_Micromercado.Pages.Products.ProductFormModel
+
+<form method="post" class="card shadow-sm border-0 p-4 modal-form">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Product.Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="row g-3">
+        <div class="col-md-8">
+            <label asp-for="Product.Nombre" class="form-label"></label>
+            <input asp-for="Product.Nombre" class="form-control" required data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" title="Usa letras, números, espacios, puntos, comas o guiones." />
+            <div class="input-error text-danger small d-none"></div>
+            <span asp-validation-for="Product.Nombre" class="text-danger"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="Product.EmpaquePresentacion" class="form-label"></label>
+            <input asp-for="Product.EmpaquePresentacion" class="form-control" required data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" title="Usa letras, números, espacios, puntos, comas o guiones." />
+            <div class="input-error text-danger small d-none"></div>
+            <span asp-validation-for="Product.EmpaquePresentacion" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Product.PrecioVenta" class="form-label"></label>
+            <input asp-for="Input.PrecioVentaInput" class="form-control" type="text" inputmode="decimal" placeholder="0,00" required data-validate-input />
+            <div class="input-error text-danger small d-none"></div>
+            <span asp-validation-for="Input.PrecioVentaInput" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Product.PrecioCosto" class="form-label"></label>
+            <input asp-for="Input.PrecioCostoInput" class="form-control" type="text" inputmode="decimal" placeholder="0,00" required data-validate-input />
+            <div class="input-error text-danger small d-none"></div>
+            <span asp-validation-for="Input.PrecioCostoInput" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Product.StockMinimo" class="form-label"></label>
+            <input asp-for="Product.StockMinimo" class="form-control" type="text" inputmode="numeric" required data-validate-input pattern="^\d+$" />
+            <div class="input-error text-danger small d-none"></div>
+            <span asp-validation-for="Product.StockMinimo" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Product.IdCategoria" class="form-label">Categoría</label>
+            <select asp-for="Product.IdCategoria" asp-items="Model.Categories" class="form-select" required data-validate-input>
+                <option value="0">Seleccione...</option>
+            </select>
+            <span asp-validation-for="Product.IdCategoria" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Product.IdProveedor" class="form-label">Proveedor</label>
+            <select asp-for="Product.IdProveedor" asp-items="Model.Suppliers" class="form-select" required data-validate-input>
+                <option value="0">Seleccione...</option>
+            </select>
+            <span asp-validation-for="Product.IdProveedor" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a asp-page="/Products/Index" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>

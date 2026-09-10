@@ -1,0 +1,190 @@
+@page
+@using Microsoft.AspNetCore.Mvc.Rendering
+@model Proyecto_Arquitectura_Micromercado.Pages.Products.IndexModel
+@{
+    ViewData["Title"] = "Productos";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <h1 class="page-heading mb-0">Productos</h1>
+    <a class="btn btn-primary" asp-page="/Products/Create">Nuevo producto</a>
+</div>
+
+<div class="mb-3">
+    <label for="productSearch" class="visually-hidden">Buscar productos</label>
+    <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+        <input id="productSearch" class="form-control" type="search" placeholder="Buscar por nombre, categoría o proveedor..." autocomplete="off" />
+    </div>
+</div>
+
+@if (Model.DatabaseWarning is not null)
+{
+    <div class="alert alert-warning shadow-sm" role="alert">@Model.DatabaseWarning</div>
+}
+
+<div class="table-responsive shadow-sm rounded-3">
+<table id="productsTable" class="table table-hover align-middle">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Presentación</th>
+            <th>Categoría</th>
+            <th>Proveedor</th>
+            <th>Precio</th>
+            <th>Stock mínimo</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var product in Model.Products)
+    {
+        <tr>
+            <td>@product.Nombre</td>
+            <td>@product.EmpaquePresentacion</td>
+            <td>@product.NombreCategoria</td>
+            <td>@product.NombreProveedor</td>
+            <td>@product.PrecioVenta.ToString("N2")</td>
+            <td>@product.StockMinimo</td>
+            <td class="text-end">
+                <button type="button" class="btn btn-sm btn-outline-primary edit-product-button" title="Editar" aria-label="Editar @product.Nombre"
+                        data-bs-toggle="modal" data-bs-target="#editProductModal"
+                        data-id="@product.Id" data-name="@product.Nombre" data-packaging="@product.EmpaquePresentacion"
+                        data-sale-price="@product.PrecioVenta.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                        data-cost-price="@product.PrecioCosto.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                        data-min-stock="@product.StockMinimo" data-category="@product.IdCategoria" data-supplier="@product.IdProveedor">
+                    <i class="bi bi-pencil-square"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger delete-product-button" title="Eliminar" aria-label="Eliminar @product.Nombre"
+                        data-bs-toggle="modal" data-bs-target="#deleteProductModal" data-id="@product.Id" data-name="@product.Nombre">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>
+
+<div class="modal fade" id="editProductModal" tabindex="-1" aria-labelledby="editProductLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Edit">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="editProductLabel">Editar producto</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" asp-for="EditProduct.Id" id="editProductId" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label asp-for="EditProduct.Nombre" class="form-label">Nombre</label>
+                            <input asp-for="EditProduct.Nombre" id="editProductName" class="form-control" required data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
+                            <div class="input-error text-danger small d-none"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="EditProduct.EmpaquePresentacion" class="form-label">Presentación</label>
+                            <input asp-for="EditProduct.EmpaquePresentacion" id="editProductPackaging" class="form-control" required data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
+                            <div class="input-error text-danger small d-none"></div>
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="EditProduct.PrecioVenta" class="form-label">Precio de venta</label>
+                            <input asp-for="EditProduct.PrecioVenta" id="editSalePrice" class="form-control" inputmode="decimal" required data-validate-input />
+                            <div class="input-error text-danger small d-none"></div>
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="EditProduct.PrecioCosto" class="form-label">Precio de costo</label>
+                            <input asp-for="EditProduct.PrecioCosto" id="editCostPrice" class="form-control" inputmode="decimal" required data-validate-input />
+                            <div class="input-error text-danger small d-none"></div>
+                        </div>
+                        <div class="col-md-2">
+                            <label asp-for="EditProduct.StockMinimo" class="form-label">Stock mínimo</label>
+                            <input asp-for="EditProduct.StockMinimo" id="editMinStock" class="form-control" required data-validate-input pattern="^\d+$" />
+                            <div class="input-error text-danger small d-none"></div>
+                        </div>
+                        <div class="col-md-2">
+                            <label asp-for="EditProduct.IdCategoria" class="form-label">Categoría</label>
+                            <select asp-for="EditProduct.IdCategoria" id="editCategory" class="form-select" required data-validate-input asp-items="@(Model.Categories.Select(x => new SelectListItem(x.Nombre, x.Id.ToString())))"></select>
+                        </div>
+                        <div class="col-md-2">
+                            <label asp-for="EditProduct.IdProveedor" class="form-label">Proveedor</label>
+                            <select asp-for="EditProduct.IdProveedor" id="editSupplier" class="form-select" required data-validate-input asp-items="@(Model.Suppliers.Select(x => new SelectListItem(x.Nombre, x.Id.ToString())))"></select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteProductModal" tabindex="-1" aria-labelledby="deleteProductLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Delete">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="deleteProductLabel">Eliminar producto</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" asp-for="DeleteProductId" id="deleteProductId" />
+                    <input type="hidden" asp-for="DeleteProductName" id="deleteProductName" />
+                    <p>Escribe exactamente <strong id="deleteProductNameLabel"></strong> para confirmar.</p>
+                    <label for="deleteProductConfirmation" class="form-label">Nombre del producto</label>
+                    <input asp-for="DeleteConfirmation" id="deleteProductConfirmation" class="form-control" autocomplete="off" required />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" id="confirmProductDelete" class="btn btn-danger" disabled><i class="bi bi-trash"></i> Eliminar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@if (Model.Products.Count == 0)
+{
+    <p class="text-muted">No hay productos activos registrados.</p>
+}
+
+@section Scripts {
+    <script>
+        $('.edit-product-button').on('click', function () {
+            const button = $(this);
+            $('#editProductId').val(button.data('id'));
+            $('#editProductName').val(button.data('name'));
+            $('#editProductPackaging').val(button.data('packaging'));
+            $('#editSalePrice').val(button.data('sale-price'));
+            $('#editCostPrice').val(button.data('cost-price'));
+            $('#editMinStock').val(button.data('min-stock'));
+            $('#editCategory').val(button.data('category'));
+            $('#editSupplier').val(button.data('supplier'));
+        });
+
+        $('.delete-product-button').on('click', function () {
+            const button = $(this);
+            $('#deleteProductId').val(button.data('id'));
+            $('#deleteProductName').val(button.data('name'));
+            $('#deleteProductNameLabel').text(button.data('name'));
+            $('#deleteProductConfirmation').val('');
+            $('#confirmProductDelete').prop('disabled', true);
+        });
+
+        $('#deleteProductConfirmation').on('input', function () {
+            $('#confirmProductDelete').prop('disabled', this.value !== $('#deleteProductName').val());
+        });
+
+        $('#productSearch').on('input', function () {
+            const query = $(this).val().toString().toLocaleLowerCase();
+            $('#productsTable tbody tr').each(function () {
+                $(this).toggle($(this).text().toLocaleLowerCase().includes(query));
+            });
+        });
+    </script>
+}

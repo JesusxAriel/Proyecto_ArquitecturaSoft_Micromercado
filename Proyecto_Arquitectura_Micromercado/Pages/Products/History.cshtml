@@ -1,0 +1,55 @@
+@page
+@model Proyecto_Arquitectura_Micromercado.Pages.Products.HistoryModel
+@{
+    ViewData["Title"] = "Historial de Precios";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="page-heading mb-0">Historial de Precios</h1>
+    <a class="btn btn-outline-primary" asp-page="/Products/Index">Volver a productos</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Precio Venta Ant.</th>
+                <th>Precio Venta Nuevo</th>
+                <th>Precio Costo Ant.</th>
+                <th>Precio Costo Nuevo</th>
+                <th>Motivo de Cambio</th>
+                <th>Usuario</th>
+                <th>Fecha de Cambio</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var change in Model.PriceHistory)
+        {
+            <tr>
+                <td>@change.NombreProducto</td>
+                <td>Bs. @change.PrecioVentaAnterior.ToString("N2")</td>
+                <td>Bs. @change.PrecioVentaNuevo.ToString("N2")</td>
+                <td>
+                    @(change.PrecioCostoAnterior.HasValue
+                        ? $"Bs. {change.PrecioCostoAnterior.Value:N2}"
+                        : "—")
+                </td>
+                <td>
+                    @(change.PrecioCostoNuevo.HasValue
+                        ? $"Bs. {change.PrecioCostoNuevo.Value:N2}"
+                        : "—")
+                </td>
+                <td>@change.MotivoCambio</td>
+                <td>@change.IdUsuario</td>
+                <td>@change.FechaCambio.ToString("dd/MM/yyyy HH:mm")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.PriceHistory.Count == 0)
+{
+    <p class="text-muted">No hay cambios de precios registrados.</p>
+}

@@ -1,0 +1,84 @@
+﻿@page
+@model Proyecto_Arquitectura_Micromercado.Pages.Categories.DeleteModel
+
+@{
+    ViewData["Title"] = "Eliminar categoría";
+}
+
+<div class="modal d-block modal-shell" tabindex="-1" aria-modal="true" role="dialog">
+<div class="modal-dialog modal-dialog-centered"><div class="modal-content shadow"><div class="modal-header">
+<h1 class="modal-title h5">Eliminar categoría</h1>
+<a asp-page="/Categories/Index" class="btn-close" aria-label="Cerrar"></a>
+</div><div class="modal-body">
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">
+        @Model.ErrorMessage
+    </div>
+}
+
+<div class="alert alert-warning">Escribe exactamente <strong>@Model.Category.Name</strong> para confirmar la eliminación.</div>
+
+<dl class="row">
+
+    <dt class="col-sm-3">
+        Nombre
+    </dt>
+    <dd class="col-sm-9">
+        @Model.Category.Name
+    </dd>
+
+    <dt class="col-sm-3">
+        Código
+    </dt>
+    <dd class="col-sm-9">
+        @Model.Category.Code
+    </dd>
+
+    <dt class="col-sm-3">
+        Ubicación
+    </dt>
+    <dd class="col-sm-9">
+        @(Model.Category.AisleLocation ?? "Sin ubicación")
+    </dd>
+
+    <dt class="col-sm-3">
+        Descripción
+    </dt>
+    <dd class="col-sm-9">
+        @(Model.Category.Description ?? "Sin descripción")
+    </dd>
+
+</dl>
+
+<form method="post" id="deleteCategoryForm">
+
+    <input type="hidden"
+           name="id"
+           value="@Model.Category.Id" />
+    <input type="hidden" asp-for="Category.Name" />
+    <input type="hidden"
+           asp-for="ConfirmationName" />
+
+    <label for="deleteCategoryName" class="form-label">Nombre de la categoría</label>
+    <input id="deleteCategoryName" class="form-control mb-3" autocomplete="off" />
+    <button type="submit" id="confirmCategoryDelete" class="btn btn-danger" disabled>
+        <i class="bi bi-trash"></i> Confirmar eliminación
+    </button>
+
+    <a asp-page="/Categories/Index"
+       class="btn btn-secondary">
+        Cancelar
+    </a>
+
+</form></div></div></div></div>
+
+@section Scripts {
+    <script>
+        $('#deleteCategoryName').on('input', function () {
+            $('#ConfirmationName').val(this.value);
+            $('#confirmCategoryDelete').prop('disabled', this.value !== @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Category.Name)));
+        });
+    </script>
+}

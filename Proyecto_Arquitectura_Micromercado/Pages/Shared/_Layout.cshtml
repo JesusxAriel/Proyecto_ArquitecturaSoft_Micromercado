@@ -1,56 +1,160 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Proyecto_Arquitectura_Micromercado</title>
+    <title>@ViewData["Title"] - Punto Casero POS</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Proyecto_Arquitectura_Micromercado.styles.css" asp-append-version="true" />
 </head>
 <body>
+    @if (ViewContext.RouteData.Values["page"]?.ToString() != "/Login")
+    {
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container">
-                <a class="navbar-brand" asp-area="" asp-page="/Index">Proyecto_Arquitectura_Micromercado</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-navy fixed-top shadow-sm py-3">
+            <div class="container-fluid px-4 navbar-main-grid">
+                <a class="navbar-brand" asp-area="" asp-page="/Index">
+                    <span aria-hidden="true">🛒</span> Punto Casero POS
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavigation"
+                        aria-controls="mainNavigation" aria-expanded="false" aria-label="Abrir navegación">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Index">Home</a>
+                <div class="collapse navbar-collapse" id="mainNavigation">
+                    <ul class="navbar-nav navbar-center mx-auto mb-2 mb-lg-0">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Categorías</a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" asp-page="/Categories/Index">Listado de Categorías</a></li>
+                                <li><a class="dropdown-item" href="javascript:void(0)">Distribución por Pasillos</a></li>
+                            </ul>
                         </li>
-                     
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Productos">Productos</a>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Proveedores</a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" asp-page="/Suppliers/Index">Directorio de Proveedores</a></li>
+                                <li><a class="dropdown-item" href="javascript:void(0)">Productos por Proveedor</a></li>
+                            </ul>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-page="/Suppliers/Index">Proveedores</a>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Inventario</a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" asp-page="/Products/Index">Lista de productos</a></li>
+                                <li><a class="dropdown-item" asp-page="/Products/History">Historial de Cambios</a></li>
+                            </ul>
                         </li>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Control de Cajas</a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="javascript:void(0)">Registro de Ventas</a></li>
+                                <li><a class="dropdown-item" href="javascript:void(0)">Arqueo Diario</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+                <div class="dropdown ms-auto navbar-user">
+                    <button type="button" class="btn btn-link text-white text-decoration-none dropdown-toggle d-flex align-items-center gap-2"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="user-avatar" aria-label="Usuario Juan Pérez">JP</span>
+                        <span class="d-none d-md-block text-start">
+                            <span class="d-block small fw-semibold">Admin: Juan Pérez</span>
+                            <span class="badge badge-ok">Caja Abierta</span>
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><button type="button" id="logoutButton" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</button></li>
                     </ul>
                 </div>
             </div>
         </nav>
     </header>
+    }
     <div class="container">
-        <main role="main" class="pb-3">
+        <main role="main" class="pt-4 pb-3">
             @RenderBody()
         </main>
     </div>
-
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - Proyecto_Arquitectura_Micromercado - <a asp-area="" asp-page="/Privacy">Privacy</a>
-        </div>
+    <footer class="footer border-top text-muted">
+        <div class="container">&copy; 2026 - Punto Casero POS</div>
     </footer>
-
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            const isLogin = '@(ViewContext.RouteData.Values["page"]?.ToString() == "/Login" ? "true" : "false")' === 'true';
+            if (!isLogin && !localStorage.getItem('puntoCaseroSession')) {
+                window.location.replace('/Login');
+                return;
+            }
 
+            $('#logoutButton').on('click', function () {
+                localStorage.removeItem('puntoCaseroSession');
+                window.location.replace('/Login');
+            });
+
+            const invalidCharacters = /[*%$@{}\[\]?¿\^]/g;
+            const validationPattern = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$/;
+
+            function validateInput(input) {
+                const value = input.value;
+                const error = $(input).siblings('.input-error');
+                let message = '';
+
+                if (input.required && !value.trim()) {
+                    message = 'Este campo es obligatorio.';
+                } else if (invalidCharacters.test(value)) {
+                    input.value = value.replace(invalidCharacters, '');
+                    message = 'No se permiten caracteres especiales.';
+                } else if (input.pattern && input.value && !new RegExp(input.pattern).test(input.value)) {
+                    message = 'El formato ingresado no es válido.';
+                } else if (input.type === 'number' && input.value && Number.isNaN(Number(input.value))) {
+                    message = 'Ingresa un número válido.';
+                } else if (input.dataset.sanitize === 'text' && input.value && !validationPattern.test(input.value)) {
+                    message = 'Usa solo letras, números, espacios, puntos, comas o guiones.';
+                }
+
+                invalidCharacters.lastIndex = 0;
+                if (message) {
+                    error.text(message).removeClass('d-none');
+                    input.setCustomValidity(message);
+                    return false;
+                }
+
+                error.addClass('d-none').text('');
+                input.setCustomValidity('');
+                return true;
+            }
+
+            function validateForm(form) {
+                let valid = true;
+                $(form).find('[data-validate-input]').each(function () {
+                    valid = validateInput(this) && valid;
+                });
+                $(form).find('.modal-save-button, button[type="submit"]').prop('disabled', !valid);
+                return valid;
+            }
+
+            $('.modal-form').each(function () {
+                const form = this;
+                $(form).find('[data-validate-input]').on('input blur change', function () {
+                    validateInput(this);
+                    validateForm(form);
+                });
+                $(form).on('submit', function (event) {
+                    if (!validateForm(form) || !form.checkValidity()) {
+                        event.preventDefault();
+                        form.classList.add('was-validated');
+                    }
+                });
+                validateForm(form);
+            });
+        })();
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

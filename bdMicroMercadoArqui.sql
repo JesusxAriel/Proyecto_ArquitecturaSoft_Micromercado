@@ -93,23 +93,23 @@ CREATE TABLE `LOTE` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========================================================
--- 5. TABLA DE HISTORIAL / AUDITORÍA DE PRODUCTOS (Requisito de 7 pts)
--- Solo configurada para PRODUCTO como fue solicitado.
+-- 5. TABLA DE HISTORIAL DE PRECIOS DE PRODUCTOS (Modificado según Patrón MER 1.2.B)
 -- ========================================================
-DROP TABLE IF EXISTS `HISTORIAL_PRODUCTO`;
-CREATE TABLE `HISTORIAL_PRODUCTO` (
+DROP TABLE IF EXISTS `HISTORIAL_PRECIO`;
+CREATE TABLE `HISTORIAL_PRECIO` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `idProducto` INT NOT NULL,
-  `campoModificado` VARCHAR(50) NOT NULL,
-  `valorAnterior` VARCHAR(255) DEFAULT NULL,
-  `valorNuevo` VARCHAR(255) DEFAULT NULL,
-  `tipoOperacion` VARCHAR(20) NOT NULL, -- 'INSERT', 'UPDATE', 'DELETE'
+  `precioVentaAnterior` DECIMAL(10,2) NOT NULL,
+  `precioVentaNuevo` DECIMAL(10,2) NOT NULL,
+  `precioCostoAnterior` DECIMAL(10,2) DEFAULT NULL,
+  `precioCostoNuevo` DECIMAL(10,2) DEFAULT NULL,
+  `motivoCambio` VARCHAR(255) DEFAULT 'Ajuste de precio',
   `idUsuario` INT NOT NULL,
   `fechaCambio` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   
   PRIMARY KEY (`id`),
-  KEY `FK_Historial_Producto` (`idProducto`),
-  CONSTRAINT `FK_Historial_Producto` FOREIGN KEY (`idProducto`) REFERENCES `PRODUCTO` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  KEY `FK_HistorialPrecio_Producto` (`idProducto`),
+  CONSTRAINT `FK_HistorialPrecio_Producto` FOREIGN KEY (`idProducto`) REFERENCES `PRODUCTO` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========================================================
@@ -211,8 +211,8 @@ INSERT INTO `LOTE` (`idProducto`, `codigoLote`, `cantidadInicial`, `cantidadDisp
 (20, 'LOT-TOS-NOV26', 40, 40, '2026-11-01', 1, 1),
 (21, 'LOT-ROY-JUN27', 65, 65, '2027-06-30', 1, 1);
 
--- 5. HISTORIAL_PRODUCTO
-INSERT INTO `HISTORIAL_PRODUCTO` (`idProducto`, `campoModificado`, `valorAnterior`, `valorNuevo`, `tipoOperacion`, `idUsuario`) VALUES
-(1, 'PRECIO_VENTA', '6.00', '6.50', 'UPDATE', 1),
-(4, 'PRECIO_VENTA', '10.50', '11.00', 'UPDATE', 1),
-(11, 'CREACION', 'N/A', 'Chorizo Parrillero Sofía', 'INSERT', 1);
+-- 5. HISTORIAL_PRECIO
+INSERT INTO `HISTORIAL_PRECIO` (`idProducto`, `precioVentaAnterior`, `precioVentaNuevo`, `precioCostoAnterior`, `precioCostoNuevo`, `motivoCambio`, `idUsuario`, `fechaCambio`) VALUES
+(1, 6.00, 6.50, 5.00, 5.20, 'Ajuste de precio del proveedor PIL', 1, '2026-01-15 08:30:00'),
+(4, 10.50, 11.00, 8.50, 9.00, 'Incremento de tarifa de EMBOL', 1, '2026-02-01 10:00:00'),
+(11, 26.00, 28.50, 21.00, 23.50, 'Ajuste de precio por temporada Sofía', 1, '2026-03-10 14:15:00');

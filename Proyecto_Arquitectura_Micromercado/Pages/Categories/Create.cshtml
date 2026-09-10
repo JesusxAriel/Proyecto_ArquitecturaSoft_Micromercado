@@ -1,0 +1,230 @@
+@page
+@model Proyecto_Arquitectura_Micromercado.Pages.Categories.CreateModel
+
+@{
+    ViewData["Title"] = "Agregar categoría";
+}
+
+<div class="modal d-block modal-shell" tabindex="-1" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow">
+            <div class="modal-header">
+                <h1 class="modal-title h5">Agregar categoría</h1>
+
+                <a asp-page="/Categories/Index"
+                   class="btn-close"
+                   aria-label="Cerrar">
+                </a>
+            </div>
+
+            <div class="modal-body">
+
+                @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                {
+                    <div class="alert alert-danger">
+                        @Model.ErrorMessage
+                    </div>
+                }
+
+                <form method="post"
+                      class="needs-validation modal-form">
+
+                    <partial name="_CategoryForm"
+                             model="Model.Category" />
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Guardar
+                    </button>
+
+                    <a asp-page="/Categories/Index"
+                       class="btn btn-secondary">
+                        Cancelar
+                    </a>
+
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        function normalizeCategorySpaces(value) {
+            return value.replace(/\s+/g, ' ');
+        }
+
+        function toCategoryTitleCase(value) {
+            const lowerWords = [
+                'y',
+                'de',
+                'del',
+                'la',
+                'las',
+                'el',
+                'los',
+                'en'
+            ];
+
+            return value
+                .toLowerCase()
+                .split(' ')
+                .map((word, index) => {
+
+                    if (index > 0 && lowerWords.includes(word)) {
+                        return word;
+                    }
+
+                    return word.charAt(0).toUpperCase() + word.slice(1);
+                })
+                .join(' ');
+        }
+
+        function validateCategoryField(input) {
+
+            const error = $(input).siblings('.input-error');
+            const value = input.value;
+            let message = '';
+
+            if (input.required && !value.trim()) {
+                message = 'Este campo es obligatorio.';
+            }
+
+            if (!message &&
+                input.hasAttribute('data-category-name')) {
+
+                if (/^\s/.test(value)) {
+                    message = 'No se permiten espacios al inicio.';
+                }
+                else if (/\s{2,}/.test(value)) {
+                    message = 'No se permiten espacios dobles.';
+                }
+                else if (
+                    value &&
+                    !/^(?=.*[A-Za-zÁÉÍÓÚáéíóúÑñ])[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s\-&]+$/.test(value)
+                ) {
+                    message =
+                        'El nombre contiene caracteres no permitidos.';
+                }
+            }
+
+            if (!message &&
+                input.hasAttribute('data-category-code')) {
+
+                if (/^\s/.test(value)) {
+                    message = 'No se permiten espacios al inicio.';
+                }
+                else if (/\s/.test(value)) {
+                    message = 'El código no puede contener espacios.';
+                }
+                else if (
+                    value &&
+                    !/^[A-Za-z0-9\-]+$/.test(value)
+                ) {
+                    message =
+                        'El código solo puede contener letras, números y guiones.';
+                }
+            }
+
+            if (!message &&
+                input.hasAttribute('data-category-aisle')) {
+
+                if (/^\s/.test(value)) {
+                    message = 'No se permiten espacios al inicio.';
+                }
+                else if (/\s{2,}/.test(value)) {
+                    message = 'No se permiten espacios dobles.';
+                }
+                else if (
+                    value &&
+                    !/^[Pp][Aa][Ss][Ii][Ll][Ll][Oo] [1-8]$/.test(value)
+                ) {
+                    message =
+                        'La ubicación debe tener el formato Pasillo 1 hasta Pasillo 8.';
+                }
+            }
+
+            if (!message &&
+                input.hasAttribute('data-category-description')) {
+
+                if (/^\s/.test(value)) {
+                    message = 'No se permiten espacios al inicio.';
+                }
+                else if (/\s{2,}/.test(value)) {
+                    message = 'No se permiten espacios dobles.';
+                }
+                else if (
+                    value &&
+                    !/^[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s.,\-()]+$/.test(value)
+                ) {
+                    message =
+                        'La descripción solo puede contener letras, números, espacios, puntos, comas, guiones y paréntesis.';
+                }
+            }
+
+            if (message) {
+
+                error
+                    .text(message)
+                    .removeClass('d-none');
+
+                input.setCustomValidity(message);
+
+                return false;
+            }
+
+            error
+                .text('')
+                .addClass('d-none');
+
+            input.setCustomValidity('');
+
+            return true;
+        }
+
+        $(
+            '[data-category-name], ' +
+            '[data-category-code], ' +
+            '[data-category-aisle], ' +
+            '[data-category-description]'
+        )
+            .on('input', function() {
+
+                validateCategoryField(this);
+
+            })
+            .on('blur', function() {
+
+                let value = this.value.trim();
+
+                value = normalizeCategorySpaces(value);
+
+                if (this.hasAttribute('data-category-name')) {
+
+                    value = toCategoryTitleCase(value);
+                }
+
+                if (this.hasAttribute('data-category-code')) {
+
+                    value = value.toUpperCase();
+                }
+
+                if (this.hasAttribute('data-category-aisle')) {
+
+                    const match =
+                        value.match(/^pasillo\s+([1-8])$/i);
+
+                    if (match) {
+                        value = 'Pasillo ' + match[1];
+                    }
+                }
+
+                this.value = value;
+
+                validateCategoryField(this);
+            });
+    </script>
+}

@@ -1,0 +1,37 @@
+@page
+@model Proyecto_Arquitectura_Micromercado.Pages.Products.DeleteModel
+@{
+    ViewData["Title"] = "Eliminar producto";
+}
+
+<div class="modal d-block modal-shell" tabindex="-1" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow">
+            <div class="modal-header">
+                <h1 class="modal-title h5">Eliminar producto</h1>
+                <a asp-page="/Products/Index" class="btn-close" aria-label="Cerrar"></a>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">Escribe exactamente <strong>@Model.Product.Nombre</strong> para confirmar la eliminación.</div>
+                <form method="post" id="deleteProductForm">
+                    <input type="hidden" asp-for="Product.Id" />
+                    @Html.AntiForgeryToken()
+                    <label for="deleteProductName" class="form-label">Nombre del producto</label>
+                    <input id="deleteProductName" class="form-control mb-3" autocomplete="off" />
+                    <div class="d-flex justify-content-end gap-2">
+                        <a asp-page="/Products/Index" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" id="confirmProductDelete" class="btn btn-danger" disabled><i class="bi bi-trash"></i> Eliminar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $('#deleteProductName').on('input', function () {
+            $('#confirmProductDelete').prop('disabled', this.value !== @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Product.Nombre)));
+        });
+    </script>
+}
