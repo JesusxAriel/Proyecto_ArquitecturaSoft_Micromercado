@@ -5,12 +5,13 @@ namespace Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
 
 public static class SupplierValidation
 {
-    public const string TelefonoPattern = @"^\d{6,20}$";
+    public const string TelefonoPattern = @"^\d{7,15}$";
 
     public const string TelefonoMessage =
-        "Solo dígitos, entre 6 y 20. Ej: 44112233";
+        "El teléfono debe contener entre 7 y 15 dígitos numéricos.";
+    public const string CorreoPattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
     public const string CorreoMessage =
-        "Formato inválido. Ej: ventas@empresa.com.bo";
+        "Ingrese un correo electrónico válido con dominio (ejemplo@dominio.com).";
     public const string NombreDuplicadoMessage =
         "Ya existe un proveedor registrado con ese nombre de empresa.";
     public const string CorreoRequeridoParaAutogestionadoMessage =

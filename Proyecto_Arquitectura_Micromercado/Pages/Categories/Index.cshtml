@@ -5,12 +5,12 @@
     ViewData["Title"] = "Categorías";
 }
 
-<h1 class="page-heading mb-4">Categorías</h1>
-
-<div class="mb-3">
-    <a asp-page="/Categories/Create" class="btn btn-primary">
-    <i class="bi bi-plus-lg"></i> Agregar categoría
-    </a>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <h1 class="page-heading mb-0">Categorías</h1>
+    <button type="button" class="btn btn-warning fw-semibold px-3"
+            onclick="window.location.href='@Url.Page("/Categories/Create")'">
+        <i class="bi bi-plus-lg me-1"></i>Añadir
+    </button>
 </div>
 
 @if (!string.IsNullOrEmpty(Model.ErrorMessage))
@@ -28,7 +28,17 @@
 }
 else
 {
-    <table class="table table-striped table-hover">
+    <div class="mb-3">
+        <label for="categorySearch" class="visually-hidden">Buscar categorías</label>
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+            <input id="categorySearch" class="form-control" type="search"
+                   placeholder="Buscar por nombre, código o pasillo..." autocomplete="off" />
+        </div>
+    </div>
+
+    <div class="table-responsive shadow-sm rounded-3">
+    <table id="categoriesTable" class="table table-hover align-middle mb-0">
         <thead>
             <tr>
                 <th>Nombre</th>
@@ -68,6 +78,7 @@ else
             }
         </tbody>
     </table>
+    </div>
 }
 
 <div class="modal fade" id="editCategoryModal" tabindex="-1" aria-labelledby="editCategoryLabel" aria-hidden="true">
@@ -83,23 +94,23 @@ else
                     <input type="hidden" asp-for="EditCategory.Id" id="editCategoryId" />
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                     <div class="mb-3">
-                        <label asp-for="EditCategory.Name" class="form-label">Nombre *</label>
+                        <label for="editCategoryName" class="form-label">Nombre *</label>
                         <input asp-for="EditCategory.Name" id="editCategoryName" class="form-control" required data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
                         <div class="input-error text-danger small d-none"></div>
                     </div>
                     <div class="mb-3">
-                        <label asp-for="EditCategory.Code" class="form-label">Código *</label>
+                        <label for="editCategoryCode" class="form-label">Código *</label>
                         <input asp-for="EditCategory.Code" id="editCategoryCode" class="form-control" required data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
                         <div class="input-error text-danger small d-none"></div>
                     </div>
                     <div class="mb-3">
-                        <label asp-for="EditCategory.AisleLocation" class="form-label">Ubicación en pasillo</label>
+                        <label for="editCategoryAisle" class="form-label">Ubicación en pasillo</label>
                         <input asp-for="EditCategory.AisleLocation" id="editCategoryAisle" class="form-control" data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
                         <div class="input-error text-danger small d-none"></div>
                     </div>
                     <div class="mb-3">
-                        <label asp-for="EditCategory.Description" class="form-label">Descripción</label>
-                        <input asp-for="EditCategory.Description" id="editCategoryDescription" class="form-control" data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
+                        <label for="editCategoryDescription" class="form-label">Descripción</label>
+                        <input asp-for="EditCategory.Description" id="editCategoryDescription" class="form-control" data-sanitize="text" data-capitalize="true" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
                         <div class="input-error text-danger small d-none"></div>
                     </div>
                 </div>
@@ -121,6 +132,13 @@ else
             $('#editCategoryCode').val(button.data('code'));
             $('#editCategoryAisle').val(button.data('aisle') || '');
             $('#editCategoryDescription').val(button.data('description') || '');
+        });
+
+        $('#categorySearch').on('input', function () {
+            const query = $(this).val().toString().toLocaleLowerCase();
+            $('#categoriesTable tbody tr').each(function () {
+                $(this).toggle($(this).text().toLocaleLowerCase().includes(query));
+            });
         });
     </script>
 }

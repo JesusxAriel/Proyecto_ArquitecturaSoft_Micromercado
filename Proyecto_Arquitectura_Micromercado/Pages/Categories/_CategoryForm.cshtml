@@ -23,7 +23,7 @@
 
 <div class="mb-3">
     <label asp-for="Description" class="form-label">Descripción</label>
-    <input asp-for="Description" class="form-control" data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" title="La descripción contiene caracteres no permitidos." />
+    <input asp-for="Description" class="form-control" data-sanitize="text" data-capitalize="true" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" title="La descripción contiene caracteres no permitidos." />
     <div class="input-error text-danger small d-none"></div>
     <span asp-validation-for="Description" class="text-danger"></span>
 </div>

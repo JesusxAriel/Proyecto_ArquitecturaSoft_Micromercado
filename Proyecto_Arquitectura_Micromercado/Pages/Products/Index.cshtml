@@ -7,7 +7,10 @@
 
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
     <h1 class="page-heading mb-0">Productos</h1>
-    <a class="btn btn-primary" asp-page="/Products/Create">Nuevo producto</a>
+    <button type="button" class="btn btn-warning fw-semibold px-3"
+            onclick="window.location.href='@Url.Page("/Products/Create")'">
+        <i class="bi bi-plus-lg me-1"></i>Añadir
+    </button>
 </div>
 
 <div class="mb-3">
@@ -24,16 +27,16 @@
 }
 
 <div class="table-responsive shadow-sm rounded-3">
-<table id="productsTable" class="table table-hover align-middle">
+<table id="productsTable" class="table table-hover align-middle mb-0">
     <thead>
         <tr>
             <th>Nombre</th>
             <th>Presentación</th>
             <th>Categoría</th>
             <th>Proveedor</th>
-            <th>Precio</th>
-            <th>Stock mínimo</th>
-            <th></th>
+            <th class="text-center">Precio</th>
+            <th class="text-center" style="min-width: 120px;">Stock mínimo</th>
+            <th class="text-end pe-3">ACCIONES</th>
         </tr>
     </thead>
     <tbody>
@@ -44,21 +47,23 @@
             <td>@product.EmpaquePresentacion</td>
             <td>@product.NombreCategoria</td>
             <td>@product.NombreProveedor</td>
-            <td>@product.PrecioVenta.ToString("N2")</td>
-            <td>@product.StockMinimo</td>
-            <td class="text-end">
-                <button type="button" class="btn btn-sm btn-outline-primary edit-product-button" title="Editar" aria-label="Editar @product.Nombre"
-                        data-bs-toggle="modal" data-bs-target="#editProductModal"
-                        data-id="@product.Id" data-name="@product.Nombre" data-packaging="@product.EmpaquePresentacion"
-                        data-sale-price="@product.PrecioVenta.ToString(System.Globalization.CultureInfo.InvariantCulture)"
-                        data-cost-price="@product.PrecioCosto.ToString(System.Globalization.CultureInfo.InvariantCulture)"
-                        data-min-stock="@product.StockMinimo" data-category="@product.IdCategoria" data-supplier="@product.IdProveedor">
-                    <i class="bi bi-pencil-square"></i>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-danger delete-product-button" title="Eliminar" aria-label="Eliminar @product.Nombre"
-                        data-bs-toggle="modal" data-bs-target="#deleteProductModal" data-id="@product.Id" data-name="@product.Nombre">
-                    <i class="bi bi-trash"></i>
-                </button>
+            <td class="text-center">@product.PrecioVenta.ToString("N2")</td>
+            <td class="text-center" style="min-width: 120px;">@product.StockMinimo</td>
+            <td class="text-end pe-3">
+                <div class="d-flex justify-content-end align-items-center gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-warning edit-product-button" title="Editar" aria-label="Editar @product.Nombre"
+                            data-bs-toggle="modal" data-bs-target="#editProductModal"
+                            data-id="@product.Id" data-name="@product.Nombre" data-packaging="@product.EmpaquePresentacion"
+                            data-sale-price="@product.PrecioVenta.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                            data-cost-price="@product.PrecioCosto.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                            data-min-stock="@product.StockMinimo" data-category="@product.IdCategoria" data-supplier="@product.IdProveedor">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-product-button" title="Eliminar" aria-label="Eliminar @product.Nombre"
+                            data-bs-toggle="modal" data-bs-target="#deleteProductModal" data-id="@product.Id" data-name="@product.Nombre">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
             </td>
         </tr>
     }
@@ -69,7 +74,7 @@
 <div class="modal fade" id="editProductModal" tabindex="-1" aria-labelledby="editProductLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <form method="post" asp-page-handler="Edit">
+            <form method="post" asp-page-handler="Edit" id="editProductForm" class="modal-form">
                 @Html.AntiForgeryToken()
                 <div class="modal-header">
                     <h2 class="modal-title h5" id="editProductLabel">Editar producto</h2>
@@ -77,48 +82,75 @@
                 </div>
                 <div class="modal-body">
                     <input type="hidden" asp-for="EditProduct.Id" id="editProductId" />
+                    <input type="hidden" asp-for="EditProduct.MotivoCambio" id="editProductReason" />
+                    <span asp-validation-for="PriceChangeReason" class="text-danger"></span>
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                     <div class="row g-3">
                         <div class="col-md-8">
-                            <label asp-for="EditProduct.Nombre" class="form-label">Nombre</label>
+                            <label for="editProductName" class="form-label">Nombre</label>
                             <input asp-for="EditProduct.Nombre" id="editProductName" class="form-control" required data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
                             <div class="input-error text-danger small d-none"></div>
                         </div>
                         <div class="col-md-4">
-                            <label asp-for="EditProduct.EmpaquePresentacion" class="form-label">Presentación</label>
+                            <label for="editProductPackaging" class="form-label">Presentación</label>
                             <input asp-for="EditProduct.EmpaquePresentacion" id="editProductPackaging" class="form-control" required data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
                             <div class="input-error text-danger small d-none"></div>
                         </div>
                         <div class="col-md-3">
-                            <label asp-for="EditProduct.PrecioVenta" class="form-label">Precio de venta</label>
+                            <label for="editSalePrice" class="form-label">Precio de venta</label>
                             <input asp-for="EditProduct.PrecioVenta" id="editSalePrice" class="form-control" inputmode="decimal" required data-validate-input />
                             <div class="input-error text-danger small d-none"></div>
                         </div>
                         <div class="col-md-3">
-                            <label asp-for="EditProduct.PrecioCosto" class="form-label">Precio de costo</label>
+                            <label for="editCostPrice" class="form-label">Precio de costo</label>
                             <input asp-for="EditProduct.PrecioCosto" id="editCostPrice" class="form-control" inputmode="decimal" required data-validate-input />
                             <div class="input-error text-danger small d-none"></div>
                         </div>
                         <div class="col-md-2">
-                            <label asp-for="EditProduct.StockMinimo" class="form-label">Stock mínimo</label>
+                            <label for="editMinStock" class="form-label">Stock mínimo</label>
                             <input asp-for="EditProduct.StockMinimo" id="editMinStock" class="form-control" required data-validate-input pattern="^\d+$" />
                             <div class="input-error text-danger small d-none"></div>
                         </div>
                         <div class="col-md-2">
-                            <label asp-for="EditProduct.IdCategoria" class="form-label">Categoría</label>
+                            <label for="editCategory" class="form-label">Categoría</label>
                             <select asp-for="EditProduct.IdCategoria" id="editCategory" class="form-select" required data-validate-input asp-items="@(Model.Categories.Select(x => new SelectListItem(x.Nombre, x.Id.ToString())))"></select>
                         </div>
                         <div class="col-md-2">
-                            <label asp-for="EditProduct.IdProveedor" class="form-label">Proveedor</label>
+                            <label for="editSupplier" class="form-label">Proveedor</label>
                             <select asp-for="EditProduct.IdProveedor" id="editSupplier" class="form-select" required data-validate-input asp-items="@(Model.Suppliers.Select(x => new SelectListItem(x.Nombre, x.Id.ToString())))"></select>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                    <button type="submit" class="btn btn-primary modal-save-button">Guardar cambios</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="priceChangeReasonModal" tabindex="-1" aria-labelledby="priceChangeReasonLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title h5" id="priceChangeReasonLabel">Justificación del cambio de precio</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">Indica por qué se modificó el precio de venta o costo.</p>
+                <label for="priceChangeReason" class="form-label">Motivo del cambio</label>
+                <input id="priceChangeReason" class="form-control" type="text" maxlength="255"
+                       autocomplete="off" required
+                       pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
+                <div id="priceChangeReasonError" class="text-danger small d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="confirmPriceChangeReason" class="btn btn-primary" disabled>
+                    Continuar
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -155,16 +187,76 @@
 
 @section Scripts {
     <script>
+        let reasonConfirmed = false;
+        let initialSalePrice = null;
+        let initialCostPrice = null;
+
         $('.edit-product-button').on('click', function () {
             const button = $(this);
-            $('#editProductId').val(button.data('id'));
-            $('#editProductName').val(button.data('name'));
-            $('#editProductPackaging').val(button.data('packaging'));
-            $('#editSalePrice').val(button.data('sale-price'));
-            $('#editCostPrice').val(button.data('cost-price'));
-            $('#editMinStock').val(button.data('min-stock'));
-            $('#editCategory').val(button.data('category'));
-            $('#editSupplier').val(button.data('supplier'));
+            reasonConfirmed = false;
+            $('#editProductId').val(button.attr('data-id'));
+            $('#editProductName').val(button.attr('data-name'));
+            $('#editProductPackaging').val(button.attr('data-packaging'));
+            $('#editSalePrice').val(button.attr('data-sale-price'));
+            $('#editCostPrice').val(button.attr('data-cost-price'));
+            $('#editMinStock').val(button.attr('data-min-stock'));
+            $('#editCategory').val(String(button.attr('data-category')));
+            $('#editSupplier').val(String(button.attr('data-supplier')));
+            $('#editProductReason').val('');
+            initialSalePrice = Number((button.attr('data-sale-price') || '').replace(',', '.'));
+            initialCostPrice = Number((button.attr('data-cost-price') || '').replace(',', '.'));
+            $('#editProductForm').find('[data-validate-input]').trigger('input');
+        });
+
+        $('#editProductForm').on('submit', function (event) {
+            if (reasonConfirmed) {
+                reasonConfirmed = false;
+                return;
+            }
+
+            const salePriceChanged = Number($('#editSalePrice').val().replace(',', '.')) !== initialSalePrice;
+            const costPriceChanged = Number($('#editCostPrice').val().replace(',', '.')) !== initialCostPrice;
+
+            if (salePriceChanged || costPriceChanged) {
+                event.preventDefault();
+                $('#priceChangeReason').val('');
+                $('#priceChangeReasonError').addClass('d-none').text('');
+                $('#confirmPriceChangeReason').prop('disabled', true);
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('priceChangeReasonModal')).show();
+            }
+        });
+
+        function normalizeReason(value) {
+            return value.trim().replace(/  +/g, ' ');
+        }
+
+        function validatePriceReason() {
+            const input = $('#priceChangeReason');
+            let value = normalizeReason(input.val().toString());
+            if (value) {
+                value = value.charAt(0).toLocaleUpperCase() + value.slice(1);
+                input.val(value);
+            }
+            const valid = value.length > 0 &&
+                /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.,\-]+$/.test(value) &&
+                /^[A-ZÁÉÍÓÚÑÜ]/.test(value);
+            input.val(value);
+            $('#confirmPriceChangeReason').prop('disabled', !valid);
+            $('#priceChangeReasonError').toggleClass('d-none', valid).text(
+                valid ? '' : 'Ingresa una justificación válida, iniciando con mayúscula y sin caracteres especiales.');
+            return valid;
+        }
+
+        $('#priceChangeReason').on('input blur', validatePriceReason);
+        $('#confirmPriceChangeReason').on('click', function () {
+            if (!validatePriceReason()) {
+                return;
+            }
+
+            $('#editProductReason').val(normalizeReason($('#priceChangeReason').val().toString()));
+            reasonConfirmed = true;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('priceChangeReasonModal')).hide();
+            document.getElementById('editProductForm').requestSubmit();
         });
 
         $('.delete-product-button').on('click', function () {

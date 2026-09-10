@@ -228,7 +228,9 @@ public sealed class MySqlProductRepository(IConfiguration configuration) : IProd
                 PrecioVentaNuevo = product.PrecioVenta,
                 PrecioCostoAnterior = precioCostoAnterior,
                 PrecioCostoNuevo = product.PrecioCosto,
-                MotivoCambio = "Actualización de precio",
+                MotivoCambio = string.IsNullOrWhiteSpace(product.MotivoCambio)
+                    ? "Actualización de precio"
+                    : product.MotivoCambio.Trim(),
                 IdUsuario = SystemAdminId
             };
 

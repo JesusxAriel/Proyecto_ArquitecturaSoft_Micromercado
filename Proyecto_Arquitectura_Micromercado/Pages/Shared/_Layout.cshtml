@@ -17,7 +17,7 @@
         <nav class="navbar navbar-expand-lg navbar-dark bg-navy fixed-top shadow-sm py-3">
             <div class="container-fluid px-4 navbar-main-grid">
                 <a class="navbar-brand" asp-area="" asp-page="/Index">
-                    <span aria-hidden="true">🛒</span> Punto Casero POS
+                    <img src="~/images/logo.jpg" alt="Punto Casero POS" class="navbar-logo" style="height: 76px; width: auto; object-fit: contain;">
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavigation"
                         aria-controls="mainNavigation" aria-expanded="false" aria-label="Abrir navegación">
@@ -35,7 +35,7 @@
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Proveedores</a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="javascript:void(0)">Directorio de Proveedores</a></li>
+                                <li><a class="dropdown-item" asp-page="/Suppliers/Index">Directorio de Proveedores</a></li>
                                 <li><a class="dropdown-item" href="javascript:void(0)">Productos por Proveedor</a></li>
                             </ul>
                         </li>
@@ -98,6 +98,7 @@
 
             const invalidCharacters = /[*%$@{}\[\]?¿\^]/g;
             const validationPattern = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$/;
+            const emailPattern = /^[^\u0040\s]+\u0040[^\u0040\s]+\.[^\u0040\s]+$/;
 
             function validateInput(input) {
                 const value = input.value;
@@ -109,8 +110,13 @@
                 } else if (invalidCharacters.test(value)) {
                     input.value = value.replace(invalidCharacters, '');
                     message = 'No se permiten caracteres especiales.';
+                } else if (input.type === 'email' && input.value && !emailPattern.test(input.value)) {
+                    message = input.dataset.validationMessage || 'Ingrese un correo electrónico válido con dominio (ejemplo@dominio.com).';
                 } else if (input.pattern && input.value && !new RegExp(input.pattern).test(input.value)) {
-                    message = 'El formato ingresado no es válido.';
+                    message = input.dataset.validationMessage ||
+                        (input.pattern === '^\\d{7,15}$'
+                            ? 'El teléfono debe contener entre 7 y 15 dígitos numéricos.'
+                            : 'El formato ingresado no es válido.');
                 } else if (input.type === 'number' && input.value && Number.isNaN(Number(input.value))) {
                     message = 'Ingresa un número válido.';
                 } else if (input.dataset.sanitize === 'text' && input.value && !validationPattern.test(input.value)) {
@@ -138,6 +144,17 @@
                 return valid;
             }
 
+            function capitalizeFirstLetter(input) {
+                const value = input.value.trim();
+                if (value) {
+                    input.value = value.charAt(0).toLocaleUpperCase() + value.slice(1);
+                }
+            }
+
+            $('[data-capitalize="true"]').on('blur', function () {
+                capitalizeFirstLetter(this);
+            });
+
             $('.modal-form').each(function () {
                 const form = this;
                 $(form).find('[data-validate-input]').on('input blur change', function () {
@@ -145,6 +162,9 @@
                     validateForm(form);
                 });
                 $(form).on('submit', function (event) {
+                    $(this).find('[data-capitalize="true"]').each(function () {
+                        capitalizeFirstLetter(this);
+                    });
                     if (!validateForm(form) || !form.checkValidity()) {
                         event.preventDefault();
                         form.classList.add('was-validated');

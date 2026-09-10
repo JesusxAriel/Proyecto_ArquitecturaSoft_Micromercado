@@ -38,6 +38,8 @@ public sealed class Product
     [Range(1, int.MaxValue, ErrorMessage = "Seleccione una opción.")]
     public int IdProveedor { get; set; }
 
+    public string? MotivoCambio { get; set; }
+
     public bool EstaActivo { get; set; } = true;
 }
 
