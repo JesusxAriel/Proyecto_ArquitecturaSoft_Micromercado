@@ -2,28 +2,80 @@
 
 <div class="mb-3">
     <label asp-for="Name" class="form-label">Nombre *</label>
-    <input asp-for="Name" class="form-control" required data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" title="Usa letras, números, espacios, puntos, comas o guiones." />
+
+    <input asp-for="Name"
+           class="form-control"
+           required
+           maxlength="150"
+           data-validate-input
+           data-category-name="true"
+           pattern="^(?=.*[A-Za-zÁÉÍÓÚáéíóúÑñ])[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s\-&amp;]+$"
+           title="El nombre debe contener letras y solo puede incluir letras, números, espacios, guiones y &." />
+
     <div class="input-error text-danger small d-none"></div>
-    <span asp-validation-for="Name" class="text-danger"></span>
+
+    <span asp-validation-for="Name"
+          class="text-danger">
+    </span>
 </div>
 
 <div class="mb-3">
     <label asp-for="Code" class="form-label">Código *</label>
-    <input asp-for="Code" class="form-control" required data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" title="Usa letras, números, espacios, puntos, comas o guiones." />
+
+    <input asp-for="Code"
+           class="form-control"
+           required
+           maxlength="20"
+           data-validate-input
+           data-category-code="true"
+           pattern="^[A-Za-z0-9\-]+$"
+           title="El código solo puede contener letras, números y guiones." />
+
     <div class="input-error text-danger small d-none"></div>
-    <span asp-validation-for="Code" class="text-danger"></span>
+
+    <span asp-validation-for="Code"
+          class="text-danger">
+    </span>
 </div>
 
 <div class="mb-3">
-    <label asp-for="AisleLocation" class="form-label">Ubicación en pasillo</label>
-    <input asp-for="AisleLocation" class="form-control" data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" title="Usa letras, números, espacios, puntos, comas o guiones." />
+    <label asp-for="AisleLocation"
+           class="form-label">
+        Ubicación en pasillo
+    </label>
+
+    <input asp-for="AisleLocation"
+           class="form-control"
+           maxlength="20"
+           data-validate-input
+           data-category-aisle="true"
+           pattern="^[Pp][Aa][Ss][Ii][Ll][Ll][Oo] [1-8]$"
+           title="La ubicación debe tener el formato Pasillo 1 hasta Pasillo 8." />
+
     <div class="input-error text-danger small d-none"></div>
-    <span asp-validation-for="AisleLocation" class="text-danger"></span>
+
+    <span asp-validation-for="AisleLocation"
+          class="text-danger">
+    </span>
 </div>
 
 <div class="mb-3">
-    <label asp-for="Description" class="form-label">Descripción</label>
-    <input asp-for="Description" class="form-control" data-sanitize="text" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" title="La descripción contiene caracteres no permitidos." />
+    <label asp-for="Description"
+           class="form-label">
+        Descripción
+    </label>
+
+    <input asp-for="Description"
+           class="form-control"
+           maxlength="255"
+           data-validate-input
+           data-category-description="true"
+           pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s.,\-()]+$"
+           title="La descripción debe contener al menos una letra o número." />
+
     <div class="input-error text-danger small d-none"></div>
-    <span asp-validation-for="Description" class="text-danger"></span>
+
+    <span asp-validation-for="Description"
+          class="text-danger">
+    </span>
 </div>
