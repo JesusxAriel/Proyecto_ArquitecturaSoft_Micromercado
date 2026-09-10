@@ -12,12 +12,12 @@
         </div>
         <div class="col-md-4">
             <label asp-for="Supplier.NumeroEmpresa" class="form-label"></label>
-            <input asp-for="Supplier.NumeroEmpresa" class="form-control" type="text" inputmode="numeric" placeholder="44112233" />
+            <input asp-for="Supplier.NumeroEmpresa" class="form-control" type="text" inputmode="numeric" pattern="^\d{7,15}$" placeholder="44112233" />
             <span asp-validation-for="Supplier.NumeroEmpresa" class="text-danger"></span>
         </div>
         <div class="col-md-8">
             <label asp-for="Supplier.CorreoReferencia" class="form-label"></label>
-            <input asp-for="Supplier.CorreoReferencia" class="form-control" type="text" placeholder="ventas@empresa.com.bo" />
+            <input asp-for="Supplier.CorreoReferencia" class="form-control" type="email" pattern="^[^@@\s]+@@[^@@\s]+\.[^@@\s]+$" placeholder="ventas@empresa.com.bo" />
             <span asp-validation-for="Supplier.CorreoReferencia" class="text-danger"></span>
         </div>
         <div class="col-md-12">

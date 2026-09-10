@@ -60,6 +60,8 @@
 </div>
 
 <div class="mb-3">
+    <label asp-for="Description" class="form-label">Descripción</label>
+    <input asp-for="Description" class="form-control" data-sanitize="text" data-capitalize="true" data-validate-input pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" title="La descripción contiene caracteres no permitidos." />
     <label asp-for="Description"
            class="form-label">
         Descripción

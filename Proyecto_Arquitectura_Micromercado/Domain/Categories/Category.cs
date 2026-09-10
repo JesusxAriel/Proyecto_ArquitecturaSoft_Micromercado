@@ -43,5 +43,17 @@ namespace Proyecto_Arquitectura_Micromercado.Domain.Categories
         public DateTime CreatedAt { get; set; }
 
         public DateTime? UpdatedAt { get; set; }
+
+        private static string? CapitalizeFirstLetter(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+
+            var trimmed = value.Trim();
+            return char.ToUpper(trimmed[0], System.Globalization.CultureInfo.CurrentCulture)
+                + trimmed[1..];
+        }
     }
 }

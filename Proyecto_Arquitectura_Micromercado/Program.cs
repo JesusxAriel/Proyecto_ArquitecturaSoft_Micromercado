@@ -1,8 +1,8 @@
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
-using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Localization;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
+using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
 using System.Globalization;
 
@@ -15,11 +15,11 @@ builder.Services.AddRazorPages()
         options.ModelBindingMessageProvider.SetValueMustBeANumberAccessor(
             _ => "Ingrese un número válido.");
     });
+
 builder.Services.AddScoped<IProductRepository, MySqlProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
 
 builder.Services.AddScoped<ICategoryRepository, MySqlCategoryRepository>();
-
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 
 builder.Services.AddScoped<ISupplierRepository, MySqlSupplierRepository>();
