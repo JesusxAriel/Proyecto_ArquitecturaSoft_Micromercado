@@ -1,7 +1,6 @@
-﻿using MySql.Data.MySqlClient;
+using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
-using System.Data;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
@@ -29,13 +28,13 @@ public sealed class MySqlSupplierRepository(IConfiguration configuration) : ISup
         {
             suppliers.Add(new SupplierListItem
             {
-                Id = reader.GetInt32("id"),
-                NombreEmpresa = reader.GetString("nombreEmpresa"),
-                NumeroEmpresa = reader.GetString("numeroEmpresa"),
-                CorreoReferencia = reader.IsDBNull("correoReferencia")
+                Id = reader.GetInt32(reader.GetOrdinal("id")),
+                NombreEmpresa = reader.GetString(reader.GetOrdinal("nombreEmpresa")),
+                NumeroEmpresa = reader.GetString(reader.GetOrdinal("numeroEmpresa")),
+                CorreoReferencia = reader.IsDBNull(reader.GetOrdinal("correoReferencia"))
                     ? string.Empty
-                    : reader.GetString("correoReferencia"),
-                EsAutogestionado = reader.GetBoolean("esAutogestionado")
+                    : reader.GetString(reader.GetOrdinal("correoReferencia")),
+                EsAutogestionado = reader.GetBoolean(reader.GetOrdinal("esAutogestionado"))
             });
         }
 
@@ -63,14 +62,14 @@ public sealed class MySqlSupplierRepository(IConfiguration configuration) : ISup
 
         return new Supplier
         {
-            Id = reader.GetInt32("id"),
-            NombreEmpresa = reader.GetString("nombreEmpresa"),
-            NumeroEmpresa = reader.GetString("numeroEmpresa"),
-            CorreoReferencia = reader.IsDBNull("correoReferencia")
+            Id = reader.GetInt32(reader.GetOrdinal("id")),
+            NombreEmpresa = reader.GetString(reader.GetOrdinal("nombreEmpresa")),
+            NumeroEmpresa = reader.GetString(reader.GetOrdinal("numeroEmpresa")),
+            CorreoReferencia = reader.IsDBNull(reader.GetOrdinal("correoReferencia"))
                 ? null
-                : reader.GetString("correoReferencia"),
-            EsAutogestionado = reader.GetBoolean("esAutogestionado"),
-            EstaActivo = reader.GetBoolean("estaActivo")
+                : reader.GetString(reader.GetOrdinal("correoReferencia")),
+            EsAutogestionado = reader.GetBoolean(reader.GetOrdinal("esAutogestionado")),
+            EstaActivo = reader.GetBoolean(reader.GetOrdinal("estaActivo"))
         };
     }
 
@@ -111,7 +110,9 @@ public sealed class MySqlSupplierRepository(IConfiguration configuration) : ISup
         await using var command = new MySqlCommand(sql, connection);
         AddSupplierParameters(command, supplier);
         command.Parameters.AddWithValue("@idUsuarioAdmin", SystemAdminId);
-        return Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
+        var generatedId = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
+        supplier.Id = generatedId;
+        return generatedId;
     }
 
     public async Task<bool> UpdateAsync(Supplier supplier, CancellationToken cancellationToken = default)

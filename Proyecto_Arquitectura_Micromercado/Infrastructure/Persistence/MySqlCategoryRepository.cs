@@ -118,6 +118,11 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence
 
             int affectedRows = command.ExecuteNonQuery();
 
+            if (affectedRows > 0)
+            {
+                category.Id = (int)command.LastInsertedId;
+            }
+
             return affectedRows > 0;
         }
 
@@ -181,6 +186,33 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence
 
             return affectedRows > 0;
         }
+
+        public Task<Category?> GetByIdAsync(
+            int id,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(GetById(id));
+
+        public Task<IReadOnlyList<Category>> GetAllAsync(
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<Category>>(GetActive());
+
+        public Task<int> CreateAsync(
+            Category entity,
+            CancellationToken cancellationToken = default)
+        {
+            var created = Add(entity);
+            return Task.FromResult(created ? entity.Id : 0);
+        }
+
+        public Task<bool> UpdateAsync(
+            Category entity,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Update(entity));
+
+        public Task<bool> SoftDeleteAsync(
+            int id,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Delete(id, 1));
 
         private static void AddCommonParameters(
             MySqlCommand command,

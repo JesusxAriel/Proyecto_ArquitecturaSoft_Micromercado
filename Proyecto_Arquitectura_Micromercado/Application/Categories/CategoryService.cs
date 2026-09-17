@@ -55,6 +55,29 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
             return categoryRepository.Delete(id, adminUserId);
         }
 
+        public Task<Category?> GetByIdAsync(
+            int id,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(GetById(id));
+
+        public Task<int> CreateAsync(
+            Category dto,
+            CancellationToken cancellationToken = default)
+        {
+            var created = Create(dto);
+            return Task.FromResult(created ? dto.Id : 0);
+        }
+
+        public Task<bool> UpdateAsync(
+            Category dto,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Update(dto));
+
+        public Task<bool> SoftDeleteAsync(
+            int id,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Delete(id, 1));
+
         private static void Normalize(Category category)
         {
             category.Name = category.Name.Trim();
