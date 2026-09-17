@@ -1,8 +1,10 @@
-﻿using Proyecto_Arquitectura_Micromercado.Domain.Categories;
+﻿using Proyecto_Arquitectura_Micromercado.Application.Common;
+using Proyecto_Arquitectura_Micromercado.Domain.Categories;
 
 namespace Proyecto_Arquitectura_Micromercado.Application.Categories
 {
-    public interface ICategoryRepository
+    public interface ICategoryRepository :
+        IRepositorioBase<Category, Category, int>
     {
         List<Category> GetActive();
         Category? GetById(int id);

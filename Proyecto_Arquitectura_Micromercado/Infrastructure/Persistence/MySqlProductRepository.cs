@@ -1,7 +1,6 @@
 using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
-using System.Data;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
@@ -24,23 +23,25 @@ public sealed class MySqlProductRepository(IConfiguration configuration) : IProd
         var products = new List<ProductListItem>();
         await using var connection = await OpenConnectionAsync(cancellationToken);
         await using var command = new MySqlCommand(sql, connection);
-        await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess, cancellationToken);
+        await using var reader = await command.ExecuteReaderAsync(
+            System.Data.CommandBehavior.SequentialAccess,
+            cancellationToken);
 
         while (await reader.ReadAsync(cancellationToken))
         {
             products.Add(new ProductListItem
             {
-                Id = reader.GetInt32("id"),
-                Nombre = reader.GetString("nombre"),
-                EmpaquePresentacion = reader.GetString("empaquePresentacion"),
-                PrecioVenta = reader.GetDecimal("precioVenta"),
-                PrecioCosto = reader.GetDecimal("precioCosto"),
-                StockMinimo = reader.GetInt32("stockMinimo"),
-                IdCategoria = reader.GetInt32("idCategoria"),
-                NombreCategoria = reader.GetString("nombreCategoria"),
-                IdProveedor = reader.GetInt32("idProveedor"),
-                NombreProveedor = reader.GetString("nombreProveedor"),
-                StockCalculado = reader.GetInt32("stockCalculado")
+                Id = reader.GetInt32(reader.GetOrdinal("id")),
+                Nombre = reader.GetString(reader.GetOrdinal("nombre")),
+                EmpaquePresentacion = reader.GetString(reader.GetOrdinal("empaquePresentacion")),
+                PrecioVenta = reader.GetDecimal(reader.GetOrdinal("precioVenta")),
+                PrecioCosto = reader.GetDecimal(reader.GetOrdinal("precioCosto")),
+                StockMinimo = reader.GetInt32(reader.GetOrdinal("stockMinimo")),
+                IdCategoria = reader.GetInt32(reader.GetOrdinal("idCategoria")),
+                NombreCategoria = reader.GetString(reader.GetOrdinal("nombreCategoria")),
+                IdProveedor = reader.GetInt32(reader.GetOrdinal("idProveedor")),
+                NombreProveedor = reader.GetString(reader.GetOrdinal("nombreProveedor")),
+                StockCalculado = reader.GetInt32(reader.GetOrdinal("stockCalculado"))
             });
         }
 
@@ -68,15 +69,15 @@ public sealed class MySqlProductRepository(IConfiguration configuration) : IProd
 
         return new Product
         {
-            Id = reader.GetInt32("id"),
-            Nombre = reader.GetString("nombre"),
-            EmpaquePresentacion = reader.GetString("empaquePresentacion"),
-            PrecioVenta = reader.GetDecimal("precioVenta"),
-            PrecioCosto = reader.GetDecimal("precioCosto"),
-            StockMinimo = reader.GetInt32("stockMinimo"),
-            IdCategoria = reader.GetInt32("idCategoria"),
-            IdProveedor = reader.GetInt32("idProveedor"),
-            EstaActivo = reader.GetBoolean("estaActivo")
+            Id = reader.GetInt32(reader.GetOrdinal("id")),
+            Nombre = reader.GetString(reader.GetOrdinal("nombre")),
+            EmpaquePresentacion = reader.GetString(reader.GetOrdinal("empaquePresentacion")),
+            PrecioVenta = reader.GetDecimal(reader.GetOrdinal("precioVenta")),
+            PrecioCosto = reader.GetDecimal(reader.GetOrdinal("precioCosto")),
+            StockMinimo = reader.GetInt32(reader.GetOrdinal("stockMinimo")),
+            IdCategoria = reader.GetInt32(reader.GetOrdinal("idCategoria")),
+            IdProveedor = reader.GetInt32(reader.GetOrdinal("idProveedor")),
+            EstaActivo = reader.GetBoolean(reader.GetOrdinal("estaActivo"))
         };
     }
 
@@ -108,22 +109,22 @@ public sealed class MySqlProductRepository(IConfiguration configuration) : IProd
         {
             history.Add(new ProductPriceHistory
             {
-                Id = reader.GetInt32("id"),
-                IdProducto = reader.GetInt32("idProducto"),
-                NombreProducto = reader.GetString("NombreProducto"),
-                PrecioVentaAnterior = reader.GetDecimal("precioVentaAnterior"),
-                PrecioVentaNuevo = reader.GetDecimal("precioVentaNuevo"),
-                PrecioCostoAnterior = reader.IsDBNull("precioCostoAnterior")
+                Id = reader.GetInt32(reader.GetOrdinal("id")),
+                IdProducto = reader.GetInt32(reader.GetOrdinal("idProducto")),
+                NombreProducto = reader.GetString(reader.GetOrdinal("NombreProducto")),
+                PrecioVentaAnterior = reader.GetDecimal(reader.GetOrdinal("precioVentaAnterior")),
+                PrecioVentaNuevo = reader.GetDecimal(reader.GetOrdinal("precioVentaNuevo")),
+                PrecioCostoAnterior = reader.IsDBNull(reader.GetOrdinal("precioCostoAnterior"))
                     ? null
-                    : reader.GetDecimal("precioCostoAnterior"),
-                PrecioCostoNuevo = reader.IsDBNull("precioCostoNuevo")
+                    : reader.GetDecimal(reader.GetOrdinal("precioCostoAnterior")),
+                PrecioCostoNuevo = reader.IsDBNull(reader.GetOrdinal("precioCostoNuevo"))
                     ? null
-                    : reader.GetDecimal("precioCostoNuevo"),
-                MotivoCambio = reader.IsDBNull("motivoCambio")
+                    : reader.GetDecimal(reader.GetOrdinal("precioCostoNuevo")),
+                MotivoCambio = reader.IsDBNull(reader.GetOrdinal("motivoCambio"))
                     ? string.Empty
-                    : reader.GetString("motivoCambio"),
-                IdUsuario = reader.GetInt32("idUsuario"),
-                FechaCambio = reader.GetDateTime("fechaCambio")
+                    : reader.GetString(reader.GetOrdinal("motivoCambio")),
+                IdUsuario = reader.GetInt32(reader.GetOrdinal("idUsuario")),
+                FechaCambio = reader.GetDateTime(reader.GetOrdinal("fechaCambio"))
             });
         }
 
@@ -136,19 +137,8 @@ public sealed class MySqlProductRepository(IConfiguration configuration) : IProd
     {
         ArgumentNullException.ThrowIfNull(history);
 
-        const string sql = """
-            INSERT INTO HISTORIAL_PRECIO
-                (idProducto, precioVentaAnterior, precioVentaNuevo,
-                 precioCostoAnterior, precioCostoNuevo, motivoCambio, idUsuario)
-            VALUES
-                (@idProducto, @precioVentaAnterior, @precioVentaNuevo,
-                 @precioCostoAnterior, @precioCostoNuevo, @motivoCambio, @idUsuario);
-            """;
-
         await using var connection = await OpenConnectionAsync(cancellationToken);
-        await using var command = new MySqlCommand(sql, connection);
-        AddPriceHistoryParameters(command, history);
-        await command.ExecuteNonQueryAsync(cancellationToken);
+        await AddPriceHistoryAsync(connection, null, history, cancellationToken);
     }
 
     public async Task<int> CreateAsync(Product product, CancellationToken cancellationToken = default)
@@ -167,7 +157,9 @@ public sealed class MySqlProductRepository(IConfiguration configuration) : IProd
         await using var command = new MySqlCommand(sql, connection);
         AddProductParameters(command, product);
         command.Parameters.AddWithValue("@idUsuarioAdmin", SystemAdminId);
-        return Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
+        var generatedId = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
+        product.Id = generatedId;
+        return generatedId;
     }
 
     public async Task<bool> UpdateAsync(Product product, CancellationToken cancellationToken = default)
@@ -206,8 +198,8 @@ public sealed class MySqlProductRepository(IConfiguration configuration) : IProd
                 return false;
             }
 
-            precioVentaAnterior = reader.GetDecimal("precioVenta");
-            precioCostoAnterior = reader.GetDecimal("precioCosto");
+            precioVentaAnterior = reader.GetDecimal(reader.GetOrdinal("precioVenta"));
+            precioCostoAnterior = reader.GetDecimal(reader.GetOrdinal("precioCosto"));
         }
 
         int affectedRows;
@@ -311,7 +303,7 @@ public sealed class MySqlProductRepository(IConfiguration configuration) : IProd
 
     private static async Task AddPriceHistoryAsync(
         MySqlConnection connection,
-        MySqlTransaction transaction,
+        MySqlTransaction? transaction,
         ProductPriceHistory history,
         CancellationToken cancellationToken)
     {
