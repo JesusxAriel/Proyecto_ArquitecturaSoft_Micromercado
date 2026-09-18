@@ -1,6 +1,7 @@
 Proyecto_Arquitectura_Micromercado/Proyecto_Arquitectura_Micromercado.csproj.user
+appsettings.json/
+.vs/
 bin/
 obj/
 **/bin/
 **/obj/
-appsettings.json
