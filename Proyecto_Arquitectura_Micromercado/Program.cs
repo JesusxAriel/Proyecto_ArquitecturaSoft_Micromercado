@@ -17,14 +17,23 @@ builder.Services.AddRazorPages()
             _ => "Ingrese un número válido.");
     });
 
-builder.Services.AddScoped<IProductRepository, MySqlProductRepository>();
+// --- MÓDULO PRODUCTO E HISTORIAL (FACTORY METHOD) ---
+builder.Services.AddScoped<CreatorPriceHistoryRepository>();
+builder.Services.AddScoped<IPriceHistoryRepository>(sp =>
+    sp.GetRequiredService<CreatorPriceHistoryRepository>().CrearRepositorio());
+
+builder.Services.AddScoped<CreatorProductRepository>();
+builder.Services.AddScoped<IProductRepository>(sp =>
+    sp.GetRequiredService<CreatorProductRepository>().CrearRepositorio());
 builder.Services.AddScoped<IProductService, ProductService>();
 
+// --- MÓDULO CATEGORÍAS (FACTORY METHOD) ---
 builder.Services.AddScoped<CreatorCategoryRepository>();
 builder.Services.AddScoped<ICategoryRepository>(sp =>
     sp.GetRequiredService<CreatorCategoryRepository>().CrearRepositorio());
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 
+// --- MÓDULO PROVEEDORES (FACTORY METHOD) ---
 builder.Services.AddScoped<CreatorSupplierRepository>();
 builder.Services.AddScoped<ISupplierRepository>(sp =>
     sp.GetRequiredService<CreatorSupplierRepository>().CrearRepositorio());
