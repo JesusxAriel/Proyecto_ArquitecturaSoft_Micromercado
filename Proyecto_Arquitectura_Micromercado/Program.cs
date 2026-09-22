@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Localization;
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Factories;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
 using System.Globalization;
@@ -22,7 +23,9 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICategoryRepository, MySqlCategoryRepository>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 
-builder.Services.AddScoped<ISupplierRepository, MySqlSupplierRepository>();
+builder.Services.AddScoped<CreatorSupplierRepository>();
+builder.Services.AddScoped<ISupplierRepository>(sp =>
+    sp.GetRequiredService<CreatorSupplierRepository>().CrearRepositorio());
 builder.Services.AddScoped<ISupplierService, SupplierService>();
 
 var app = builder.Build();
