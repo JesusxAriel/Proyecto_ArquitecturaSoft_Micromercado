@@ -27,8 +27,10 @@ builder.Services.AddScoped<IProductRepository>(sp =>
     sp.GetRequiredService<CreatorProductRepository>().CrearRepositorio());
 builder.Services.AddScoped<IProductService, ProductService>();
 
-// --- MÓDULO CATEGORÍAS (SIN CAMBIOS) ---
-builder.Services.AddScoped<ICategoryRepository, MySqlCategoryRepository>();
+// --- MÓDULO CATEGORÍAS (FACTORY METHOD) ---
+builder.Services.AddScoped<CreatorCategoryRepository>();
+builder.Services.AddScoped<ICategoryRepository>(sp =>
+    sp.GetRequiredService<CreatorCategoryRepository>().CrearRepositorio());
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 
 // --- MÓDULO PROVEEDORES (FACTORY METHOD) ---
@@ -50,6 +52,7 @@ app.UseRequestLocalization(new RequestLocalizationOptions
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
