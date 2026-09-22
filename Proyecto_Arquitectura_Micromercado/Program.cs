@@ -20,7 +20,9 @@ builder.Services.AddRazorPages()
 builder.Services.AddScoped<IProductRepository, MySqlProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
 
-builder.Services.AddScoped<ICategoryRepository, MySqlCategoryRepository>();
+builder.Services.AddScoped<CreatorCategoryRepository>();
+builder.Services.AddScoped<ICategoryRepository>(sp =>
+    sp.GetRequiredService<CreatorCategoryRepository>().CrearRepositorio());
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 
 builder.Services.AddScoped<CreatorSupplierRepository>();
