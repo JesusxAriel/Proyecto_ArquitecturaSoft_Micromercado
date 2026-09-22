@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace Proyecto_Arquitectura_Micromercado.Application.Products;
 
-public sealed class ProductService(IProductRepository repository) : IProductService
+public sealed class ProductService(IProductRepository repository, IPriceHistoryRepository priceHistoryRepository) : IProductService
 {
     public Task<IReadOnlyList<ProductListItem>> GetAllAsync(CancellationToken cancellationToken = default) =>
         repository.GetAllAsync(cancellationToken);
@@ -19,7 +19,7 @@ public sealed class ProductService(IProductRepository repository) : IProductServ
 
     public Task<IReadOnlyList<ProductPriceHistory>> GetPriceHistoryAsync(
         CancellationToken cancellationToken = default) =>
-        repository.GetPriceHistoryAsync(cancellationToken);
+        priceHistoryRepository.GetPriceHistoryAsync(cancellationToken);
 
     public Task<int> CreateAsync(Product product, CancellationToken cancellationToken = default)
     {

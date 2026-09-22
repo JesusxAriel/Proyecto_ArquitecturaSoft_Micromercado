@@ -4,11 +4,12 @@ using Proyecto_Arquitectura_Micromercado.Domain.Products;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-public sealed class MySqlProductRepository(IConfiguration configuration) : IProductRepository
+public sealed class MySqlProductRepository(IConfiguration configuration, IPriceHistoryRepository priceHistoryRepository) : IProductRepository
 {
     private const int SystemAdminId = 1;
     private readonly string connectionString = configuration.GetConnectionString("MySqlConnection")
         ?? throw new InvalidOperationException("No se configuró la conexión MySqlConnection.");
+    private readonly IPriceHistoryRepository _priceHistoryRepository = priceHistoryRepository;
 
     public async Task<IReadOnlyList<ProductListItem>> GetAllAsync(CancellationToken cancellationToken = default)
     {
@@ -136,9 +137,7 @@ public sealed class MySqlProductRepository(IConfiguration configuration) : IProd
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(history);
-
-        await using var connection = await OpenConnectionAsync(cancellationToken);
-        await AddPriceHistoryAsync(connection, null, history, cancellationToken);
+        await _priceHistoryRepository.AddPriceHistoryAsync(history, cancellationToken);
     }
 
     public async Task<int> CreateAsync(Product product, CancellationToken cancellationToken = default)
@@ -226,7 +225,7 @@ public sealed class MySqlProductRepository(IConfiguration configuration) : IProd
                 IdUsuario = SystemAdminId
             };
 
-            await AddPriceHistoryAsync(connection, transaction, history, cancellationToken);
+            await _priceHistoryRepository.AddPriceHistoryAsync(connection, transaction, history, cancellationToken);
         }
 
         if (affectedRows == 1)
@@ -288,36 +287,5 @@ public sealed class MySqlProductRepository(IConfiguration configuration) : IProd
         command.Parameters.AddWithValue("@stockMinimo", product.StockMinimo);
         command.Parameters.AddWithValue("@idCategoria", product.IdCategoria);
         command.Parameters.AddWithValue("@idProveedor", product.IdProveedor);
-    }
-
-    private static void AddPriceHistoryParameters(MySqlCommand command, ProductPriceHistory history)
-    {
-        command.Parameters.AddWithValue("@idProducto", history.IdProducto);
-        command.Parameters.AddWithValue("@precioVentaAnterior", history.PrecioVentaAnterior);
-        command.Parameters.AddWithValue("@precioVentaNuevo", history.PrecioVentaNuevo);
-        command.Parameters.AddWithValue("@precioCostoAnterior", (object?)history.PrecioCostoAnterior ?? DBNull.Value);
-        command.Parameters.AddWithValue("@precioCostoNuevo", (object?)history.PrecioCostoNuevo ?? DBNull.Value);
-        command.Parameters.AddWithValue("@motivoCambio", history.MotivoCambio);
-        command.Parameters.AddWithValue("@idUsuario", history.IdUsuario);
-    }
-
-    private static async Task AddPriceHistoryAsync(
-        MySqlConnection connection,
-        MySqlTransaction? transaction,
-        ProductPriceHistory history,
-        CancellationToken cancellationToken)
-    {
-        const string sql = """
-            INSERT INTO HISTORIAL_PRECIO
-                (idProducto, precioVentaAnterior, precioVentaNuevo,
-                 precioCostoAnterior, precioCostoNuevo, motivoCambio, idUsuario)
-            VALUES
-                (@idProducto, @precioVentaAnterior, @precioVentaNuevo,
-                 @precioCostoAnterior, @precioCostoNuevo, @motivoCambio, @idUsuario);
-            """;
-
-        await using var command = new MySqlCommand(sql, connection, transaction);
-        AddPriceHistoryParameters(command, history);
-        await command.ExecuteNonQueryAsync(cancellationToken);
     }
 }

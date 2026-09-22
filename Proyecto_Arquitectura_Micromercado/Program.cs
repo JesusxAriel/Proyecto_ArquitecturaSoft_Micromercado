@@ -17,12 +17,21 @@ builder.Services.AddRazorPages()
             _ => "Ingrese un número válido.");
     });
 
-builder.Services.AddScoped<IProductRepository, MySqlProductRepository>();
+// --- MÓDULO PRODUCTO E HISTORIAL (FACTORY METHOD) ---
+builder.Services.AddScoped<CreatorPriceHistoryRepository>();
+builder.Services.AddScoped<IPriceHistoryRepository>(sp =>
+    sp.GetRequiredService<CreatorPriceHistoryRepository>().CrearRepositorio());
+
+builder.Services.AddScoped<CreatorProductRepository>();
+builder.Services.AddScoped<IProductRepository>(sp =>
+    sp.GetRequiredService<CreatorProductRepository>().CrearRepositorio());
 builder.Services.AddScoped<IProductService, ProductService>();
 
+// --- MÓDULO CATEGORÍAS (SIN CAMBIOS) ---
 builder.Services.AddScoped<ICategoryRepository, MySqlCategoryRepository>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 
+// --- MÓDULO PROVEEDORES (FACTORY METHOD) ---
 builder.Services.AddScoped<CreatorSupplierRepository>();
 builder.Services.AddScoped<ISupplierRepository>(sp =>
     sp.GetRequiredService<CreatorSupplierRepository>().CrearRepositorio());
@@ -41,7 +50,6 @@ app.UseRequestLocalization(new RequestLocalizationOptions
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
