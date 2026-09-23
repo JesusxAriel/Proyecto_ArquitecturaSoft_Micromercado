@@ -8,7 +8,7 @@ public sealed class Supplier : IValidatableObject
 
     [Display(Name = "Nombre de la empresa")]
     [Required(ErrorMessage = "Campo obligatorio.")]
-    [StringLength(150)]
+    [StringLength(150, ErrorMessage = "El nombre no puede exceder los 150 caracteres.")]
     [SupplierText]
     public string NombreEmpresa { get; set; } = string.Empty;
 
@@ -19,7 +19,7 @@ public sealed class Supplier : IValidatableObject
 
     [Display(Name = "Correo de referencia")]
     [EmailAddress(ErrorMessage = SupplierValidation.CorreoMessage)]
-    [StringLength(150)]
+    [StringLength(150, ErrorMessage = "El correo no puede exceder los 150 caracteres.")]
     public string? CorreoReferencia { get; set; }
 
     [Display(Name = "Proveedor autogestionado")]
