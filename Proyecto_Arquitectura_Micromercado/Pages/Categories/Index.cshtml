@@ -115,11 +115,20 @@ else
                     </div>
                     <div class="mb-3">
                         <label for="createCategoryAisle" class="form-label">Ubicación en pasillo</label>
-                        <input asp-for="CreateCategory.AisleLocation" id="createCategoryAisle"
-                               class="form-control" data-sanitize="text"
-                               data-validate-input pattern="^[Pp][Aa][Ss][Ii][Ll][Ll][Oo] [1-8]$" />
-                        <div class="input-error text-danger small d-none"></div>
-                        <span asp-validation-for="CreateCategory.AisleLocation" class="text-danger"></span>
+
+                        <select asp-for="CreateCategory.AisleLocation"
+                                id="createCategoryAisle"
+                                class="form-select">
+                            <option value="">Seleccione un pasillo</option>
+
+                            @for (var i = 1; i <= 8; i++)
+                            {
+                                <option value="Pasillo @i">Pasillo @i</option>
+                            }
+                        </select>
+
+                        <span asp-validation-for="CreateCategory.AisleLocation"
+                              class="text-danger"></span>
                     </div>
                     <div class="mb-3">
                         <label for="createCategoryDescription" class="form-label">Descripción</label>
@@ -175,10 +184,20 @@ else
                     </div>
                     <div class="mb-3">
                         <label for="editCategoryAisle" class="form-label">Ubicación en pasillo</label>
-                        <input asp-for="EditCategory.AisleLocation" id="editCategoryAisle"
-                               class="form-control" data-sanitize="text"
-                               data-validate-input pattern="^[Pp][Aa][Ss][Ii][Ll][Ll][Oo] [1-8]$" />
-                        <div class="input-error text-danger small d-none"></div>
+
+                        <select asp-for="EditCategory.AisleLocation"
+                                id="editCategoryAisle"
+                                class="form-select">
+                            <option value="">Seleccione un pasillo</option>
+
+                            @for (var i = 1; i <= 8; i++)
+                            {
+                                <option value="Pasillo @i">Pasillo @i</option>
+                            }
+                        </select>
+
+                        <span asp-validation-for="EditCategory.AisleLocation"
+                              class="text-danger"></span>
                     </div>
                     <div class="mb-3">
                         <label for="editCategoryDescription" class="form-label">Descripción</label>
