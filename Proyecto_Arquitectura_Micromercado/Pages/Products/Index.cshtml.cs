@@ -15,17 +15,16 @@ public sealed class IndexModel(
     public IReadOnlyList<LookupOption> Suppliers { get; private set; } = [];
     [TempData]
     public string? StatusMessage { get; set; }
+    public Product CreateProduct { get; set; } = new();
     [BindProperty]
     public Product EditProduct { get; set; } = new();
     [BindProperty]
     public string? PriceChangeReason { get; set; }
     [BindProperty]
     public int DeleteProductId { get; set; }
-    [BindProperty]
-    public string DeleteProductName { get; set; } = string.Empty;
-    [BindProperty]
-    public string DeleteConfirmation { get; set; } = string.Empty;
     public string? DatabaseWarning { get; private set; }
+    public bool ShowCreateModal { get; private set; }
+    public bool ShowEditModal { get; private set; }
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
@@ -42,12 +41,49 @@ public sealed class IndexModel(
         }
     }
 
+    public async Task<IActionResult> OnPostCreateAsync(
+        [FromForm(Name = "CreateProduct")] Product createProduct,
+        CancellationToken cancellationToken)
+    {
+        CreateProduct = createProduct;
+        ModelState.Clear();
+
+        if (!TryValidateModel(CreateProduct, nameof(CreateProduct)))
+        {
+            ShowCreateModal = true;
+            await ReloadProductsAsync(cancellationToken);
+            return Page();
+        }
+
+        try
+        {
+            await productService.CreateAsync(CreateProduct, cancellationToken);
+            StatusMessage = "Producto creado correctamente.";
+            return RedirectToPage();
+        }
+        catch (ArgumentException ex)
+        {
+            ShowCreateModal = true;
+            ModelState.AddModelError(string.Empty, ex.Message);
+            await ReloadProductsAsync(cancellationToken);
+            return Page();
+        }
+        catch (MySqlException)
+        {
+            ShowCreateModal = true;
+            DatabaseWarning = "No se pudo guardar el producto por un problema de conexión.";
+            await ReloadProductsAsync(cancellationToken);
+            return Page();
+        }
+    }
+
     public async Task<IActionResult> OnPostEditAsync(CancellationToken cancellationToken)
     {
         RemoveUnrelatedModelState();
 
         if (!ModelState.IsValid)
         {
+            ShowEditModal = true;
             LogModelStateErrors();
             await ReloadProductsAsync(cancellationToken);
             return Page();
@@ -68,6 +104,7 @@ public sealed class IndexModel(
                 PriceChangeReason = NormalizeReason(PriceChangeReason);
                 if (!IsValidReason(PriceChangeReason))
                 {
+                    ShowEditModal = true;
                     ModelState.AddModelError(nameof(PriceChangeReason),
                         "Ingresa una justificación de al menos 3 caracteres. Evita etiquetas HTML, comillas y caracteres de control.");
                     await ReloadProductsAsync(cancellationToken);
@@ -92,12 +129,14 @@ public sealed class IndexModel(
         }
         catch (ArgumentException ex)
         {
+            ShowEditModal = true;
             ModelState.AddModelError(string.Empty, ex.Message);
             await ReloadProductsAsync(cancellationToken);
             return Page();
         }
         catch (MySqlException)
         {
+            ShowEditModal = true;
             DatabaseWarning = "No se pudo actualizar el producto por un problema de conexión.";
             await ReloadProductsAsync(cancellationToken);
             return Page();
@@ -106,8 +145,6 @@ public sealed class IndexModel(
 
     private void RemoveUnrelatedModelState()
     {
-        ModelState.Remove(nameof(DeleteProductName));
-        ModelState.Remove(nameof(DeleteConfirmation));
         ModelState.Remove(nameof(PriceChangeReason));
         ModelState.Remove("Product.PriceChangeReason");
     }
@@ -155,9 +192,9 @@ public sealed class IndexModel(
 
     public async Task<IActionResult> OnPostDeleteAsync(CancellationToken cancellationToken)
     {
-        if (DeleteProductId <= 0 || !string.Equals(DeleteProductName, DeleteConfirmation, StringComparison.Ordinal))
+        if (DeleteProductId <= 0)
         {
-            return BadRequest("La confirmación del nombre no coincide.");
+            return BadRequest("El producto no es válido.");
         }
 
         if (!await productService.SoftDeleteAsync(DeleteProductId, cancellationToken))

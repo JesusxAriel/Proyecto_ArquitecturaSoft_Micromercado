@@ -17,8 +17,15 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
         [TempData]
         public string? StatusMessage { get; set; }
 
+        public Category CreateCategory { get; set; } = new Category();
+
         [BindProperty]
         public Category EditCategory { get; set; } = new Category();
+
+        [BindProperty]
+        public int DeleteCategoryId { get; set; }
+
+        public bool ShowCreateModal { get; private set; }
 
         public IndexModel(ICategoryService categoryService)
         {
@@ -45,6 +52,58 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
             }
         }
 
+        public async Task<IActionResult> OnPostCreateAsync(
+            [FromForm(Name = "CreateCategory")] Category createCategory,
+            CancellationToken cancellationToken)
+        {
+            CreateCategory = createCategory;
+            ModelState.Clear();
+
+            if (!TryValidateModel(CreateCategory, nameof(CreateCategory)))
+            {
+                ShowCreateModal = true;
+                LoadCategories();
+                return Page();
+            }
+
+            try
+            {
+                await categoryService.CreateAsync(CreateCategory, cancellationToken);
+                StatusMessage = "Categoría creada correctamente.";
+                return RedirectToPage();
+            }
+            catch (ArgumentException ex)
+            {
+                ShowCreateModal = true;
+                ModelState.AddModelError(string.Empty, ex.Message);
+                LoadCategories();
+                return Page();
+            }
+            catch (Exception)
+            {
+                ShowCreateModal = true;
+                ErrorMessage = "Ocurrió un error al crear la categoría.";
+                LoadCategories();
+                return Page();
+            }
+        }
+
+        public async Task<IActionResult> OnPostDeleteAsync(CancellationToken cancellationToken)
+        {
+            if (DeleteCategoryId <= 0)
+            {
+                return BadRequest("La categoría no es válida.");
+            }
+
+            if (!await categoryService.SoftDeleteAsync(DeleteCategoryId, cancellationToken))
+            {
+                return NotFound();
+            }
+
+            StatusMessage = "Categoría eliminada correctamente.";
+            return RedirectToPage();
+        }
+
         public IActionResult OnPostEdit()
         {
             if (!ModelState.IsValid)
@@ -64,6 +123,12 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 
                 StatusMessage = "Categoría actualizada correctamente.";
                 return RedirectToPage();
+            }
+            catch (ArgumentException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                LoadCategories();
+                return Page();
             }
             catch (Exception)
             {

@@ -93,7 +93,7 @@
      aria-labelledby="createSupplierLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form method="post" asp-page-handler="Create" class="modal-form">
+            <form method="post" asp-page-handler="Create" class="modal-form" novalidate>
                 @Html.AntiForgeryToken()
                 <div class="modal-header">
                     <h2 class="modal-title h5" id="createSupplierLabel">Añadir proveedor</h2>
@@ -103,7 +103,7 @@
                 <div class="modal-body">
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                     <div class="mb-3">
-                        <label for="CreateSupplier_NombreEmpresa" class="form-label">Nombre de la empresa</label>
+                        <label for="CreateSupplier_NombreEmpresa" class="form-label">Nombre de la empresa *</label>
                         <input asp-for="CreateSupplier.NombreEmpresa" id="CreateSupplier_NombreEmpresa" class="form-control"
                                required data-sanitize="text" data-validate-input
                                pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
@@ -111,7 +111,7 @@
                         <div class="input-error text-danger small d-none"></div>
                     </div>
                     <div class="mb-3">
-                        <label for="CreateSupplier_NumeroEmpresa" class="form-label">Teléfono de contacto</label>
+                        <label for="CreateSupplier_NumeroEmpresa" class="form-label">Teléfono de contacto *</label>
                         <input asp-for="CreateSupplier.NumeroEmpresa" id="CreateSupplier_NumeroEmpresa" class="form-control"
                                required data-validate-input pattern="^\d{7,15}$"
                                data-validation-message="El teléfono debe contener entre 7 y 15 dígitos numéricos."
@@ -150,7 +150,7 @@
      aria-labelledby="editSupplierLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form method="post" asp-page-handler="Edit" class="modal-form">
+            <form method="post" asp-page-handler="Edit" class="modal-form" novalidate>
                 @Html.AntiForgeryToken()
                 <div class="modal-header">
                     <h2 class="modal-title h5" id="editSupplierLabel">Editar proveedor</h2>
@@ -161,7 +161,7 @@
                     <input type="hidden" asp-for="EditSupplier.Id" id="EditSupplier_Id" />
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                     <div class="mb-3">
-                        <label for="EditSupplier_NombreEmpresa" class="form-label">Nombre de la empresa</label>
+                        <label for="EditSupplier_NombreEmpresa" class="form-label">Nombre de la empresa *</label>
                         <input asp-for="EditSupplier.NombreEmpresa" id="EditSupplier_NombreEmpresa"
                                class="form-control" required data-sanitize="text"
                                data-validate-input
@@ -170,7 +170,7 @@
                         <div class="input-error text-danger small d-none"></div>
                     </div>
                     <div class="mb-3">
-                        <label for="EditSupplier_NumeroEmpresa" class="form-label">Teléfono de contacto</label>
+                        <label for="EditSupplier_NumeroEmpresa" class="form-label">Teléfono de contacto *</label>
                         <input asp-for="EditSupplier.NumeroEmpresa" id="EditSupplier_NumeroEmpresa"
                                class="form-control" required data-validate-input
                                pattern="^\d{7,15}$"
@@ -219,19 +219,14 @@
                             aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="hidden" asp-for="DeleteSupplierId" id="deleteSupplierId" />
-                    <input type="hidden" asp-for="DeleteSupplierName" id="deleteSupplierName" />
-                    <p>Escribe exactamente <strong id="deleteSupplierNameLabel"></strong> para confirmar.</p>
-                    <label for="deleteSupplierConfirmation" class="form-label">Nombre del proveedor</label>
-                    <input asp-for="DeleteConfirmation" id="deleteSupplierConfirmation"
-                           class="form-control" autocomplete="off" required />
+                    <input type="hidden" asp-for="DeleteSupplierId" data-delete-id-input />
+                    <p class="mb-0">¿Estás seguro de que querés eliminar <strong data-delete-name-display></strong>? Esta acción no se puede deshacer.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary"
                             data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" id="confirmSupplierDelete"
-                            class="btn btn-danger" disabled>
-                        <i class="bi bi-trash"></i> Eliminar
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Sí, eliminar
                     </button>
                 </div>
             </form>
@@ -251,21 +246,6 @@
                 'checked',
                 button.attr('data-self-managed') === 'True');
             $('#editSupplierModal [data-validate-input]').trigger('input');
-        });
-
-        $('.delete-supplier-button').on('click', function () {
-            const button = $(this);
-            $('#deleteSupplierId').val(button.attr('data-id'));
-            $('#deleteSupplierName').val(button.attr('data-name'));
-            $('#deleteSupplierNameLabel').text(button.attr('data-name'));
-            $('#deleteSupplierConfirmation').val('');
-            $('#confirmSupplierDelete').prop('disabled', true);
-        });
-
-        $('#deleteSupplierConfirmation').on('input', function () {
-            $('#confirmSupplierDelete').prop(
-                'disabled',
-                this.value !== $('#deleteSupplierName').val());
         });
 
         $('#supplierSearch').on('input', function () {

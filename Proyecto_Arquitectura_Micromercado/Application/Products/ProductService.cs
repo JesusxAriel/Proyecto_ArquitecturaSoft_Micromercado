@@ -5,6 +5,10 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Products;
 
 public sealed class ProductService(IProductRepository repository, IPriceHistoryRepository priceHistoryRepository) : IProductService
 {
+    // PRODUCTO.precioVenta / precioCosto son DECIMAL(10,2) en MySQL: 8 dígitos
+    // enteros + 2 decimales. Un valor mayor desborda la columna.
+    private const decimal MaxPrice = 99_999_999.99m;
+
     public Task<IReadOnlyList<ProductListItem>> GetAllAsync(CancellationToken cancellationToken = default) =>
         repository.GetAllAsync(cancellationToken);
 
@@ -52,20 +56,48 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
 
         if (string.IsNullOrWhiteSpace(product.Nombre))
         {
-            throw new ArgumentException("El nombre del producto es obligatorio.", nameof(product));
+            throw new ArgumentException("El nombre del producto es obligatorio.");
         }
 
         if (string.IsNullOrWhiteSpace(product.EmpaquePresentacion))
         {
-            throw new ArgumentException("La presentación del producto es obligatoria.", nameof(product));
+            throw new ArgumentException("La presentación del producto es obligatoria.");
         }
 
         if (product.PrecioVenta < 0.10m ||
-            decimal.Round(product.PrecioVenta * 10, 0) != product.PrecioVenta * 10 ||
-            product.PrecioCosto <= 0 ||
-            product.StockMinimo < 0 || product.IdCategoria <= 0 || product.IdProveedor <= 0)
+            decimal.Round(product.PrecioVenta * 10, 0) != product.PrecioVenta * 10)
         {
-            throw new ArgumentException("Los datos del producto no son válidos.", nameof(product));
+            throw new ArgumentException("El precio de venta debe ser al menos Bs. 0,10 y no puede tener más de un decimal significativo (ej. 5,20).");
+        }
+
+        if (product.PrecioVenta > MaxPrice)
+        {
+            throw new ArgumentException($"El precio de venta no puede superar Bs. {MaxPrice:N2}.");
+        }
+
+        if (product.PrecioCosto <= 0)
+        {
+            throw new ArgumentException("El precio de costo debe ser mayor a cero.");
+        }
+
+        if (product.PrecioCosto > MaxPrice)
+        {
+            throw new ArgumentException($"El precio de costo no puede superar Bs. {MaxPrice:N2}.");
+        }
+
+        if (product.StockMinimo < 0)
+        {
+            throw new ArgumentException("El stock mínimo no puede ser negativo.");
+        }
+
+        if (product.IdCategoria <= 0)
+        {
+            throw new ArgumentException("La categoría del producto es obligatoria.");
+        }
+
+        if (product.IdProveedor <= 0)
+        {
+            throw new ArgumentException("El proveedor del producto es obligatorio.");
         }
     }
 

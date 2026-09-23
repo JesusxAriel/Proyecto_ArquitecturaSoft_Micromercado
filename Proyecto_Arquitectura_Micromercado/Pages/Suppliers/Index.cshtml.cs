@@ -22,12 +22,6 @@ public sealed class IndexModel(
     [BindProperty]
     public int DeleteSupplierId { get; set; }
 
-    [BindProperty]
-    public string DeleteSupplierName { get; set; } = string.Empty;
-
-    [BindProperty]
-    public string DeleteConfirmation { get; set; } = string.Empty;
-
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         await LoadSuppliersAsync(cancellationToken);
@@ -121,10 +115,9 @@ public sealed class IndexModel(
 
     public async Task<IActionResult> OnPostDeleteAsync(CancellationToken cancellationToken)
     {
-        if (DeleteSupplierId <= 0 ||
-            !string.Equals(DeleteSupplierName, DeleteConfirmation, StringComparison.Ordinal))
+        if (DeleteSupplierId <= 0)
         {
-            return BadRequest("La confirmación del nombre no coincide exactamente.");
+            return BadRequest("El proveedor no es válido.");
         }
 
         if (!await supplierService.SoftDeleteAsync(DeleteSupplierId, cancellationToken))
@@ -132,6 +125,7 @@ public sealed class IndexModel(
             return NotFound();
         }
 
+        StatusMessage = "Proveedor eliminado correctamente.";
         return RedirectToPage();
     }
 
@@ -144,8 +138,6 @@ public sealed class IndexModel(
 
     private void RemoveDeleteModelState()
     {
-        ModelState.Remove(nameof(DeleteSupplierName));
-        ModelState.Remove(nameof(DeleteConfirmation));
         ModelState.Remove(nameof(DeleteSupplierId));
     }
 

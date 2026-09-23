@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Proyecto_Arquitectura_Micromercado.styles.css" asp-append-version="true" />
 </head>
-<body>
+<body data-is-login="@(ViewContext.RouteData.Values["page"]?.ToString() == "/Login" ? "true" : "false")">
     @if (ViewContext.RouteData.Values["page"]?.ToString() != "/Login")
     {
     <header>
@@ -35,6 +35,7 @@
                                 <li><a class="dropdown-item" asp-page="/Categories/Index">Listado de Categorías</a></li>
                                 <li><a class="dropdown-item" href="javascript:void(0)">Distribución por Pasillos</a></li>
                             </ul>
+                        </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle @(currentPage.StartsWith("/Suppliers", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)"
                                href="#" role="button" data-bs-toggle="dropdown">Proveedores</a>
@@ -50,7 +51,6 @@
                                 <li><a class="dropdown-item" asp-page="/Products/Index">Lista de productos</a></li>
                                 <li><a class="dropdown-item" asp-page="/Products/History">Historial de Cambios</a></li>
                             </ul>
-                        </li>
                         </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Control de Cajas</a>
@@ -91,97 +91,6 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-    <script>
-        (function () {
-            const isLogin = '@(ViewContext.RouteData.Values["page"]?.ToString() == "/Login" ? "true" : "false")' === 'true';
-            if (!isLogin && !localStorage.getItem('puntoCaseroSession')) {
-                window.location.replace('/Login');
-                return;
-            }
-
-            $('#logoutButton').on('click', function () {
-                localStorage.removeItem('puntoCaseroSession');
-                window.location.replace('/Login');
-            });
-
-            const invalidCharacters = /[*%$@{}\[\]?¿\^]/g;
-            const validationPattern = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$/;
-            const emailPattern = /^[^\u0040\s]+\u0040[^\u0040\s]+\.[^\u0040\s]+$/;
-
-            function validateInput(input) {
-                const value = input.value;
-                const error = $(input).siblings('.input-error');
-                let message = '';
-
-                if (input.required && !value.trim()) {
-                    message = 'Este campo es obligatorio.';
-                } else if (invalidCharacters.test(value)) {
-                    input.value = value.replace(invalidCharacters, '');
-                    message = 'No se permiten caracteres especiales.';
-                } else if (input.type === 'email' && input.value && !emailPattern.test(input.value)) {
-                    message = input.dataset.validationMessage || 'Ingrese un correo electrónico válido con dominio (ejemplo@dominio.com).';
-                } else if (input.pattern && input.value && !new RegExp(input.pattern).test(input.value)) {
-                    message = input.dataset.validationMessage ||
-                        (input.pattern === '^\\d{7,15}$'
-                            ? 'El teléfono debe contener entre 7 y 15 dígitos numéricos.'
-                            : 'El formato ingresado no es válido.');
-                } else if (input.type === 'number' && input.value && Number.isNaN(Number(input.value))) {
-                    message = 'Ingresa un número válido.';
-                } else if (input.dataset.sanitize === 'text' && input.value && !validationPattern.test(input.value)) {
-                    message = 'Usa solo letras, números, espacios, puntos, comas o guiones.';
-                }
-
-                invalidCharacters.lastIndex = 0;
-                if (message) {
-                    error.text(message).removeClass('d-none');
-                    input.setCustomValidity(message);
-                    return false;
-                }
-
-                error.addClass('d-none').text('');
-                input.setCustomValidity('');
-                return true;
-            }
-
-            function validateForm(form) {
-                let valid = true;
-                $(form).find('[data-validate-input]').each(function () {
-                    valid = validateInput(this) && valid;
-                });
-                $(form).find('.modal-save-button, button[type="submit"]').prop('disabled', !valid);
-                return valid;
-            }
-
-            function capitalizeFirstLetter(input) {
-                const value = input.value.trim();
-                if (value) {
-                    input.value = value.charAt(0).toLocaleUpperCase() + value.slice(1);
-                }
-            }
-
-            $('[data-capitalize="true"]').on('blur', function () {
-                capitalizeFirstLetter(this);
-            });
-
-            $('.modal-form').each(function () {
-                const form = this;
-                $(form).find('[data-validate-input]').on('input blur change', function () {
-                    validateInput(this);
-                    validateForm(form);
-                });
-                $(form).on('submit', function (event) {
-                    $(this).find('[data-capitalize="true"]').each(function () {
-                        capitalizeFirstLetter(this);
-                    });
-                    if (!validateForm(form) || !form.checkValidity()) {
-                        event.preventDefault();
-                        form.classList.add('was-validated');
-                    }
-                });
-                validateForm(form);
-            });
-        })();
-    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -46,17 +46,17 @@ public sealed class SupplierService(ISupplierRepository repository) : ISupplierS
 
         if (string.IsNullOrWhiteSpace(supplier.NombreEmpresa))
         {
-            throw new ArgumentException("El nombre de la empresa es obligatorio.", nameof(supplier));
+            throw new ArgumentException("El nombre de la empresa es obligatorio.");
         }
 
         if (string.IsNullOrWhiteSpace(supplier.NumeroEmpresa))
         {
-            throw new ArgumentException("El teléfono de contacto es obligatorio.", nameof(supplier));
+            throw new ArgumentException("El teléfono de contacto es obligatorio.");
         }
 
         if (supplier.EsAutogestionado && string.IsNullOrWhiteSpace(supplier.CorreoReferencia))
         {
-            throw new ArgumentException("Un proveedor autogestionado requiere correo.", nameof(supplier));
+            throw new ArgumentException("Un proveedor autogestionado requiere correo.");
         }
     }
 
