@@ -1,19 +1,12 @@
 ﻿using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Domain.Categories;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence
 {
     public class MySqlCategoryRepository : ICategoryRepository
     {
-        private readonly string connectionString;
-
-        public MySqlCategoryRepository(IConfiguration configuration)
-        {
-            connectionString =
-                configuration.GetConnectionString("MySqlConnection")!;
-        }
-
         public List<Category> GetActive()
         {
             const string query = @"
@@ -33,7 +26,7 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence
             List<Category> categories = new List<Category>();
 
             using MySqlConnection connection =
-                new MySqlConnection(connectionString);
+                DatabaseConnection.Instance.CreateConnection();
 
             using MySqlCommand command =
                 new MySqlCommand(query, connection);
@@ -67,7 +60,7 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence
                   AND estaActivo = 1;";
 
             using MySqlConnection connection =
-                new MySqlConnection(connectionString);
+                DatabaseConnection.Instance.CreateConnection();
 
             using MySqlCommand command =
                 new MySqlCommand(query, connection);
@@ -107,7 +100,7 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence
                 );";
 
             using MySqlConnection connection =
-                new MySqlConnection(connectionString);
+                DatabaseConnection.Instance.CreateConnection();
 
             using MySqlCommand command =
                 new MySqlCommand(query, connection);
@@ -139,7 +132,7 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence
                   AND estaActivo = 1;";
 
             using MySqlConnection connection =
-                new MySqlConnection(connectionString);
+                DatabaseConnection.Instance.CreateConnection();
 
             using MySqlCommand command =
                 new MySqlCommand(query, connection);
@@ -167,7 +160,7 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence
                   AND estaActivo = 1;";
 
             using MySqlConnection connection =
-                new MySqlConnection(connectionString);
+                DatabaseConnection.Instance.CreateConnection();
 
             using MySqlCommand command =
                 new MySqlCommand(query, connection);

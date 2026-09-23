@@ -3,6 +3,7 @@ using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Factories;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
 using System.Globalization;
@@ -38,6 +39,9 @@ builder.Services.AddScoped<CreatorSupplierRepository>();
 builder.Services.AddScoped<ISupplierRepository>(sp =>
     sp.GetRequiredService<CreatorSupplierRepository>().CrearRepositorio());
 builder.Services.AddScoped<ISupplierService, SupplierService>();
+
+// INICIALIZACIÓN DEL SINGLETON (Punto Extra)
+DatabaseConnection.GetInstance(builder.Configuration.GetConnectionString("MySqlConnection")!);
 
 var app = builder.Build();
 var boliviaCulture = new CultureInfo("es-BO");

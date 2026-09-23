@@ -1,15 +1,13 @@
 using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 using System.Data;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-public sealed class MySqlPriceHistoryRepository(IConfiguration configuration) : IPriceHistoryRepository
+public sealed class MySqlPriceHistoryRepository : IPriceHistoryRepository
 {
-    private readonly string connectionString = configuration.GetConnectionString("MySqlConnection")
-        ?? throw new InvalidOperationException("No se configuró la conexión MySqlConnection.");
-
     public async Task<IReadOnlyList<ProductPriceHistory>> GetPriceHistoryAsync(CancellationToken cancellationToken = default)
     {
         const string sql = """
@@ -88,7 +86,7 @@ public sealed class MySqlPriceHistoryRepository(IConfiguration configuration) : 
 
     private async Task<MySqlConnection> OpenConnectionAsync(CancellationToken cancellationToken)
     {
-        var connection = new MySqlConnection(connectionString);
+        var connection = DatabaseConnection.Instance.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         return connection;
     }

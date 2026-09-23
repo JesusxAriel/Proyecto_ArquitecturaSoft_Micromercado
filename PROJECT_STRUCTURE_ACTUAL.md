@@ -15,7 +15,7 @@ excluyen intencionalmente artefactos generados o dependencias: `.git/`, `bin/`,
 ```tree
 Proyecto_Arquitectura_Micromercado - copia/
 ├── .gitignore
-├── PROJECT_STRUCTURE.md
+├── PROJECT_STRUCTURE_ACTUAL.md
 ├── README.md
 ├── Proyecto_Arquitectura_Micromercado.slnx
 ├── bdMicroMercadoArqui.sql
@@ -58,8 +58,17 @@ Proyecto_Arquitectura_Micromercado - copia/
     ├── Infrastructure/
     │   ├── Persistence/
     │   │   ├── MySqlCategoryRepository.cs
+    │   │   ├── MySqlPriceHistoryRepository.cs
     │   │   ├── MySqlProductRepository.cs
     │   │   └── MySqlSupplierRepository.cs
+    │   ├── Database/
+    │   │   └── DatabaseConnection.cs
+    │   ├── Factories/
+    │   │   ├── CreatorCategoryRepository.cs
+    │   │   ├── CreatorPriceHistoryRepository.cs
+    │   │   ├── CreatorProductRepository.cs
+    │   │   ├── CreatorRepositorio.cs
+    │   │   └── CreatorSupplierRepository.cs
     │   └── Web/
     │       └── DecimalModelBinder.cs
     ├── Pages/
@@ -200,10 +209,21 @@ sincrónica existente.
 
 ### `Infrastructure/`: adaptadores técnicos
 
+- `Database/DatabaseConnection.cs` implementa un Singleton manual con
+  **Double-Check Locking**. `Program.cs` lo inicializa una vez al arrancar mediante
+  `GetInstance(builder.Configuration.GetConnectionString("MySqlConnection")!)`.
+  Los repositorios obtienen conexiones nuevas para cada operación con
+  `DatabaseConnection.Instance.CreateConnection()`, manteniendo centralizada la
+  cadena de conexión sin registrar el Singleton en el contenedor de dependencias.
+- `Factories/` implementa el patrón **Factory Method** mediante
+  `CreatorRepositorio<T>` y los cuatro creadores concretos:
+  `CreatorCategoryRepository`, `CreatorProductRepository`,
+  `CreatorSupplierRepository` y `CreatorPriceHistoryRepository`. Los creadores ya
+  no reciben `IConfiguration` y construyen sus repositorios sin parámetros.
 - `Persistence/` contiene `MySqlCategoryRepository`,
-  `MySqlProductRepository` y `MySqlSupplierRepository`. Estas clases implementan
-  los contratos de `Application`, leen la cadena `MySqlConnection` desde
-  configuración y ejecutan SQL parametrizado mediante `MySql.Data`/ADO.NET.
+  `MySqlProductRepository`, `MySqlSupplierRepository` y
+  `MySqlPriceHistoryRepository`. Estas clases implementan los contratos de
+  `Application` y ejecutan SQL parametrizado mediante `MySql.Data`/ADO.NET.
   Incluyen consultas de listado, búsqueda, creación, actualización, eliminación
   lógica, catálogos de categorías/proveedores e historial de precios. Las
   operaciones de creación conservan el identificador autogenerado de MySQL en la
@@ -268,13 +288,14 @@ Recursos estáticos servidos directamente por ASP.NET Core:
 ## Archivos de configuración y arranque
 
 - `Program.cs`: punto de composición de la aplicación. Registra Razor Pages,
-  configura `DecimalModelBinder`, registra cada par interfaz/implementación con
-  ciclo de vida `Scoped`, configura la cultura `es-BO`, HTTPS, manejo de errores,
+  configura `DecimalModelBinder`, registra los cuatro creadores y los servicios
+  con ciclo de vida `Scoped`, inicializa el Singleton `DatabaseConnection` con la
+  cadena `MySqlConnection`, configura la cultura `es-BO`, HTTPS, manejo de errores,
   routing y el mapeo de páginas.
-- `appsettings.json`: configuración base de logging y errores detallados.
-- `appsettings.Development.json`: cadena `MySqlConnection`, logging de desarrollo
-  y hosts permitidos. La contraseña debe mantenerse fuera del control de versiones
-  en un entorno real.
+- `appsettings.json`: configuración base, incluida la cadena
+  `ConnectionStrings:MySqlConnection`, logging y hosts permitidos. La contraseña
+  debe mantenerse fuera del control de versiones en un entorno real.
+- `appsettings.Development.json`: errores detallados y logging de desarrollo.
 - `Properties/launchSettings.json`: perfiles locales HTTP/HTTPS, puertos de
   desarrollo y variable `ASPNETCORE_ENVIRONMENT`.
 - `Proyecto_Arquitectura_Micromercado.csproj`: define el SDK web, `net10.0`,
@@ -295,7 +316,7 @@ Recursos estáticos servidos directamente por ASP.NET Core:
 - `doc/.gitkeep`: conserva la carpeta destinada a documentación adicional.
 - `.gitignore`: evita versionar archivos locales, temporales y artefactos
   generados.
-- `PROJECT_STRUCTURE.md`: este inventario arquitectónico y de archivos.
+- `PROJECT_STRUCTURE_ACTUAL.md`: este inventario arquitectónico y de archivos.
 
 ## Flujo de dependencias e inyección
 
@@ -309,6 +330,14 @@ ICategoryRepository -> MySqlCategoryRepository
 ICategoryService    -> CategoryService
 ISupplierRepository -> MySqlSupplierRepository
 ISupplierService    -> SupplierService
+
+CreatorCategoryRepository      -> MySqlCategoryRepository
+CreatorProductRepository       -> MySqlProductRepository
+CreatorSupplierRepository      -> MySqlSupplierRepository
+CreatorPriceHistoryRepository  -> MySqlPriceHistoryRepository
+
+DatabaseConnection.GetInstance(...) -> DatabaseConnection.Instance
+DatabaseConnection.Instance         -> MySqlConnection
 ```
 
 El flujo normal de una operación es:
@@ -317,7 +346,9 @@ El flujo normal de una operación es:
 2. El PageModel recibe y valida los datos.
 3. El PageModel invoca un `I*Service`.
 4. El servicio aplica reglas del caso de uso y utiliza un `I*Repository`.
-5. El repositorio MySQL ejecuta la consulta parametrizada.
+5. El repositorio MySQL solicita una conexión a
+   `DatabaseConnection.Instance.CreateConnection()` y ejecuta la consulta
+   parametrizada.
 6. El resultado retorna al servicio y luego al PageModel para mostrarlo o redirigir.
 
 Así, la UI conoce contratos de aplicación, la aplicación conoce contratos de
