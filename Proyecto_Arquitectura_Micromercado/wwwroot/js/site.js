@@ -64,7 +64,7 @@
             message = 'Este campo es obligatorio.';
         } else if (spacingMessage) {
             message = spacingMessage;
-        } else if (invalidCharacters.test(value)) {
+        } else if (input.type !== 'email' && invalidCharacters.test(value)) {
             input.value = value.replace(invalidCharacters, '');
             message = 'No se permiten caracteres especiales.';
         } else if (input.type === 'email' && input.value && !emailPattern.test(input.value)) {

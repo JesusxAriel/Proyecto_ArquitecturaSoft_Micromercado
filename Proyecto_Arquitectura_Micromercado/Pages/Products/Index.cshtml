@@ -84,7 +84,7 @@
 <div class="modal fade" id="editProductModal" tabindex="-1" aria-labelledby="editProductLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <form method="post" asp-page-handler="Edit" id="editProductForm" class="modal-form">
+            <form method="post" asp-page-handler="Edit" id="editProductForm" class="modal-form" novalidate>
                 @Html.AntiForgeryToken()
                 <div class="modal-header">
                     <h2 class="modal-title h5" id="editProductLabel">Editar producto</h2>
