@@ -57,13 +57,6 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
             CancellationToken cancellationToken)
         {
             CreateCategory = createCategory;
-
-            // EditCategory sigue siendo [BindProperty] del mismo tipo Category. Cuando
-            // el formulario de Crear postea, no llega ningún campo "EditCategory.*",
-            // así que el model binder de ASP.NET Core cae al "prefijo vacío" para
-            // EditCategory y genera errores de validación con claves sin prefijo
-            // que contaminan el ModelState de Crear. Se limpia y se revalida solo
-            // CreateCategory, con su prefijo correcto, sin tocar EditCategory.
             ModelState.Clear();
 
             if (!TryValidateModel(CreateCategory, nameof(CreateCategory)))
