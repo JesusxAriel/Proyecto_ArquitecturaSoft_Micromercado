@@ -256,5 +256,20 @@
                 $(this).toggle($(this).text().toLocaleLowerCase().includes(query));
             });
         });
+
+        $('#createSupplierModal, #editSupplierModal').on('hidden.bs.modal', function () {
+            const form = this.querySelector('form');
+            if (!form) {
+                return;
+            }
+
+            form.reset();
+            form.classList.remove('was-validated');
+            $(form).find('[data-validate-input]').each(function () {
+                this.setCustomValidity('');
+            });
+            $(form).find('.input-error').addClass('d-none').text('');
+            $(form).find('.modal-save-button, button[type="submit"]').prop('disabled', false);
+        });
     </script>
 }
