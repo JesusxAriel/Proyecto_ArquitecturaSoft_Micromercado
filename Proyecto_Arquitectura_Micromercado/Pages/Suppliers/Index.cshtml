@@ -105,8 +105,9 @@
                     <div class="mb-3">
                         <label for="CreateSupplier_NombreEmpresa" class="form-label">Nombre de la empresa *</label>
                         <input asp-for="CreateSupplier.NombreEmpresa" id="CreateSupplier_NombreEmpresa" class="form-control"
-                               required data-sanitize="text" data-validate-input
-                               pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
+                               required data-validate-input
+                               pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-\(\)]+$"
+                               data-validation-message="Solo se permiten letras, números, espacios y los signos . , - ( )." />
                         <span asp-validation-for="CreateSupplier.NombreEmpresa" class="text-danger"></span>
                         <div class="input-error text-danger small d-none"></div>
                     </div>
@@ -163,9 +164,10 @@
                     <div class="mb-3">
                         <label for="EditSupplier_NombreEmpresa" class="form-label">Nombre de la empresa *</label>
                         <input asp-for="EditSupplier.NombreEmpresa" id="EditSupplier_NombreEmpresa"
-                               class="form-control" required data-sanitize="text"
+                               class="form-control" required
                                data-validate-input
-                               pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
+                               pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-\(\)]+$"
+                               data-validation-message="Solo se permiten letras, números, espacios y los signos . , - ( )." />
                         <span asp-validation-for="EditSupplier.NombreEmpresa" class="text-danger"></span>
                         <div class="input-error text-danger small d-none"></div>
                     </div>
