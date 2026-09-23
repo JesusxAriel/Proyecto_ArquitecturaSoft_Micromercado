@@ -125,6 +125,7 @@ public sealed class IndexModel(
             return NotFound();
         }
 
+        StatusMessage = "Proveedor eliminado correctamente.";
         return RedirectToPage();
     }
 
