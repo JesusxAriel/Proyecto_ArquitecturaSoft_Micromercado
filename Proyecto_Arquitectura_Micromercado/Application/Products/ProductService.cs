@@ -5,6 +5,10 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Products;
 
 public sealed class ProductService(IProductRepository repository, IPriceHistoryRepository priceHistoryRepository) : IProductService
 {
+    // PRODUCTO.precioVenta / precioCosto son DECIMAL(10,2) en MySQL: 8 dígitos
+    // enteros + 2 decimales. Un valor mayor desborda la columna.
+    private const decimal MaxPrice = 99_999_999.99m;
+
     public Task<IReadOnlyList<ProductListItem>> GetAllAsync(CancellationToken cancellationToken = default) =>
         repository.GetAllAsync(cancellationToken);
 
@@ -66,9 +70,19 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
             throw new ArgumentException("El precio de venta debe ser al menos Bs. 0,10 y no puede tener más de un decimal significativo (ej. 5,20).", nameof(product));
         }
 
+        if (product.PrecioVenta > MaxPrice)
+        {
+            throw new ArgumentException($"El precio de venta no puede superar Bs. {MaxPrice:N2}.", nameof(product));
+        }
+
         if (product.PrecioCosto <= 0)
         {
             throw new ArgumentException("El precio de costo debe ser mayor a cero.", nameof(product));
+        }
+
+        if (product.PrecioCosto > MaxPrice)
+        {
+            throw new ArgumentException($"El precio de costo no puede superar Bs. {MaxPrice:N2}.", nameof(product));
         }
 
         if (product.StockMinimo < 0)
