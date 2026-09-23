@@ -15,6 +15,7 @@ public sealed class IndexModel(
     public IReadOnlyList<LookupOption> Suppliers { get; private set; } = [];
     [TempData]
     public string? StatusMessage { get; set; }
+    public Product CreateProduct { get; set; } = new();
     [BindProperty]
     public Product EditProduct { get; set; } = new();
     [BindProperty]
@@ -22,6 +23,7 @@ public sealed class IndexModel(
     [BindProperty]
     public int DeleteProductId { get; set; }
     public string? DatabaseWarning { get; private set; }
+    public bool ShowCreateModal { get; private set; }
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
@@ -35,6 +37,50 @@ public sealed class IndexModel(
         {
             Products = [];
             DatabaseWarning = "No se pudo conectar con la base de datos. No hay productos para mostrar.";
+        }
+    }
+
+    public async Task<IActionResult> OnPostCreateAsync(
+        [FromForm(Name = "CreateProduct")] Product createProduct,
+        CancellationToken cancellationToken)
+    {
+        CreateProduct = createProduct;
+
+        // EditProduct sigue siendo [BindProperty] del mismo tipo Product. Cuando
+        // el formulario de Crear postea, no llega ningún campo "EditProduct.*",
+        // así que el model binder de ASP.NET Core cae al "prefijo vacío" para
+        // EditProduct y genera errores de validación con claves sin prefijo
+        // (ej. "Nombre", "IdCategoria") que contaminan el ModelState de Crear.
+        // Se limpia y se revalida solo CreateProduct, con su prefijo correcto,
+        // sin tocar EditProduct ni su handler.
+        ModelState.Clear();
+
+        if (!TryValidateModel(CreateProduct, nameof(CreateProduct)))
+        {
+            ShowCreateModal = true;
+            await ReloadProductsAsync(cancellationToken);
+            return Page();
+        }
+
+        try
+        {
+            await productService.CreateAsync(CreateProduct, cancellationToken);
+            StatusMessage = "Producto creado correctamente.";
+            return RedirectToPage();
+        }
+        catch (ArgumentException ex)
+        {
+            ShowCreateModal = true;
+            ModelState.AddModelError(string.Empty, ex.Message);
+            await ReloadProductsAsync(cancellationToken);
+            return Page();
+        }
+        catch (MySqlException)
+        {
+            ShowCreateModal = true;
+            DatabaseWarning = "No se pudo guardar el producto por un problema de conexión.";
+            await ReloadProductsAsync(cancellationToken);
+            return Page();
         }
     }
 
