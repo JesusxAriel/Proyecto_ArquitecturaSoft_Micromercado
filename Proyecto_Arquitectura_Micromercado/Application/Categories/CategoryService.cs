@@ -25,11 +25,7 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
         public bool Create(Category category)
         {
             Normalize(category);
-
-            if (!IsValid(category))
-            {
-                return false;
-            }
+            Validate(category);
 
             category.AdminUserId = 1;
 
@@ -39,11 +35,7 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
         public bool Update(Category category)
         {
             Normalize(category);
-
-            if (!IsValid(category))
-            {
-                return false;
-            }
+            Validate(category);
 
             category.AdminUserId = 1;
 
@@ -94,16 +86,16 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
                     : category.AisleLocation.Trim();
         }
 
-        private static bool IsValid(Category category)
+        private static void Validate(Category category)
         {
             if (string.IsNullOrWhiteSpace(category.Name))
             {
-                return false;
+                throw new ArgumentException("El nombre de la categoría es obligatorio.", nameof(category));
             }
 
             if (category.Name.Length > 150)
             {
-                return false;
+                throw new ArgumentException("El nombre no puede exceder los 150 caracteres.", nameof(category));
             }
 
             if (!Regex.IsMatch(
@@ -111,17 +103,17 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
                     CategoryValidation.NamePattern,
                     RegexOptions.CultureInvariant))
             {
-                return false;
+                throw new ArgumentException(CategoryValidation.NameMessage, nameof(category));
             }
 
             if (string.IsNullOrWhiteSpace(category.Code))
             {
-                return false;
+                throw new ArgumentException("El código de la categoría es obligatorio.", nameof(category));
             }
 
             if (category.Code.Length > 20)
             {
-                return false;
+                throw new ArgumentException("El código no puede exceder los 20 caracteres.", nameof(category));
             }
 
             if (!Regex.IsMatch(
@@ -129,12 +121,12 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
                     CategoryValidation.CodePattern,
                     RegexOptions.CultureInvariant))
             {
-                return false;
+                throw new ArgumentException(CategoryValidation.CodeMessage, nameof(category));
             }
 
             if (category.Description?.Length > 255)
             {
-                return false;
+                throw new ArgumentException("La descripción no puede exceder los 255 caracteres.", nameof(category));
             }
 
             if (category.Description is not null &&
@@ -143,12 +135,12 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
                     CategoryValidation.DescriptionPattern,
                     RegexOptions.CultureInvariant))
             {
-                return false;
+                throw new ArgumentException(CategoryValidation.DescriptionMessage, nameof(category));
             }
 
             if (category.AisleLocation?.Length > 20)
             {
-                return false;
+                throw new ArgumentException("La ubicación no puede exceder los 20 caracteres.", nameof(category));
             }
 
             if (category.AisleLocation is not null &&
@@ -158,10 +150,8 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
                     RegexOptions.IgnoreCase |
                     RegexOptions.CultureInvariant))
             {
-                return false;
+                throw new ArgumentException(CategoryValidation.AisleMessage, nameof(category));
             }
-
-            return true;
         }
     }
 }

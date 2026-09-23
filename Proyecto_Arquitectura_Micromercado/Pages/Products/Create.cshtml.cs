@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
 
@@ -25,8 +26,23 @@ public sealed class CreateModel(IProductService productService) : ProductFormMod
             return Page();
         }
 
-        await ProductService.CreateAsync(Product, cancellationToken);
-        StatusMessage = "Producto creado correctamente.";
-        return RedirectToPage("/Products/Index");
+        try
+        {
+            await ProductService.CreateAsync(Product, cancellationToken);
+            StatusMessage = "Producto creado correctamente.";
+            return RedirectToPage("/Products/Index");
+        }
+        catch (ArgumentException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            await LoadLookupsAsync(cancellationToken);
+            return Page();
+        }
+        catch (MySqlException)
+        {
+            ModelState.AddModelError(string.Empty, "No se pudo guardar el producto por un problema de conexión.");
+            await LoadLookupsAsync(cancellationToken);
+            return Page();
+        }
     }
 }

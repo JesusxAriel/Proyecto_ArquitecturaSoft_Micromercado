@@ -61,11 +61,29 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
         }
 
         if (product.PrecioVenta < 0.10m ||
-            decimal.Round(product.PrecioVenta * 10, 0) != product.PrecioVenta * 10 ||
-            product.PrecioCosto <= 0 ||
-            product.StockMinimo < 0 || product.IdCategoria <= 0 || product.IdProveedor <= 0)
+            decimal.Round(product.PrecioVenta * 10, 0) != product.PrecioVenta * 10)
         {
-            throw new ArgumentException("Los datos del producto no son válidos.", nameof(product));
+            throw new ArgumentException("El precio de venta debe ser al menos Bs. 0,10 y no puede tener más de un decimal significativo (ej. 5,20).", nameof(product));
+        }
+
+        if (product.PrecioCosto <= 0)
+        {
+            throw new ArgumentException("El precio de costo debe ser mayor a cero.", nameof(product));
+        }
+
+        if (product.StockMinimo < 0)
+        {
+            throw new ArgumentException("El stock mínimo no puede ser negativo.", nameof(product));
+        }
+
+        if (product.IdCategoria <= 0)
+        {
+            throw new ArgumentException("La categoría del producto es obligatoria.", nameof(product));
+        }
+
+        if (product.IdProveedor <= 0)
+        {
+            throw new ArgumentException("El proveedor del producto es obligatorio.", nameof(product));
         }
     }
 

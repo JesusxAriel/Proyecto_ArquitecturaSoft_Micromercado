@@ -37,6 +37,11 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
                 StatusMessage = "Categoría creada correctamente.";
                 return RedirectToPage("/Categories/Index");
             }
+            catch (ArgumentException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                return Page();
+            }
             catch (Exception)
             {
                 ErrorMessage =

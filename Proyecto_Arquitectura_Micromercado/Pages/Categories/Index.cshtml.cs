@@ -65,6 +65,12 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
                 StatusMessage = "Categoría actualizada correctamente.";
                 return RedirectToPage();
             }
+            catch (ArgumentException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                LoadCategories();
+                return Page();
+            }
             catch (Exception)
             {
                 ErrorMessage = "Ocurrió un error al actualizar la categoría.";

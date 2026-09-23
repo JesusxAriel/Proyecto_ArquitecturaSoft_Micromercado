@@ -29,6 +29,8 @@
                 <form method="post"
                       class="needs-validation modal-form">
 
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
                     <partial name="_CategoryForm"
                              model="Model.Category" />
 
