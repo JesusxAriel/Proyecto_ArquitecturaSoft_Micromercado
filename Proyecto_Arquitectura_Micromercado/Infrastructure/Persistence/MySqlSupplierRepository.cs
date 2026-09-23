@@ -1,14 +1,13 @@
 using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-public sealed class MySqlSupplierRepository(IConfiguration configuration) : ISupplierRepository
+public sealed class MySqlSupplierRepository : ISupplierRepository
 {
     private const int SystemAdminId = 1;
-    private readonly string connectionString = configuration.GetConnectionString("MySqlConnection")
-        ?? throw new InvalidOperationException("No se configuró la conexión MySqlConnection.");
 
     public async Task<IReadOnlyList<SupplierListItem>> GetAllAsync(CancellationToken cancellationToken = default)
     {
@@ -149,7 +148,7 @@ public sealed class MySqlSupplierRepository(IConfiguration configuration) : ISup
 
     private async Task<MySqlConnection> OpenConnectionAsync(CancellationToken cancellationToken)
     {
-        var connection = new MySqlConnection(connectionString);
+        var connection = DatabaseConnection.Instance.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         return connection;
     }

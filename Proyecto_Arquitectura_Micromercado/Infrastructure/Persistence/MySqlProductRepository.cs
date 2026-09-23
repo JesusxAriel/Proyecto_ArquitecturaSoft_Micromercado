@@ -1,15 +1,14 @@
 using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-public sealed class MySqlProductRepository(IConfiguration configuration, IPriceHistoryRepository priceHistoryRepository) : IProductRepository
+public sealed class MySqlProductRepository : IProductRepository
 {
     private const int SystemAdminId = 1;
-    private readonly string connectionString = configuration.GetConnectionString("MySqlConnection")
-        ?? throw new InvalidOperationException("No se configuró la conexión MySqlConnection.");
-    private readonly IPriceHistoryRepository _priceHistoryRepository = priceHistoryRepository;
+    private readonly IPriceHistoryRepository _priceHistoryRepository = new MySqlPriceHistoryRepository();
 
     public async Task<IReadOnlyList<ProductListItem>> GetAllAsync(CancellationToken cancellationToken = default)
     {
@@ -273,7 +272,7 @@ public sealed class MySqlProductRepository(IConfiguration configuration, IPriceH
 
     private async Task<MySqlConnection> OpenConnectionAsync(CancellationToken cancellationToken)
     {
-        var connection = new MySqlConnection(connectionString);
+        var connection = DatabaseConnection.Instance.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         return connection;
     }
