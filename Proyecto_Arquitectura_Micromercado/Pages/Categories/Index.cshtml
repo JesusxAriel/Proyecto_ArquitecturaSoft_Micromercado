@@ -8,7 +8,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
     <h1 class="page-heading mb-0">Categorías</h1>
     <button type="button" class="btn btn-warning fw-semibold px-3"
-            onclick="window.location.href='@Url.Page("/Categories/Create")'">
+            data-bs-toggle="modal" data-bs-target="#createCategoryModal">
         <i class="bi bi-plus-lg me-1"></i>Añadir
     </button>
 </div>
@@ -81,6 +81,67 @@ else
     </div>
 }
 
+<div class="modal fade" id="createCategoryModal" tabindex="-1"
+     aria-labelledby="createCategoryLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Create" class="modal-form" novalidate>
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="createCategoryLabel">Agregar categoría</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <div class="mb-3">
+                        <label for="createCategoryName" class="form-label">Nombre *</label>
+                        <input asp-for="CreateCategory.Name" id="createCategoryName"
+                               class="form-control" required data-sanitize="text"
+                               data-validate-input
+                               pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-&amp;]+$" />
+                        <div class="input-error text-danger small d-none"></div>
+                        <span asp-validation-for="CreateCategory.Name" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createCategoryCode" class="form-label">Código *</label>
+                        <input asp-for="CreateCategory.Code" id="createCategoryCode"
+                               class="form-control" required data-sanitize="text"
+                               data-validate-input pattern="^[A-Za-z0-9\-]+$" />
+                        <div class="input-error text-danger small d-none"></div>
+                        <span asp-validation-for="CreateCategory.Code" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createCategoryAisle" class="form-label">Ubicación en pasillo</label>
+                        <input asp-for="CreateCategory.AisleLocation" id="createCategoryAisle"
+                               class="form-control" data-sanitize="text"
+                               data-validate-input pattern="^[Pp][Aa][Ss][Ii][Ll][Ll][Oo] [1-8]$" />
+                        <div class="input-error text-danger small d-none"></div>
+                        <span asp-validation-for="CreateCategory.AisleLocation" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createCategoryDescription" class="form-label">Descripción</label>
+                        <input asp-for="CreateCategory.Description" id="createCategoryDescription"
+                               class="form-control" data-sanitize="text"
+                               data-capitalize="true" data-validate-input
+                               pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s.,\-()]+$" />
+                        <div class="input-error text-danger small d-none"></div>
+                        <span asp-validation-for="CreateCategory.Description" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary modal-save-button">
+                        Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="editCategoryModal" tabindex="-1"
      aria-labelledby="editCategoryLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -140,6 +201,10 @@ else
 </div>
 
 @section Scripts {
+    @if (Model.ShowCreateModal)
+    {
+        <script>bootstrap.Modal.getOrCreateInstance(document.getElementById('createCategoryModal')).show();</script>
+    }
     <script>
         $('.edit-category-button').on('click', function () {
             const button = $(this);
