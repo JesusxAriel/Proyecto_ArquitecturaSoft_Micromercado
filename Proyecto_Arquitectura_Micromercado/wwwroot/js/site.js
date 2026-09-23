@@ -137,10 +137,6 @@
         validateInput(this, Boolean(form) && form.classList.contains('was-validated'));
     });
 
-    // Confirmación de eliminación centralizada: cualquier botón que abra un
-    // modal de eliminación (data-bs-target="#delete...") solo necesita traer
-    // data-id / data-name; este handler llena el id oculto y el nombre a
-    // mostrar dentro de ese modal, sin pedirle al usuario que escriba nada.
     $(document).on('click', '[data-bs-target^="#delete"]', function () {
         const button = this;
         const modal = document.querySelector(button.getAttribute('data-bs-target'));
@@ -163,9 +159,6 @@
     $('.modal-form').each(function () {
         const form = this;
 
-        // Validación diferida: no se muestran errores hasta el primer intento
-        // de guardar. Después de ese intento, sí se valida en vivo para dar
-        // feedback inmediato mientras el usuario corrige.
         $(form).find('[data-validate-input]').on('input blur change', function () {
             if (form.classList.contains('was-validated')) {
                 validateInput(this, true);
