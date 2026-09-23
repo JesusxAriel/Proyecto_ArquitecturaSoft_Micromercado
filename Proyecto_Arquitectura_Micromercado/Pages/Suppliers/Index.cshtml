@@ -103,7 +103,7 @@
                 <div class="modal-body">
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                     <div class="mb-3">
-                        <label for="CreateSupplier_NombreEmpresa" class="form-label">Nombre de la empresa</label>
+                        <label for="CreateSupplier_NombreEmpresa" class="form-label">Nombre de la empresa *</label>
                         <input asp-for="CreateSupplier.NombreEmpresa" id="CreateSupplier_NombreEmpresa" class="form-control"
                                required data-sanitize="text" data-validate-input
                                pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
@@ -111,7 +111,7 @@
                         <div class="input-error text-danger small d-none"></div>
                     </div>
                     <div class="mb-3">
-                        <label for="CreateSupplier_NumeroEmpresa" class="form-label">Teléfono de contacto</label>
+                        <label for="CreateSupplier_NumeroEmpresa" class="form-label">Teléfono de contacto *</label>
                         <input asp-for="CreateSupplier.NumeroEmpresa" id="CreateSupplier_NumeroEmpresa" class="form-control"
                                required data-validate-input pattern="^\d{7,15}$"
                                data-validation-message="El teléfono debe contener entre 7 y 15 dígitos numéricos."
@@ -161,7 +161,7 @@
                     <input type="hidden" asp-for="EditSupplier.Id" id="EditSupplier_Id" />
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                     <div class="mb-3">
-                        <label for="EditSupplier_NombreEmpresa" class="form-label">Nombre de la empresa</label>
+                        <label for="EditSupplier_NombreEmpresa" class="form-label">Nombre de la empresa *</label>
                         <input asp-for="EditSupplier.NombreEmpresa" id="EditSupplier_NombreEmpresa"
                                class="form-control" required data-sanitize="text"
                                data-validate-input
@@ -170,7 +170,7 @@
                         <div class="input-error text-danger small d-none"></div>
                     </div>
                     <div class="mb-3">
-                        <label for="EditSupplier_NumeroEmpresa" class="form-label">Teléfono de contacto</label>
+                        <label for="EditSupplier_NumeroEmpresa" class="form-label">Teléfono de contacto *</label>
                         <input asp-for="EditSupplier.NumeroEmpresa" id="EditSupplier_NumeroEmpresa"
                                class="form-control" required data-validate-input
                                pattern="^\d{7,15}$"
