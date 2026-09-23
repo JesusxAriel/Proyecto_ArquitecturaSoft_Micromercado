@@ -67,11 +67,12 @@ else
                                     data-description="@category.Description">
                                 <i class="bi bi-pencil-square"></i>
                             </button>
-                            <a asp-page="/Categories/Delete" asp-route-id="@category.Id"
-                               class="btn btn-sm btn-outline-danger" title="Eliminar"
-                               aria-label="Eliminar @category.Name">
+                            <button type="button" class="btn btn-sm btn-outline-danger delete-category-button"
+                                    title="Eliminar" aria-label="Eliminar @category.Name"
+                                    data-bs-toggle="modal" data-bs-target="#deleteCategoryModal"
+                                    data-id="@category.Id" data-name="@category.Name">
                                 <i class="bi bi-trash"></i>
-                            </a>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -194,6 +195,29 @@ else
                     <button type="submit" class="btn btn-primary modal-save-button">
                         Guardar cambios
                     </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteCategoryModal" tabindex="-1"
+     aria-labelledby="deleteCategoryLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Delete">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="deleteCategoryLabel">Eliminar categoría</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" asp-for="DeleteCategoryId" data-delete-id-input />
+                    <p class="mb-0">¿Estás seguro de que querés eliminar <strong data-delete-name-display></strong>? Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Sí, eliminar</button>
                 </div>
             </form>
         </div>

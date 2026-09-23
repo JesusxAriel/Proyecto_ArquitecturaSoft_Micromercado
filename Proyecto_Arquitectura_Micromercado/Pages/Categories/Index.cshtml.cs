@@ -22,6 +22,9 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
         [BindProperty]
         public Category EditCategory { get; set; } = new Category();
 
+        [BindProperty]
+        public int DeleteCategoryId { get; set; }
+
         public bool ShowCreateModal { get; private set; }
 
         public IndexModel(ICategoryService categoryService)
@@ -90,6 +93,22 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
                 LoadCategories();
                 return Page();
             }
+        }
+
+        public async Task<IActionResult> OnPostDeleteAsync(CancellationToken cancellationToken)
+        {
+            if (DeleteCategoryId <= 0)
+            {
+                return BadRequest("La categoría no es válida.");
+            }
+
+            if (!await categoryService.SoftDeleteAsync(DeleteCategoryId, cancellationToken))
+            {
+                return NotFound();
+            }
+
+            StatusMessage = "Categoría eliminada correctamente.";
+            return RedirectToPage();
         }
 
         public IActionResult OnPostEdit()
