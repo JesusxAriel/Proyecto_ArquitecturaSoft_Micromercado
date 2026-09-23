@@ -46,14 +46,6 @@ public sealed class IndexModel(
         CancellationToken cancellationToken)
     {
         CreateProduct = createProduct;
-
-        // EditProduct sigue siendo [BindProperty] del mismo tipo Product. Cuando
-        // el formulario de Crear postea, no llega ningún campo "EditProduct.*",
-        // así que el model binder de ASP.NET Core cae al "prefijo vacío" para
-        // EditProduct y genera errores de validación con claves sin prefijo
-        // (ej. "Nombre", "IdCategoria") que contaminan el ModelState de Crear.
-        // Se limpia y se revalida solo CreateProduct, con su prefijo correcto,
-        // sin tocar EditProduct ni su handler.
         ModelState.Clear();
 
         if (!TryValidateModel(CreateProduct, nameof(CreateProduct)))
