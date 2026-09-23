@@ -16,14 +16,54 @@
     const invalidCharacters = /[*%$@{}\[\]?¿\^]/g;
     const validationPattern = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$/;
     const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    const categorySpacingAttributes = [
+        'data-category-name',
+        'data-category-code',
+        'data-category-aisle',
+        'data-category-description'
+    ];
+    const lowerConnectorWords = ['y', 'de', 'del', 'la', 'las', 'el', 'los', 'en'];
+
+    function hasCategorySpacingRules(input) {
+        return categorySpacingAttributes.some(attribute => input.hasAttribute(attribute));
+    }
+
+    function normalizeSpaces(value) {
+        return value.replace(/\s+/g, ' ');
+    }
+
+    function toTitleCaseWords(value) {
+        return value
+            .toLowerCase()
+            .split(' ')
+            .map((word, index) => (index > 0 && lowerConnectorWords.includes(word))
+                ? word
+                : word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
+
+    function validateCategorySpacing(input, value) {
+        if (/^\s/.test(value)) {
+            return 'No se permiten espacios al inicio.';
+        }
+
+        if (input.hasAttribute('data-category-code')) {
+            return /\s/.test(value) ? 'El código no puede contener espacios.' : '';
+        }
+
+        return /\s{2,}/.test(value) ? 'No se permiten espacios dobles.' : '';
+    }
 
     function validateInput(input, showErrors) {
         const value = input.value;
         const error = $(input).siblings('.input-error');
+        const spacingMessage = hasCategorySpacingRules(input) ? validateCategorySpacing(input, value) : '';
         let message = '';
 
         if (input.required && !value.trim()) {
             message = 'Este campo es obligatorio.';
+        } else if (spacingMessage) {
+            message = spacingMessage;
         } else if (invalidCharacters.test(value)) {
             input.value = value.replace(invalidCharacters, '');
             message = 'No se permiten caracteres especiales.';
@@ -76,6 +116,25 @@
 
     $('[data-capitalize="true"]').on('blur', function () {
         capitalizeFirstLetter(this);
+    });
+
+    $(categorySpacingAttributes.map(attribute => `[${attribute}]`).join(', ')).on('blur', function () {
+        let value = normalizeSpaces(this.value.trim());
+
+        if (this.hasAttribute('data-category-name')) {
+            value = toTitleCaseWords(value);
+        } else if (this.hasAttribute('data-category-code')) {
+            value = value.toUpperCase();
+        } else if (this.hasAttribute('data-category-aisle')) {
+            const match = value.match(/^pasillo\s+([1-8])$/i);
+            if (match) {
+                value = 'Pasillo ' + match[1];
+            }
+        }
+
+        this.value = value;
+        const form = this.closest('form');
+        validateInput(this, Boolean(form) && form.classList.contains('was-validated'));
     });
 
     $('.modal-form').each(function () {
