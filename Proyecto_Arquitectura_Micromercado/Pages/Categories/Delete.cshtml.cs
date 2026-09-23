@@ -11,8 +11,6 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 
         [BindProperty]
         public Category Category { get; set; } = new Category();
-        [BindProperty]
-        public string ConfirmationName { get; set; } = string.Empty;
 
         public string ErrorMessage { get; set; } = string.Empty;
 
@@ -41,13 +39,6 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 
         public IActionResult OnPost(int id)
         {
-            if (!string.Equals(Category.Name, ConfirmationName, StringComparison.Ordinal))
-            {
-                ErrorMessage = "El nombre de confirmación no coincide exactamente.";
-                Category = categoryService.GetById(id) ?? new Category { Id = id };
-                return Page();
-            }
-
             try
             {
                 int adminUserId = 1;
