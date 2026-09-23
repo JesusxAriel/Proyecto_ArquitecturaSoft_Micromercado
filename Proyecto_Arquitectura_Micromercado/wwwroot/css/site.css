@@ -401,3 +401,16 @@ body {
     order: 3;
   }
 }
+
+.supplier-check .form-check-input {
+  width: 1.4em;
+  height: 1.4em;
+  border: 2px solid var(--bs-primary);
+  cursor: pointer;
+}
+
+.supplier-check .form-check-label {
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: .35rem;
+}
