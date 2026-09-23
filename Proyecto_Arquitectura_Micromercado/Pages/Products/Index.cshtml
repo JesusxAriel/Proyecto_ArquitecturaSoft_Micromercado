@@ -264,6 +264,10 @@
     {
         <script>bootstrap.Modal.getOrCreateInstance(document.getElementById('createProductModal')).show();</script>
     }
+    @if (Model.ShowEditModal)
+    {
+        <script>bootstrap.Modal.getOrCreateInstance(document.getElementById('editProductModal')).show();</script>
+    }
     <script>
         let reasonConfirmed = false;
         let initialSalePrice = null;

@@ -24,6 +24,7 @@ public sealed class IndexModel(
     public int DeleteProductId { get; set; }
     public string? DatabaseWarning { get; private set; }
     public bool ShowCreateModal { get; private set; }
+    public bool ShowEditModal { get; private set; }
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
@@ -90,6 +91,7 @@ public sealed class IndexModel(
 
         if (!ModelState.IsValid)
         {
+            ShowEditModal = true;
             LogModelStateErrors();
             await ReloadProductsAsync(cancellationToken);
             return Page();
@@ -110,6 +112,7 @@ public sealed class IndexModel(
                 PriceChangeReason = NormalizeReason(PriceChangeReason);
                 if (!IsValidReason(PriceChangeReason))
                 {
+                    ShowEditModal = true;
                     ModelState.AddModelError(nameof(PriceChangeReason),
                         "Ingresa una justificación de al menos 3 caracteres. Evita etiquetas HTML, comillas y caracteres de control.");
                     await ReloadProductsAsync(cancellationToken);
@@ -134,12 +137,14 @@ public sealed class IndexModel(
         }
         catch (ArgumentException ex)
         {
+            ShowEditModal = true;
             ModelState.AddModelError(string.Empty, ex.Message);
             await ReloadProductsAsync(cancellationToken);
             return Page();
         }
         catch (MySqlException)
         {
+            ShowEditModal = true;
             DatabaseWarning = "No se pudo actualizar el producto por un problema de conexión.";
             await ReloadProductsAsync(cancellationToken);
             return Page();
