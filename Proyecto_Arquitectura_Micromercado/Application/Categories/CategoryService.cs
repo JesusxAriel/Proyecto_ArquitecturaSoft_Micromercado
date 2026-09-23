@@ -90,12 +90,12 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
         {
             if (string.IsNullOrWhiteSpace(category.Name))
             {
-                throw new ArgumentException("El nombre de la categoría es obligatorio.", nameof(category));
+                throw new ArgumentException("El nombre de la categoría es obligatorio.");
             }
 
             if (category.Name.Length > 150)
             {
-                throw new ArgumentException("El nombre no puede exceder los 150 caracteres.", nameof(category));
+                throw new ArgumentException("El nombre no puede exceder los 150 caracteres.");
             }
 
             if (!Regex.IsMatch(
@@ -103,17 +103,17 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
                     CategoryValidation.NamePattern,
                     RegexOptions.CultureInvariant))
             {
-                throw new ArgumentException(CategoryValidation.NameMessage, nameof(category));
+                throw new ArgumentException(CategoryValidation.NameMessage);
             }
 
             if (string.IsNullOrWhiteSpace(category.Code))
             {
-                throw new ArgumentException("El código de la categoría es obligatorio.", nameof(category));
+                throw new ArgumentException("El código de la categoría es obligatorio.");
             }
 
             if (category.Code.Length > 20)
             {
-                throw new ArgumentException("El código no puede exceder los 20 caracteres.", nameof(category));
+                throw new ArgumentException("El código no puede exceder los 20 caracteres.");
             }
 
             if (!Regex.IsMatch(
@@ -121,12 +121,12 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
                     CategoryValidation.CodePattern,
                     RegexOptions.CultureInvariant))
             {
-                throw new ArgumentException(CategoryValidation.CodeMessage, nameof(category));
+                throw new ArgumentException(CategoryValidation.CodeMessage);
             }
 
             if (category.Description?.Length > 255)
             {
-                throw new ArgumentException("La descripción no puede exceder los 255 caracteres.", nameof(category));
+                throw new ArgumentException("La descripción no puede exceder los 255 caracteres.");
             }
 
             if (category.Description is not null &&
@@ -135,12 +135,12 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
                     CategoryValidation.DescriptionPattern,
                     RegexOptions.CultureInvariant))
             {
-                throw new ArgumentException(CategoryValidation.DescriptionMessage, nameof(category));
+                throw new ArgumentException(CategoryValidation.DescriptionMessage);
             }
 
             if (category.AisleLocation?.Length > 20)
             {
-                throw new ArgumentException("La ubicación no puede exceder los 20 caracteres.", nameof(category));
+                throw new ArgumentException("La ubicación no puede exceder los 20 caracteres.");
             }
 
             if (category.AisleLocation is not null &&
@@ -150,7 +150,7 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
                     RegexOptions.IgnoreCase |
                     RegexOptions.CultureInvariant))
             {
-                throw new ArgumentException(CategoryValidation.AisleMessage, nameof(category));
+                throw new ArgumentException(CategoryValidation.AisleMessage);
             }
         }
     }
