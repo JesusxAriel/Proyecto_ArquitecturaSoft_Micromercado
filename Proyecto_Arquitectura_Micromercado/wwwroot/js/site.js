@@ -137,6 +137,29 @@
         validateInput(this, Boolean(form) && form.classList.contains('was-validated'));
     });
 
+    // Confirmación de eliminación centralizada: cualquier botón que abra un
+    // modal de eliminación (data-bs-target="#delete...") solo necesita traer
+    // data-id / data-name; este handler llena el id oculto y el nombre a
+    // mostrar dentro de ese modal, sin pedirle al usuario que escriba nada.
+    $(document).on('click', '[data-bs-target^="#delete"]', function () {
+        const button = this;
+        const modal = document.querySelector(button.getAttribute('data-bs-target'));
+        if (!modal) {
+            return;
+        }
+
+        const idInput = modal.querySelector('[data-delete-id-input]');
+        const nameDisplay = modal.querySelector('[data-delete-name-display]');
+
+        if (idInput) {
+            idInput.value = button.dataset.id;
+        }
+
+        if (nameDisplay) {
+            nameDisplay.textContent = button.dataset.name;
+        }
+    });
+
     $('.modal-form').each(function () {
         const form = this;
 

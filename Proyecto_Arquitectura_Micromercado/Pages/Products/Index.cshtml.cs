@@ -21,10 +21,6 @@ public sealed class IndexModel(
     public string? PriceChangeReason { get; set; }
     [BindProperty]
     public int DeleteProductId { get; set; }
-    [BindProperty]
-    public string DeleteProductName { get; set; } = string.Empty;
-    [BindProperty]
-    public string DeleteConfirmation { get; set; } = string.Empty;
     public string? DatabaseWarning { get; private set; }
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
@@ -106,8 +102,6 @@ public sealed class IndexModel(
 
     private void RemoveUnrelatedModelState()
     {
-        ModelState.Remove(nameof(DeleteProductName));
-        ModelState.Remove(nameof(DeleteConfirmation));
         ModelState.Remove(nameof(PriceChangeReason));
         ModelState.Remove("Product.PriceChangeReason");
     }
@@ -155,9 +149,9 @@ public sealed class IndexModel(
 
     public async Task<IActionResult> OnPostDeleteAsync(CancellationToken cancellationToken)
     {
-        if (DeleteProductId <= 0 || !string.Equals(DeleteProductName, DeleteConfirmation, StringComparison.Ordinal))
+        if (DeleteProductId <= 0)
         {
-            return BadRequest("La confirmación del nombre no coincide.");
+            return BadRequest("El producto no es válido.");
         }
 
         if (!await productService.SoftDeleteAsync(DeleteProductId, cancellationToken))

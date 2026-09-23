@@ -175,15 +175,12 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="hidden" asp-for="DeleteProductId" id="deleteProductId" />
-                    <input type="hidden" asp-for="DeleteProductName" id="deleteProductName" />
-                    <p>Escribe exactamente <strong id="deleteProductNameLabel"></strong> para confirmar.</p>
-                    <label for="deleteProductConfirmation" class="form-label">Nombre del producto</label>
-                    <input asp-for="DeleteConfirmation" id="deleteProductConfirmation" class="form-control" autocomplete="off" required />
+                    <input type="hidden" asp-for="DeleteProductId" data-delete-id-input />
+                    <p class="mb-0">¿Estás seguro de que querés eliminar <strong data-delete-name-display></strong>? Esta acción no se puede deshacer.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" id="confirmProductDelete" class="btn btn-danger" disabled><i class="bi bi-trash"></i> Eliminar</button>
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Sí, eliminar</button>
                 </div>
             </form>
         </div>
@@ -272,19 +269,6 @@
             reasonConfirmed = true;
             bootstrap.Modal.getOrCreateInstance(document.getElementById('priceChangeReasonModal')).hide();
             document.getElementById('editProductForm').requestSubmit();
-        });
-
-        $('.delete-product-button').on('click', function () {
-            const button = $(this);
-            $('#deleteProductId').val(button.data('id'));
-            $('#deleteProductName').val(button.data('name'));
-            $('#deleteProductNameLabel').text(button.data('name'));
-            $('#deleteProductConfirmation').val('');
-            $('#confirmProductDelete').prop('disabled', true);
-        });
-
-        $('#deleteProductConfirmation').on('input', function () {
-            $('#confirmProductDelete').prop('disabled', this.value !== $('#deleteProductName').val());
         });
 
         $('#productSearch').on('input', function () {
