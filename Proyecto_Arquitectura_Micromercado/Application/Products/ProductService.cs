@@ -28,13 +28,39 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
     public Task<int> CreateAsync(Product product, CancellationToken cancellationToken = default)
     {
         Validate(product);
-        return repository.CreateAsync(product, cancellationToken);
+        //return repository.CreateAsync(product, cancellationToken);
+        var categories = await repository.GetCategoriesAsync(cancellationToken);
+        if (!categories.Any(c => c.Id == product.IdCategoria))
+        {
+            throw new ArgumentException("La categoría seleccionada no existe.");
+        }
+
+        var suppliers = await repository.GetSuppliersAsync(cancellationToken);
+        if (!suppliers.Any(s => s.Id == product.IdProveedor))
+        {
+            throw new ArgumentException("El proveedor seleccionado no existe.");
+        }
+
+        return await repository.CreateAsync(product, cancellationToken);
     }
 
     public Task<bool> UpdateAsync(Product product, CancellationToken cancellationToken = default)
     {
         Validate(product);
-        return repository.UpdateAsync(product, cancellationToken);
+        //return repository.UpdateAsync(product, cancellationToken);
+        var categories = await repository.GetCategoriesAsync(cancellationToken);
+        if (!categories.Any(c => c.Id == product.IdCategoria))
+        {
+            throw new ArgumentException("La categoría seleccionada no existe.");
+        }
+
+        var suppliers = await repository.GetSuppliersAsync(cancellationToken);
+        if (!suppliers.Any(s => s.Id == product.IdProveedor))
+        {
+            throw new ArgumentException("El proveedor seleccionado no existe.");
+        }
+
+        return await repository.UpdateAsync(product, cancellationToken);
     }
 
     public Task<bool> SoftDeleteAsync(int id, CancellationToken cancellationToken = default)

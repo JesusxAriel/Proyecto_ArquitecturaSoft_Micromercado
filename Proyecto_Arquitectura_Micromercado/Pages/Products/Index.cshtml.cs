@@ -197,12 +197,27 @@ public sealed class IndexModel(
             return BadRequest("El producto no es válido.");
         }
 
-        if (!await productService.SoftDeleteAsync(DeleteProductId, cancellationToken))
+        try
         {
-            return NotFound();
-        }
+            if (!await productService.SoftDeleteAsync(DeleteProductId, cancellationToken))
+            {
+                return NotFound();
+            }
 
-        StatusMessage = "Producto eliminado correctamente.";
+            StatusMessage = "Producto eliminado correctamente.";
+        }
+        catch (InvalidOperationException ex)
+        {
+            DatabaseWarning = ex.Message;
+            await ReloadProductsAsync(cancellationToken);
+            return Page();
+        }
+        catch (MySqlException)
+        {
+            DatabaseWarning = "No se pudo eliminar el producto debido a un error en la base de datos.";
+            await ReloadProductsAsync(cancellationToken);
+            return Page();
+        }
         return RedirectToPage();
     }
 
