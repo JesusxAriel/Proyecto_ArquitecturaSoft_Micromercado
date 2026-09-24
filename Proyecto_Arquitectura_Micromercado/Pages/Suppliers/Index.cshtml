@@ -126,9 +126,9 @@
                         <div class="input-error text-danger small d-none"></div>
                     </div>
                     <div class="mb-3">
-                        <label for="CreateSupplier_CorreoReferencia" class="form-label">Correo de referencia</label>
+                        <label for="CreateSupplier_CorreoReferencia" class="form-label">Correo de referencia *</label>
                         <input asp-for="CreateSupplier.CorreoReferencia" id="CreateSupplier_CorreoReferencia" class="form-control"
-                               type="email" data-validate-input
+                               type="email" required data-validate-input
                                data-validation-message="Ingrese un correo electrónico válido con dominio (ejemplo@dominio.com)." />
                         <span asp-validation-for="CreateSupplier.CorreoReferencia" class="text-danger"></span>
                         <div class="input-error text-danger small d-none"></div>
@@ -187,9 +187,9 @@
                         <div class="input-error text-danger small d-none"></div>
                     </div>
                     <div class="mb-3">
-                        <label for="EditSupplier_CorreoReferencia" class="form-label">Correo de referencia</label>
+                        <label for="EditSupplier_CorreoReferencia" class="form-label">Correo de referencia *</label>
                         <input asp-for="EditSupplier.CorreoReferencia" id="EditSupplier_CorreoReferencia"
-                               class="form-control" type="email" data-validate-input
+                               class="form-control" type="email" required data-validate-input
                                data-validation-message="Ingrese un correo electrónico válido con dominio (ejemplo@dominio.com)." />
                         <span asp-validation-for="EditSupplier.CorreoReferencia" class="text-danger"></span>
                         <div class="input-error text-danger small d-none"></div>
