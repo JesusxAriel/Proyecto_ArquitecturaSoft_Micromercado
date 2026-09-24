@@ -18,6 +18,11 @@
     <div class="alert alert-success shadow-sm" role="alert">@Model.StatusMessage</div>
 }
 
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger shadow-sm" role="alert">@Model.ErrorMessage</div>
+}
+
 @if (!string.IsNullOrWhiteSpace(Model.DatabaseWarning))
 {
     <div class="alert alert-warning shadow-sm" role="alert">@Model.DatabaseWarning</div>
