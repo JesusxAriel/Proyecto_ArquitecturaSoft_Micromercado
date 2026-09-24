@@ -98,18 +98,28 @@ else
 
                     <div class="mb-3">
                         <label for="createCategoryName" class="form-label">Nombre *</label>
-                        <input asp-for="CreateCategory.Name" id="createCategoryName"
-                               class="form-control" required data-sanitize="text"
-                               data-validate-input
-                               pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-&amp;]+$" />
-                        <div class="input-error text-danger small d-none"></div>
-                        <span asp-validation-for="CreateCategory.Name" class="text-danger"></span>
+                            <input asp-for="CreateCategory.Name" id="createCategoryName"
+                                class="form-control" required
+                                data-sanitize="text"
+                                data-category-name
+                                data-validate-input
+                                pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-&amp;]+$" />
+                            <div class="input-error text-danger small d-none"></div>
+                            <span asp-validation-for="CreateCategory.Name" class="text-danger"></span>
                     </div>
                     <div class="mb-3">
-                        <label for="createCategoryCode" class="form-label">Código *</label>
-                        <input asp-for="CreateCategory.Code" id="createCategoryCode"
-                               class="form-control" required data-sanitize="text"
-                               data-validate-input pattern="^[A-Za-z0-9\-]+$" />
+                        <div class="input-group">
+                            <span class="input-group-text">CAT-</span>
+                            <input asp-for="CreateCategory.Code"
+                                id="createCategoryCode"
+                                class="form-control"
+                                required
+                                maxlength="3"
+                                autocomplete="off"
+                                data-category-code
+                                data-validate-input
+                                pattern="^[A-Za-z]{3}$" />
+                        </div>
                         <div class="input-error text-danger small d-none"></div>
                         <span asp-validation-for="CreateCategory.Code" class="text-danger"></span>
                     </div>
@@ -171,16 +181,27 @@ else
                     <div class="mb-3">
                         <label for="editCategoryName" class="form-label">Nombre *</label>
                         <input asp-for="EditCategory.Name" id="editCategoryName"
-                               class="form-control" required data-sanitize="text"
-                               data-validate-input
-                               pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-&amp;]+$" />
+                            class="form-control" required
+                            data-sanitize="text"
+                            data-category-name
+                            data-validate-input
+                            pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-&amp;]+$" />
                         <div class="input-error text-danger small d-none"></div>
                     </div>
                     <div class="mb-3">
                         <label for="editCategoryCode" class="form-label">Código *</label>
-                        <input asp-for="EditCategory.Code" id="editCategoryCode"
-                               class="form-control" required data-sanitize="text"
-                               data-validate-input pattern="^[A-Za-z0-9\-]+$" />
+                        <div class="input-group">
+                            <span class="input-group-text">CAT-</span>
+                            <input asp-for="EditCategory.Code"
+                                id="editCategoryCode"
+                                class="form-control"
+                                required
+                                maxlength="3"
+                                autocomplete="off"
+                                data-category-code
+                                data-validate-input
+                                pattern="^[A-Za-z]{3}$" />
+                        </div>
                         <div class="input-error text-danger small d-none"></div>
                     </div>
                     <div class="mb-3">

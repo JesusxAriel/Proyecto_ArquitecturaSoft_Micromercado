@@ -9,7 +9,7 @@ namespace Proyecto_Arquitectura_Micromercado.Domain.Categories
             @"^(?=.*[A-Za-zÁÉÍÓÚáéíóúÑñ])[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s\-&]+$";
 
         public const string CodePattern =
-            @"^[A-Za-z0-9\-]+$";
+            @"^CAT-[A-Z]{3}$";
 
         public const string AislePattern =
             @"^Pasillo\s[1-8]$";
