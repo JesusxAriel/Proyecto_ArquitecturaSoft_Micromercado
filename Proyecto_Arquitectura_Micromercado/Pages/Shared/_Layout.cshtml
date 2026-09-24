@@ -30,7 +30,7 @@
                     <ul class="navbar-nav navbar-center mx-auto mb-2 mb-lg-0">
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle @(currentPage.StartsWith("/Products", StringComparison.OrdinalIgnoreCase) || currentPage.StartsWith("/Categories", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)"
-                               href="#" role="button" data-bs-toggle="dropdown">Inventario</a>
+                               href="#" role="button">Inventario</a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" asp-page="/Products/Index">Lista de productos</a></li>
                                 <li><a class="dropdown-item" asp-page="/Products/History">Historial de Cambios</a></li>
@@ -45,7 +45,7 @@
                         </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle @(currentPage.StartsWith("/Suppliers", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)"
-                               href="#" role="button" data-bs-toggle="dropdown">Proveedores</a>
+                               href="#" role="button">Proveedores</a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" asp-page="/Suppliers/Index">Directorio de Proveedores</a></li>
                                     <li>
@@ -56,7 +56,7 @@
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Caja y Ventas</a>
+                            <a class="nav-link dropdown-toggle" href="#" role="button">Caja y Ventas</a>
                             <ul class="dropdown-menu">
                                     <li>
                                         <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
@@ -105,6 +105,62 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            var nav = document.querySelector('.navbar-nav.navbar-center');
+            if (!nav) {
+                return;
+            }
+
+            var items = nav.querySelectorAll('.nav-item.dropdown');
+
+            function unlockAll() {
+                items.forEach(function (item) {
+                    item.classList.remove('fijo');
+                    var toggle = item.querySelector('.nav-link.dropdown-toggle');
+                    if (toggle) {
+                        toggle.setAttribute('aria-expanded', 'false');
+                    }
+                });
+                nav.classList.remove('nav-locked');
+            }
+
+            items.forEach(function (item) {
+                var toggle = item.querySelector('.nav-link.dropdown-toggle');
+                if (!toggle) {
+                    return;
+                }
+
+                toggle.addEventListener('click', function (event) {
+                    event.preventDefault();
+
+                    var wasLocked = item.classList.contains('fijo');
+
+                    unlockAll();
+
+                    if (!wasLocked) {
+                        item.classList.add('fijo');
+                        toggle.setAttribute('aria-expanded', 'true');
+                        nav.classList.add('nav-locked');
+                    }
+                });
+
+                item.querySelectorAll('.dropdown-item:not(.disabled)').forEach(function (link) {
+                    link.addEventListener('click', unlockAll);
+                });
+            });
+
+            document.addEventListener('click', function (event) {
+                var clickedInside = Array.prototype.some.call(items, function (item) {
+                    return item.contains(event.target);
+                });
+
+                if (!clickedInside) {
+                    unlockAll();
+                }
+            });
+        })();
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
