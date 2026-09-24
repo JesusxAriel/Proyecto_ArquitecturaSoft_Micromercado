@@ -8,13 +8,13 @@ public sealed class Product
 
     [Display(Name = "Nombre")]
     [Required(ErrorMessage = "Campo obligatorio.")]
-    [StringLength(150)]
+    [StringLength(150, ErrorMessage = "El nombre no puede superar los 150 caracteres.")]
     [ProductText]
     public string Nombre { get; set; } = string.Empty;
 
     [Display(Name = "Empaque / Presentación")]
     [Required(ErrorMessage = "Campo obligatorio.")]
-    [StringLength(100)]
+    [StringLength(100, ErrorMessage = "La presentación no puede superar los 100 caracteres.")]
     [ProductText]
     public string EmpaquePresentacion { get; set; } = string.Empty;
 
