@@ -107,13 +107,13 @@
                         </div>
                         <div class="col-md-3">
                             <label for="createSalePrice" class="form-label">Precio de venta *</label>
-                            <input asp-for="CreateProduct.PrecioVenta" id="createSalePrice" class="form-control" inputmode="decimal" max="99999999.99" step="0.01" required data-validate-input />
+                            <input asp-for="CreateProduct.PrecioVenta" id="createSalePrice" class="form-control" inputmode="decimal" max="99999999.90" step="0.1" required data-validate-input />
                             <div class="input-error text-danger small d-none"></div>
                             <span asp-validation-for="CreateProduct.PrecioVenta" class="text-danger"></span>
                         </div>
                         <div class="col-md-3">
                             <label for="createCostPrice" class="form-label">Precio de costo *</label>
-                            <input asp-for="CreateProduct.PrecioCosto" id="createCostPrice" class="form-control" inputmode="decimal" max="99999999.99" step="0.01" required data-validate-input />
+                            <input asp-for="CreateProduct.PrecioCosto" id="createCostPrice" class="form-control" inputmode="decimal" max="99999999.90" step="0.1" required data-validate-input />
                             <div class="input-error text-danger small d-none"></div>
                             <span asp-validation-for="CreateProduct.PrecioCosto" class="text-danger"></span>
                         </div>
