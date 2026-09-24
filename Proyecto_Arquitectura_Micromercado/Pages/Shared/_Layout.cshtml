@@ -97,7 +97,10 @@
         </main>
     </div>
     <footer class="footer border-top text-muted">
-        <div class="container">&copy; @DateTime.Now.Year - PuntoMarket</div>
+        <div class="container">
+            &copy; @DateTime.Now.Year - PuntoMarket &middot;
+            <a asp-page="/Privacy" class="text-muted">Política de Privacidad</a>
+        </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
