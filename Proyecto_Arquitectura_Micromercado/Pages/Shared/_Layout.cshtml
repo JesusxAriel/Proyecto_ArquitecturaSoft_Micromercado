@@ -117,6 +117,7 @@
             function unlockAll() {
                 items.forEach(function (item) {
                     item.classList.remove('fijo');
+                    item.classList.remove('hover-suppressed');
                     var toggle = item.querySelector('.nav-link.dropdown-toggle');
                     if (toggle) {
                         toggle.setAttribute('aria-expanded', 'false');
@@ -131,6 +132,10 @@
                     return;
                 }
 
+                item.addEventListener('mouseleave', function () {
+                    item.classList.remove('hover-suppressed');
+                });
+
                 toggle.addEventListener('click', function (event) {
                     event.preventDefault();
 
@@ -142,6 +147,8 @@
                         item.classList.add('fijo');
                         toggle.setAttribute('aria-expanded', 'true');
                         nav.classList.add('nav-locked');
+                    } else {
+                        item.classList.add('hover-suppressed');
                     }
                 });
 
