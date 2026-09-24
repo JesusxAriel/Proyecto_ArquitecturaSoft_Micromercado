@@ -761,13 +761,6 @@
         let initialSalePrice = null;
         let initialCostPrice = null;
 
-
-        /*
-         * ==========================================================
-         * LIMPIAR VALIDACIÓN VISUAL
-         * ==========================================================
-         */
-
         function resetFormValidation(form) {
 
             if (!form) {
@@ -814,13 +807,6 @@
 
         }
 
-
-        /*
-         * ==========================================================
-         * LIMPIAR MODAL DE CREAR AL REABRIR
-         * ==========================================================
-         */
-
         $('#createProductModal').on(
             'show.bs.modal',
             function() {
@@ -838,13 +824,6 @@
 
             }
         );
-
-
-        /*
-         * ==========================================================
-         * NORMALIZAR MOTIVO
-         * ==========================================================
-         */
 
         function normalizeReason(value) {
 
@@ -871,13 +850,6 @@
                 normalized.slice(firstLetterIndex + 1);
 
         }
-
-
-        /*
-         * ==========================================================
-         * VALIDAR MOTIVO
-         * ==========================================================
-         */
 
         function validatePriceReason() {
 
@@ -926,13 +898,6 @@
 
             return false;
         }
-
-
-        /*
-         * ==========================================================
-         * ABRIR PRODUCTO PARA EDITAR
-         * ==========================================================
-         */
 
         $('.edit-product-button').on('click', function() {
 
@@ -1026,13 +991,6 @@
 
         });
 
-
-        /*
-         * ==========================================================
-         * DETECTAR CAMBIOS DE PRECIO
-         * ==========================================================
-         */
-
         $('#editSalePrice, #editCostPrice')
             .on('input change', function() {
 
@@ -1091,26 +1049,12 @@
 
             });
 
-
-        /*
-         * ==========================================================
-         * VALIDAR MOTIVO MIENTRAS SE ESCRIBE
-         * ==========================================================
-         */
-
         $('#priceChangeReason')
             .on('input', function() {
 
                 validatePriceReason();
 
             });
-
-
-        /*
-         * ==========================================================
-         * SUBMIT DEL FORMULARIO DE EDICIÓN
-         * ==========================================================
-         */
 
         $('#editProductForm').on(
             'submit',
@@ -1145,13 +1089,6 @@
                 const costPriceChanged =
                     currentCostPrice !== initialCostPrice;
 
-
-                /*
-                 * ==================================================
-                 * SI NO CAMBIÓ NINGÚN PRECIO
-                 * ==================================================
-                 */
-
                 if (
                     !salePriceChanged &&
                     !costPriceChanged
@@ -1166,13 +1103,6 @@
                     return;
 
                 }
-
-
-                /*
-                 * ==================================================
-                 * CAMBIÓ EL PRECIO
-                 * ==================================================
-                 */
 
                 event.preventDefault();
 
@@ -1216,13 +1146,6 @@
             }
         );
 
-
-        /*
-         * ==========================================================
-         * CUANDO SE CIERRA EL MODAL DE EDITAR
-         * ==========================================================
-         */
-
         $('#editProductModal')
             .on(
                 'hidden.bs.modal',
@@ -1263,13 +1186,6 @@
                 }
             );
 
-
-        /*
-         * ==========================================================
-         * BUSCADOR DE PRODUCTOS
-         * ==========================================================
-         */
-
         $('#productSearch').on(
             'input',
             function() {
@@ -1295,13 +1211,6 @@
 
             }
         );
-
-
-        /*
-         * ==========================================================
-         * CERRAR ALERTAS AUTOMÁTICAMENTE
-         * ==========================================================
-         */
 
         setTimeout(function () {
             var alerts = document.querySelectorAll('.alert-dismissible');

@@ -28,7 +28,6 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
     public async Task<int> CreateAsync(Product product, CancellationToken cancellationToken = default)
     {
         Validate(product);
-        //return repository.CreateAsync(product, cancellationToken);
         var categories = await repository.GetCategoriesAsync(cancellationToken);
         if (!categories.Any(c => c.Id == product.IdCategoria))
         {
@@ -47,7 +46,6 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
     public async Task<bool> UpdateAsync(Product product, CancellationToken cancellationToken = default)
     {
         Validate(product);
-        //return repository.UpdateAsync(product, cancellationToken);
         var categories = await repository.GetCategoriesAsync(cancellationToken);
         if (!categories.Any(c => c.Id == product.IdCategoria))
         {
