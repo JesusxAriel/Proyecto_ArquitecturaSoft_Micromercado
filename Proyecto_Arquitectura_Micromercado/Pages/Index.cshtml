@@ -62,12 +62,28 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td class="fw-semibold">Sistema listo</td>
-                    <td class="text-muted">Panel de control iniciado</td>
-                    <td><span class="badge badge-ok">Correcto</span></td>
-                    <td class="text-end text-muted">Hoy</td>
-                </tr>
+                @if (Model.RecentPriceChanges.Count == 0)
+                {
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Sin movimientos recientes.</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var cambio in Model.RecentPriceChanges)
+                    {
+                        <tr>
+                            <td class="fw-semibold">Cambio de precio</td>
+                            <td class="text-muted">
+                                @cambio.NombreProducto:
+                                Bs. @cambio.PrecioVentaAnterior.ToString("N2")
+                                → Bs. @cambio.PrecioVentaNuevo.ToString("N2")
+                            </td>
+                            <td><span class="badge badge-ok">Registrado</span></td>
+                            <td class="text-end text-muted">@cambio.FechaCambio.ToString("dd/MM/yyyy HH:mm")</td>
+                        </tr>
+                    }
+                }
             </tbody>
         </table>
     </div>

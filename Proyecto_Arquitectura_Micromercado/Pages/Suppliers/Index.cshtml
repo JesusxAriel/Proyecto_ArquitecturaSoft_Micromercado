@@ -18,6 +18,11 @@
     <div class="alert alert-success shadow-sm" role="alert">@Model.StatusMessage</div>
 }
 
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger shadow-sm" role="alert">@Model.ErrorMessage</div>
+}
+
 @if (!string.IsNullOrWhiteSpace(Model.DatabaseWarning))
 {
     <div class="alert alert-warning shadow-sm" role="alert">@Model.DatabaseWarning</div>
@@ -105,8 +110,9 @@
                     <div class="mb-3">
                         <label for="CreateSupplier_NombreEmpresa" class="form-label">Nombre de la empresa *</label>
                         <input asp-for="CreateSupplier.NombreEmpresa" id="CreateSupplier_NombreEmpresa" class="form-control"
-                               required data-sanitize="text" data-validate-input
-                               pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
+                               required data-validate-input
+                               pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-\(\)]+$"
+                               data-validation-message="Solo se permiten letras, números, espacios y los signos . , - ( )." />
                         <span asp-validation-for="CreateSupplier.NombreEmpresa" class="text-danger"></span>
                         <div class="input-error text-danger small d-none"></div>
                     </div>
@@ -127,7 +133,7 @@
                         <span asp-validation-for="CreateSupplier.CorreoReferencia" class="text-danger"></span>
                         <div class="input-error text-danger small d-none"></div>
                     </div>
-                    <div class="form-check">
+                    <div class="form-check supplier-check">
                         <input asp-for="CreateSupplier.EsAutogestionado" id="CreateSupplier_EsAutogestionado" class="form-check-input" />
                         <label for="CreateSupplier_EsAutogestionado" class="form-check-label">
                             Proveedor autogestionado
@@ -163,9 +169,10 @@
                     <div class="mb-3">
                         <label for="EditSupplier_NombreEmpresa" class="form-label">Nombre de la empresa *</label>
                         <input asp-for="EditSupplier.NombreEmpresa" id="EditSupplier_NombreEmpresa"
-                               class="form-control" required data-sanitize="text"
+                               class="form-control" required
                                data-validate-input
-                               pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
+                               pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-\(\)]+$"
+                               data-validation-message="Solo se permiten letras, números, espacios y los signos . , - ( )." />
                         <span asp-validation-for="EditSupplier.NombreEmpresa" class="text-danger"></span>
                         <div class="input-error text-danger small d-none"></div>
                     </div>
@@ -187,7 +194,7 @@
                         <span asp-validation-for="EditSupplier.CorreoReferencia" class="text-danger"></span>
                         <div class="input-error text-danger small d-none"></div>
                     </div>
-                    <div class="form-check">
+                    <div class="form-check supplier-check">
                         <input asp-for="EditSupplier.EsAutogestionado"
                                id="EditSupplier_EsAutogestionado" class="form-check-input" />
                         <label for="EditSupplier_EsAutogestionado" class="form-check-label">
@@ -253,6 +260,21 @@
             $('#suppliersTable tbody tr').each(function () {
                 $(this).toggle($(this).text().toLocaleLowerCase().includes(query));
             });
+        });
+
+        $('#createSupplierModal, #editSupplierModal').on('hidden.bs.modal', function () {
+            const form = this.querySelector('form');
+            if (!form) {
+                return;
+            }
+
+            form.reset();
+            form.classList.remove('was-validated');
+            $(form).find('[data-validate-input]').each(function () {
+                this.setCustomValidity('');
+            });
+            $(form).find('.input-error').addClass('d-none').text('');
+            $(form).find('.modal-save-button, button[type="submit"]').prop('disabled', false);
         });
     </script>
 }
