@@ -400,6 +400,13 @@ body {
   .navbar-main-grid .navbar-toggler {
     order: 3;
   }
+
+  .navbar-collapse .dropdown-menu {
+    position: static !important;
+    left: auto !important;
+    transform: none !important;
+    width: 100%;
+  }
 }
 
 .supplier-check .form-check-input {
