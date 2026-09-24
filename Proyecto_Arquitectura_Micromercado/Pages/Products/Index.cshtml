@@ -64,8 +64,8 @@
                     <button type="button" class="btn btn-sm btn-outline-warning edit-product-button" title="Editar" aria-label="Editar @product.Nombre"
                             data-bs-toggle="modal" data-bs-target="#editProductModal"
                             data-id="@product.Id" data-name="@product.Nombre" data-packaging="@product.EmpaquePresentacion"
-                            data-sale-price="@product.PrecioVenta.ToString(System.Globalization.CultureInfo.InvariantCulture)"
-                            data-cost-price="@product.PrecioCosto.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                            data-sale-price="@product.PrecioVenta.ToString("0.00")"
+                            data-cost-price="@product.PrecioCosto.ToString("0.00")"
                             data-min-stock="@product.StockMinimo" data-category="@product.IdCategoria" data-supplier="@product.IdProveedor">
                         <i class="bi bi-pencil-square"></i>
                     </button>
@@ -91,7 +91,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
-                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div asp-validation-summary="All" class="text-danger mb-3"></div>
                     <div class="row g-3">
                         <div class="col-md-8">
                             <label for="createProductName" class="form-label">Nombre *</label>
@@ -107,13 +107,13 @@
                         </div>
                         <div class="col-md-3">
                             <label for="createSalePrice" class="form-label">Precio de venta *</label>
-                            <input asp-for="CreateProduct.PrecioVenta" id="createSalePrice" class="form-control" inputmode="decimal" required data-validate-input />
+                            <input asp-for="CreateProduct.PrecioVenta" id="createSalePrice" class="form-control" inputmode="decimal" max="99999999.90" step="0.1" required data-validate-input />
                             <div class="input-error text-danger small d-none"></div>
                             <span asp-validation-for="CreateProduct.PrecioVenta" class="text-danger"></span>
                         </div>
                         <div class="col-md-3">
                             <label for="createCostPrice" class="form-label">Precio de costo *</label>
-                            <input asp-for="CreateProduct.PrecioCosto" id="createCostPrice" class="form-control" inputmode="decimal" required data-validate-input />
+                            <input asp-for="CreateProduct.PrecioCosto" id="createCostPrice" class="form-control" inputmode="decimal" max="99999999.90" step="0.1" required data-validate-input />
                             <div class="input-error text-danger small d-none"></div>
                             <span asp-validation-for="CreateProduct.PrecioCosto" class="text-danger"></span>
                         </div>
@@ -279,8 +279,8 @@
             $('#editProductId').val(button.attr('data-id'));
             $('#editProductName').val(button.attr('data-name'));
             $('#editProductPackaging').val(button.attr('data-packaging'));
-            $('#editSalePrice').val(button.attr('data-sale-price'));
-            $('#editCostPrice').val(button.attr('data-cost-price'));
+            $('#editSalePrice').val((button.attr('data-sale-price') || '').replace('.', ','));
+            $('#editCostPrice').val((button.attr('data-cost-price') || '').replace('.', ','));
             $('#editMinStock').val(button.attr('data-min-stock'));
             $('#editCategory').val(String(button.attr('data-category')));
             $('#editSupplier').val(String(button.attr('data-supplier')));
