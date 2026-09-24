@@ -141,11 +141,6 @@ public sealed class IndexModel(
         return RedirectToPage();
     }
 
-    /// <summary>
-    /// Verifica si el proveedor abastece productos activos. La baja de proveedores
-    /// es lógica, por lo que MySQL nunca rechaza la operación aunque la clave
-    /// foránea sea ON DELETE RESTRICT: la regla debe comprobarse antes de dar de baja.
-    /// </summary>
     private async Task<bool> TieneProductosActivosAsync(
         int supplierId,
         CancellationToken cancellationToken)
