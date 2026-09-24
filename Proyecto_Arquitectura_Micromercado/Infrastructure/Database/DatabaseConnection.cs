@@ -14,7 +14,6 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Database
             ConnectionString = connectionString;
         }
 
-        // Método para inicializar la instancia por primera vez
         public static DatabaseConnection GetInstance(string connectionString)
         {
             if (_instance == null)

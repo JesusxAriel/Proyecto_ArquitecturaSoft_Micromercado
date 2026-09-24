@@ -18,7 +18,6 @@ builder.Services.AddRazorPages()
             _ => "Ingrese un número válido.");
     });
 
-// --- MÓDULO PRODUCTO E HISTORIAL (FACTORY METHOD) ---
 builder.Services.AddScoped<CreatorPriceHistoryRepository>();
 builder.Services.AddScoped<IPriceHistoryRepository>(sp =>
     sp.GetRequiredService<CreatorPriceHistoryRepository>().CrearRepositorio());
@@ -28,19 +27,16 @@ builder.Services.AddScoped<IProductRepository>(sp =>
     sp.GetRequiredService<CreatorProductRepository>().CrearRepositorio());
 builder.Services.AddScoped<IProductService, ProductService>();
 
-// --- MÓDULO CATEGORÍAS (FACTORY METHOD) ---
 builder.Services.AddScoped<CreatorCategoryRepository>();
 builder.Services.AddScoped<ICategoryRepository>(sp =>
     sp.GetRequiredService<CreatorCategoryRepository>().CrearRepositorio());
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 
-// --- MÓDULO PROVEEDORES (FACTORY METHOD) ---
 builder.Services.AddScoped<CreatorSupplierRepository>();
 builder.Services.AddScoped<ISupplierRepository>(sp =>
     sp.GetRequiredService<CreatorSupplierRepository>().CrearRepositorio());
 builder.Services.AddScoped<ISupplierService, SupplierService>();
 
-// INICIALIZACIÓN DEL SINGLETON (Punto Extra)
 DatabaseConnection.GetInstance(builder.Configuration.GetConnectionString("MySqlConnection")!);
 
 var app = builder.Build();
@@ -52,11 +48,9 @@ app.UseRequestLocalization(new RequestLocalizationOptions
     SupportedUICultures = [boliviaCulture]
 });
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 

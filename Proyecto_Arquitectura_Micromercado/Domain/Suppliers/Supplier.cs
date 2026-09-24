@@ -28,10 +28,6 @@ public sealed class Supplier : IValidatableObject
 
     public bool EstaActivo { get; set; } = true;
 
-    /// <summary>
-    /// Regla que involucra a más de un campo, por lo que no puede resolverse
-    /// con un atributo sobre una sola propiedad.
-    /// </summary>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (EsAutogestionado && string.IsNullOrWhiteSpace(CorreoReferencia))

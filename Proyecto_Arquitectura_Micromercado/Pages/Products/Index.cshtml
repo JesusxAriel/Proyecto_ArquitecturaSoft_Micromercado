@@ -24,8 +24,9 @@
 
 @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
 {
-    <div class="alert alert-success shadow-sm" role="alert">
+    <div class="alert alert-success alert-dismissible shadow-sm fade show" role="alert" id="statusAlert">
         @Model.StatusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
 
@@ -164,7 +165,7 @@
 
                 <div class="modal-body">
 
-                    <div asp-validation-summary="All"
+                    <div asp-validation-summary="None"
                          class="text-danger mb-3">
                     </div>
 
@@ -257,7 +258,7 @@
                             <input asp-for="CreateProduct.PrecioCosto"
                                    id="createCostPrice"
                                    class="form-control"
-                                   placeholder="Ej. 10.50"
+                                   placeholder="Ej. 10,50"
                                    inputmode="decimal"
                                    max="99999999.90"
                                    step="0.1"
@@ -314,7 +315,7 @@
                                     data-validate-input
                                     asp-items="@(Model.Categories.Select(x => new SelectListItem(x.Nombre, x.Id.ToString())))">
 
-                                <option value="0">
+                                <option value="">
                                     Seleccione...
                                 </option>
 
@@ -341,7 +342,7 @@
                                     data-validate-input
                                     asp-items="@(Model.Suppliers.Select(x => new SelectListItem(x.Nombre, x.Id.ToString())))">
 
-                                <option value="0">
+                                <option value="">
                                     Seleccione...
                                 </option>
 
@@ -433,7 +434,7 @@
                            id="PriceChangeReason"
                            name="PriceChangeReason" />
 
-                    <div asp-validation-summary="ModelOnly"
+                    <div asp-validation-summary="None"
                          class="text-danger">
                     </div>
 
@@ -511,7 +512,7 @@
                             <input asp-for="EditProduct.PrecioCosto"
                                    id="editCostPrice"
                                    class="form-control"
-                                   placeholder="Ej. 10.50"                               
+                                   placeholder="Ej. 10,50"
                                    inputmode="decimal"
                                    required
                                    data-validate-input
@@ -760,13 +761,6 @@
         let initialSalePrice = null;
         let initialCostPrice = null;
 
-
-        /*
-         * ==========================================================
-         * LIMPIAR VALIDACIÓN VISUAL
-         * ==========================================================
-         */
-
         function resetFormValidation(form) {
 
             if (!form) {
@@ -803,14 +797,33 @@
 
             });
 
+            form.querySelectorAll(
+                '.modal-save-button, button[type="submit"]'
+            ).forEach(function(button) {
+
+                button.disabled = false;
+
+            });
+
         }
 
+        $('#createProductModal').on(
+            'show.bs.modal',
+            function() {
 
-        /*
-         * ==========================================================
-         * NORMALIZAR MOTIVO
-         * ==========================================================
-         */
+                const form =
+                    document.getElementById(
+                        'createProductForm'
+                    );
+
+                if (form) {
+                    form.reset();
+                }
+
+                resetFormValidation(form);
+
+            }
+        );
 
         function normalizeReason(value) {
 
@@ -837,13 +850,6 @@
                 normalized.slice(firstLetterIndex + 1);
 
         }
-
-
-        /*
-         * ==========================================================
-         * VALIDAR MOTIVO
-         * ==========================================================
-         */
 
         function validatePriceReason() {
 
@@ -892,13 +898,6 @@
 
             return false;
         }
-
-
-        /*
-         * ==========================================================
-         * ABRIR PRODUCTO PARA EDITAR
-         * ==========================================================
-         */
 
         $('.edit-product-button').on('click', function() {
 
@@ -992,13 +991,6 @@
 
         });
 
-
-        /*
-         * ==========================================================
-         * DETECTAR CAMBIOS DE PRECIO
-         * ==========================================================
-         */
-
         $('#editSalePrice, #editCostPrice')
             .on('input change', function() {
 
@@ -1057,26 +1049,12 @@
 
             });
 
-
-        /*
-         * ==========================================================
-         * VALIDAR MOTIVO MIENTRAS SE ESCRIBE
-         * ==========================================================
-         */
-
         $('#priceChangeReason')
             .on('input', function() {
 
                 validatePriceReason();
 
             });
-
-
-        /*
-         * ==========================================================
-         * SUBMIT DEL FORMULARIO DE EDICIÓN
-         * ==========================================================
-         */
 
         $('#editProductForm').on(
             'submit',
@@ -1111,13 +1089,6 @@
                 const costPriceChanged =
                     currentCostPrice !== initialCostPrice;
 
-
-                /*
-                 * ==================================================
-                 * SI NO CAMBIÓ NINGÚN PRECIO
-                 * ==================================================
-                 */
-
                 if (
                     !salePriceChanged &&
                     !costPriceChanged
@@ -1132,13 +1103,6 @@
                     return;
 
                 }
-
-
-                /*
-                 * ==================================================
-                 * CAMBIÓ EL PRECIO
-                 * ==================================================
-                 */
 
                 event.preventDefault();
 
@@ -1182,13 +1146,6 @@
             }
         );
 
-
-        /*
-         * ==========================================================
-         * CUANDO SE CIERRA EL MODAL DE EDITAR
-         * ==========================================================
-         */
-
         $('#editProductModal')
             .on(
                 'hidden.bs.modal',
@@ -1229,13 +1186,6 @@
                 }
             );
 
-
-        /*
-         * ==========================================================
-         * BUSCADOR DE PRODUCTOS
-         * ==========================================================
-         */
-
         $('#productSearch').on(
             'input',
             function() {
@@ -1261,6 +1211,14 @@
 
             }
         );
+
+        setTimeout(function () {
+            var alerts = document.querySelectorAll('.alert-dismissible');
+            alerts.forEach(function (alert) {
+                var closeBtn = alert.querySelector('.btn-close');
+                if (closeBtn) closeBtn.click();
+            });
+        }, 4000);
 
     </script>
 }

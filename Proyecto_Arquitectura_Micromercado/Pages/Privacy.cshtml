@@ -1,8 +1,26 @@
-﻿@page
+@page
 @model PrivacyModel
 @{
-    ViewData["Title"] = "Privacy Policy";
+    ViewData["Title"] = "Política de Privacidad";
 }
-<h1>@ViewData["Title"]</h1>
+<h1 class="page-heading">@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<p>
+    PuntoMarket es un proyecto académico desarrollado para la materia de
+    Arquitectura de Software de la UCB. No es un sistema en producción: no
+    procesa pagos reales ni recopila datos de clientes finales.
+</p>
+
+<p>Los datos que administra el sistema son internos del punto de venta:</p>
+
+<ul>
+    <li>Catálogo de productos, categorías y precios, incluyendo el historial de cambios de precio.</li>
+    <li>Directorio de proveedores.</li>
+    <li>Movimientos de caja y ventas registrados por el personal administrador.</li>
+</ul>
+
+<p>
+    Esta información se almacena únicamente en la base de datos MySQL del
+    entorno de desarrollo o de la demostración académica, y no se comparte
+    con terceros ni se utiliza con fines comerciales.
+</p>
