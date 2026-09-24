@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Globalization;
+using System.Text.RegularExpressions;
 using Proyecto_Arquitectura_Micromercado.Domain.Categories;
 
 namespace Proyecto_Arquitectura_Micromercado.Application.Categories
@@ -7,16 +8,16 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
     {
         private readonly ICategoryRepository categoryRepository;
 
+        public CategoryService(ICategoryRepository categoryRepository)
+        {
+            this.categoryRepository = categoryRepository;
+        }
+
         public async Task<IReadOnlyList<Category>> GetAllAsync(
             CancellationToken cancellationToken = default)
         {
             return await categoryRepository.GetAllAsync(
                 cancellationToken);
-        }
-
-        public CategoryService(ICategoryRepository categoryRepository)
-        {
-            this.categoryRepository = categoryRepository;
         }
 
         public async Task<Category?> GetByIdAsync(
@@ -67,18 +68,52 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
 
         private static void Normalize(Category category)
         {
-            category.Name = category.Name.Trim();
-            category.Code = category.Code.Trim();
+            category.Name = ToTitleCase(category.Name);
+
+            category.Code = NormalizeCategoryCode(
+                category.Code);
 
             category.Description =
                 string.IsNullOrWhiteSpace(category.Description)
                     ? null
-                    : category.Description.Trim();
+                    : NormalizeSpaces(category.Description);
 
             category.AisleLocation =
                 string.IsNullOrWhiteSpace(category.AisleLocation)
                     ? null
-                    : category.AisleLocation.Trim();
+                    : NormalizeSpaces(category.AisleLocation);
+        }
+
+        private static string NormalizeSpaces(string value)
+        {
+            return Regex.Replace(
+                value.Trim(),
+                @"\s+",
+                " ");
+        }
+
+        private static string ToTitleCase(string value)
+        {
+            string normalized = NormalizeSpaces(value);
+
+            return CultureInfo
+                .CurrentCulture
+                .TextInfo
+                .ToTitleCase(normalized.ToLower());
+        }
+
+        private static string NormalizeCategoryCode(string value)
+        {
+            string code = value.Trim().ToUpperInvariant();
+
+            if (code.StartsWith("CAT-"))
+            {
+                code = code[4..];
+            }
+
+            code = Regex.Replace(code, @"\s+", "");
+
+            return $"CAT-{code}";
         }
 
         private static void Validate(Category category)
