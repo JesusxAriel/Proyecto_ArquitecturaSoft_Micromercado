@@ -15,12 +15,18 @@
 
 @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
 {
-    <div class="alert alert-success shadow-sm" role="alert">@Model.StatusMessage</div>
+    <div class="alert alert-success alert-dismissible shadow-sm fade show" role="alert" id="statusAlert">
+        @Model.StatusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 }
 
 @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
 {
-    <div class="alert alert-danger shadow-sm" role="alert">@Model.ErrorMessage</div>
+    <div class="alert alert-danger alert-dismissible shadow-sm fade show" role="alert" id="errorAlert">
+        @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 }
 
 @if (!string.IsNullOrWhiteSpace(Model.DatabaseWarning))
@@ -280,5 +286,13 @@
             $(form).find('.input-error').addClass('d-none').text('');
             $(form).find('.modal-save-button, button[type="submit"]').prop('disabled', false);
         });
+
+        setTimeout(function () {
+            var alerts = document.querySelectorAll('.alert-dismissible');
+            alerts.forEach(function (alert) {
+                var closeBtn = alert.querySelector('.btn-close');
+                if (closeBtn) closeBtn.click();
+            });
+        }, 4000);
     </script>
 }
