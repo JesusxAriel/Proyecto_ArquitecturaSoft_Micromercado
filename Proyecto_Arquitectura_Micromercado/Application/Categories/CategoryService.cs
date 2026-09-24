@@ -7,6 +7,13 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
     {
         private readonly ICategoryRepository categoryRepository;
 
+        public async Task<IReadOnlyList<Category>> GetAllAsync(
+            CancellationToken cancellationToken = default)
+        {
+            return await categoryRepository.GetAllAsync(
+                cancellationToken);
+        }
+
         public CategoryService(ICategoryRepository categoryRepository)
         {
             this.categoryRepository = categoryRepository;
