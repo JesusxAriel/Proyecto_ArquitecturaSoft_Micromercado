@@ -12,6 +12,8 @@ namespace Proyecto_Arquitectura_Micromercado.Pages
         public int LowStockCount { get; private set; }
         public string? DatabaseWarning { get; private set; }
 
+        public IReadOnlyList<ProductPriceHistory> RecentPriceChanges { get; private set; } = [];
+
         public async Task OnGetAsync(CancellationToken cancellationToken)
         {
             DailySales = 0m;
@@ -21,11 +23,16 @@ namespace Proyecto_Arquitectura_Micromercado.Pages
                 var products = await productService.GetAllAsync(cancellationToken);
                 ActiveProductCount = products.Count;
                 LowStockCount = products.Count(product => product.StockCalculado <= product.StockMinimo);
+
+                RecentPriceChanges = (await productService.GetPriceHistoryAsync(cancellationToken))
+                    .Take(5)
+                    .ToList();
             }
             catch (MySqlException)
             {
                 ActiveProductCount = 0;
                 LowStockCount = 0;
+                RecentPriceChanges = [];
                 DatabaseWarning = "No se pudo conectar con la base de datos. Las métricas se muestran en cero.";
             }
         }
