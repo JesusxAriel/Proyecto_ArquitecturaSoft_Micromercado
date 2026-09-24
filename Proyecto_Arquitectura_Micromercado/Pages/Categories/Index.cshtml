@@ -103,7 +103,8 @@ else
                                 data-sanitize="text"
                                 data-category-name
                                 data-validate-input
-                                pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-&amp;]+$" />
+                                pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-&amp;]+$" 
+                                placeholder="Lácteos" />
                             <div class="input-error text-danger small d-none"></div>
                             <span asp-validation-for="CreateCategory.Name" class="text-danger"></span>
                     </div>
@@ -119,7 +120,8 @@ else
                                 data-validate-input
                                 maxlength="3"
                                 autocomplete="off"
-                                pattern="^[A-Za-z]{3}$" />
+                                pattern="^[A-Za-z]{3}$" 
+                                placeholder="ABC" />
                         </div>
                         <div class="input-error text-danger small d-none"></div>
                         <span asp-validation-for="CreateCategory.Code" class="text-danger"></span>
@@ -147,7 +149,8 @@ else
                         <input asp-for="CreateCategory.Description" id="createCategoryDescription"
                                class="form-control" data-sanitize="text"
                                data-capitalize="true" data-validate-input
-                               pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s.,\-()]+$" />
+                               pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s.,\-()]+$" 
+                               placeholder="Ej: Leche, queso, yogur, etc." />
                         <div class="input-error text-danger small d-none"></div>
                         <span asp-validation-for="CreateCategory.Description" class="text-danger"></span>
                     </div>
