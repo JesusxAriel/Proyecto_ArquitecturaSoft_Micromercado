@@ -808,6 +808,31 @@
 
         /*
          * ==========================================================
+         * LIMPIAR MODAL DE CREAR AL REABRIR
+         * ==========================================================
+         */
+
+        $('#createProductModal').on(
+            'show.bs.modal',
+            function() {
+
+                const form =
+                    document.getElementById(
+                        'createProductForm'
+                    );
+
+                if (form) {
+                    form.reset();
+                }
+
+                resetFormValidation(form);
+
+            }
+        );
+
+
+        /*
+         * ==========================================================
          * NORMALIZAR MOTIVO
          * ==========================================================
          */
