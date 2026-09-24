@@ -15,12 +15,18 @@
 
 @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
 {
-    <div class="alert alert-success shadow-sm" role="alert">@Model.StatusMessage</div>
+    <div class="alert alert-success alert-dismissible shadow-sm fade show" role="alert" id="statusAlert">
+        @Model.StatusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 }
 
 @if (!string.IsNullOrEmpty(Model.ErrorMessage))
 {
-    <div class="alert alert-danger">@Model.ErrorMessage</div>
+    <div class="alert alert-danger alert-dismissible shadow-sm fade show" role="alert" id="errorAlert">
+        @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 }
 
 @if (Model.Categories.Count == 0)
@@ -320,5 +326,13 @@ else
                 $(this).toggle($(this).text().toLocaleLowerCase().includes(query));
             });
         });
+
+        setTimeout(function () {
+            var alerts = document.querySelectorAll('.alert-dismissible');
+            alerts.forEach(function (alert) {
+                var closeBtn = alert.querySelector('.btn-close');
+                if (closeBtn) closeBtn.click();
+            });
+        }, 4000);
     </script>
 }
