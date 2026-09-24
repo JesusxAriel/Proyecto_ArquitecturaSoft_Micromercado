@@ -298,6 +298,22 @@ else
             $('#editCategoryModal [data-validate-input]').trigger('input');
         });
 
+        $('#createCategoryModal').on('hidden.bs.modal', function () {
+            const form = this.querySelector('form');
+
+            if (!form) {
+                return;
+            }
+
+            form.reset();
+
+            $(form).removeClass('was-validated');
+            $(form).find('.input-error').text('').addClass('d-none');
+            $(form).find('input').each(function () {
+                this.setCustomValidity('');
+            });
+        });
+
         $('#categorySearch').on('input', function () {
             const query = $(this).val().toString().toLocaleLowerCase();
             $('#categoriesTable tbody tr').each(function () {
