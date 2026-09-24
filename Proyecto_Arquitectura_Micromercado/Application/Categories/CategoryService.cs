@@ -138,6 +138,11 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
                 throw new ArgumentException(CategoryValidation.DescriptionMessage);
             }
 
+            if (string.IsNullOrWhiteSpace(category.AisleLocation))
+            {
+                throw new ArgumentException("El pasillo es obligatorio.");
+            }
+
             if (category.AisleLocation?.Length > 20)
             {
                 throw new ArgumentException("La ubicación no puede exceder los 20 caracteres.");

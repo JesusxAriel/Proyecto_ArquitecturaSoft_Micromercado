@@ -106,7 +106,9 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 
         public IActionResult OnPostEdit()
         {
-            if (!ModelState.IsValid)
+            ModelState.Clear();
+
+            if (!TryValidateModel(EditCategory, nameof(EditCategory)))
             {
                 LoadCategories();
                 return Page();

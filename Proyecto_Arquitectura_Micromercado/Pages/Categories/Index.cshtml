@@ -114,11 +114,12 @@ else
                         <span asp-validation-for="CreateCategory.Code" class="text-danger"></span>
                     </div>
                     <div class="mb-3">
-                        <label for="createCategoryAisle" class="form-label">Ubicación en pasillo</label>
+                        <label for="createCategoryAisle" class="form-label">Ubicación en pasillo *</label>
 
                         <select asp-for="CreateCategory.AisleLocation"
                                 id="createCategoryAisle"
-                                class="form-select">
+                                class="form-select"
+                                required>
                             <option value="">Seleccione un pasillo</option>
 
                             @for (var i = 1; i <= 8; i++)
@@ -183,11 +184,12 @@ else
                         <div class="input-error text-danger small d-none"></div>
                     </div>
                     <div class="mb-3">
-                        <label for="editCategoryAisle" class="form-label">Ubicación en pasillo</label>
+                        <label for="editCategoryAisle" class="form-label">Ubicación en pasillo *</label>
 
                         <select asp-for="EditCategory.AisleLocation"
                                 id="editCategoryAisle"
-                                class="form-select">
+                                class="form-select"
+                                required>
                             <option value="">Seleccione un pasillo</option>
 
                             @for (var i = 1; i <= 8; i++)
@@ -244,6 +246,9 @@ else
 </div>
 
 @section Scripts {
+
+    <partial name="_ValidationScriptsPartial" />
+
     @if (Model.ShowCreateModal)
     {
         <script>bootstrap.Modal.getOrCreateInstance(document.getElementById('createCategoryModal')).show();</script>
