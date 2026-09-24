@@ -33,7 +33,11 @@
                                href="#" role="button" data-bs-toggle="dropdown">Categorías</a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" asp-page="/Categories/Index">Listado de Categorías</a></li>
-                                <li><a class="dropdown-item" href="javascript:void(0)">Distribución por Pasillos</a></li>
+                                    <li>
+                                        <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
+                                            Distribución por Pasillos <span class="badge bg-secondary ms-1">Próximamente</span>
+                                        </a>
+                                    </li>
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
@@ -41,7 +45,11 @@
                                href="#" role="button" data-bs-toggle="dropdown">Proveedores</a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" asp-page="/Suppliers/Index">Directorio de Proveedores</a></li>
-                                <li><a class="dropdown-item" href="javascript:void(0)">Productos por Proveedor</a></li>
+                                    <li>
+                                        <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
+                                            Productos por Proveedor <span class="badge bg-secondary ms-1">Próximamente</span>
+                                        </a>
+                                    </li>
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
@@ -55,8 +63,16 @@
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Control de Cajas</a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="javascript:void(0)">Registro de Ventas</a></li>
-                                <li><a class="dropdown-item" href="javascript:void(0)">Arqueo Diario</a></li>
+                                    <li>
+                                        <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
+                                            Registro de Ventas <span class="badge bg-secondary ms-1">Próximamente</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
+                                            Arqueo Diario <span class="badge bg-secondary ms-1">Próximamente</span>
+                                        </a>
+                                    </li>
                             </ul>
                         </li>
                     </ul>
