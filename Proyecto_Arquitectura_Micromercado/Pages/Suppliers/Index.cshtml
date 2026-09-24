@@ -112,7 +112,8 @@
                         <input asp-for="CreateSupplier.NombreEmpresa" id="CreateSupplier_NombreEmpresa" class="form-control"
                                required data-validate-input
                                pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-\(\)]+$"
-                               data-validation-message="Solo se permiten letras, números, espacios y los signos . , - ( )." />
+                               data-validation-message="Solo se permiten letras, números, espacios y los signos . , - ( )."
+                               placeholder="Ej: Embol S.A." />
                         <span asp-validation-for="CreateSupplier.NombreEmpresa" class="text-danger"></span>
                         <div class="input-error text-danger small d-none"></div>
                     </div>
@@ -121,7 +122,7 @@
                         <input asp-for="CreateSupplier.NumeroEmpresa" id="CreateSupplier_NumeroEmpresa" class="form-control"
                                required data-validate-input pattern="^\d{7,15}$"
                                data-validation-message="El teléfono debe contener entre 7 y 15 dígitos numéricos."
-                               inputmode="numeric" />
+                               inputmode="numeric" placeholder="Ej: 71234567" />
                         <span asp-validation-for="CreateSupplier.NumeroEmpresa" class="text-danger"></span>
                         <div class="input-error text-danger small d-none"></div>
                     </div>
@@ -129,7 +130,8 @@
                         <label for="CreateSupplier_CorreoReferencia" class="form-label">Correo de referencia *</label>
                         <input asp-for="CreateSupplier.CorreoReferencia" id="CreateSupplier_CorreoReferencia" class="form-control"
                                type="email" required data-validate-input
-                               data-validation-message="Ingrese un correo electrónico válido con dominio (ejemplo@dominio.com)." />
+                               data-validation-message="Ingrese un correo electrónico válido con dominio (ejemplo@dominio.com)."
+                               placeholder="ejemplo@correo.com" />
                         <span asp-validation-for="CreateSupplier.CorreoReferencia" class="text-danger"></span>
                         <div class="input-error text-danger small d-none"></div>
                     </div>
@@ -172,7 +174,8 @@
                                class="form-control" required
                                data-validate-input
                                pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-\(\)]+$"
-                               data-validation-message="Solo se permiten letras, números, espacios y los signos . , - ( )." />
+                               data-validation-message="Solo se permiten letras, números, espacios y los signos . , - ( )."
+                               placeholder="Ej: Embol S.A." />
                         <span asp-validation-for="EditSupplier.NombreEmpresa" class="text-danger"></span>
                         <div class="input-error text-danger small d-none"></div>
                     </div>
@@ -182,7 +185,7 @@
                                class="form-control" required data-validate-input
                                pattern="^\d{7,15}$"
                                data-validation-message="El teléfono debe contener entre 7 y 15 dígitos numéricos."
-                               inputmode="numeric" />
+                               inputmode="numeric" placeholder="Ej: 71234567" />
                         <span asp-validation-for="EditSupplier.NumeroEmpresa" class="text-danger"></span>
                         <div class="input-error text-danger small d-none"></div>
                     </div>
@@ -190,7 +193,8 @@
                         <label for="EditSupplier_CorreoReferencia" class="form-label">Correo de referencia *</label>
                         <input asp-for="EditSupplier.CorreoReferencia" id="EditSupplier_CorreoReferencia"
                                class="form-control" type="email" required data-validate-input
-                               data-validation-message="Ingrese un correo electrónico válido con dominio (ejemplo@dominio.com)." />
+                               data-validation-message="Ingrese un correo electrónico válido con dominio (ejemplo@dominio.com)."
+                               placeholder="ejemplo@correo.com" />
                         <span asp-validation-for="EditSupplier.CorreoReferencia" class="text-danger"></span>
                         <div class="input-error text-danger small d-none"></div>
                     </div>
