@@ -108,16 +108,17 @@ else
                             <span asp-validation-for="CreateCategory.Name" class="text-danger"></span>
                     </div>
                     <div class="mb-3">
+                        <label for="createCategoryCode" class="form-label">Código *</label>
                         <div class="input-group">
                             <span class="input-group-text">CAT-</span>
                             <input asp-for="CreateCategory.Code"
                                 id="createCategoryCode"
                                 class="form-control"
                                 required
-                                maxlength="3"
-                                autocomplete="off"
                                 data-category-code
                                 data-validate-input
+                                maxlength="3"
+                                autocomplete="off"
                                 pattern="^[A-Za-z]{3}$" />
                         </div>
                         <div class="input-error text-danger small d-none"></div>
@@ -279,7 +280,12 @@ else
             const button = $(this);
             $('#editCategoryId').val(button.attr('data-id'));
             $('#editCategoryName').val(button.attr('data-name'));
-            $('#editCategoryCode').val(button.attr('data-code'));
+            $('#editCategoryCode').val(
+                (button.attr('data-code') || '')
+                    .replace(/^CAT-/i, '')
+                    .substring(0, 3)
+                    .toUpperCase()
+            );
             $('#editCategoryAisle').val(button.attr('data-aisle') || '');
             $('#editCategoryDescription').val(button.attr('data-description') || '');
             $('#editCategoryModal .input-error').text('').addClass('d-none');
