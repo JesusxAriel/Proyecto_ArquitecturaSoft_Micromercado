@@ -71,7 +71,7 @@ public sealed class IndexModel(
         catch (MySqlException)
         {
             ShowCreateModal = true;
-            DatabaseWarning = "No se pudo guardar el producto por un problema de conexión.";
+            ModelState.AddModelError(string.Empty, "No se pudo guardar el producto. Intente nuevamente.");
             await ReloadProductsAsync(cancellationToken);
             return Page();
         }
