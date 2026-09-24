@@ -5,10 +5,10 @@ namespace Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
 
 public static class SupplierValidation
 {
-    public const string TelefonoPattern = @"^\d{6,20}$";
+    public const string TelefonoPattern = @"^\d{7,15}$";
 
     public const string TelefonoMessage =
-        "Solo dígitos, entre 6 y 20. Ej: 44112233";
+        "Solo dígitos, entre 7 y 15. Ej: 44112233";
     public const string CorreoMessage =
         "Formato inválido. Ej: ventas@empresa.com.bo";
     public const string NombreDuplicadoMessage =
