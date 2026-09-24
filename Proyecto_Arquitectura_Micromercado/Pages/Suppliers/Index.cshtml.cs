@@ -17,6 +17,8 @@ public sealed class IndexModel(
     public string? DatabaseWarning { get; private set; }
     [TempData]
     public string? ErrorMessage { get; set; }
+
+    [TempData]
     public string? StatusMessage { get; set; }
 
     public Supplier CreateSupplier { get; set; } = new();
