@@ -64,8 +64,8 @@
                     <button type="button" class="btn btn-sm btn-outline-warning edit-product-button" title="Editar" aria-label="Editar @product.Nombre"
                             data-bs-toggle="modal" data-bs-target="#editProductModal"
                             data-id="@product.Id" data-name="@product.Nombre" data-packaging="@product.EmpaquePresentacion"
-                            data-sale-price="@product.PrecioVenta.ToString(System.Globalization.CultureInfo.InvariantCulture)"
-                            data-cost-price="@product.PrecioCosto.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                            data-sale-price="@product.PrecioVenta.ToString("0.00")"
+                            data-cost-price="@product.PrecioCosto.ToString("0.00")"
                             data-min-stock="@product.StockMinimo" data-category="@product.IdCategoria" data-supplier="@product.IdProveedor">
                         <i class="bi bi-pencil-square"></i>
                     </button>
@@ -279,8 +279,8 @@
             $('#editProductId').val(button.attr('data-id'));
             $('#editProductName').val(button.attr('data-name'));
             $('#editProductPackaging').val(button.attr('data-packaging'));
-            $('#editSalePrice').val(button.attr('data-sale-price'));
-            $('#editCostPrice').val(button.attr('data-cost-price'));
+            $('#editSalePrice').val((button.attr('data-sale-price') || '').replace('.', ','));
+            $('#editCostPrice').val((button.attr('data-cost-price') || '').replace('.', ','));
             $('#editMinStock').val(button.attr('data-min-stock'));
             $('#editCategory').val(String(button.attr('data-category')));
             $('#editSupplier').val(String(button.attr('data-supplier')));
