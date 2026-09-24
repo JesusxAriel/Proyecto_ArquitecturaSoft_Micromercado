@@ -98,35 +98,59 @@ else
 
                     <div class="mb-3">
                         <label for="createCategoryName" class="form-label">Nombre *</label>
-                        <input asp-for="CreateCategory.Name" id="createCategoryName"
-                               class="form-control" required data-sanitize="text"
-                               data-validate-input
-                               pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-&amp;]+$" />
-                        <div class="input-error text-danger small d-none"></div>
-                        <span asp-validation-for="CreateCategory.Name" class="text-danger"></span>
+                            <input asp-for="CreateCategory.Name" id="createCategoryName"
+                                class="form-control" required
+                                data-sanitize="text"
+                                data-category-name
+                                data-validate-input
+                                pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-&amp;]+$" 
+                                placeholder="Lácteos" />
+                            <div class="input-error text-danger small d-none"></div>
+                            <span asp-validation-for="CreateCategory.Name" class="text-danger"></span>
                     </div>
                     <div class="mb-3">
                         <label for="createCategoryCode" class="form-label">Código *</label>
-                        <input asp-for="CreateCategory.Code" id="createCategoryCode"
-                               class="form-control" required data-sanitize="text"
-                               data-validate-input pattern="^[A-Za-z0-9\-]+$" />
+                        <div class="input-group">
+                            <span class="input-group-text">CAT-</span>
+                            <input asp-for="CreateCategory.Code"
+                                id="createCategoryCode"
+                                class="form-control"
+                                required
+                                data-category-code
+                                data-validate-input
+                                maxlength="3"
+                                autocomplete="off"
+                                pattern="^[A-Za-z]{3}$" 
+                                placeholder="ABC" />
+                        </div>
                         <div class="input-error text-danger small d-none"></div>
                         <span asp-validation-for="CreateCategory.Code" class="text-danger"></span>
                     </div>
                     <div class="mb-3">
-                        <label for="createCategoryAisle" class="form-label">Ubicación en pasillo</label>
-                        <input asp-for="CreateCategory.AisleLocation" id="createCategoryAisle"
-                               class="form-control" data-sanitize="text"
-                               data-validate-input pattern="^[Pp][Aa][Ss][Ii][Ll][Ll][Oo] [1-8]$" />
-                        <div class="input-error text-danger small d-none"></div>
-                        <span asp-validation-for="CreateCategory.AisleLocation" class="text-danger"></span>
+                        <label for="createCategoryAisle" class="form-label">Ubicación en pasillo *</label>
+
+                        <select asp-for="CreateCategory.AisleLocation"
+                                id="createCategoryAisle"
+                                class="form-select"
+                                required>
+                            <option value="">Seleccione un pasillo</option>
+
+                            @for (var i = 1; i <= 8; i++)
+                            {
+                                <option value="Pasillo @i">Pasillo @i</option>
+                            }
+                        </select>
+
+                        <span asp-validation-for="CreateCategory.AisleLocation"
+                              class="text-danger"></span>
                     </div>
                     <div class="mb-3">
                         <label for="createCategoryDescription" class="form-label">Descripción</label>
                         <input asp-for="CreateCategory.Description" id="createCategoryDescription"
                                class="form-control" data-sanitize="text"
                                data-capitalize="true" data-validate-input
-                               pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s.,\-()]+$" />
+                               pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s.,\-()]+$" 
+                               placeholder="Ej: Leche, queso, yogur, etc." />
                         <div class="input-error text-danger small d-none"></div>
                         <span asp-validation-for="CreateCategory.Description" class="text-danger"></span>
                     </div>
@@ -161,24 +185,46 @@ else
                     <div class="mb-3">
                         <label for="editCategoryName" class="form-label">Nombre *</label>
                         <input asp-for="EditCategory.Name" id="editCategoryName"
-                               class="form-control" required data-sanitize="text"
-                               data-validate-input
-                               pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-&amp;]+$" />
+                            class="form-control" required
+                            data-sanitize="text"
+                            data-category-name
+                            data-validate-input
+                            pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-&amp;]+$" />
                         <div class="input-error text-danger small d-none"></div>
                     </div>
                     <div class="mb-3">
                         <label for="editCategoryCode" class="form-label">Código *</label>
-                        <input asp-for="EditCategory.Code" id="editCategoryCode"
-                               class="form-control" required data-sanitize="text"
-                               data-validate-input pattern="^[A-Za-z0-9\-]+$" />
+                        <div class="input-group">
+                            <span class="input-group-text">CAT-</span>
+                            <input asp-for="EditCategory.Code"
+                                id="editCategoryCode"
+                                class="form-control"
+                                required
+                                maxlength="3"
+                                autocomplete="off"
+                                data-category-code
+                                data-validate-input
+                                pattern="^[A-Za-z]{3}$" />
+                        </div>
                         <div class="input-error text-danger small d-none"></div>
                     </div>
                     <div class="mb-3">
-                        <label for="editCategoryAisle" class="form-label">Ubicación en pasillo</label>
-                        <input asp-for="EditCategory.AisleLocation" id="editCategoryAisle"
-                               class="form-control" data-sanitize="text"
-                               data-validate-input pattern="^[Pp][Aa][Ss][Ii][Ll][Ll][Oo] [1-8]$" />
-                        <div class="input-error text-danger small d-none"></div>
+                        <label for="editCategoryAisle" class="form-label">Ubicación en pasillo *</label>
+
+                        <select asp-for="EditCategory.AisleLocation"
+                                id="editCategoryAisle"
+                                class="form-select"
+                                required>
+                            <option value="">Seleccione un pasillo</option>
+
+                            @for (var i = 1; i <= 8; i++)
+                            {
+                                <option value="Pasillo @i">Pasillo @i</option>
+                            }
+                        </select>
+
+                        <span asp-validation-for="EditCategory.AisleLocation"
+                              class="text-danger"></span>
                     </div>
                     <div class="mb-3">
                         <label for="editCategoryDescription" class="form-label">Descripción</label>
@@ -225,6 +271,9 @@ else
 </div>
 
 @section Scripts {
+
+    <partial name="_ValidationScriptsPartial" />
+
     @if (Model.ShowCreateModal)
     {
         <script>bootstrap.Modal.getOrCreateInstance(document.getElementById('createCategoryModal')).show();</script>
@@ -234,7 +283,12 @@ else
             const button = $(this);
             $('#editCategoryId').val(button.attr('data-id'));
             $('#editCategoryName').val(button.attr('data-name'));
-            $('#editCategoryCode').val(button.attr('data-code'));
+            $('#editCategoryCode').val(
+                (button.attr('data-code') || '')
+                    .replace(/^CAT-/i, '')
+                    .substring(0, 3)
+                    .toUpperCase()
+            );
             $('#editCategoryAisle').val(button.attr('data-aisle') || '');
             $('#editCategoryDescription').val(button.attr('data-description') || '');
             $('#editCategoryModal .input-error').text('').addClass('d-none');
@@ -242,6 +296,22 @@ else
                 this.setCustomValidity('');
             });
             $('#editCategoryModal [data-validate-input]').trigger('input');
+        });
+
+        $('#createCategoryModal').on('hidden.bs.modal', function () {
+            const form = this.querySelector('form');
+
+            if (!form) {
+                return;
+            }
+
+            form.reset();
+
+            $(form).removeClass('was-validated');
+            $(form).find('.input-error').text('').addClass('d-none');
+            $(form).find('input').each(function () {
+                this.setCustomValidity('');
+            });
         });
 
         $('#categorySearch').on('input', function () {

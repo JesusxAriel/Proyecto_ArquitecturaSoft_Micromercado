@@ -30,6 +30,7 @@ namespace Proyecto_Arquitectura_Micromercado.Domain.Categories
         public string Code { get; set; } = string.Empty;
 
         [Display(Name = "Ubicación en pasillo")]
+        [Required(ErrorMessage = "El pasillo es obligatorio.")]
         [StringLength(
             20,
             ErrorMessage = "La ubicación no puede exceder los 20 caracteres.")]

@@ -56,7 +56,7 @@
 
     function validateInput(input, showErrors) {
         const value = input.value;
-        const error = $(input).siblings('.input-error');
+        const error = hasCategorySpacingRules(input) ? $(input).closest('.mb-3').find('.input-error').first() : $(input).siblings('.input-error');
         const spacingMessage = hasCategorySpacingRules(input) ? validateCategorySpacing(input, value) : '';
         let message = '';
 
@@ -71,9 +71,11 @@
             message = input.dataset.validationMessage || 'Ingrese un correo electrónico válido con dominio (ejemplo@dominio.com).';
         } else if (input.pattern && input.value && !new RegExp(input.pattern).test(input.value)) {
             message = input.dataset.validationMessage ||
-                (input.pattern === '^\\d{7,15}$'
-                    ? 'El teléfono debe contener entre 7 y 15 dígitos numéricos.'
-                    : 'El formato ingresado no es válido.');
+                (input.id === 'createCategoryCode' || input.id === 'editCategoryCode'
+                    ? 'El código debe tener exactamente 3 letras. Ej: LAC.'
+                    : input.pattern === '^\\d{7,15}$'
+                        ? 'El teléfono debe contener entre 7 y 15 dígitos numéricos.'
+                        : 'El formato ingresado no es válido.');
         } else if (input.type === 'number' && input.value && Number.isNaN(Number(input.value))) {
             message = 'Ingresa un número válido.';
         } else if (input.dataset.sanitize === 'text' && input.value && !validationPattern.test(input.value)) {
