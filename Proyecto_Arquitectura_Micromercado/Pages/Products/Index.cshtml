@@ -24,8 +24,9 @@
 
 @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
 {
-    <div class="alert alert-success shadow-sm" role="alert">
+    <div class="alert alert-success alert-dismissible shadow-sm fade show" role="alert" id="statusAlert">
         @Model.StatusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
 
@@ -1294,6 +1295,21 @@
 
             }
         );
+
+
+        /*
+         * ==========================================================
+         * CERRAR ALERTAS AUTOMÁTICAMENTE
+         * ==========================================================
+         */
+
+        setTimeout(function () {
+            var alerts = document.querySelectorAll('.alert-dismissible');
+            alerts.forEach(function (alert) {
+                var closeBtn = alert.querySelector('.btn-close');
+                if (closeBtn) closeBtn.click();
+            });
+        }, 4000);
 
     </script>
 }
