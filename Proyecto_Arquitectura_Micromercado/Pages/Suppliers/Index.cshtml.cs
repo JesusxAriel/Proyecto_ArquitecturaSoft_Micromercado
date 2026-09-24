@@ -4,14 +4,20 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
 
+using Proyecto_Arquitectura_Micromercado.Application.Products;
+
 namespace Proyecto_Arquitectura_Micromercado.Pages.Suppliers;
 
 public sealed class IndexModel(
     ISupplierService supplierService,
+    IProductService productService,
     ILogger<IndexModel> logger) : PageModel
 {
     public IReadOnlyList<SupplierListItem> Suppliers { get; private set; } = [];
     public string? DatabaseWarning { get; private set; }
+    [TempData]
+    public string? ErrorMessage { get; set; }
+
     [TempData]
     public string? StatusMessage { get; set; }
 
@@ -120,6 +126,12 @@ public sealed class IndexModel(
             return BadRequest("El proveedor no es válido.");
         }
 
+        if (await TieneProductosActivosAsync(DeleteSupplierId, cancellationToken))
+        {
+            ErrorMessage = "No se puede eliminar el proveedor porque tiene productos asociados.";
+            return RedirectToPage();
+        }
+
         if (!await supplierService.SoftDeleteAsync(DeleteSupplierId, cancellationToken))
         {
             return NotFound();
@@ -127,6 +139,19 @@ public sealed class IndexModel(
 
         StatusMessage = "Proveedor eliminado correctamente.";
         return RedirectToPage();
+    }
+
+    /// <summary>
+    /// Verifica si el proveedor abastece productos activos. La baja de proveedores
+    /// es lógica, por lo que MySQL nunca rechaza la operación aunque la clave
+    /// foránea sea ON DELETE RESTRICT: la regla debe comprobarse antes de dar de baja.
+    /// </summary>
+    private async Task<bool> TieneProductosActivosAsync(
+        int supplierId,
+        CancellationToken cancellationToken)
+    {
+        var productos = await productService.GetAllAsync(cancellationToken);
+        return productos.Any(producto => producto.IdProveedor == supplierId);
     }
 
     private async Task LoadSuppliersAsync(CancellationToken cancellationToken)
