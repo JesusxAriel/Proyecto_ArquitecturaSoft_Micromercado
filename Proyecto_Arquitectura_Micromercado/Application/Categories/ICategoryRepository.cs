@@ -6,10 +6,5 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
     public interface ICategoryRepository :
         IRepositorioBase<Category, Category, int>
     {
-        List<Category> GetActive();
-        Category? GetById(int id);
-        bool Add(Category category);
-        bool Update(Category category);
-        bool Delete(int id, int adminUserId);
     }
 }
