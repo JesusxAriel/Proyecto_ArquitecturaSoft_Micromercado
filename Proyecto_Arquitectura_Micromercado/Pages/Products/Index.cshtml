@@ -55,12 +55,12 @@
     </div>
 }
 
-<div class="table-responsive shadow-sm rounded-3">
+<div class="table-responsive products-table-container shadow-sm rounded-3">
     <table id="productsTable" class="table table-hover align-middle mb-0">
-        <thead>
+        <thead class="products-table-header">
             <tr>
                 <th>Nombre</th>
-                <th>Presentación</th>
+                <th>Empaque</th>
                 <th>Categoría</th>
                 <th>Proveedor</th>
                 <th class="text-center">Precio(Bs)</th>
@@ -79,7 +79,7 @@
                     <td>@product.NombreProveedor</td>
 
                     <td class="text-center">
-                        Bs. @product.PrecioVenta.ToString("N2")
+                        @product.PrecioVenta.ToString("N2")
                     </td>
 
                     <td class="text-center" style="min-width: 120px;">
@@ -608,7 +608,8 @@
                                        placeholder="Ej. Ajuste de precio por proveedor"
                                        type="text"
                                        maxlength="255"
-                                       autocomplete="off" />
+                                       autocomplete="off" 
+                                       required />
 
                                 <div id="priceChangeReasonError"
                                      class="text-danger small mt-1 d-none">
@@ -853,16 +854,10 @@
 
         function validatePriceReason() {
 
-            const input =
-                $('#priceChangeReason');
+            const input = $('#priceChangeReason');
+            const error = $('#priceChangeReasonError');
 
-            const error =
-                $('#priceChangeReasonError');
-
-            let value =
-                normalizeReason(
-                    input.val().toString()
-                );
+            let value = normalizeReason(input.val().toString());
 
             input.val(value);
 
@@ -870,16 +865,15 @@
                 value.length >= 3 &&
                 !/[<>"'`;\\\u0000-\u001F\u007F]/.test(value);
 
-
             if (valid) {
+
+                input
+                    .removeClass('is-invalid')
+                    .addClass('is-valid');
 
                 error
                     .addClass('d-none')
                     .text('');
-
-                input
-                    .removeClass('is-invalid')
-                    .removeClass('is-valid');
 
                 return true;
             }
