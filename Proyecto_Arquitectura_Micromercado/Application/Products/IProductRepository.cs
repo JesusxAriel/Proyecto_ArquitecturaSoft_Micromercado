@@ -6,6 +6,7 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Products;
 public interface IProductRepository :
     IRepositorioBase<Product, ProductListItem, int>,
     IConListadoPaginado,
+    IConBusqueda,
     IConCatalogo
 {
 }

@@ -9,6 +9,7 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 public sealed class MySqlProductRepository(IPriceHistoryRepository priceHistoryRepository) : IProductRepository
 {
     private const int SystemAdminId = 1;
+    private const int DuplicateKeyErrorNumber = 1062;
     private readonly IPriceHistoryRepository _priceHistoryRepository = priceHistoryRepository;
 
     public async Task<IReadOnlyList<ProductListItem>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -150,6 +151,32 @@ public sealed class MySqlProductRepository(IPriceHistoryRepository priceHistoryR
         };
     }
 
+    public async Task<bool> ExistsNombreEmpaqueAsync(
+        string nombre,
+        int idEmpaque,
+        int idExcluido,
+        CancellationToken cancellationToken = default)
+    {
+        // La collation utf8mb4_unicode_ci ignora mayúsculas y tildes; REGEXP_REPLACE los espacios extra.
+        const string sql = """
+            SELECT EXISTS (
+                SELECT 1
+                FROM PRODUCTO
+                WHERE estaActivo = 1
+                  AND id <> @idExcluido
+                  AND idEmpaque = @idEmpaque
+                  AND TRIM(REGEXP_REPLACE(nombre, '[[:space:]]+', ' ')) = @nombre
+            );
+            """;
+
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@nombre", nombre.Trim());
+        command.Parameters.AddWithValue("@idEmpaque", idEmpaque);
+        command.Parameters.AddWithValue("@idExcluido", idExcluido);
+        return Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken)) == 1;
+    }
+
     public Task<IReadOnlyList<LookupOption>> GetPackagingsAsync(CancellationToken cancellationToken = default) =>
         GetLookupAsync("SELECT id, nombre FROM EMPAQUE WHERE estaActivo = 1 ORDER BY nombre;", cancellationToken);
 
@@ -227,7 +254,17 @@ public sealed class MySqlProductRepository(IPriceHistoryRepository priceHistoryR
         await using var command = new MySqlCommand(sql, connection);
         AddProductParameters(command, product);
         command.Parameters.AddWithValue("@idUsuarioAdmin", SystemAdminId);
-        var generatedId = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
+
+        int generatedId;
+        try
+        {
+            generatedId = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
+        }
+        catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
+        {
+            throw new ArgumentException(ProductValidation.DuplicateMessage, ex);
+        }
+
         product.Id = generatedId;
         return generatedId;
     }
@@ -277,7 +314,16 @@ public sealed class MySqlProductRepository(IPriceHistoryRepository priceHistoryR
         {
             AddProductParameters(updateCommand, product);
             updateCommand.Parameters.AddWithValue("@id", product.Id);
-            affectedRows = await updateCommand.ExecuteNonQueryAsync(cancellationToken);
+
+            try
+            {
+                affectedRows = await updateCommand.ExecuteNonQueryAsync(cancellationToken);
+            }
+            catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw new ArgumentException(ProductValidation.DuplicateMessage, ex);
+            }
         }
 
         if (affectedRows == 1 &&

@@ -53,6 +53,7 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
     public async Task<int> CreateAsync(Product product, CancellationToken cancellationToken = default)
     {
         Validate(product);
+        await EnsureNotDuplicatedAsync(product, cancellationToken);
         await EnsureReferencesExistAsync(product, cancellationToken);
 
         return await repository.CreateAsync(product, cancellationToken);
@@ -61,9 +62,23 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
     public async Task<bool> UpdateAsync(Product product, CancellationToken cancellationToken = default)
     {
         Validate(product);
+        await EnsureNotDuplicatedAsync(product, cancellationToken);
         await EnsureReferencesExistAsync(product, cancellationToken);
 
         return await repository.UpdateAsync(product, cancellationToken);
+    }
+
+    // Al crear Id vale 0, así que no excluye a nadie; al editar excluye el propio registro.
+    private async Task EnsureNotDuplicatedAsync(Product product, CancellationToken cancellationToken)
+    {
+        if (await repository.ExistsNombreEmpaqueAsync(
+                product.Nombre,
+                product.IdEmpaque,
+                product.Id,
+                cancellationToken))
+        {
+            throw new ArgumentException(ProductValidation.DuplicateMessage);
+        }
     }
 
     private async Task EnsureReferencesExistAsync(Product product, CancellationToken cancellationToken)
