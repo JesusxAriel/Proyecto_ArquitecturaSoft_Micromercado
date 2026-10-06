@@ -110,6 +110,8 @@
                                 data-sanitize="text"
                                 data-category-name
                                 data-validate-input
+                                data-unique-url="@Url.Page("/Categories/Index", "CheckUnique")"
+                                data-unique-fields="nombre=#createCategoryName"
                                 pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-&amp;]+$" 
                                 placeholder="Lácteos" />
                             <div class="input-error text-danger small d-none"></div>
@@ -118,8 +120,10 @@
                     <div class="mb-3">
                         <label for="createCategoryCode" class="form-label">Código</label>
                         <input id="createCategoryCode" class="form-control"
-                               placeholder="Se genera automáticamente (CAT-XXX)" readonly disabled />
-                        <div class="form-text">Se genera a partir del nombre y no se puede modificar.</div>
+                               placeholder="Se genera automáticamente (CAT-XXX)" readonly disabled
+                               data-code-preview-url="@Url.Page("/Categories/Index", "PreviewCode")"
+                               data-code-preview-source="#createCategoryName" />
+                        <div class="text-danger small d-none" data-code-preview-message></div>
                     </div>
                     <div class="mb-3">
                         <label for="createCategoryAisle" class="form-label">Ubicación en pasillo *</label>
@@ -187,13 +191,15 @@
                             data-sanitize="text"
                             data-category-name
                             data-validate-input
+                            data-unique-url="@Url.Page("/Categories/Index", "CheckUnique")"
+                            data-unique-fields="nombre=#editCategoryName,id=#editCategoryId"
                             pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-&amp;]+$" />
                         <div class="input-error text-danger small d-none"></div>
+                        <span asp-validation-for="EditCategory.Name" class="text-danger"></span>
                     </div>
                     <div class="mb-3">
                         <label for="editCategoryCode" class="form-label">Código</label>
                         <input id="editCategoryCode" class="form-control" readonly disabled />
-                        <div class="form-text">El código no cambia al editar la categoría.</div>
                     </div>
                     <div class="mb-3">
                         <label for="editCategoryAisle" class="form-label">Ubicación en pasillo *</label>
