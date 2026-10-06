@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
+using Proyecto_Arquitectura_Micromercado.Pages.Shared;
 
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 
@@ -41,9 +42,25 @@ public sealed class IndexModel(
     [BindProperty]
     public int DeleteSupplierId { get; set; }
 
+    public bool ShowCreateModal { get; private set; }
+    public bool ShowEditModal { get; private set; }
+
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         await LoadSuppliersAsync(cancellationToken);
+    }
+
+    // Endpoint GET para el script de validación en vivo (site.js).
+    public async Task<IActionResult> OnGetCheckUniqueAsync(
+        string? nombre,
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var duplicate =
+            !string.IsNullOrWhiteSpace(nombre) &&
+            await supplierService.ExistsNombreEmpresaAsync(nombre, id, cancellationToken);
+
+        return UniqueCheckResult.ToJson(duplicate, SupplierValidation.NombreDuplicadoMessage);
     }
 
     public async Task<IActionResult> OnPostCreateAsync(
@@ -56,13 +73,7 @@ public sealed class IndexModel(
         if (!ModelState.IsValid)
         {
             LogModelStateErrors("crear");
-            await LoadSuppliersAsync(cancellationToken);
-            return Page();
-        }
-
-        if (await supplierService.ExistsNombreEmpresaAsync(CreateSupplier.NombreEmpresa, 0, cancellationToken))
-        {
-            ModelState.AddModelError("CreateSupplier.NombreEmpresa", "Ya existe un proveedor con ese nombre.");
+            ShowCreateModal = true;
             await LoadSuppliersAsync(cancellationToken);
             return Page();
         }
@@ -75,13 +86,18 @@ public sealed class IndexModel(
         }
         catch (ArgumentException ex)
         {
-            ModelState.AddModelError(string.Empty, ex.Message);
+            // Un duplicado (carrera con otra solicitud) se muestra junto al campo Nombre.
+            ModelState.AddModelError(
+                ex is DuplicateSupplierException ? "CreateSupplier.NombreEmpresa" : string.Empty,
+                ex.Message);
+            ShowCreateModal = true;
             await LoadSuppliersAsync(cancellationToken);
             return Page();
         }
         catch (MySqlException)
         {
             DatabaseWarning = "No se pudo guardar el proveedor por un problema de conexión.";
+            ShowCreateModal = true;
             await LoadSuppliersAsync(cancellationToken);
             return Page();
         }
@@ -97,13 +113,7 @@ public sealed class IndexModel(
         if (!ModelState.IsValid || EditSupplier.Id <= 0)
         {
             LogModelStateErrors();
-            await LoadSuppliersAsync(cancellationToken);
-            return Page();
-        }
-
-        if (await supplierService.ExistsNombreEmpresaAsync(EditSupplier.NombreEmpresa, EditSupplier.Id, cancellationToken))
-        {
-            ModelState.AddModelError("EditSupplier.NombreEmpresa", "Ya existe un proveedor con ese nombre.");
+            ShowEditModal = true;
             await LoadSuppliersAsync(cancellationToken);
             return Page();
         }
@@ -120,13 +130,17 @@ public sealed class IndexModel(
         }
         catch (ArgumentException ex)
         {
-            ModelState.AddModelError(string.Empty, ex.Message);
+            ModelState.AddModelError(
+                ex is DuplicateSupplierException ? "EditSupplier.NombreEmpresa" : string.Empty,
+                ex.Message);
+            ShowEditModal = true;
             await LoadSuppliersAsync(cancellationToken);
             return Page();
         }
         catch (MySqlException)
         {
             DatabaseWarning = "No se pudo actualizar el proveedor por un problema de conexión.";
+            ShowEditModal = true;
             await LoadSuppliersAsync(cancellationToken);
             return Page();
         }
