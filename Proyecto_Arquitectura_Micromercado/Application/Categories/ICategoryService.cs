@@ -5,6 +5,7 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories;
 
 public interface ICategoryService :
     IServicioCRUD<Category, int, Category, Category>,
-    IConListado
+    IConListado,
+    IConListadoPaginado
 {
 }

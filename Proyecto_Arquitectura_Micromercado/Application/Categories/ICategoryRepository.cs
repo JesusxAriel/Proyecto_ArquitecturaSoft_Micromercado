@@ -5,6 +5,7 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
 {
     public interface ICategoryRepository :
         IRepositorioBase<Category, Category, int>,
+        IConListadoPaginado,
         IConBusqueda
     {
     }

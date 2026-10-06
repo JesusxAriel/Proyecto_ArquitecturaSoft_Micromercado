@@ -1,4 +1,6 @@
 ﻿using System.Globalization;
+using Proyecto_Arquitectura_Micromercado.Application.Common;
+using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using System.Text.RegularExpressions;
 using Proyecto_Arquitectura_Micromercado.Domain.Categories;
 
@@ -20,6 +22,25 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
         {
             return await categoryRepository.GetAllAsync(
                 cancellationToken);
+        }
+
+        public async Task<PagedResult<Category>> GetPagedAsync(
+            int page,
+            int pageSize,
+            string? search,
+            CancellationToken cancellationToken = default)
+        {
+            search = PagedQuery.NormalizeSearch(search);
+
+            return await PagedQuery.ExecuteAsync(
+                page,
+                pageSize,
+                (currentPage, currentSize) =>
+                    categoryRepository.GetPagedAsync(
+                        currentPage,
+                        currentSize,
+                        search,
+                        cancellationToken));
         }
 
         public async Task<Category?> GetByIdAsync(

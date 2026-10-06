@@ -1,6 +1,7 @@
 ﻿using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Domain.Categories;
+using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
@@ -45,6 +46,37 @@ public sealed class MySqlCategoryRepository : ICategoryRepository
         }
 
         return categories;
+    }
+
+    public async Task<PagedResult<Category>> GetPagedAsync(
+        int page,
+        int pageSize,
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection =
+            await OpenConnectionAsync(cancellationToken);
+
+        return await PagedSqlRunner.RunAsync(
+            connection,
+            columns: """
+                id, nombre, descripcion, codigo, pasilloUbicacion, estaActivo,
+                idUsuarioAdmin, fechaCreacion, fechaActualizacion
+                """,
+            from: "CATEGORIAS",
+            baseWhere: "estaActivo = 1",
+            searchCondition: """
+                nombre LIKE @search
+                OR codigo LIKE @search
+                OR pasilloUbicacion LIKE @search
+                OR descripcion LIKE @search
+                """,
+            orderBy: "nombre, id",
+            search,
+            page,
+            pageSize,
+            MapCategory,
+            cancellationToken);
     }
 
     public async Task<Category?> GetByIdAsync(
