@@ -1,6 +1,19 @@
 namespace Proyecto_Arquitectura_Micromercado.Domain.Common;
 
-public sealed class PagedResult<T>
+// Datos de paginación sin el tipo de los elementos; los consume el parcial _Pager.
+public interface IPagedInfo
+{
+    int Page { get; }
+    int PageSize { get; }
+    int TotalCount { get; }
+    int TotalPages { get; }
+    int FirstItemNumber { get; }
+    int LastItemNumber { get; }
+    bool HasPrevious { get; }
+    bool HasNext { get; }
+}
+
+public sealed class PagedResult<T> : IPagedInfo
 {
     public IReadOnlyList<T> Items { get; init; } = [];
     public int Page { get; init; } = 1;

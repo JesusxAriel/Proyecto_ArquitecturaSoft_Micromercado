@@ -43,63 +43,29 @@ public sealed class MySqlProductRepository(IPriceHistoryRepository priceHistoryR
         string? search,
         CancellationToken cancellationToken = default)
     {
-        const string filter = """
-            WHERE (@search IS NULL
-                   OR nombre LIKE @search
-                   OR empaquePresentacion LIKE @search
-                   OR nombreCategoria LIKE @search
-                   OR nombreProveedor LIKE @search)
-            """;
-        const string countSql = "SELECT COUNT(*) FROM vw_productos_con_stock " + filter + ";";
-        const string pageSql = """
-            SELECT id, nombre, idEmpaque, empaquePresentacion, precioVenta, precioCosto,
-                   stockMinimo, idCategoria, nombreCategoria, idProveedor,
-                   nombreProveedor, stockCalculado
-            FROM vw_productos_con_stock
-            """ + "\n" + filter + """
-
-            ORDER BY nombre, id
-            LIMIT @limit OFFSET @offset;
-            """;
-
-        // En LIKE el backslash es el escape por defecto de MySQL: se escapan \, % y _ del texto buscado.
-        object searchPattern = string.IsNullOrWhiteSpace(search)
-            ? DBNull.Value
-            : "%" + search.Trim()
-                .Replace("\\", "\\\\")
-                .Replace("%", "\\%")
-                .Replace("_", "\\_") + "%";
-
         await using var connection = await OpenConnectionAsync(cancellationToken);
 
-        int totalCount;
-        await using (var countCommand = new MySqlCommand(countSql, connection))
-        {
-            countCommand.Parameters.AddWithValue("@search", searchPattern);
-            totalCount = Convert.ToInt32(await countCommand.ExecuteScalarAsync(cancellationToken));
-        }
-
-        var products = new List<ProductListItem>();
-        await using (var pageCommand = new MySqlCommand(pageSql, connection))
-        {
-            pageCommand.Parameters.AddWithValue("@search", searchPattern);
-            pageCommand.Parameters.AddWithValue("@limit", pageSize);
-            pageCommand.Parameters.AddWithValue("@offset", (page - 1) * pageSize);
-            await using var reader = await pageCommand.ExecuteReaderAsync(cancellationToken);
-
-            while (await reader.ReadAsync(cancellationToken))
-            {
-                products.Add(MapListItem(reader));
-            }
-        }
-
-        return new PagedResult<ProductListItem>
-        {
-            Items = products,
-            Page = page,
-            PageSize = pageSize,
-            TotalCount = totalCount
-        };
+        return await PagedSqlRunner.RunAsync(
+            connection,
+            columns: """
+                id, nombre, idEmpaque, empaquePresentacion, precioVenta, precioCosto,
+                stockMinimo, idCategoria, nombreCategoria, idProveedor,
+                nombreProveedor, stockCalculado
+                """,
+            from: "vw_productos_con_stock",
+            baseWhere: null,
+            searchCondition: """
+                nombre LIKE @search
+                OR empaquePresentacion LIKE @search
+                OR nombreCategoria LIKE @search
+                OR nombreProveedor LIKE @search
+                """,
+            orderBy: "nombre, id",
+            search,
+            page,
+            pageSize,
+            MapListItem,
+            cancellationToken);
     }
 
     private static ProductListItem MapListItem(System.Data.Common.DbDataReader reader) => new()
