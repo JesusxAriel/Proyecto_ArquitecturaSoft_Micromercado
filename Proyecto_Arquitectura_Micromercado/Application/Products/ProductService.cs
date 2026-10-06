@@ -135,6 +135,11 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
             throw new ArgumentException($"El precio de costo no puede superar Bs. {MaxPrice:N2}.");
         }
 
+        if (product.PrecioVenta < product.PrecioCosto)
+        {
+            throw new ArgumentException(ProductPriceValidation.SaleBelowCostMessage);
+        }
+
         if (product.StockMinimo < 0)
         {
             throw new ArgumentException("El stock mínimo no puede ser negativo.");

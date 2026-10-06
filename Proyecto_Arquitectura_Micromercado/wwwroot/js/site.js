@@ -54,6 +54,22 @@
         return /\s{2,}/.test(value) ? 'No se permiten espacios dobles.' : '';
     }
 
+    function parseDecimal(value) {
+        return Number(String(value).trim().replace(',', '.'));
+    }
+
+    // data-gte-field="#otroCampo": el valor de este campo debe ser >= al del otro campo.
+    function isLessThanField(input) {
+        const other = document.querySelector(input.dataset.gteField);
+        if (!other || !input.value.trim() || !other.value.trim()) {
+            return false;
+        }
+
+        const value = parseDecimal(input.value);
+        const limit = parseDecimal(other.value);
+        return !Number.isNaN(value) && !Number.isNaN(limit) && value < limit;
+    }
+
     function validateInput(input, showErrors) {
         const value = input.value;
         const error = hasCategorySpacingRules(input) ? $(input).closest('.mb-3').find('.input-error').first() : $(input).siblings('.input-error');
@@ -74,6 +90,8 @@
                 (input.id === 'createCategoryCode' || input.id === 'editCategoryCode'
                     ? 'El código debe tener exactamente 3 letras. Ej: LAC.'
                     : 'El formato ingresado no es válido.');
+        } else if (input.dataset.gteField && isLessThanField(input)) {
+            message = input.dataset.gteMessage || 'El valor no puede ser menor al del campo relacionado.';
         } else if (input.type === 'number' && input.value && Number.isNaN(Number(input.value))) {
             message = 'Ingresa un número válido.';
         } else if (input.dataset.sanitize === 'text' && input.value && !validationPattern.test(input.value)) {

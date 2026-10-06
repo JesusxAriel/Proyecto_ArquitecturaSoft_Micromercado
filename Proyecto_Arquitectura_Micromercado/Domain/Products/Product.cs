@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Proyecto_Arquitectura_Micromercado.Domain.Products;
 
-public sealed class Product
+public sealed class Product : IValidatableObject
 {
     public int Id { get; set; }
 
@@ -39,6 +39,16 @@ public sealed class Product
     public string? MotivoCambio { get; set; }
 
     public bool EstaActivo { get; set; } = true;
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (PrecioVenta < PrecioCosto)
+        {
+            yield return new ValidationResult(
+                ProductPriceValidation.SaleBelowCostMessage,
+                [nameof(PrecioVenta)]);
+        }
+    }
 }
 
 public sealed class ProductListItem
