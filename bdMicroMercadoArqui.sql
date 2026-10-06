@@ -41,7 +41,10 @@ CREATE TABLE `PROVEEDOR` (
   `idUsuarioAdmin` INT NOT NULL,
   `fechaCreacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `fechaActualizacion` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
+  -- Vale NULL si el proveedor está dado de baja: así el nombre se puede reutilizar.
+  `nombreActivo` VARCHAR(150) GENERATED ALWAYS AS (IF(`estaActivo` = 1, `nombreEmpresa`, NULL)) VIRTUAL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UQ_Proveedor_nombre_activo` (`nombreActivo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========================================================
