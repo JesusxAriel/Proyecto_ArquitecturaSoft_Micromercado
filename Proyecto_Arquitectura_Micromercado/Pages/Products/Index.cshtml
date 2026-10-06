@@ -102,7 +102,7 @@
                                     data-bs-target="#editProductModal"
                                     data-id="@product.Id"
                                     data-name="@product.Nombre"
-                                    data-packaging="@product.EmpaquePresentacion"
+                                    data-packaging="@product.IdEmpaque"
                                     data-sale-price="@product.PrecioVenta.ToString("0.00")"
                                     data-cost-price="@product.PrecioCosto.ToString("0.00")"
                                     data-min-stock="@product.StockMinimo"
@@ -265,19 +265,21 @@
                                 Empaque *
                             </label>
 
-                            <input asp-for="CreateProduct.EmpaquePresentacion"
-                                   id="createProductPackaging"
-                                   class="form-control"
-                                   placeholder="Ej. Bolsa"
-                                   required
-                                   autocomplete="off"
-                                   data-sanitize="text"
-                                   data-validate-input
-                                   pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
+                            <select asp-for="CreateProduct.IdEmpaque"
+                                    id="createProductPackaging"
+                                    class="form-select"
+                                    required
+                                    autocomplete="off"
+                                    data-validate-input
+                                    asp-items="@(Model.Packagings.Select(x => new SelectListItem(x.Nombre, x.Id.ToString())))">
 
-                            <div class="input-error text-danger small d-none"></div>
+                                <option value="">
+                                    Seleccione...
+                                </option>
 
-                            <span asp-validation-for="CreateProduct.EmpaquePresentacion"
+                            </select>
+
+                            <span asp-validation-for="CreateProduct.IdEmpaque"
                                   class="text-danger">
                             </span>
 
@@ -533,17 +535,14 @@
                                 Empaque *
                             </label>
 
-                            <input asp-for="EditProduct.EmpaquePresentacion"
-                                   id="editProductPackaging"
-                                   class="form-control"
-                                   placeholder="Ej. Bolsa"
-                                   required
-                                   autocomplete="off"                        
-                                   data-sanitize="text"
-                                   data-validate-input
-                                   pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
-
-                            <div class="input-error text-danger small d-none"></div>
+                            <select asp-for="EditProduct.IdEmpaque"
+                                    id="editProductPackaging"
+                                    class="form-select"
+                                    required
+                                    autocomplete="off"
+                                    data-validate-input
+                                    asp-items="@(Model.Packagings.Select(x => new SelectListItem(x.Nombre, x.Id.ToString())))">
+                            </select>
 
                         </div>
 

@@ -14,7 +14,7 @@ public sealed class MySqlProductRepository : IProductRepository
     public async Task<IReadOnlyList<ProductListItem>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT id, nombre, empaquePresentacion, precioVenta, precioCosto,
+            SELECT id, nombre, idEmpaque, empaquePresentacion, precioVenta, precioCosto,
                    stockMinimo, idCategoria, nombreCategoria, idProveedor,
                    nombreProveedor, stockCalculado
             FROM vw_productos_con_stock
@@ -51,7 +51,7 @@ public sealed class MySqlProductRepository : IProductRepository
             """;
         const string countSql = "SELECT COUNT(*) FROM vw_productos_con_stock " + filter + ";";
         const string pageSql = """
-            SELECT id, nombre, empaquePresentacion, precioVenta, precioCosto,
+            SELECT id, nombre, idEmpaque, empaquePresentacion, precioVenta, precioCosto,
                    stockMinimo, idCategoria, nombreCategoria, idProveedor,
                    nombreProveedor, stockCalculado
             FROM vw_productos_con_stock
@@ -105,6 +105,7 @@ public sealed class MySqlProductRepository : IProductRepository
     {
         Id = reader.GetInt32(reader.GetOrdinal("id")),
         Nombre = reader.GetString(reader.GetOrdinal("nombre")),
+        IdEmpaque = reader.GetInt32(reader.GetOrdinal("idEmpaque")),
         EmpaquePresentacion = reader.GetString(reader.GetOrdinal("empaquePresentacion")),
         PrecioVenta = reader.GetDecimal(reader.GetOrdinal("precioVenta")),
         PrecioCosto = reader.GetDecimal(reader.GetOrdinal("precioCosto")),
@@ -119,7 +120,7 @@ public sealed class MySqlProductRepository : IProductRepository
     public async Task<Product?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT id, nombre, empaquePresentacion, precioVenta, precioCosto,
+            SELECT id, nombre, idEmpaque, precioVenta, precioCosto,
                    stockMinimo, idCategoria, idProveedor, estaActivo
             FROM PRODUCTO
             WHERE id = @id AND estaActivo = 1;
@@ -139,7 +140,7 @@ public sealed class MySqlProductRepository : IProductRepository
         {
             Id = reader.GetInt32(reader.GetOrdinal("id")),
             Nombre = reader.GetString(reader.GetOrdinal("nombre")),
-            EmpaquePresentacion = reader.GetString(reader.GetOrdinal("empaquePresentacion")),
+            IdEmpaque = reader.GetInt32(reader.GetOrdinal("idEmpaque")),
             PrecioVenta = reader.GetDecimal(reader.GetOrdinal("precioVenta")),
             PrecioCosto = reader.GetDecimal(reader.GetOrdinal("precioCosto")),
             StockMinimo = reader.GetInt32(reader.GetOrdinal("stockMinimo")),
@@ -148,6 +149,9 @@ public sealed class MySqlProductRepository : IProductRepository
             EstaActivo = reader.GetBoolean(reader.GetOrdinal("estaActivo"))
         };
     }
+
+    public Task<IReadOnlyList<LookupOption>> GetPackagingsAsync(CancellationToken cancellationToken = default) =>
+        GetLookupAsync("SELECT id, nombre FROM EMPAQUE WHERE estaActivo = 1 ORDER BY nombre;", cancellationToken);
 
     public Task<IReadOnlyList<LookupOption>> GetCategoriesAsync(CancellationToken cancellationToken = default) =>
         GetLookupAsync("SELECT id, nombre FROM CATEGORIAS WHERE estaActivo = 1 ORDER BY nombre;", cancellationToken);
@@ -211,10 +215,10 @@ public sealed class MySqlProductRepository : IProductRepository
     {
         const string sql = """
             INSERT INTO PRODUCTO
-                (nombre, empaquePresentacion, precioVenta, precioCosto, stockMinimo,
+                (nombre, idEmpaque, precioVenta, precioCosto, stockMinimo,
                  idCategoria, idProveedor, estaActivo, idUsuarioAdmin)
             VALUES
-                (@nombre, @empaquePresentacion, @precioVenta, @precioCosto, @stockMinimo,
+                (@nombre, @idEmpaque, @precioVenta, @precioCosto, @stockMinimo,
                  @idCategoria, @idProveedor, 1, @idUsuarioAdmin);
             SELECT LAST_INSERT_ID();
             """;
@@ -239,7 +243,7 @@ public sealed class MySqlProductRepository : IProductRepository
         const string updateSql = """
             UPDATE PRODUCTO
             SET nombre = @nombre,
-                empaquePresentacion = @empaquePresentacion,
+                idEmpaque = @idEmpaque,
                 precioVenta = @precioVenta,
                 precioCosto = @precioCosto,
                 stockMinimo = @stockMinimo,
@@ -348,7 +352,7 @@ public sealed class MySqlProductRepository : IProductRepository
     private static void AddProductParameters(MySqlCommand command, Product product)
     {
         command.Parameters.AddWithValue("@nombre", product.Nombre.Trim());
-        command.Parameters.AddWithValue("@empaquePresentacion", product.EmpaquePresentacion.Trim());
+        command.Parameters.AddWithValue("@idEmpaque", product.IdEmpaque);
         command.Parameters.AddWithValue("@precioVenta", product.PrecioVenta);
         command.Parameters.AddWithValue("@precioCosto", product.PrecioCosto);
         command.Parameters.AddWithValue("@stockMinimo", product.StockMinimo);

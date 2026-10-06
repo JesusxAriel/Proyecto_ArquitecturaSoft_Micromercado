@@ -42,15 +42,32 @@ CREATE TABLE `PROVEEDOR` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========================================================
+-- 2.1 TABLA: EMPAQUE (catalogo normalizado de presentaciones)
+-- PRODUCTO.idEmpaque referencia a esta tabla.
+-- ========================================================
+DROP TABLE IF EXISTS `EMPAQUE`;
+CREATE TABLE `EMPAQUE` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `nombre` VARCHAR(100) NOT NULL,
+
+  `estaActivo` TINYINT(1) NOT NULL DEFAULT 1, -- 1: Activo, 0: Eliminado (Soft Delete)
+  `idUsuarioAdmin` INT NOT NULL,
+  `fechaCreacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `fechaActualizacion` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UQ_Empaque_nombre` (`nombre`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ========================================================
 -- 3. TABLA PRINCIPAL 3: PRODUCTO
--- Atributos Independientes: nombre, empaquePresentacion, precioVenta, precioCosto, stockMinimo (5 Atributos)
+-- Atributos Independientes: nombre, precioVenta, precioCosto, stockMinimo + idEmpaque (FK a EMPAQUE)
 -- NOTA: Se eliminó el atributo 'stock' ya que se calcula dinámicamente desde LOTE.
 -- ========================================================
 DROP TABLE IF EXISTS `PRODUCTO`;
 CREATE TABLE `PRODUCTO` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `nombre` VARCHAR(150) NOT NULL,
-  `empaquePresentacion` VARCHAR(100) NOT NULL,
+  `idEmpaque` INT NOT NULL,
   `precioVenta` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `precioCosto` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `stockMinimo` INT NOT NULL DEFAULT 10,
@@ -65,8 +82,10 @@ CREATE TABLE `PRODUCTO` (
   `fechaActualizacion` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   
   PRIMARY KEY (`id`),
+  KEY `FK_Producto_Empaque` (`idEmpaque`),
   KEY `FK_Producto_Categoria` (`idCategoria`),
   KEY `FK_Producto_Proveedor` (`idProveedor`),
+  CONSTRAINT `FK_Producto_Empaque` FOREIGN KEY (`idEmpaque`) REFERENCES `EMPAQUE` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `FK_Producto_Categoria` FOREIGN KEY (`idCategoria`) REFERENCES `CATEGORIAS` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `FK_Producto_Proveedor` FOREIGN KEY (`idProveedor`) REFERENCES `PROVEEDOR` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -120,7 +139,8 @@ CREATE OR REPLACE VIEW `vw_productos_con_stock` AS
 SELECT 
     p.id,
     p.nombre,
-    p.empaquePresentacion,
+    p.idEmpaque,
+    e.nombre AS empaquePresentacion,
     p.precioVenta,
     p.precioCosto,
     p.stockMinimo,
@@ -131,6 +151,7 @@ SELECT
     p.estaActivo,
     COALESCE(SUM(l.cantidadDisponible), 0) AS stockCalculado
 FROM `PRODUCTO` p
+INNER JOIN `EMPAQUE` e ON p.idEmpaque = e.id
 INNER JOIN `CATEGORIAS` c ON p.idCategoria = c.id
 INNER JOIN `PROVEEDOR` pr ON p.idProveedor = pr.id
 LEFT JOIN `LOTE` l ON p.id = l.idProducto AND l.estaActivo = 1
@@ -163,29 +184,49 @@ INSERT INTO `PROVEEDOR` (`id`, `nombreEmpresa`, `numeroEmpresa`, `correoReferenc
 (6, 'Industrias Venado S.A. (Kris)', '44118899', 'ventas@venado.com.bo', 0, 1, 1),
 (7, 'Arcor Bolivia', '44778811', 'pedidos@arcor.com.bo', 0, 1, 1);
 
+-- 2.1 EMPAQUE
+INSERT INTO `EMPAQUE` (`id`, `nombre`, `idUsuarioAdmin`) VALUES
+(1, 'Bolsa 1L', 1),
+(2, 'Botella Plástica 1kg', 1),
+(3, 'Envase Plástico 200g', 1),
+(4, 'Botella Plástica 2L', 1),
+(5, 'Botella Vidrio 620ml', 1),
+(6, 'Doypack 500g', 1),
+(7, 'Doypack 400g', 1),
+(8, 'Paquete 500g', 1),
+(9, 'Paquete Sellado 200g', 1),
+(10, 'Paquete 110g', 1),
+(11, 'Display x 18 u', 1),
+(12, 'Bolsa 800g', 1),
+(13, 'Botella Plástica 500ml', 1),
+(14, 'Barra 125g', 1),
+(15, 'Tubo 90g', 1),
+(16, 'Bolsa 200g', 1),
+(17, 'Lata 100g', 1);
+
 -- 3. PRODUCTO (sin columna stock)
-INSERT INTO `PRODUCTO` (`id`, `nombre`, `empaquePresentacion`, `idCategoria`, `precioVenta`, `precioCosto`, `stockMinimo`, `estaActivo`, `idProveedor`, `idUsuarioAdmin`) VALUES
-(1, 'Leche Entera PIL', 'Bolsa 1L', 1, 6.50, 5.20, 20, 1, 1, 1),
-(2, 'Yogurt Frutado PIL', 'Botella Plástica 1kg', 1, 12.00, 9.50, 10, 1, 1, 1),
-(3, 'Mantequilla con Sal PIL', 'Envase Plástico 200g', 1, 14.50, 11.80, 5, 1, 1, 1),
-(4, 'Coca-Cola Sabor Original', 'Botella Plástica 2L', 2, 11.00, 9.00, 25, 1, 2, 1),
-(5, 'Fanta Naranja', 'Botella Plástica 2L', 2, 10.50, 8.50, 15, 1, 2, 1),
-(6, 'Agua Vital Sin Gas', 'Botella Plástica 2L', 2, 6.00, 4.50, 30, 1, 2, 1),
-(7, 'Cerveza Paceña', 'Botella Vidrio 620ml', 2, 12.00, 9.80, 40, 1, 4, 1),
-(8, 'Mayonesa Kris', 'Doypack 500g', 3, 14.00, 11.20, 12, 1, 6, 1),
-(9, 'Ketchup Kris', 'Doypack 500g', 3, 12.50, 10.00, 10, 1, 6, 1),
-(10, 'Salsa de Tomate Kris', 'Doypack 400g', 3, 8.00, 6.20, 15, 1, 6, 1),
-(11, 'Chorizo Parrillero Sofía', 'Paquete 500g', 4, 28.50, 23.50, 8, 1, 3, 1),
-(12, 'Jamón Premium Sofía', 'Paquete Sellado 200g', 4, 18.00, 14.50, 10, 1, 3, 1),
-(13, 'Salchicha de Pollo Sofía', 'Paquete 500g', 4, 16.50, 13.00, 10, 1, 3, 1),
-(14, 'Galletas Moka Arcor', 'Paquete 110g', 5, 4.50, 3.20, 20, 1, 7, 1),
-(15, 'Bon o Bon Leche', 'Display x 18 u', 5, 27.00, 21.50, 5, 1, 7, 1),
-(16, 'Detergente OMO Multiacción', 'Bolsa 800g', 6, 15.00, 12.00, 15, 1, 5, 1),
-(17, 'Lavavajillas Ola Limón', 'Botella Plástica 500ml', 6, 8.50, 6.80, 10, 1, 5, 1),
-(18, 'Jabón Lux Suave', 'Barra 125g', 7, 5.50, 4.10, 20, 1, 5, 1),
-(19, 'Crema Dental Colgate Triple Acción', 'Tubo 90g', 7, 9.00, 7.00, 15, 1, 5, 1),
-(20, 'Tostadas Trigo PIL', 'Bolsa 200g', 8, 7.50, 5.80, 10, 1, 1, 1),
-(21, 'Royal Polvo de Hornear', 'Lata 100g', 8, 6.00, 4.50, 15, 1, 6, 1);
+INSERT INTO `PRODUCTO` (`id`, `nombre`, `idEmpaque`, `idCategoria`, `precioVenta`, `precioCosto`, `stockMinimo`, `estaActivo`, `idProveedor`, `idUsuarioAdmin`) VALUES
+(1, 'Leche Entera PIL', 1, 1, 6.50, 5.20, 20, 1, 1, 1),
+(2, 'Yogurt Frutado PIL', 2, 1, 12.00, 9.50, 10, 1, 1, 1),
+(3, 'Mantequilla con Sal PIL', 3, 1, 14.50, 11.80, 5, 1, 1, 1),
+(4, 'Coca-Cola Sabor Original', 4, 2, 11.00, 9.00, 25, 1, 2, 1),
+(5, 'Fanta Naranja', 4, 2, 10.50, 8.50, 15, 1, 2, 1),
+(6, 'Agua Vital Sin Gas', 4, 2, 6.00, 4.50, 30, 1, 2, 1),
+(7, 'Cerveza Paceña', 5, 2, 12.00, 9.80, 40, 1, 4, 1),
+(8, 'Mayonesa Kris', 6, 3, 14.00, 11.20, 12, 1, 6, 1),
+(9, 'Ketchup Kris', 6, 3, 12.50, 10.00, 10, 1, 6, 1),
+(10, 'Salsa de Tomate Kris', 7, 3, 8.00, 6.20, 15, 1, 6, 1),
+(11, 'Chorizo Parrillero Sofía', 8, 4, 28.50, 23.50, 8, 1, 3, 1),
+(12, 'Jamón Premium Sofía', 9, 4, 18.00, 14.50, 10, 1, 3, 1),
+(13, 'Salchicha de Pollo Sofía', 8, 4, 16.50, 13.00, 10, 1, 3, 1),
+(14, 'Galletas Moka Arcor', 10, 5, 4.50, 3.20, 20, 1, 7, 1),
+(15, 'Bon o Bon Leche', 11, 5, 27.00, 21.50, 5, 1, 7, 1),
+(16, 'Detergente OMO Multiacción', 12, 6, 15.00, 12.00, 15, 1, 5, 1),
+(17, 'Lavavajillas Ola Limón', 13, 6, 8.50, 6.80, 10, 1, 5, 1),
+(18, 'Jabón Lux Suave', 14, 7, 5.50, 4.10, 20, 1, 5, 1),
+(19, 'Crema Dental Colgate Triple Acción', 15, 7, 9.00, 7.00, 15, 1, 5, 1),
+(20, 'Tostadas Trigo PIL', 16, 8, 7.50, 5.80, 10, 1, 1, 1),
+(21, 'Royal Polvo de Hornear', 17, 8, 6.00, 4.50, 15, 1, 6, 1);
 
 -- 4. LOTE
 INSERT INTO `LOTE` (`idProducto`, `codigoLote`, `cantidadInicial`, `cantidadDisponible`, `fechaVencimiento`, `estaActivo`, `idUsuarioAdmin`) VALUES

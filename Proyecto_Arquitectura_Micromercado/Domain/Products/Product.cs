@@ -13,10 +13,8 @@ public sealed class Product
     public string Nombre { get; set; } = string.Empty;
 
     [Display(Name = "Empaque / Presentación")]
-    [Required(ErrorMessage = "Campo obligatorio.")]
-    [StringLength(100, ErrorMessage = "La presentación no puede superar los 100 caracteres.")]
-    [ProductText]
-    public string EmpaquePresentacion { get; set; } = string.Empty;
+    [Range(1, int.MaxValue, ErrorMessage = "Seleccione una opción.")]
+    public int IdEmpaque { get; set; }
 
     [Display(Name = "Precio Venta")]
     [RegularExpression(ProductPriceValidation.DecimalPattern, ErrorMessage = ProductPriceValidation.SaleMessage)]
@@ -47,6 +45,7 @@ public sealed class ProductListItem
 {
     public int Id { get; init; }
     public string Nombre { get; init; } = string.Empty;
+    public int IdEmpaque { get; init; }
     public string EmpaquePresentacion { get; init; } = string.Empty;
     public decimal PrecioVenta { get; init; }
     public decimal PrecioCosto { get; init; }

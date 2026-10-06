@@ -19,6 +19,7 @@ public sealed class IndexModel(
     public int Tamano { get; set; } = PageSizes.Default;
     [BindProperty(SupportsGet = true)]
     public string? Q { get; set; }
+    public IReadOnlyList<LookupOption> Packagings { get; private set; } = [];
     public IReadOnlyList<LookupOption> Categories { get; private set; } = [];
     public IReadOnlyList<LookupOption> Suppliers { get; private set; } = [];
     [TempData]
@@ -39,6 +40,7 @@ public sealed class IndexModel(
         try
         {
             await LoadPageAsync(cancellationToken);
+            Packagings = await productService.GetPackagingsAsync(cancellationToken);
             Categories = await productService.GetCategoriesAsync(cancellationToken);
             Suppliers = await productService.GetSuppliersAsync(cancellationToken);
         }
@@ -246,12 +248,14 @@ public sealed class IndexModel(
         try
         {
             await LoadPageAsync(cancellationToken);
+            Packagings = await productService.GetPackagingsAsync(cancellationToken);
             Categories = await productService.GetCategoriesAsync(cancellationToken);
             Suppliers = await productService.GetSuppliersAsync(cancellationToken);
         }
         catch (MySqlException)
         {
             PagedProducts = new PagedResult<ProductListItem>();
+            Packagings = [];
             Categories = [];
             Suppliers = [];
             DatabaseWarning = "No se pudo conectar con la base de datos.";

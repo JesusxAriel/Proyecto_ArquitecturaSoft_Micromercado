@@ -37,6 +37,9 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
     public Task<Product?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
         repository.GetByIdAsync(id, cancellationToken);
 
+    public Task<IReadOnlyList<LookupOption>> GetPackagingsAsync(CancellationToken cancellationToken = default) =>
+        repository.GetPackagingsAsync(cancellationToken);
+
     public Task<IReadOnlyList<LookupOption>> GetCategoriesAsync(CancellationToken cancellationToken = default) =>
         repository.GetCategoriesAsync(cancellationToken);
 
@@ -50,17 +53,7 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
     public async Task<int> CreateAsync(Product product, CancellationToken cancellationToken = default)
     {
         Validate(product);
-        var categories = await repository.GetCategoriesAsync(cancellationToken);
-        if (!categories.Any(c => c.Id == product.IdCategoria))
-        {
-            throw new ArgumentException("La categoría seleccionada no existe.");
-        }
-
-        var suppliers = await repository.GetSuppliersAsync(cancellationToken);
-        if (!suppliers.Any(s => s.Id == product.IdProveedor))
-        {
-            throw new ArgumentException("El proveedor seleccionado no existe.");
-        }
+        await EnsureReferencesExistAsync(product, cancellationToken);
 
         return await repository.CreateAsync(product, cancellationToken);
     }
@@ -68,6 +61,19 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
     public async Task<bool> UpdateAsync(Product product, CancellationToken cancellationToken = default)
     {
         Validate(product);
+        await EnsureReferencesExistAsync(product, cancellationToken);
+
+        return await repository.UpdateAsync(product, cancellationToken);
+    }
+
+    private async Task EnsureReferencesExistAsync(Product product, CancellationToken cancellationToken)
+    {
+        var packagings = await repository.GetPackagingsAsync(cancellationToken);
+        if (!packagings.Any(p => p.Id == product.IdEmpaque))
+        {
+            throw new ArgumentException("El empaque seleccionado no existe.");
+        }
+
         var categories = await repository.GetCategoriesAsync(cancellationToken);
         if (!categories.Any(c => c.Id == product.IdCategoria))
         {
@@ -79,8 +85,6 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
         {
             throw new ArgumentException("El proveedor seleccionado no existe.");
         }
-
-        return await repository.UpdateAsync(product, cancellationToken);
     }
 
     public Task<bool> SoftDeleteAsync(int id, CancellationToken cancellationToken = default)
@@ -105,9 +109,9 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
             throw new ArgumentException("El nombre del producto es obligatorio.");
         }
 
-        if (string.IsNullOrWhiteSpace(product.EmpaquePresentacion))
+        if (product.IdEmpaque <= 0)
         {
-            throw new ArgumentException("La presentación del producto es obligatoria.");
+            throw new ArgumentException("El empaque del producto es obligatorio.");
         }
 
         if (product.PrecioVenta < 0.10m ||
@@ -150,7 +154,6 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
     private static void NormalizeText(Product product)
     {
         product.Nombre = ToTitleCase(product.Nombre);
-        product.EmpaquePresentacion = ToTitleCase(product.EmpaquePresentacion);
     }
 
     private static string ToTitleCase(string text)
