@@ -18,8 +18,11 @@ CREATE TABLE `CATEGORIAS` (
   `idUsuarioAdmin` INT NOT NULL,
   `fechaCreacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `fechaActualizacion` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  -- Vale NULL si la categoría está dada de baja: así el nombre se puede reutilizar.
+  `nombreActivo` VARCHAR(150) GENERATED ALWAYS AS (IF(`estaActivo` = 1, `nombre`, NULL)) VIRTUAL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `UQ_Categorias_codigo` (`codigo`)
+  UNIQUE KEY `UQ_Categorias_codigo` (`codigo`),
+  UNIQUE KEY `UQ_Categorias_nombre_activo` (`nombreActivo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========================================================
@@ -81,7 +84,12 @@ CREATE TABLE `PRODUCTO` (
   `fechaCreacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `fechaActualizacion` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   
+  -- Valen NULL si el producto está dado de baja: así nombre + empaque se pueden reutilizar.
+  `nombreActivo` VARCHAR(150) GENERATED ALWAYS AS (IF(`estaActivo` = 1, `nombre`, NULL)) VIRTUAL,
+  `idEmpaqueActivo` INT GENERATED ALWAYS AS (IF(`estaActivo` = 1, `idEmpaque`, NULL)) VIRTUAL,
+
   PRIMARY KEY (`id`),
+  UNIQUE KEY `UQ_Producto_nombre_empaque_activo` (`nombreActivo`, `idEmpaqueActivo`),
   KEY `FK_Producto_Empaque` (`idEmpaque`),
   KEY `FK_Producto_Categoria` (`idCategoria`),
   KEY `FK_Producto_Proveedor` (`idProveedor`),
