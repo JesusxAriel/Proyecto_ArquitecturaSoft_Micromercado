@@ -199,6 +199,10 @@
             : '';
         anchor._uniqueCheckedKey = key;
 
+        if (!anchor.value.trim()) {
+            return; // campo vacío: no hay nada que comparar ni que mostrar (lo valida "required")
+        }
+
         validateInput(anchor, true);
         const form = anchor.closest('form');
         if (form && form.classList.contains('was-validated')) {
@@ -220,6 +224,12 @@
         };
 
         const onChange = () => {
+            // El navegador dispara "change" al salir del campo aunque el valor ya se haya comprobado:
+            // solo se descarta el resultado si el valor realmente cambió.
+            if (anchor._uniqueCheckedKey === uniqueQuery(anchor)) {
+                return;
+            }
+
             if (anchor._uniqueError) {
                 anchor._uniqueError = '';
                 validateInput(anchor, true);
