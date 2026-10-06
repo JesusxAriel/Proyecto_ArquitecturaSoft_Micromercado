@@ -227,7 +227,7 @@
 
                 <div class="modal-body">
 
-                    <div asp-validation-summary="None"
+                    <div asp-validation-summary="ModelOnly"
                          class="text-danger mb-3">
                     </div>
 
@@ -503,7 +503,7 @@
                            id="PriceChangeReason"
                            name="PriceChangeReason" />
 
-                    <div asp-validation-summary="None"
+                    <div asp-validation-summary="ModelOnly"
                          class="text-danger">
                     </div>
 
@@ -677,7 +677,7 @@
                                        type="text"
                                        maxlength="255"
                                        autocomplete="off" 
-                                       required />
+                                       aria-required="true" />
 
                                 <div id="priceChangeReasonError"
                                      class="text-danger small mt-1 d-none">
@@ -828,8 +828,6 @@
 
     <script>
 
-        let reasonConfirmed = false;
-
         let initialSalePrice = null;
         let initialCostPrice = null;
 
@@ -967,8 +965,6 @@
         $('.edit-product-button').on('click', function() {
 
             const button = $(this);
-
-            reasonConfirmed = false;
 
             resetFormValidation(
                 document.getElementById(
@@ -1125,14 +1121,6 @@
             'submit',
             function(event) {
 
-                if (reasonConfirmed) {
-
-                    reasonConfirmed = false;
-
-                    return;
-
-                }
-
                 const currentSalePrice =
                     Number(
                         ($('#editSalePrice').val() || '')
@@ -1169,12 +1157,12 @@
 
                 }
 
-                event.preventDefault();
-
                 $('#priceChangeReasonContainer')
                     .removeClass('d-none');
 
                 if (!validatePriceReason()) {
+
+                    event.preventDefault();
 
                     $('#priceChangeReason')
                         .focus();
@@ -1200,13 +1188,9 @@
                 $('#editProductReason')
                     .val(reason);
 
-                reasonConfirmed = true;
-
-                document
-                    .getElementById(
-                        'editProductForm'
-                    )
-                    .requestSubmit();
+                // Sin preventDefault: el envío original continúa. No se debe volver a
+                // llamar a requestSubmit() aquí, el navegador lo ignora mientras se
+                // procesa el evento submit y obligaba a pulsar Guardar dos veces.
 
             }
         );
@@ -1242,8 +1226,6 @@
 
                     $('#editProductReason')
                         .val('');
-
-                    reasonConfirmed = false;
 
                     initialSalePrice = null;
                     initialCostPrice = null;

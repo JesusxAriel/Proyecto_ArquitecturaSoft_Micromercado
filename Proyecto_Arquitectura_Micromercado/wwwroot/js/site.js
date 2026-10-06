@@ -185,6 +185,12 @@
         });
 
         $(form).on('submit', function (event) {
+            if (form.dataset.submitting === 'true') {
+                // Segundo envío mientras el primero sigue en curso (doble clic o Enter repetido).
+                event.preventDefault();
+                return;
+            }
+
             $(this).find('[data-capitalize="true"]').each(function () {
                 capitalizeFirstLetter(this);
             });
@@ -194,7 +200,25 @@
 
             if (!valid) {
                 event.preventDefault();
+                return;
             }
+
+            // Otros handlers del mismo formulario pueden cancelar el envío después de este,
+            // así que se decide al terminar el evento si realmente se está enviando.
+            setTimeout(function () {
+                if (event.originalEvent && event.originalEvent.defaultPrevented) {
+                    return;
+                }
+
+                form.dataset.submitting = 'true';
+                $(form).find('.modal-save-button, button[type="submit"]').prop('disabled', true);
+            }, 0);
+        });
+
+        // Al volver con "atrás" el navegador puede restaurar la página con el envío bloqueado.
+        window.addEventListener('pageshow', function () {
+            delete form.dataset.submitting;
+            $(form).find('.modal-save-button, button[type="submit"]').prop('disabled', false);
         });
     });
 })();
