@@ -1,6 +1,7 @@
 ﻿using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Domain.Categories;
+using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
@@ -8,6 +9,7 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 public sealed class MySqlCategoryRepository : ICategoryRepository
 {
     private const int SystemAdminId = 1;
+    private const int DuplicateKeyErrorNumber = 1062;
 
     public async Task<IReadOnlyList<Category>> GetAllAsync(
         CancellationToken cancellationToken = default)
@@ -44,6 +46,37 @@ public sealed class MySqlCategoryRepository : ICategoryRepository
         }
 
         return categories;
+    }
+
+    public async Task<PagedResult<Category>> GetPagedAsync(
+        int page,
+        int pageSize,
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection =
+            await OpenConnectionAsync(cancellationToken);
+
+        return await PagedSqlRunner.RunAsync(
+            connection,
+            columns: """
+                id, nombre, descripcion, codigo, pasilloUbicacion, estaActivo,
+                idUsuarioAdmin, fechaCreacion, fechaActualizacion
+                """,
+            from: "CATEGORIAS",
+            baseWhere: "estaActivo = 1",
+            searchCondition: """
+                nombre LIKE @search
+                OR codigo LIKE @search
+                OR pasilloUbicacion LIKE @search
+                OR descripcion LIKE @search
+                """,
+            orderBy: "nombre, id",
+            search,
+            page,
+            pageSize,
+            MapCategory,
+            cancellationToken);
     }
 
     public async Task<Category?> GetByIdAsync(
@@ -104,9 +137,18 @@ public sealed class MySqlCategoryRepository : ICategoryRepository
 
         AddCategoryParameters(command, category);
 
-        var generatedId =
-            Convert.ToInt32(
-                await command.ExecuteScalarAsync(cancellationToken));
+        int generatedId;
+
+        try
+        {
+            generatedId =
+                Convert.ToInt32(
+                    await command.ExecuteScalarAsync(cancellationToken));
+        }
+        catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
+        {
+            throw ToDuplicateException(ex);
+        }
 
         category.Id = generatedId;
 
@@ -140,10 +182,70 @@ public sealed class MySqlCategoryRepository : ICategoryRepository
             "@id",
             category.Id);
 
-        int affectedRows =
-            await command.ExecuteNonQueryAsync(cancellationToken);
+        try
+        {
+            int affectedRows =
+                await command.ExecuteNonQueryAsync(cancellationToken);
 
-        return affectedRows == 1;
+            return affectedRows == 1;
+        }
+        catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
+        {
+            throw ToDuplicateException(ex);
+        }
+    }
+
+    public async Task<bool> ExistsNameAsync(
+        string name,
+        int idExcluido,
+        CancellationToken cancellationToken = default)
+    {
+        // La collation utf8mb4_unicode_ci ignora mayúsculas y tildes; REGEXP_REPLACE los espacios extra.
+        const string sql = """
+            SELECT EXISTS (
+                SELECT 1
+                FROM CATEGORIAS
+                WHERE estaActivo = 1
+                  AND id <> @idExcluido
+                  AND TRIM(REGEXP_REPLACE(nombre, '[[:space:]]+', ' ')) = @nombre
+            );
+            """;
+
+        await using var connection =
+            await OpenConnectionAsync(cancellationToken);
+
+        await using var command =
+            new MySqlCommand(sql, connection);
+
+        command.Parameters.AddWithValue("@nombre", name.Trim());
+        command.Parameters.AddWithValue("@idExcluido", idExcluido);
+
+        return Convert.ToInt32(
+            await command.ExecuteScalarAsync(cancellationToken)) == 1;
+    }
+
+    public async Task<IReadOnlyList<string>> GetAllCodesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = "SELECT codigo FROM CATEGORIAS;";
+
+        var codes = new List<string>();
+
+        await using var connection =
+            await OpenConnectionAsync(cancellationToken);
+
+        await using var command =
+            new MySqlCommand(sql, connection);
+
+        await using var reader =
+            await command.ExecuteReaderAsync(cancellationToken);
+
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            codes.Add(reader.GetString(0));
+        }
+
+        return codes;
     }
 
     public async Task<bool> SoftDeleteAsync(
@@ -175,6 +277,12 @@ public sealed class MySqlCategoryRepository : ICategoryRepository
         return await command.ExecuteNonQueryAsync(
             cancellationToken) == 1;
     }
+
+    // El mensaje de MySQL indica qué índice UNIQUE se violó.
+    private static ArgumentException ToDuplicateException(MySqlException ex) =>
+        ex.Message.Contains("UQ_Categorias_nombre_activo", StringComparison.OrdinalIgnoreCase)
+            ? new DuplicateCategoryNameException(ex)
+            : new DuplicateCategoryCodeException(ex);
 
     private async Task<MySqlConnection> OpenConnectionAsync(
         CancellationToken cancellationToken)

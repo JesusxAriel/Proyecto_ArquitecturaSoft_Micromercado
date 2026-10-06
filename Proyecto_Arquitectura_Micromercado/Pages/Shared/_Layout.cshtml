@@ -106,6 +106,33 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script>
+        // Publica la altura real de la barra fija para que el padding del body y los
+        // encabezados sticky (top) coincidan con ella en cualquier ancho de pantalla.
+        (function () {
+            var navbar = document.querySelector('.navbar.fixed-top');
+            if (!navbar) {
+                return;
+            }
+
+            var menu = document.getElementById('mainNavigation');
+
+            function publishNavbarHeight() {
+                // Con el menú móvil desplegándose no se actualiza para evitar saltos del contenido.
+                if (menu && (menu.classList.contains('show') || menu.classList.contains('collapsing'))) {
+                    return;
+                }
+
+                document.documentElement.style.setProperty('--navbar-height', navbar.offsetHeight + 'px');
+            }
+
+            publishNavbarHeight();
+            window.addEventListener('resize', publishNavbarHeight);
+            if ('ResizeObserver' in window) {
+                new ResizeObserver(publishNavbarHeight).observe(navbar);
+            }
+        })();
+    </script>
+    <script>
         (function () {
             var nav = document.querySelector('.navbar-nav.navbar-center');
             if (!nav) {

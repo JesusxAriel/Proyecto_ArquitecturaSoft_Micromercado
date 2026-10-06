@@ -1,5 +1,7 @@
 @page
 @using Microsoft.AspNetCore.Mvc.Rendering
+@using Proyecto_Arquitectura_Micromercado.Domain.Common
+@using Proyecto_Arquitectura_Micromercado.Pages.Shared
 @model Proyecto_Arquitectura_Micromercado.Pages.Products.IndexModel
 @{
     ViewData["Title"] = "Productos";
@@ -30,23 +32,11 @@
     </div>
 }
 
-<div class="mb-3">
-    <label for="productSearch" class="visually-hidden">
-        Buscar productos
-    </label>
-
-    <div class="input-group">
-        <span class="input-group-text">
-            <i class="bi bi-search" aria-hidden="true"></i>
-        </span>
-
-        <input id="productSearch"
-               class="form-control"
-               type="search"
-               placeholder="Buscar por nombre, categoría o proveedor..."
-               autocomplete="off" />
-    </div>
-</div>
+<partial name="_SearchBox" model="@(new SearchBoxModel(
+    "Buscar productos",
+    "Buscar por nombre, empaque, categoría o proveedor...",
+    Model.Q,
+    Model.Tamano))" />
 
 @if (Model.DatabaseWarning is not null)
 {
@@ -55,15 +45,15 @@
     </div>
 }
 
-<div class="table-responsive products-table-container shadow-sm rounded-3">
+<div class="table-responsive shadow-sm rounded-3">
     <table id="productsTable" class="table table-hover align-middle mb-0">
-        <thead class="products-table-header">
+        <thead class="sticky-table-header">
             <tr>
                 <th>Nombre</th>
                 <th>Empaque</th>
                 <th>Categoría</th>
                 <th>Proveedor</th>
-                <th class="text-center">Precio(Bs)</th>
+                <th class="text-center">Precio <span class="th-unit">(Bs)</span></th>
                 <th class="text-center" style="min-width: 120px;">Stock mínimo</th>
                 <th class="text-end pe-3">ACCIONES</th>
             </tr>
@@ -97,7 +87,7 @@
                                     data-bs-target="#editProductModal"
                                     data-id="@product.Id"
                                     data-name="@product.Nombre"
-                                    data-packaging="@product.EmpaquePresentacion"
+                                    data-packaging="@product.IdEmpaque"
                                     data-sale-price="@product.PrecioVenta.ToString("0.00")"
                                     data-cost-price="@product.PrecioCosto.ToString("0.00")"
                                     data-min-stock="@product.StockMinimo"
@@ -125,6 +115,8 @@
     </table>
 </div>
 
+<partial name="_Pager" model="Model.PagedProducts" view-data="@(new ViewDataDictionary(ViewData) { ["ItemLabel"] = "productos" })" />
+
 
 <!-- ========================================================= -->
 <!-- MODAL CREAR PRODUCTO                                      -->
@@ -148,6 +140,9 @@
                   autocomplete="off">
 
                 @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Pagina" />
+                <input type="hidden" asp-for="Tamano" />
+                <input type="hidden" asp-for="Q" />
 
                 <div class="modal-header">
 
@@ -165,7 +160,7 @@
 
                 <div class="modal-body">
 
-                    <div asp-validation-summary="None"
+                    <div asp-validation-summary="ModelOnly"
                          class="text-danger mb-3">
                     </div>
 
@@ -186,6 +181,8 @@
                                    autocomplete="off"
                                    data-sanitize="text"
                                    data-validate-input
+                                   data-unique-url="@Url.Page("/Products/Index", "CheckUnique")"
+                                   data-unique-fields="nombre=#createProductName,idEmpaque=#createProductPackaging"
                                    pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
 
                             <div class="input-error text-danger small d-none"></div>
@@ -203,19 +200,21 @@
                                 Empaque *
                             </label>
 
-                            <input asp-for="CreateProduct.EmpaquePresentacion"
-                                   id="createProductPackaging"
-                                   class="form-control"
-                                   placeholder="Ej. Bolsa"
-                                   required
-                                   autocomplete="off"
-                                   data-sanitize="text"
-                                   data-validate-input
-                                   pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
+                            <select asp-for="CreateProduct.IdEmpaque"
+                                    id="createProductPackaging"
+                                    class="form-select"
+                                    required
+                                    autocomplete="off"
+                                    data-validate-input
+                                    asp-items="@(Model.Packagings.Select(x => new SelectListItem(x.Nombre, x.Id.ToString())))">
 
-                            <div class="input-error text-danger small d-none"></div>
+                                <option value="">
+                                    Seleccione...
+                                </option>
 
-                            <span asp-validation-for="CreateProduct.EmpaquePresentacion"
+                            </select>
+
+                            <span asp-validation-for="CreateProduct.IdEmpaque"
                                   class="text-danger">
                             </span>
 
@@ -238,6 +237,8 @@
                                    required
                                    autocomplete="off"
                                    data-validate-input
+                                   data-gte-field="#createCostPrice"
+                                   data-gte-message="El precio de venta no puede ser menor al precio de costo."
                                    value="" />
 
                             <div class="input-error text-danger small d-none"></div>
@@ -404,6 +405,9 @@
                   autocomplete="off">
 
                 @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Pagina" />
+                <input type="hidden" asp-for="Tamano" />
+                <input type="hidden" asp-for="Q" />
 
                 <div class="modal-header">
 
@@ -434,7 +438,7 @@
                            id="PriceChangeReason"
                            name="PriceChangeReason" />
 
-                    <div asp-validation-summary="None"
+                    <div asp-validation-summary="ModelOnly"
                          class="text-danger">
                     </div>
 
@@ -455,9 +459,15 @@
                                    autocomplete="off"
                                    data-sanitize="text"
                                    data-validate-input
+                                   data-unique-url="@Url.Page("/Products/Index", "CheckUnique")"
+                                   data-unique-fields="nombre=#editProductName,idEmpaque=#editProductPackaging,id=#editProductId"
                                    pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
 
                             <div class="input-error text-danger small d-none"></div>
+
+                            <span asp-validation-for="EditProduct.Nombre"
+                                  class="text-danger">
+                            </span>
 
                         </div>
 
@@ -468,17 +478,14 @@
                                 Empaque *
                             </label>
 
-                            <input asp-for="EditProduct.EmpaquePresentacion"
-                                   id="editProductPackaging"
-                                   class="form-control"
-                                   placeholder="Ej. Bolsa"
-                                   required
-                                   autocomplete="off"                        
-                                   data-sanitize="text"
-                                   data-validate-input
-                                   pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
-
-                            <div class="input-error text-danger small d-none"></div>
+                            <select asp-for="EditProduct.IdEmpaque"
+                                    id="editProductPackaging"
+                                    class="form-select"
+                                    required
+                                    autocomplete="off"
+                                    data-validate-input
+                                    asp-items="@(Model.Packagings.Select(x => new SelectListItem(x.Nombre, x.Id.ToString())))">
+                            </select>
 
                         </div>
 
@@ -496,6 +503,8 @@
                                    inputmode="decimal"
                                    required
                                    data-validate-input
+                                   data-gte-field="#editCostPrice"
+                                   data-gte-message="El precio de venta no puede ser menor al precio de costo."
                                    autocomplete="off" />
 
                             <div class="input-error text-danger small d-none"></div>
@@ -609,7 +618,7 @@
                                        type="text"
                                        maxlength="255"
                                        autocomplete="off" 
-                                       required />
+                                       aria-required="true" />
 
                                 <div id="priceChangeReasonError"
                                      class="text-danger small mt-1 d-none">
@@ -665,6 +674,9 @@
                   asp-page-handler="Delete">
 
                 @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Pagina" />
+                <input type="hidden" asp-for="Tamano" />
+                <input type="hidden" asp-for="Q" />
 
                 <div class="modal-header">
 
@@ -756,8 +768,6 @@
 
 
     <script>
-
-        let reasonConfirmed = false;
 
         let initialSalePrice = null;
         let initialCostPrice = null;
@@ -896,8 +906,6 @@
         $('.edit-product-button').on('click', function() {
 
             const button = $(this);
-
-            reasonConfirmed = false;
 
             resetFormValidation(
                 document.getElementById(
@@ -1054,14 +1062,6 @@
             'submit',
             function(event) {
 
-                if (reasonConfirmed) {
-
-                    reasonConfirmed = false;
-
-                    return;
-
-                }
-
                 const currentSalePrice =
                     Number(
                         ($('#editSalePrice').val() || '')
@@ -1098,12 +1098,12 @@
 
                 }
 
-                event.preventDefault();
-
                 $('#priceChangeReasonContainer')
                     .removeClass('d-none');
 
                 if (!validatePriceReason()) {
+
+                    event.preventDefault();
 
                     $('#priceChangeReason')
                         .focus();
@@ -1129,13 +1129,9 @@
                 $('#editProductReason')
                     .val(reason);
 
-                reasonConfirmed = true;
-
-                document
-                    .getElementById(
-                        'editProductForm'
-                    )
-                    .requestSubmit();
+                // Sin preventDefault: el envío original continúa. No se debe volver a
+                // llamar a requestSubmit() aquí, el navegador lo ignora mientras se
+                // procesa el evento submit y obligaba a pulsar Guardar dos veces.
 
             }
         );
@@ -1172,39 +1168,11 @@
                     $('#editProductReason')
                         .val('');
 
-                    reasonConfirmed = false;
-
                     initialSalePrice = null;
                     initialCostPrice = null;
 
                 }
             );
-
-        $('#productSearch').on(
-            'input',
-            function() {
-
-                const query =
-                    $(this)
-                        .val()
-                        .toString()
-                        .toLocaleLowerCase();
-
-
-                $('#productsTable tbody tr')
-                    .each(function() {
-
-                        $(this).toggle(
-                            $(this)
-                                .text()
-                                .toLocaleLowerCase()
-                                .includes(query)
-                        );
-
-                    });
-
-            }
-        );
 
         setTimeout(function () {
             var alerts = document.querySelectorAll('.alert-dismissible');

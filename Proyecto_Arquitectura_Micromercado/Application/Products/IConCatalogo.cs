@@ -4,6 +4,9 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Products;
 
 public interface IConCatalogo
 {
+    Task<IReadOnlyList<LookupOption>> GetPackagingsAsync(
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<LookupOption>> GetCategoriesAsync(
         CancellationToken cancellationToken = default);
 

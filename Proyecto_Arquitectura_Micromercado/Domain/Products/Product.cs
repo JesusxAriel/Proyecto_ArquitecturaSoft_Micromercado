@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Proyecto_Arquitectura_Micromercado.Domain.Products;
 
-public sealed class Product
+public sealed class Product : IValidatableObject
 {
     public int Id { get; set; }
 
@@ -13,10 +13,8 @@ public sealed class Product
     public string Nombre { get; set; } = string.Empty;
 
     [Display(Name = "Empaque / Presentación")]
-    [Required(ErrorMessage = "Campo obligatorio.")]
-    [StringLength(100, ErrorMessage = "La presentación no puede superar los 100 caracteres.")]
-    [ProductText]
-    public string EmpaquePresentacion { get; set; } = string.Empty;
+    [Range(1, int.MaxValue, ErrorMessage = "Seleccione una opción.")]
+    public int IdEmpaque { get; set; }
 
     [Display(Name = "Precio Venta")]
     [RegularExpression(ProductPriceValidation.DecimalPattern, ErrorMessage = ProductPriceValidation.SaleMessage)]
@@ -41,12 +39,23 @@ public sealed class Product
     public string? MotivoCambio { get; set; }
 
     public bool EstaActivo { get; set; } = true;
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (PrecioVenta < PrecioCosto)
+        {
+            yield return new ValidationResult(
+                ProductPriceValidation.SaleBelowCostMessage,
+                [nameof(PrecioVenta)]);
+        }
+    }
 }
 
 public sealed class ProductListItem
 {
     public int Id { get; init; }
     public string Nombre { get; init; } = string.Empty;
+    public int IdEmpaque { get; init; }
     public string EmpaquePresentacion { get; init; } = string.Empty;
     public decimal PrecioVenta { get; init; }
     public decimal PrecioCosto { get; init; }

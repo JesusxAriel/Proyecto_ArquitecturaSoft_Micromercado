@@ -1,3 +1,5 @@
+using Proyecto_Arquitectura_Micromercado.Application.Common;
+using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
 using System.Globalization;
 
@@ -12,8 +14,26 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
     public Task<IReadOnlyList<ProductListItem>> GetAllAsync(CancellationToken cancellationToken = default) =>
         repository.GetAllAsync(cancellationToken);
 
+    public async Task<PagedResult<ProductListItem>> GetPagedAsync(
+        int page,
+        int pageSize,
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        search = PagedQuery.NormalizeSearch(search);
+
+        return await PagedQuery.ExecuteAsync(
+            page,
+            pageSize,
+            (currentPage, currentSize) =>
+                repository.GetPagedAsync(currentPage, currentSize, search, cancellationToken));
+    }
+
     public Task<Product?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
         repository.GetByIdAsync(id, cancellationToken);
+
+    public Task<IReadOnlyList<LookupOption>> GetPackagingsAsync(CancellationToken cancellationToken = default) =>
+        repository.GetPackagingsAsync(cancellationToken);
 
     public Task<IReadOnlyList<LookupOption>> GetCategoriesAsync(CancellationToken cancellationToken = default) =>
         repository.GetCategoriesAsync(cancellationToken);
@@ -28,17 +48,8 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
     public async Task<int> CreateAsync(Product product, CancellationToken cancellationToken = default)
     {
         Validate(product);
-        var categories = await repository.GetCategoriesAsync(cancellationToken);
-        if (!categories.Any(c => c.Id == product.IdCategoria))
-        {
-            throw new ArgumentException("La categoría seleccionada no existe.");
-        }
-
-        var suppliers = await repository.GetSuppliersAsync(cancellationToken);
-        if (!suppliers.Any(s => s.Id == product.IdProveedor))
-        {
-            throw new ArgumentException("El proveedor seleccionado no existe.");
-        }
+        await EnsureNotDuplicatedAsync(product, cancellationToken);
+        await EnsureReferencesExistAsync(product, cancellationToken);
 
         return await repository.CreateAsync(product, cancellationToken);
     }
@@ -46,6 +57,36 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
     public async Task<bool> UpdateAsync(Product product, CancellationToken cancellationToken = default)
     {
         Validate(product);
+        await EnsureNotDuplicatedAsync(product, cancellationToken);
+        await EnsureReferencesExistAsync(product, cancellationToken);
+
+        return await repository.UpdateAsync(product, cancellationToken);
+    }
+
+    public Task<bool> IsDuplicateAsync(
+        string nombre,
+        int idEmpaque,
+        int idExcluido,
+        CancellationToken cancellationToken = default) =>
+        repository.ExistsNombreEmpaqueAsync(ToTitleCase(nombre), idEmpaque, idExcluido, cancellationToken);
+
+    // Al crear Id vale 0, así que no excluye a nadie; al editar excluye el propio registro.
+    private async Task EnsureNotDuplicatedAsync(Product product, CancellationToken cancellationToken)
+    {
+        if (await IsDuplicateAsync(product.Nombre, product.IdEmpaque, product.Id, cancellationToken))
+        {
+            throw new DuplicateProductException();
+        }
+    }
+
+    private async Task EnsureReferencesExistAsync(Product product, CancellationToken cancellationToken)
+    {
+        var packagings = await repository.GetPackagingsAsync(cancellationToken);
+        if (!packagings.Any(p => p.Id == product.IdEmpaque))
+        {
+            throw new ArgumentException("El empaque seleccionado no existe.");
+        }
+
         var categories = await repository.GetCategoriesAsync(cancellationToken);
         if (!categories.Any(c => c.Id == product.IdCategoria))
         {
@@ -57,8 +98,6 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
         {
             throw new ArgumentException("El proveedor seleccionado no existe.");
         }
-
-        return await repository.UpdateAsync(product, cancellationToken);
     }
 
     public Task<bool> SoftDeleteAsync(int id, CancellationToken cancellationToken = default)
@@ -83,9 +122,9 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
             throw new ArgumentException("El nombre del producto es obligatorio.");
         }
 
-        if (string.IsNullOrWhiteSpace(product.EmpaquePresentacion))
+        if (product.IdEmpaque <= 0)
         {
-            throw new ArgumentException("La presentación del producto es obligatoria.");
+            throw new ArgumentException("El empaque del producto es obligatorio.");
         }
 
         if (product.PrecioVenta < 0.10m ||
@@ -109,6 +148,11 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
             throw new ArgumentException($"El precio de costo no puede superar Bs. {MaxPrice:N2}.");
         }
 
+        if (product.PrecioVenta < product.PrecioCosto)
+        {
+            throw new ArgumentException(ProductPriceValidation.SaleBelowCostMessage);
+        }
+
         if (product.StockMinimo < 0)
         {
             throw new ArgumentException("El stock mínimo no puede ser negativo.");
@@ -128,7 +172,6 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
     private static void NormalizeText(Product product)
     {
         product.Nombre = ToTitleCase(product.Nombre);
-        product.EmpaquePresentacion = ToTitleCase(product.EmpaquePresentacion);
     }
 
     private static string ToTitleCase(string text)

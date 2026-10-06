@@ -1,0 +1,24 @@
+@model Proyecto_Arquitectura_Micromercado.Pages.Shared.SearchBoxModel
+
+@* La búsqueda se resuelve en el servidor (parámetro Q) y vuelve a la página 1.
+   site.js envía el formulario al dejar de escribir (data-auto-search). *@
+<form method="get" class="mb-3">
+    <input type="hidden" name="Tamano" value="@Model.PageSize" />
+
+    <label for="listSearch" class="visually-hidden">@Model.Label</label>
+
+    <div class="input-group">
+        <span class="input-group-text">
+            <i class="bi bi-search" aria-hidden="true"></i>
+        </span>
+
+        <input id="listSearch"
+               name="Q"
+               value="@Model.Query"
+               class="form-control"
+               type="search"
+               placeholder="@Model.Placeholder"
+               autocomplete="off"
+               data-auto-search />
+    </div>
+</form>

@@ -15,6 +15,8 @@
   --bs-success-rgb: 16, 185, 129;
   --bs-danger: #EF4444;
   --bs-danger-rgb: 239, 68, 68;
+  /* Altura real de la barra fija; _Layout.cshtml la actualiza con la medida del navegador. */
+  --navbar-height: 118px;
 }
 
 html {
@@ -31,7 +33,7 @@ html {
 
 body {
   margin: 0;
-  padding-top: 108px;
+  padding-top: var(--navbar-height);
   margin-bottom: 60px;
   background-color: var(--bs-body-bg);
   font-family: 'Inter', sans-serif;
@@ -307,6 +309,11 @@ body {
   white-space: nowrap;
 }
 
+/* La unidad de moneda se muestra "Bs", no "BS", aunque el encabezado esté en mayúsculas. */
+.table thead th .th-unit {
+  text-transform: none;
+}
+
 .table tbody {
   font-size: .9375rem;
 }
@@ -438,27 +445,18 @@ body {
 }
 
 /* =========================================================
-   ENCABEZADO FIJO - TABLA DE PRODUCTOS
+   ENCABEZADO FIJO - TODAS LAS TABLAS DE LISTADOS
+   Se aplica con class="sticky-table-header" en el <thead>.
    ========================================================= */
 
-.products-table-container {
-    position: relative;
-}
-
-.products-table-header {
+.sticky-table-header {
     position: sticky;
-    top: 115px;
+    top: var(--navbar-height);
     z-index: 90;
 }
 
-    .products-table-header th {
+    .sticky-table-header th {
         background-color: #f8fafc !important;
-        color: #475569;
-        font-size: .75rem;
-        font-weight: 700;
-        letter-spacing: .03em;
-        text-transform: uppercase;
-        white-space: nowrap;
         border-bottom: 1px solid #e2e8f0 !important;
     }
 

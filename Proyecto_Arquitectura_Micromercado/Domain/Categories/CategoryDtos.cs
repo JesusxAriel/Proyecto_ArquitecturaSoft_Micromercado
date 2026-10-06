@@ -23,6 +23,18 @@ namespace Proyecto_Arquitectura_Micromercado.Domain.Categories
         public const string CodeMessage =
             "El código solo puede contener letras, números y guiones. Ej: CAT-LAC.";
 
+        public const string CodeDuplicateMessage =
+            "Ya existe una categoría con ese código.";
+
+        public const string NameDuplicateMessage =
+            "Ya existe una categoría con ese nombre.";
+
+        public const string CodeNotEnoughLettersMessage =
+            "El nombre debe tener al menos 3 letras para poder generar el código de la categoría.";
+
+        public const string CodeExhaustedMessage =
+            "No hay códigos disponibles para este nombre. Cambie el nombre de la categoría e intente nuevamente.";
+
         public const string AisleMessage =
             "La ubicación debe tener el formato Pasillo 1 hasta Pasillo 8.";
 

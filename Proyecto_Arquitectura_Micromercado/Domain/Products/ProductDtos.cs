@@ -9,6 +9,8 @@ public static class ProductPriceValidation
         "Formato inválido. Ej: 10,50 o 10,90";
     public const string CostMessage =
         "Formato inválido. Ej: 6,99 o 12,50";
+    public const string SaleBelowCostMessage =
+        "El precio de venta no puede ser menor al precio de costo.";
 }
 
 public sealed class ProductTextAttribute : ValidationAttribute

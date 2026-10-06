@@ -1,19 +1,21 @@
 using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
+using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-public sealed class MySqlProductRepository : IProductRepository
+public sealed class MySqlProductRepository(IPriceHistoryRepository priceHistoryRepository) : IProductRepository
 {
     private const int SystemAdminId = 1;
-    private readonly IPriceHistoryRepository _priceHistoryRepository = new MySqlPriceHistoryRepository();
+    private const int DuplicateKeyErrorNumber = 1062;
+    private readonly IPriceHistoryRepository _priceHistoryRepository = priceHistoryRepository;
 
     public async Task<IReadOnlyList<ProductListItem>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT id, nombre, empaquePresentacion, precioVenta, precioCosto,
+            SELECT id, nombre, idEmpaque, empaquePresentacion, precioVenta, precioCosto,
                    stockMinimo, idCategoria, nombreCategoria, idProveedor,
                    nombreProveedor, stockCalculado
             FROM vw_productos_con_stock
@@ -29,29 +31,63 @@ public sealed class MySqlProductRepository : IProductRepository
 
         while (await reader.ReadAsync(cancellationToken))
         {
-            products.Add(new ProductListItem
-            {
-                Id = reader.GetInt32(reader.GetOrdinal("id")),
-                Nombre = reader.GetString(reader.GetOrdinal("nombre")),
-                EmpaquePresentacion = reader.GetString(reader.GetOrdinal("empaquePresentacion")),
-                PrecioVenta = reader.GetDecimal(reader.GetOrdinal("precioVenta")),
-                PrecioCosto = reader.GetDecimal(reader.GetOrdinal("precioCosto")),
-                StockMinimo = reader.GetInt32(reader.GetOrdinal("stockMinimo")),
-                IdCategoria = reader.GetInt32(reader.GetOrdinal("idCategoria")),
-                NombreCategoria = reader.GetString(reader.GetOrdinal("nombreCategoria")),
-                IdProveedor = reader.GetInt32(reader.GetOrdinal("idProveedor")),
-                NombreProveedor = reader.GetString(reader.GetOrdinal("nombreProveedor")),
-                StockCalculado = reader.GetInt32(reader.GetOrdinal("stockCalculado"))
-            });
+            products.Add(MapListItem(reader));
         }
 
         return products;
     }
 
+    public async Task<PagedResult<ProductListItem>> GetPagedAsync(
+        int page,
+        int pageSize,
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+
+        return await PagedSqlRunner.RunAsync(
+            connection,
+            columns: """
+                id, nombre, idEmpaque, empaquePresentacion, precioVenta, precioCosto,
+                stockMinimo, idCategoria, nombreCategoria, idProveedor,
+                nombreProveedor, stockCalculado
+                """,
+            from: "vw_productos_con_stock",
+            baseWhere: null,
+            searchCondition: """
+                nombre LIKE @search
+                OR empaquePresentacion LIKE @search
+                OR nombreCategoria LIKE @search
+                OR nombreProveedor LIKE @search
+                """,
+            orderBy: "nombre, id",
+            search,
+            page,
+            pageSize,
+            MapListItem,
+            cancellationToken);
+    }
+
+    private static ProductListItem MapListItem(System.Data.Common.DbDataReader reader) => new()
+    {
+        Id = reader.GetInt32(reader.GetOrdinal("id")),
+        Nombre = reader.GetString(reader.GetOrdinal("nombre")),
+        IdEmpaque = reader.GetInt32(reader.GetOrdinal("idEmpaque")),
+        EmpaquePresentacion = reader.GetString(reader.GetOrdinal("empaquePresentacion")),
+        PrecioVenta = reader.GetDecimal(reader.GetOrdinal("precioVenta")),
+        PrecioCosto = reader.GetDecimal(reader.GetOrdinal("precioCosto")),
+        StockMinimo = reader.GetInt32(reader.GetOrdinal("stockMinimo")),
+        IdCategoria = reader.GetInt32(reader.GetOrdinal("idCategoria")),
+        NombreCategoria = reader.GetString(reader.GetOrdinal("nombreCategoria")),
+        IdProveedor = reader.GetInt32(reader.GetOrdinal("idProveedor")),
+        NombreProveedor = reader.GetString(reader.GetOrdinal("nombreProveedor")),
+        StockCalculado = reader.GetInt32(reader.GetOrdinal("stockCalculado"))
+    };
+
     public async Task<Product?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT id, nombre, empaquePresentacion, precioVenta, precioCosto,
+            SELECT id, nombre, idEmpaque, precioVenta, precioCosto,
                    stockMinimo, idCategoria, idProveedor, estaActivo
             FROM PRODUCTO
             WHERE id = @id AND estaActivo = 1;
@@ -71,7 +107,7 @@ public sealed class MySqlProductRepository : IProductRepository
         {
             Id = reader.GetInt32(reader.GetOrdinal("id")),
             Nombre = reader.GetString(reader.GetOrdinal("nombre")),
-            EmpaquePresentacion = reader.GetString(reader.GetOrdinal("empaquePresentacion")),
+            IdEmpaque = reader.GetInt32(reader.GetOrdinal("idEmpaque")),
             PrecioVenta = reader.GetDecimal(reader.GetOrdinal("precioVenta")),
             PrecioCosto = reader.GetDecimal(reader.GetOrdinal("precioCosto")),
             StockMinimo = reader.GetInt32(reader.GetOrdinal("stockMinimo")),
@@ -80,6 +116,35 @@ public sealed class MySqlProductRepository : IProductRepository
             EstaActivo = reader.GetBoolean(reader.GetOrdinal("estaActivo"))
         };
     }
+
+    public async Task<bool> ExistsNombreEmpaqueAsync(
+        string nombre,
+        int idEmpaque,
+        int idExcluido,
+        CancellationToken cancellationToken = default)
+    {
+        // La collation utf8mb4_unicode_ci ignora mayúsculas y tildes; REGEXP_REPLACE los espacios extra.
+        const string sql = """
+            SELECT EXISTS (
+                SELECT 1
+                FROM PRODUCTO
+                WHERE estaActivo = 1
+                  AND id <> @idExcluido
+                  AND idEmpaque = @idEmpaque
+                  AND TRIM(REGEXP_REPLACE(nombre, '[[:space:]]+', ' ')) = @nombre
+            );
+            """;
+
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@nombre", nombre.Trim());
+        command.Parameters.AddWithValue("@idEmpaque", idEmpaque);
+        command.Parameters.AddWithValue("@idExcluido", idExcluido);
+        return Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken)) == 1;
+    }
+
+    public Task<IReadOnlyList<LookupOption>> GetPackagingsAsync(CancellationToken cancellationToken = default) =>
+        GetLookupAsync("SELECT id, nombre FROM EMPAQUE WHERE estaActivo = 1 ORDER BY nombre;", cancellationToken);
 
     public Task<IReadOnlyList<LookupOption>> GetCategoriesAsync(CancellationToken cancellationToken = default) =>
         GetLookupAsync("SELECT id, nombre FROM CATEGORIAS WHERE estaActivo = 1 ORDER BY nombre;", cancellationToken);
@@ -143,10 +208,10 @@ public sealed class MySqlProductRepository : IProductRepository
     {
         const string sql = """
             INSERT INTO PRODUCTO
-                (nombre, empaquePresentacion, precioVenta, precioCosto, stockMinimo,
+                (nombre, idEmpaque, precioVenta, precioCosto, stockMinimo,
                  idCategoria, idProveedor, estaActivo, idUsuarioAdmin)
             VALUES
-                (@nombre, @empaquePresentacion, @precioVenta, @precioCosto, @stockMinimo,
+                (@nombre, @idEmpaque, @precioVenta, @precioCosto, @stockMinimo,
                  @idCategoria, @idProveedor, 1, @idUsuarioAdmin);
             SELECT LAST_INSERT_ID();
             """;
@@ -155,7 +220,17 @@ public sealed class MySqlProductRepository : IProductRepository
         await using var command = new MySqlCommand(sql, connection);
         AddProductParameters(command, product);
         command.Parameters.AddWithValue("@idUsuarioAdmin", SystemAdminId);
-        var generatedId = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
+
+        int generatedId;
+        try
+        {
+            generatedId = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
+        }
+        catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
+        {
+            throw new DuplicateProductException(ex);
+        }
+
         product.Id = generatedId;
         return generatedId;
     }
@@ -171,7 +246,7 @@ public sealed class MySqlProductRepository : IProductRepository
         const string updateSql = """
             UPDATE PRODUCTO
             SET nombre = @nombre,
-                empaquePresentacion = @empaquePresentacion,
+                idEmpaque = @idEmpaque,
                 precioVenta = @precioVenta,
                 precioCosto = @precioCosto,
                 stockMinimo = @stockMinimo,
@@ -205,7 +280,16 @@ public sealed class MySqlProductRepository : IProductRepository
         {
             AddProductParameters(updateCommand, product);
             updateCommand.Parameters.AddWithValue("@id", product.Id);
-            affectedRows = await updateCommand.ExecuteNonQueryAsync(cancellationToken);
+
+            try
+            {
+                affectedRows = await updateCommand.ExecuteNonQueryAsync(cancellationToken);
+            }
+            catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw new DuplicateProductException(ex);
+            }
         }
 
         if (affectedRows == 1 &&
@@ -280,7 +364,7 @@ public sealed class MySqlProductRepository : IProductRepository
     private static void AddProductParameters(MySqlCommand command, Product product)
     {
         command.Parameters.AddWithValue("@nombre", product.Nombre.Trim());
-        command.Parameters.AddWithValue("@empaquePresentacion", product.EmpaquePresentacion.Trim());
+        command.Parameters.AddWithValue("@idEmpaque", product.IdEmpaque);
         command.Parameters.AddWithValue("@precioVenta", product.PrecioVenta);
         command.Parameters.AddWithValue("@precioCosto", product.PrecioCosto);
         command.Parameters.AddWithValue("@stockMinimo", product.StockMinimo);

@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Domain.Categories;
+using Proyecto_Arquitectura_Micromercado.Domain.Common;
+using Proyecto_Arquitectura_Micromercado.Pages.Shared;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 {
@@ -9,8 +11,21 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
     {
         private readonly ICategoryService categoryService;
 
-        public List<Category> Categories { get; set; } =
-            new List<Category>();
+        public PagedResult<Category> PagedCategories { get; private set; } =
+            new PagedResult<Category>();
+
+        public IReadOnlyList<Category> Categories => PagedCategories.Items;
+
+        [BindProperty(SupportsGet = true)]
+        public int Pagina { get; set; } = 1;
+
+        [BindProperty(SupportsGet = true)]
+        public int Tamano { get; set; } = PageSizes.Default;
+
+        [BindProperty(SupportsGet = true)]
+        public string? Q { get; set; }
+
+        private object ListRouteValues => new { Pagina, Tamano, Q };
 
         public string ErrorMessage { get; set; } = string.Empty;
 
@@ -29,6 +44,8 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 
         public bool ShowCreateModal { get; private set; }
 
+        public bool ShowEditModal { get; private set; }
+
         public IndexModel(ICategoryService categoryService)
         {
             this.categoryService = categoryService;
@@ -45,13 +62,15 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
         {
             try
             {
-                IReadOnlyList<Category> categories =
-                    await categoryService.GetAllAsync(
+                PagedCategories =
+                    await categoryService.GetPagedAsync(
+                        Pagina,
+                        Tamano,
+                        Q,
                         cancellationToken);
 
-                Categories = categories
-                    .OrderBy(category => category.Name)
-                    .ToList();
+                Pagina = PagedCategories.Page;
+                Tamano = PagedCategories.PageSize;
             }
             catch (Exception ex)
             {
@@ -59,6 +78,40 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
                     "Error al cargar las categorías: " +
                     ex.Message;
             }
+        }
+
+        // Endpoints GET para el script de validación en vivo (site.js).
+        public async Task<IActionResult> OnGetCheckUniqueAsync(
+            string? nombre,
+            int id,
+            CancellationToken cancellationToken)
+        {
+            bool duplicate =
+                !string.IsNullOrWhiteSpace(nombre) &&
+                await categoryService.IsNameTakenAsync(
+                    nombre,
+                    id,
+                    cancellationToken);
+
+            return UniqueCheckResult.ToJson(
+                duplicate,
+                CategoryValidation.NameDuplicateMessage);
+        }
+
+        public async Task<IActionResult> OnGetPreviewCodeAsync(
+            string? name,
+            CancellationToken cancellationToken)
+        {
+            CategoryCodePreview preview =
+                await categoryService.PreviewCodeAsync(
+                    name ?? string.Empty,
+                    cancellationToken);
+
+            return new JsonResult(new
+            {
+                code = preview.Code,
+                message = preview.Message
+            });
         }
 
         public async Task<IActionResult> OnPostCreateAsync(
@@ -90,14 +143,17 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
                 StatusMessage =
                     "Categoría creada correctamente.";
 
-                return RedirectToPage();
+                return RedirectToPage(ListRouteValues);
             }
             catch (ArgumentException ex)
             {
                 ShowCreateModal = true;
 
+                // Un nombre repetido (carrera con otra solicitud) se muestra junto al campo Nombre.
                 ModelState.AddModelError(
-                    string.Empty,
+                    ex is DuplicateCategoryNameException
+                        ? "CreateCategory.Name"
+                        : string.Empty,
                     ex.Message);
 
                 await LoadCategoriesAsync(
@@ -141,7 +197,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
             StatusMessage =
                 "Categoría eliminada correctamente.";
 
-            return RedirectToPage();
+            return RedirectToPage(ListRouteValues);
         }
 
         public async Task<IActionResult> OnPostEditAsync(
@@ -153,6 +209,8 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
                     EditCategory,
                     nameof(EditCategory)))
             {
+                ShowEditModal = true;
+
                 await LoadCategoriesAsync(
                     cancellationToken);
 
@@ -180,12 +238,16 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
                 StatusMessage =
                     "Categoría actualizada correctamente.";
 
-                return RedirectToPage();
+                return RedirectToPage(ListRouteValues);
             }
             catch (ArgumentException ex)
             {
+                ShowEditModal = true;
+
                 ModelState.AddModelError(
-                    string.Empty,
+                    ex is DuplicateCategoryNameException
+                        ? "EditCategory.Name"
+                        : string.Empty,
                     ex.Message);
 
                 await LoadCategoriesAsync(
