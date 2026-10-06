@@ -174,6 +174,29 @@
         }
     });
 
+    // Búsqueda de los listados paginados: el servidor filtra, así que se envía el formulario GET
+    // poco después de dejar de escribir y se devuelve el foco al campo al recargar.
+    $('[data-auto-search]').each(function () {
+        const input = this;
+        let timer = null;
+
+        input.addEventListener('input', function () {
+            clearTimeout(timer);
+            timer = setTimeout(function () {
+                input.form.requestSubmit();
+            }, 450);
+        });
+
+        if (new URLSearchParams(window.location.search).has('Q')) {
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+        }
+    });
+
+    $(document).on('change', '[data-auto-submit]', function () {
+        this.form.submit();
+    });
+
     $('.modal-form').each(function () {
         const form = this;
 

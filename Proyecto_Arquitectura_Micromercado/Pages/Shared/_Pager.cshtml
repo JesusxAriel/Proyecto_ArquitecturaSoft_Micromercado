@@ -1,0 +1,60 @@
+@using Proyecto_Arquitectura_Micromercado.Domain.Common
+@model IPagedInfo
+@{
+    // Paginador de los listados. Parámetros: Pagina, Tamano y Q (la búsqueda se conserva al cambiar de página).
+    // ViewData["ItemLabel"]: nombre plural de lo que se lista, p. ej. "productos".
+    var targetPage = ViewContext.RouteData.Values["page"]?.ToString();
+    var search = Context.Request.Query["Q"].ToString();
+    var query = string.IsNullOrEmpty(search) ? null : search;
+    var itemLabel = ViewData["ItemLabel"] as string ?? "registros";
+    var firstShown = Math.Max(1, Model.Page - 2);
+    var lastShown = Math.Min(Model.TotalPages, Model.Page + 2);
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3" data-pager>
+    <div class="text-muted small">
+        @if (Model.TotalCount == 0)
+        {
+            <text>0 @itemLabel</text>
+        }
+        else
+        {
+            <text>Mostrando @Model.FirstItemNumber–@Model.LastItemNumber de @Model.TotalCount @itemLabel</text>
+        }
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center gap-3">
+        <form method="get" class="d-flex align-items-center gap-2 mb-0">
+            <input type="hidden" name="Q" value="@query" />
+            <label for="pageSizeSelect" class="small text-muted mb-0">Por página</label>
+            <select id="pageSizeSelect" name="Tamano" class="form-select form-select-sm w-auto" data-auto-submit>
+                @foreach (var size in PageSizes.Allowed)
+                {
+                    <option value="@size" selected="@(size == Model.PageSize)">@size</option>
+                }
+            </select>
+        </form>
+
+        <nav aria-label="Paginación">
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(Model.HasPrevious ? "" : "disabled")">
+                    <a class="page-link" asp-page="@targetPage"
+                       asp-route-Pagina="@(Model.Page - 1)" asp-route-Tamano="@Model.PageSize" asp-route-Q="@query"
+                       aria-label="Anterior">&laquo;</a>
+                </li>
+                @for (var number = firstShown; number <= lastShown; number++)
+                {
+                    <li class="page-item @(number == Model.Page ? "active" : "")">
+                        <a class="page-link" asp-page="@targetPage"
+                           asp-route-Pagina="@number" asp-route-Tamano="@Model.PageSize" asp-route-Q="@query">@number</a>
+                    </li>
+                }
+                <li class="page-item @(Model.HasNext ? "" : "disabled")">
+                    <a class="page-link" asp-page="@targetPage"
+                       asp-route-Pagina="@(Model.Page + 1)" asp-route-Tamano="@Model.PageSize" asp-route-Q="@query"
+                       aria-label="Siguiente">&raquo;</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
