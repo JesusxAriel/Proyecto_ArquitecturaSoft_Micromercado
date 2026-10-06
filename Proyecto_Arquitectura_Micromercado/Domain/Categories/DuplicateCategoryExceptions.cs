@@ -8,4 +8,12 @@ namespace Proyecto_Arquitectura_Micromercado.Domain.Categories
         {
         }
     }
+
+    public sealed class DuplicateCategoryNameException : ArgumentException
+    {
+        public DuplicateCategoryNameException(Exception? innerException = null)
+            : base(CategoryValidation.NameDuplicateMessage, innerException)
+        {
+        }
+    }
 }

@@ -37,6 +37,7 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
         {
             Normalize(category);
             Validate(category);
+            await EnsureNameIsUniqueAsync(category, cancellationToken);
 
             category.AdminUserId = 1;
 
@@ -76,6 +77,7 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
 
             Normalize(category);
             Validate(category);
+            await EnsureNameIsUniqueAsync(category, cancellationToken);
 
             // El código se asigna al crear y no cambia al editar el nombre.
             category.Code = current.Code;
@@ -93,6 +95,20 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
             return await categoryRepository.SoftDeleteAsync(
                 id,
                 cancellationToken);
+        }
+
+        // Al crear Id vale 0, así que no excluye a nadie; al editar excluye el propio registro.
+        private async Task EnsureNameIsUniqueAsync(
+            Category category,
+            CancellationToken cancellationToken)
+        {
+            if (await categoryRepository.ExistsNameAsync(
+                    category.Name,
+                    category.Id,
+                    cancellationToken))
+            {
+                throw new DuplicateCategoryNameException();
+            }
         }
 
         private async Task<string> GenerateCodeAsync(

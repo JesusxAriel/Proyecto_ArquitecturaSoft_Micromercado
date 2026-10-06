@@ -115,7 +115,7 @@ public sealed class MySqlCategoryRepository : ICategoryRepository
         }
         catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
         {
-            throw new DuplicateCategoryCodeException(ex);
+            throw ToDuplicateException(ex);
         }
 
         category.Id = generatedId;
@@ -159,8 +159,37 @@ public sealed class MySqlCategoryRepository : ICategoryRepository
         }
         catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
         {
-            throw new DuplicateCategoryCodeException(ex);
+            throw ToDuplicateException(ex);
         }
+    }
+
+    public async Task<bool> ExistsNameAsync(
+        string name,
+        int idExcluido,
+        CancellationToken cancellationToken = default)
+    {
+        // La collation utf8mb4_unicode_ci ignora mayúsculas y tildes; REGEXP_REPLACE los espacios extra.
+        const string sql = """
+            SELECT EXISTS (
+                SELECT 1
+                FROM CATEGORIAS
+                WHERE estaActivo = 1
+                  AND id <> @idExcluido
+                  AND TRIM(REGEXP_REPLACE(nombre, '[[:space:]]+', ' ')) = @nombre
+            );
+            """;
+
+        await using var connection =
+            await OpenConnectionAsync(cancellationToken);
+
+        await using var command =
+            new MySqlCommand(sql, connection);
+
+        command.Parameters.AddWithValue("@nombre", name.Trim());
+        command.Parameters.AddWithValue("@idExcluido", idExcluido);
+
+        return Convert.ToInt32(
+            await command.ExecuteScalarAsync(cancellationToken)) == 1;
     }
 
     public async Task<IReadOnlyList<string>> GetAllCodesAsync(
@@ -216,6 +245,12 @@ public sealed class MySqlCategoryRepository : ICategoryRepository
         return await command.ExecuteNonQueryAsync(
             cancellationToken) == 1;
     }
+
+    // El mensaje de MySQL indica qué índice UNIQUE se violó.
+    private static ArgumentException ToDuplicateException(MySqlException ex) =>
+        ex.Message.Contains("UQ_Categorias_nombre_activo", StringComparison.OrdinalIgnoreCase)
+            ? new DuplicateCategoryNameException(ex)
+            : new DuplicateCategoryCodeException(ex);
 
     private async Task<MySqlConnection> OpenConnectionAsync(
         CancellationToken cancellationToken)
