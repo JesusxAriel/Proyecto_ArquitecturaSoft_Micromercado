@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
+using Proyecto_Arquitectura_Micromercado.Pages.Shared;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Products;
 
@@ -60,6 +61,21 @@ public sealed class IndexModel(
 
     private object ListRouteValues => new { Pagina, Tamano, Q };
 
+    // Endpoint GET para el script de validación en vivo (site.js).
+    public async Task<IActionResult> OnGetCheckUniqueAsync(
+        string? nombre,
+        int idEmpaque,
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var duplicate =
+            !string.IsNullOrWhiteSpace(nombre) &&
+            idEmpaque > 0 &&
+            await productService.IsDuplicateAsync(nombre, idEmpaque, id, cancellationToken);
+
+        return UniqueCheckResult.ToJson(duplicate, ProductValidation.DuplicateMessage);
+    }
+
     public async Task<IActionResult> OnPostCreateAsync(
         [FromForm(Name = "CreateProduct")] Product createProduct,
         CancellationToken cancellationToken)
@@ -83,7 +99,11 @@ public sealed class IndexModel(
         catch (ArgumentException ex)
         {
             ShowCreateModal = true;
-            ModelState.AddModelError(string.Empty, ex.Message);
+
+            // Un duplicado (carrera con otra solicitud) se muestra junto al campo Nombre.
+            ModelState.AddModelError(
+                ex is DuplicateProductException ? "CreateProduct.Nombre" : string.Empty,
+                ex.Message);
             await ReloadProductsAsync(cancellationToken);
             return Page();
         }
@@ -149,7 +169,9 @@ public sealed class IndexModel(
         catch (ArgumentException ex)
         {
             ShowEditModal = true;
-            ModelState.AddModelError(string.Empty, ex.Message);
+            ModelState.AddModelError(
+                ex is DuplicateProductException ? "EditProduct.Nombre" : string.Empty,
+                ex.Message);
             await ReloadProductsAsync(cancellationToken);
             return Page();
         }
