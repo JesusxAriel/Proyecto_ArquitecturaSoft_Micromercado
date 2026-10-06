@@ -9,6 +9,7 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 public sealed class MySqlSupplierRepository : ISupplierRepository
 {
     private const int SystemAdminId = 1;
+    private const int DuplicateKeyErrorNumber = 1062;
 
     public async Task<IReadOnlyList<SupplierListItem>> GetAllAsync(CancellationToken cancellationToken = default)
     {
@@ -116,7 +117,7 @@ public sealed class MySqlSupplierRepository : ISupplierRepository
         const string sql = """
             SELECT COUNT(*)
             FROM PROVEEDOR
-            WHERE nombreEmpresa = @nombreEmpresa
+            WHERE TRIM(REGEXP_REPLACE(nombreEmpresa, '[[:space:]]+', ' ')) = @nombreEmpresa
               AND id <> @idExcluido
               AND estaActivo = 1;
             """;
@@ -145,7 +146,17 @@ public sealed class MySqlSupplierRepository : ISupplierRepository
         await using var command = new MySqlCommand(sql, connection);
         AddSupplierParameters(command, supplier);
         command.Parameters.AddWithValue("@idUsuarioAdmin", SystemAdminId);
-        var generatedId = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
+
+        int generatedId;
+        try
+        {
+            generatedId = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
+        }
+        catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
+        {
+            throw new DuplicateSupplierException(ex);
+        }
+
         supplier.Id = generatedId;
         return generatedId;
     }
@@ -165,7 +176,15 @@ public sealed class MySqlSupplierRepository : ISupplierRepository
         await using var command = new MySqlCommand(sql, connection);
         AddSupplierParameters(command, supplier);
         command.Parameters.AddWithValue("@id", supplier.Id);
-        return await command.ExecuteNonQueryAsync(cancellationToken) == 1;
+
+        try
+        {
+            return await command.ExecuteNonQueryAsync(cancellationToken) == 1;
+        }
+        catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
+        {
+            throw new DuplicateSupplierException(ex);
+        }
     }
 
     public async Task<bool> SoftDeleteAsync(int id, CancellationToken cancellationToken = default)

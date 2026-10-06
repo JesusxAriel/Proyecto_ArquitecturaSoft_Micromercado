@@ -21,7 +21,7 @@ public static class SupplierValidation
     }
 
     public const string NombreDuplicadoMessage =
-        "Ya existe un proveedor registrado con ese nombre de empresa.";
+        "Ya existe un proveedor con ese nombre.";
     public const string CorreoRequeridoParaAutogestionadoMessage =
         "Un proveedor autogestionado necesita un correo para coordinar sus reposiciones.";
 }

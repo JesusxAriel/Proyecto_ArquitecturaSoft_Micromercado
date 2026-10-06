@@ -38,16 +38,27 @@ public sealed class SupplierService(ISupplierRepository repository) : ISupplierS
         CancellationToken cancellationToken = default) =>
         repository.ExistsNombreEmpresaAsync(ToTitleCase(nombreEmpresa), idExcluido, cancellationToken);
 
-    public Task<int> CreateAsync(Supplier supplier, CancellationToken cancellationToken = default)
+    public async Task<int> CreateAsync(Supplier supplier, CancellationToken cancellationToken = default)
     {
         Validate(supplier);
-        return repository.CreateAsync(supplier, cancellationToken);
+        await EnsureNameIsUniqueAsync(supplier, cancellationToken);
+        return await repository.CreateAsync(supplier, cancellationToken);
     }
 
-    public Task<bool> UpdateAsync(Supplier supplier, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(Supplier supplier, CancellationToken cancellationToken = default)
     {
         Validate(supplier);
-        return repository.UpdateAsync(supplier, cancellationToken);
+        await EnsureNameIsUniqueAsync(supplier, cancellationToken);
+        return await repository.UpdateAsync(supplier, cancellationToken);
+    }
+
+    // Al crear Id vale 0, así que no excluye a nadie; al editar excluye el propio registro.
+    private async Task EnsureNameIsUniqueAsync(Supplier supplier, CancellationToken cancellationToken)
+    {
+        if (await repository.ExistsNombreEmpresaAsync(supplier.NombreEmpresa, supplier.Id, cancellationToken))
+        {
+            throw new DuplicateSupplierException();
+        }
     }
 
     public Task<bool> SoftDeleteAsync(int id, CancellationToken cancellationToken = default)
