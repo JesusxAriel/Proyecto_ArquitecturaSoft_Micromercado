@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Domain.Categories;
 using Proyecto_Arquitectura_Micromercado.Domain.Common;
+using Proyecto_Arquitectura_Micromercado.Pages.Shared;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 {
@@ -79,6 +80,40 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
             }
         }
 
+        // Endpoints GET para el script de validación en vivo (site.js).
+        public async Task<IActionResult> OnGetCheckUniqueAsync(
+            string? nombre,
+            int id,
+            CancellationToken cancellationToken)
+        {
+            bool duplicate =
+                !string.IsNullOrWhiteSpace(nombre) &&
+                await categoryService.IsNameTakenAsync(
+                    nombre,
+                    id,
+                    cancellationToken);
+
+            return UniqueCheckResult.ToJson(
+                duplicate,
+                CategoryValidation.NameDuplicateMessage);
+        }
+
+        public async Task<IActionResult> OnGetPreviewCodeAsync(
+            string? name,
+            CancellationToken cancellationToken)
+        {
+            CategoryCodePreview preview =
+                await categoryService.PreviewCodeAsync(
+                    name ?? string.Empty,
+                    cancellationToken);
+
+            return new JsonResult(new
+            {
+                code = preview.Code,
+                message = preview.Message
+            });
+        }
+
         public async Task<IActionResult> OnPostCreateAsync(
             [FromForm(Name = "CreateCategory")]
             Category createCategory,
@@ -114,8 +149,11 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
             {
                 ShowCreateModal = true;
 
+                // Un nombre repetido (carrera con otra solicitud) se muestra junto al campo Nombre.
                 ModelState.AddModelError(
-                    string.Empty,
+                    ex is DuplicateCategoryNameException
+                        ? "CreateCategory.Name"
+                        : string.Empty,
                     ex.Message);
 
                 await LoadCategoriesAsync(
@@ -207,7 +245,9 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
                 ShowEditModal = true;
 
                 ModelState.AddModelError(
-                    string.Empty,
+                    ex is DuplicateCategoryNameException
+                        ? "EditCategory.Name"
+                        : string.Empty,
                     ex.Message);
 
                 await LoadCategoriesAsync(
