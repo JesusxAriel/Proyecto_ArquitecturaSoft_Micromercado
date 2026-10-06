@@ -1,5 +1,6 @@
 @page
 @using Microsoft.AspNetCore.Mvc.Rendering
+@using Proyecto_Arquitectura_Micromercado.Domain.Common
 @model Proyecto_Arquitectura_Micromercado.Pages.Products.IndexModel
 @{
     ViewData["Title"] = "Productos";
@@ -30,7 +31,9 @@
     </div>
 }
 
-<div class="mb-3">
+<form method="get" class="mb-3" id="productSearchForm">
+    <input type="hidden" name="Tamano" value="@Model.Tamano" />
+
     <label for="productSearch" class="visually-hidden">
         Buscar productos
     </label>
@@ -41,12 +44,14 @@
         </span>
 
         <input id="productSearch"
+               name="Q"
+               value="@Model.Q"
                class="form-control"
                type="search"
-               placeholder="Buscar por nombre, categoría o proveedor..."
+               placeholder="Buscar por nombre, empaque, categoría o proveedor..."
                autocomplete="off" />
     </div>
-</div>
+</form>
 
 @if (Model.DatabaseWarning is not null)
 {
@@ -125,6 +130,60 @@
     </table>
 </div>
 
+@{
+    var paged = Model.PagedProducts;
+    var firstShown = Math.Max(1, paged.Page - 2);
+    var lastShown = Math.Min(paged.TotalPages, paged.Page + 2);
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3" id="productsPager">
+    <div class="text-muted small">
+        @if (paged.TotalCount == 0)
+        {
+            <text>0 productos</text>
+        }
+        else
+        {
+            <text>Mostrando @paged.FirstItemNumber–@paged.LastItemNumber de @paged.TotalCount productos</text>
+        }
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center gap-3">
+        <form method="get" class="d-flex align-items-center gap-2 mb-0">
+            <input type="hidden" name="Q" value="@Model.Q" />
+            <label for="pageSizeSelect" class="small text-muted mb-0">Por página</label>
+            <select id="pageSizeSelect" name="Tamano" class="form-select form-select-sm w-auto">
+                @foreach (var size in PageSizes.Allowed)
+                {
+                    <option value="@size" selected="@(size == paged.PageSize)">@size</option>
+                }
+            </select>
+        </form>
+
+        <nav aria-label="Paginación de productos">
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(paged.HasPrevious ? "" : "disabled")">
+                    <a class="page-link" asp-page="/Products/Index"
+                       asp-route-Pagina="@(paged.Page - 1)" asp-route-Tamano="@paged.PageSize" asp-route-Q="@Model.Q"
+                       aria-label="Anterior">&laquo;</a>
+                </li>
+                @for (var number = firstShown; number <= lastShown; number++)
+                {
+                    <li class="page-item @(number == paged.Page ? "active" : "")">
+                        <a class="page-link" asp-page="/Products/Index"
+                           asp-route-Pagina="@number" asp-route-Tamano="@paged.PageSize" asp-route-Q="@Model.Q">@number</a>
+                    </li>
+                }
+                <li class="page-item @(paged.HasNext ? "" : "disabled")">
+                    <a class="page-link" asp-page="/Products/Index"
+                       asp-route-Pagina="@(paged.Page + 1)" asp-route-Tamano="@paged.PageSize" asp-route-Q="@Model.Q"
+                       aria-label="Siguiente">&raquo;</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
 
 <!-- ========================================================= -->
 <!-- MODAL CREAR PRODUCTO                                      -->
@@ -148,6 +207,9 @@
                   autocomplete="off">
 
                 @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Pagina" />
+                <input type="hidden" asp-for="Tamano" />
+                <input type="hidden" asp-for="Q" />
 
                 <div class="modal-header">
 
@@ -404,6 +466,9 @@
                   autocomplete="off">
 
                 @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Pagina" />
+                <input type="hidden" asp-for="Tamano" />
+                <input type="hidden" asp-for="Q" />
 
                 <div class="modal-header">
 
@@ -665,6 +730,9 @@
                   asp-page-handler="Delete">
 
                 @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Pagina" />
+                <input type="hidden" asp-for="Tamano" />
+                <input type="hidden" asp-for="Q" />
 
                 <div class="modal-header">
 
@@ -1180,31 +1248,41 @@
                 }
             );
 
-        $('#productSearch').on(
-            'input',
-            function() {
+        // La búsqueda y la paginación se resuelven en el servidor: se envía el
+        // formulario GET poco después de dejar de escribir.
+        (function() {
 
-                const query =
-                    $(this)
-                        .val()
-                        .toString()
-                        .toLocaleLowerCase();
+            const searchInput = document.getElementById('productSearch');
+            let searchTimer = null;
 
+            searchInput.addEventListener('input', function() {
 
-                $('#productsTable tbody tr')
-                    .each(function() {
+                clearTimeout(searchTimer);
 
-                        $(this).toggle(
-                            $(this)
-                                .text()
-                                .toLocaleLowerCase()
-                                .includes(query)
-                        );
+                searchTimer = setTimeout(function() {
+                    searchInput.form.requestSubmit();
+                }, 450);
 
-                    });
+            });
+
+            if (new URLSearchParams(window.location.search).has('Q')) {
+
+                searchInput.focus();
+
+                searchInput.setSelectionRange(
+                    searchInput.value.length,
+                    searchInput.value.length
+                );
 
             }
-        );
+
+            document
+                .getElementById('pageSizeSelect')
+                .addEventListener('change', function() {
+                    this.form.submit();
+                });
+
+        })();
 
         setTimeout(function () {
             var alerts = document.querySelectorAll('.alert-dismissible');

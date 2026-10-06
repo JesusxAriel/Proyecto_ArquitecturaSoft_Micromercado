@@ -1,3 +1,4 @@
+using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
 using System.Globalization;
 
@@ -11,6 +12,27 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
 
     public Task<IReadOnlyList<ProductListItem>> GetAllAsync(CancellationToken cancellationToken = default) =>
         repository.GetAllAsync(cancellationToken);
+
+    public async Task<PagedResult<ProductListItem>> GetPagedAsync(
+        int page,
+        int pageSize,
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        pageSize = PageSizes.Normalize(pageSize);
+        page = Math.Max(1, page);
+        search = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
+
+        var result = await repository.GetPagedAsync(page, pageSize, search, cancellationToken);
+
+        // Si la página pedida quedó fuera de rango (p. ej. se eliminaron registros), se muestra la última.
+        if (result.Items.Count == 0 && result.TotalCount > 0 && page > result.TotalPages)
+        {
+            result = await repository.GetPagedAsync(result.TotalPages, pageSize, search, cancellationToken);
+        }
+
+        return result;
+    }
 
     public Task<Product?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
         repository.GetByIdAsync(id, cancellationToken);

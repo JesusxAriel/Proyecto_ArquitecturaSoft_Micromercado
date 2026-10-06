@@ -2,6 +2,7 @@ using MySql.Data.MySqlClient;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
+using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Products;
@@ -10,7 +11,14 @@ public sealed class IndexModel(
     IProductService productService,
     ILogger<IndexModel> logger) : PageModel
 {
-    public IReadOnlyList<ProductListItem> Products { get; private set; } = [];
+    public PagedResult<ProductListItem> PagedProducts { get; private set; } = new();
+    public IReadOnlyList<ProductListItem> Products => PagedProducts.Items;
+    [BindProperty(SupportsGet = true)]
+    public int Pagina { get; set; } = 1;
+    [BindProperty(SupportsGet = true)]
+    public int Tamano { get; set; } = PageSizes.Default;
+    [BindProperty(SupportsGet = true)]
+    public string? Q { get; set; }
     public IReadOnlyList<LookupOption> Categories { get; private set; } = [];
     public IReadOnlyList<LookupOption> Suppliers { get; private set; } = [];
     [TempData]
@@ -30,16 +38,25 @@ public sealed class IndexModel(
     {
         try
         {
-            Products = await productService.GetAllAsync(cancellationToken);
+            await LoadPageAsync(cancellationToken);
             Categories = await productService.GetCategoriesAsync(cancellationToken);
             Suppliers = await productService.GetSuppliersAsync(cancellationToken);
         }
         catch (MySqlException)
         {
-            Products = [];
+            PagedProducts = new PagedResult<ProductListItem>();
             DatabaseWarning = "No se pudo conectar con la base de datos. No hay productos para mostrar.";
         }
     }
+
+    private async Task LoadPageAsync(CancellationToken cancellationToken)
+    {
+        PagedProducts = await productService.GetPagedAsync(Pagina, Tamano, Q, cancellationToken);
+        Pagina = PagedProducts.Page;
+        Tamano = PagedProducts.PageSize;
+    }
+
+    private object ListRouteValues => new { Pagina, Tamano, Q };
 
     public async Task<IActionResult> OnPostCreateAsync(
         [FromForm(Name = "CreateProduct")] Product createProduct,
@@ -59,7 +76,7 @@ public sealed class IndexModel(
         {
             await productService.CreateAsync(CreateProduct, cancellationToken);
             StatusMessage = "Producto creado correctamente.";
-            return RedirectToPage();
+            return RedirectToPage(ListRouteValues);
         }
         catch (ArgumentException ex)
         {
@@ -125,7 +142,7 @@ public sealed class IndexModel(
             }
 
             StatusMessage = "Producto actualizado correctamente.";
-            return RedirectToPage();
+            return RedirectToPage(ListRouteValues);
         }
         catch (ArgumentException ex)
         {
@@ -147,6 +164,9 @@ public sealed class IndexModel(
     {
         ModelState.Remove(nameof(PriceChangeReason));
         ModelState.Remove("Product.PriceChangeReason");
+        ModelState.Remove(nameof(Pagina));
+        ModelState.Remove(nameof(Tamano));
+        ModelState.Remove(nameof(Q));
     }
 
     private static string NormalizeReason(string? value)
@@ -218,20 +238,20 @@ public sealed class IndexModel(
             await ReloadProductsAsync(cancellationToken);
             return Page();
         }
-        return RedirectToPage();
+        return RedirectToPage(ListRouteValues);
     }
 
     private async Task ReloadProductsAsync(CancellationToken cancellationToken)
     {
         try
         {
-            Products = await productService.GetAllAsync(cancellationToken);
+            await LoadPageAsync(cancellationToken);
             Categories = await productService.GetCategoriesAsync(cancellationToken);
             Suppliers = await productService.GetSuppliersAsync(cancellationToken);
         }
         catch (MySqlException)
         {
-            Products = [];
+            PagedProducts = new PagedResult<ProductListItem>();
             Categories = [];
             Suppliers = [];
             DatabaseWarning = "No se pudo conectar con la base de datos.";

@@ -1,5 +1,6 @@
 using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
+using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 
@@ -29,24 +30,91 @@ public sealed class MySqlProductRepository : IProductRepository
 
         while (await reader.ReadAsync(cancellationToken))
         {
-            products.Add(new ProductListItem
-            {
-                Id = reader.GetInt32(reader.GetOrdinal("id")),
-                Nombre = reader.GetString(reader.GetOrdinal("nombre")),
-                EmpaquePresentacion = reader.GetString(reader.GetOrdinal("empaquePresentacion")),
-                PrecioVenta = reader.GetDecimal(reader.GetOrdinal("precioVenta")),
-                PrecioCosto = reader.GetDecimal(reader.GetOrdinal("precioCosto")),
-                StockMinimo = reader.GetInt32(reader.GetOrdinal("stockMinimo")),
-                IdCategoria = reader.GetInt32(reader.GetOrdinal("idCategoria")),
-                NombreCategoria = reader.GetString(reader.GetOrdinal("nombreCategoria")),
-                IdProveedor = reader.GetInt32(reader.GetOrdinal("idProveedor")),
-                NombreProveedor = reader.GetString(reader.GetOrdinal("nombreProveedor")),
-                StockCalculado = reader.GetInt32(reader.GetOrdinal("stockCalculado"))
-            });
+            products.Add(MapListItem(reader));
         }
 
         return products;
     }
+
+    public async Task<PagedResult<ProductListItem>> GetPagedAsync(
+        int page,
+        int pageSize,
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        const string filter = """
+            WHERE (@search IS NULL
+                   OR nombre LIKE @search
+                   OR empaquePresentacion LIKE @search
+                   OR nombreCategoria LIKE @search
+                   OR nombreProveedor LIKE @search)
+            """;
+        const string countSql = "SELECT COUNT(*) FROM vw_productos_con_stock " + filter + ";";
+        const string pageSql = """
+            SELECT id, nombre, empaquePresentacion, precioVenta, precioCosto,
+                   stockMinimo, idCategoria, nombreCategoria, idProveedor,
+                   nombreProveedor, stockCalculado
+            FROM vw_productos_con_stock
+            """ + "\n" + filter + """
+
+            ORDER BY nombre, id
+            LIMIT @limit OFFSET @offset;
+            """;
+
+        // En LIKE el backslash es el escape por defecto de MySQL: se escapan \, % y _ del texto buscado.
+        object searchPattern = string.IsNullOrWhiteSpace(search)
+            ? DBNull.Value
+            : "%" + search.Trim()
+                .Replace("\\", "\\\\")
+                .Replace("%", "\\%")
+                .Replace("_", "\\_") + "%";
+
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+
+        int totalCount;
+        await using (var countCommand = new MySqlCommand(countSql, connection))
+        {
+            countCommand.Parameters.AddWithValue("@search", searchPattern);
+            totalCount = Convert.ToInt32(await countCommand.ExecuteScalarAsync(cancellationToken));
+        }
+
+        var products = new List<ProductListItem>();
+        await using (var pageCommand = new MySqlCommand(pageSql, connection))
+        {
+            pageCommand.Parameters.AddWithValue("@search", searchPattern);
+            pageCommand.Parameters.AddWithValue("@limit", pageSize);
+            pageCommand.Parameters.AddWithValue("@offset", (page - 1) * pageSize);
+            await using var reader = await pageCommand.ExecuteReaderAsync(cancellationToken);
+
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                products.Add(MapListItem(reader));
+            }
+        }
+
+        return new PagedResult<ProductListItem>
+        {
+            Items = products,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
+    }
+
+    private static ProductListItem MapListItem(System.Data.Common.DbDataReader reader) => new()
+    {
+        Id = reader.GetInt32(reader.GetOrdinal("id")),
+        Nombre = reader.GetString(reader.GetOrdinal("nombre")),
+        EmpaquePresentacion = reader.GetString(reader.GetOrdinal("empaquePresentacion")),
+        PrecioVenta = reader.GetDecimal(reader.GetOrdinal("precioVenta")),
+        PrecioCosto = reader.GetDecimal(reader.GetOrdinal("precioCosto")),
+        StockMinimo = reader.GetInt32(reader.GetOrdinal("stockMinimo")),
+        IdCategoria = reader.GetInt32(reader.GetOrdinal("idCategoria")),
+        NombreCategoria = reader.GetString(reader.GetOrdinal("nombreCategoria")),
+        IdProveedor = reader.GetInt32(reader.GetOrdinal("idProveedor")),
+        NombreProveedor = reader.GetString(reader.GetOrdinal("nombreProveedor")),
+        StockCalculado = reader.GetInt32(reader.GetOrdinal("stockCalculado"))
+    };
 
     public async Task<Product?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
