@@ -2,6 +2,7 @@ using MySql.Data.MySqlClient;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
+using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
 
 using Proyecto_Arquitectura_Micromercado.Application.Products;
@@ -13,7 +14,19 @@ public sealed class IndexModel(
     IProductService productService,
     ILogger<IndexModel> logger) : PageModel
 {
-    public IReadOnlyList<SupplierListItem> Suppliers { get; private set; } = [];
+    public PagedResult<SupplierListItem> PagedSuppliers { get; private set; } = new();
+    public IReadOnlyList<SupplierListItem> Suppliers => PagedSuppliers.Items;
+
+    [BindProperty(SupportsGet = true)]
+    public int Pagina { get; set; } = 1;
+
+    [BindProperty(SupportsGet = true)]
+    public int Tamano { get; set; } = PageSizes.Default;
+
+    [BindProperty(SupportsGet = true)]
+    public string? Q { get; set; }
+
+    private object ListRouteValues => new { Pagina, Tamano, Q };
     public string? DatabaseWarning { get; private set; }
     [TempData]
     public string? ErrorMessage { get; set; }
@@ -58,7 +71,7 @@ public sealed class IndexModel(
         {
             await supplierService.CreateAsync(CreateSupplier, cancellationToken);
             StatusMessage = "Proveedor creado correctamente.";
-            return RedirectToPage();
+            return RedirectToPage(ListRouteValues);
         }
         catch (ArgumentException ex)
         {
@@ -103,7 +116,7 @@ public sealed class IndexModel(
             }
 
             StatusMessage = "Proveedor actualizado correctamente.";
-            return RedirectToPage();
+            return RedirectToPage(ListRouteValues);
         }
         catch (ArgumentException ex)
         {
@@ -129,7 +142,7 @@ public sealed class IndexModel(
         if (await TieneProductosActivosAsync(DeleteSupplierId, cancellationToken))
         {
             ErrorMessage = "No se puede eliminar el proveedor porque tiene productos asociados.";
-            return RedirectToPage();
+            return RedirectToPage(ListRouteValues);
         }
 
         if (!await supplierService.SoftDeleteAsync(DeleteSupplierId, cancellationToken))
@@ -138,7 +151,7 @@ public sealed class IndexModel(
         }
 
         StatusMessage = "Proveedor eliminado correctamente.";
-        return RedirectToPage();
+        return RedirectToPage(ListRouteValues);
     }
 
     private async Task<bool> TieneProductosActivosAsync(
@@ -151,14 +164,17 @@ public sealed class IndexModel(
 
     private async Task LoadSuppliersAsync(CancellationToken cancellationToken)
     {
-        Suppliers = (await supplierService.GetAllAsync(cancellationToken))
-            .OrderBy(supplier => supplier.NombreEmpresa)
-            .ToList();
+        PagedSuppliers = await supplierService.GetPagedAsync(Pagina, Tamano, Q, cancellationToken);
+        Pagina = PagedSuppliers.Page;
+        Tamano = PagedSuppliers.PageSize;
     }
 
     private void RemoveDeleteModelState()
     {
         ModelState.Remove(nameof(DeleteSupplierId));
+        ModelState.Remove(nameof(Pagina));
+        ModelState.Remove(nameof(Tamano));
+        ModelState.Remove(nameof(Q));
     }
 
     private void LogModelStateErrors(string operation = "editar")
