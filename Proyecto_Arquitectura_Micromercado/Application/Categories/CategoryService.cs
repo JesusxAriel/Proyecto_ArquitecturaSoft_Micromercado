@@ -118,12 +118,46 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
                 cancellationToken);
         }
 
+        public async Task<bool> IsNameTakenAsync(
+            string name,
+            int idExcluido,
+            CancellationToken cancellationToken = default)
+        {
+            return await categoryRepository.ExistsNameAsync(
+                ToTitleCase(name),
+                idExcluido,
+                cancellationToken);
+        }
+
+        public async Task<CategoryCodePreview> PreviewCodeAsync(
+            string name,
+            CancellationToken cancellationToken = default)
+        {
+            string normalized = ToTitleCase(name);
+
+            if (!CategoryCodeGenerator.HasEnoughLetters(normalized))
+            {
+                return new CategoryCodePreview(null, null);
+            }
+
+            try
+            {
+                return new CategoryCodePreview(
+                    await GenerateCodeAsync(normalized, cancellationToken),
+                    null);
+            }
+            catch (ArgumentException ex)
+            {
+                return new CategoryCodePreview(null, ex.Message);
+            }
+        }
+
         // Al crear Id vale 0, así que no excluye a nadie; al editar excluye el propio registro.
         private async Task EnsureNameIsUniqueAsync(
             Category category,
             CancellationToken cancellationToken)
         {
-            if (await categoryRepository.ExistsNameAsync(
+            if (await IsNameTakenAsync(
                     category.Name,
                     category.Id,
                     cancellationToken))
