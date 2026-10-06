@@ -35,6 +35,7 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
         {
             Normalize(category);
             Validate(category);
+            await EnsureCodeIsUniqueAsync(category, cancellationToken);
 
             category.AdminUserId = 1;
 
@@ -49,6 +50,7 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
         {
             Normalize(category);
             Validate(category);
+            await EnsureCodeIsUniqueAsync(category, cancellationToken);
 
             category.AdminUserId = 1;
 
@@ -64,6 +66,20 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
             return await categoryRepository.SoftDeleteAsync(
                 id,
                 cancellationToken);
+        }
+
+        private async Task EnsureCodeIsUniqueAsync(
+            Category category,
+            CancellationToken cancellationToken)
+        {
+            if (await categoryRepository.ExistsCodeAsync(
+                    category.Code,
+                    category.Id,
+                    cancellationToken))
+            {
+                throw new ArgumentException(
+                    CategoryValidation.CodeDuplicateMessage);
+            }
         }
 
         private static void Normalize(Category category)

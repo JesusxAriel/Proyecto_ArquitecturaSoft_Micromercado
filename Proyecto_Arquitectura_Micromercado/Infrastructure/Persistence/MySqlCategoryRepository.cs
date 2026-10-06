@@ -8,6 +8,7 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 public sealed class MySqlCategoryRepository : ICategoryRepository
 {
     private const int SystemAdminId = 1;
+    private const int DuplicateKeyErrorNumber = 1062;
 
     public async Task<IReadOnlyList<Category>> GetAllAsync(
         CancellationToken cancellationToken = default)
@@ -104,9 +105,20 @@ public sealed class MySqlCategoryRepository : ICategoryRepository
 
         AddCategoryParameters(command, category);
 
-        var generatedId =
-            Convert.ToInt32(
-                await command.ExecuteScalarAsync(cancellationToken));
+        int generatedId;
+
+        try
+        {
+            generatedId =
+                Convert.ToInt32(
+                    await command.ExecuteScalarAsync(cancellationToken));
+        }
+        catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
+        {
+            throw new ArgumentException(
+                CategoryValidation.CodeDuplicateMessage,
+                ex);
+        }
 
         category.Id = generatedId;
 
@@ -140,10 +152,47 @@ public sealed class MySqlCategoryRepository : ICategoryRepository
             "@id",
             category.Id);
 
-        int affectedRows =
-            await command.ExecuteNonQueryAsync(cancellationToken);
+        try
+        {
+            int affectedRows =
+                await command.ExecuteNonQueryAsync(cancellationToken);
 
-        return affectedRows == 1;
+            return affectedRows == 1;
+        }
+        catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
+        {
+            throw new ArgumentException(
+                CategoryValidation.CodeDuplicateMessage,
+                ex);
+        }
+    }
+
+    public async Task<bool> ExistsCodeAsync(
+        string code,
+        int idExcluido,
+        CancellationToken cancellationToken = default)
+    {
+        // Incluye categorías inactivas: el índice UNIQUE de la BD también las considera.
+        const string sql = """
+            SELECT EXISTS (
+                SELECT 1
+                FROM CATEGORIAS
+                WHERE codigo = @codigo
+                  AND id <> @idExcluido
+            );
+            """;
+
+        await using var connection =
+            await OpenConnectionAsync(cancellationToken);
+
+        await using var command =
+            new MySqlCommand(sql, connection);
+
+        command.Parameters.AddWithValue("@codigo", code.Trim());
+        command.Parameters.AddWithValue("@idExcluido", idExcluido);
+
+        return Convert.ToInt32(
+            await command.ExecuteScalarAsync(cancellationToken)) == 1;
     }
 
     public async Task<bool> SoftDeleteAsync(

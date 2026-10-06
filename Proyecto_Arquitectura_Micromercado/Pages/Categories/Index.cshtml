@@ -284,6 +284,10 @@ else
     {
         <script>bootstrap.Modal.getOrCreateInstance(document.getElementById('createCategoryModal')).show();</script>
     }
+    @if (Model.ShowEditModal)
+    {
+        <script>bootstrap.Modal.getOrCreateInstance(document.getElementById('editCategoryModal')).show();</script>
+    }
     <script>
         $('.edit-category-button').on('click', function () {
             const button = $(this);

@@ -29,6 +29,8 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 
         public bool ShowCreateModal { get; private set; }
 
+        public bool ShowEditModal { get; private set; }
+
         public IndexModel(ICategoryService categoryService)
         {
             this.categoryService = categoryService;
@@ -95,6 +97,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
             catch (ArgumentException ex)
             {
                 ShowCreateModal = true;
+                CreateCategory.Code = WithoutCodePrefix(CreateCategory.Code);
 
                 ModelState.AddModelError(
                     string.Empty,
@@ -144,6 +147,14 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
             return RedirectToPage();
         }
 
+        // El servicio normaliza el código a "CAT-XXX"; el formulario ya muestra el prefijo "CAT-".
+        private static string WithoutCodePrefix(string code)
+        {
+            return code.StartsWith("CAT-", StringComparison.OrdinalIgnoreCase)
+                ? code[4..]
+                : code;
+        }
+
         public async Task<IActionResult> OnPostEditAsync(
             CancellationToken cancellationToken)
         {
@@ -153,6 +164,8 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
                     EditCategory,
                     nameof(EditCategory)))
             {
+                ShowEditModal = true;
+
                 await LoadCategoriesAsync(
                     cancellationToken);
 
@@ -184,6 +197,9 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
             }
             catch (ArgumentException ex)
             {
+                ShowEditModal = true;
+                EditCategory.Code = WithoutCodePrefix(EditCategory.Code);
+
                 ModelState.AddModelError(
                     string.Empty,
                     ex.Message);

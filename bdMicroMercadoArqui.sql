@@ -18,7 +18,8 @@ CREATE TABLE `CATEGORIAS` (
   `idUsuarioAdmin` INT NOT NULL,
   `fechaCreacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `fechaActualizacion` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UQ_Categorias_codigo` (`codigo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========================================================
