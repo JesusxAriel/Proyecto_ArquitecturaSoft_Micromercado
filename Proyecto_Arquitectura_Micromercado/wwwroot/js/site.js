@@ -96,6 +96,8 @@
             message = 'Ingresa un número válido.';
         } else if (input.dataset.sanitize === 'text' && input.value && !validationPattern.test(input.value)) {
             message = 'Usa solo letras, números, espacios, puntos, comas o guiones.';
+        } else if (input._uniqueError) {
+            message = input._uniqueError;
         }
 
         invalidCharacters.lastIndex = 0;
@@ -116,14 +118,211 @@
 
     function validateForm(form, showErrors) {
         let valid = true;
+        let blocked = false;
         $(form).find('[data-validate-input]').each(function () {
-            valid = validateInput(this, showErrors) && valid;
+            const fieldValid = validateInput(this, showErrors);
+            valid = fieldValid && valid;
+
+            // Un duplicado no deshabilita Guardar: al hacer clic el foco va al campo repetido.
+            if (!fieldValid && !(this._uniqueError && this.validationMessage === this._uniqueError)) {
+                blocked = true;
+            }
         });
         if (showErrors) {
-            $(form).find('.modal-save-button, button[type="submit"]').prop('disabled', !valid);
+            $(form).find('.modal-save-button, button[type="submit"]').prop('disabled', blocked);
         }
         return valid;
     }
+
+    // ---- Validación de unicidad en vivo ---------------------------------------------------
+    // Un campo con data-unique-url consulta ese endpoint (GET "?handler=CheckUnique") al escribir
+    // (con espera) y al salir del campo, y muestra el error junto a él. data-unique-fields indica
+    // qué valores se envían: "parametro=#selector,...". Lo usan categorías, productos y proveedores.
+    const uniqueDelay = 400;
+
+    function uniqueFields(anchor) {
+        if (!anchor._uniqueFields) {
+            anchor._uniqueFields = (anchor.dataset.uniqueFields || '')
+                .split(',')
+                .map(pair => pair.split('='))
+                .filter(parts => parts.length === 2)
+                .map(([name, selector]) => ({ name: name.trim(), element: document.querySelector(selector.trim()) }))
+                .filter(field => field.element);
+        }
+
+        return anchor._uniqueFields;
+    }
+
+    function uniqueQuery(anchor) {
+        const params = new URLSearchParams();
+        uniqueFields(anchor).forEach(field => params.set(field.name, field.element.value.trim()));
+        return params.toString();
+    }
+
+    function uniqueAnchors(form) {
+        return Array.from(form.querySelectorAll('[data-unique-url]'));
+    }
+
+    function resetUnique(anchor) {
+        anchor._uniqueSequence = (anchor._uniqueSequence || 0) + 1; // descarta respuestas en vuelo
+        anchor._uniqueError = '';
+        anchor._uniqueCheckedKey = null;
+        clearTimeout(anchor._uniqueTimer);
+    }
+
+    async function checkUnique(anchor) {
+        const key = uniqueQuery(anchor);
+        const sequence = anchor._uniqueSequence = (anchor._uniqueSequence || 0) + 1;
+        let result = null;
+
+        if (anchor.value.trim()) {
+            try {
+                const response = await fetch(anchor.dataset.uniqueUrl + '&' + key, {
+                    cache: 'no-store',
+                    headers: { Accept: 'application/json' }
+                });
+
+                if (response.ok) {
+                    result = await response.json();
+                }
+            } catch {
+                // Sin respuesta del servidor: no se bloquea, el servidor valida de todos modos al guardar.
+            }
+        }
+
+        if (sequence !== anchor._uniqueSequence) {
+            return; // llegó tarde: ya hay una consulta más reciente
+        }
+
+        anchor._uniqueError = result && result.duplicate
+            ? (result.message || 'Ya existe un registro con esos datos.')
+            : '';
+        anchor._uniqueCheckedKey = key;
+
+        validateInput(anchor, true);
+        const form = anchor.closest('form');
+        if (form && form.classList.contains('was-validated')) {
+            validateForm(form, true);
+        }
+    }
+
+    function bindUnique(anchor) {
+        if (anchor._uniqueBound) {
+            return; // idempotente: nunca se enlazan dos veces los mismos listeners
+        }
+
+        anchor._uniqueBound = true;
+        resetUnique(anchor);
+
+        const schedule = delay => {
+            clearTimeout(anchor._uniqueTimer);
+            anchor._uniqueTimer = setTimeout(() => checkUnique(anchor), delay);
+        };
+
+        const onChange = () => {
+            if (anchor._uniqueError) {
+                anchor._uniqueError = '';
+                validateInput(anchor, true);
+            }
+
+            schedule(uniqueDelay);
+        };
+
+        uniqueFields(anchor).forEach(field => {
+            field.element.addEventListener('input', onChange);
+            field.element.addEventListener('change', onChange);
+        });
+
+        anchor.addEventListener('blur', () => {
+            if (anchor.value.trim() && anchor._uniqueCheckedKey !== uniqueQuery(anchor)) {
+                schedule(0);
+            }
+        });
+    }
+
+    function focusUniqueError(form) {
+        const anchor = uniqueAnchors(form).find(candidate => candidate._uniqueError);
+        if (anchor) {
+            anchor.focus();
+        }
+
+        return Boolean(anchor);
+    }
+
+    window.initUniqueChecks = function (root) {
+        $(root || document).find('[data-unique-url]').each(function () {
+            bindUnique(this);
+        });
+    };
+
+    // Cada vez que un modal se abre o se cierra se descarta el estado de la comprobación anterior.
+    $(document).on('show.bs.modal hidden.bs.modal', '.modal', function () {
+        $(this).find('[data-unique-url]').each(function () {
+            resetUnique(this);
+        });
+    });
+
+    // ---- Vista previa del código generado --------------------------------------------------
+    // El servidor calcula el código con el mismo servicio que usa al guardar (no se repite el algoritmo aquí).
+    function bindCodePreview(target) {
+        const source = document.querySelector(target.dataset.codePreviewSource);
+        const note = target.parentElement.querySelector('[data-code-preview-message]');
+        let timer = null;
+        let sequence = 0;
+
+        function show(code, message) {
+            target.value = code;
+            if (note) {
+                note.textContent = message;
+                note.classList.toggle('d-none', !message);
+            }
+        }
+
+        async function refresh() {
+            const name = source.value.trim();
+            const current = ++sequence;
+
+            if (!name) {
+                show('', '');
+                return;
+            }
+
+            try {
+                const response = await fetch(target.dataset.codePreviewUrl + '&name=' + encodeURIComponent(name), {
+                    cache: 'no-store',
+                    headers: { Accept: 'application/json' }
+                });
+
+                if (!response.ok || current !== sequence) {
+                    return;
+                }
+
+                const data = await response.json();
+                show(data.code || '', data.message || '');
+            } catch {
+                // Sin respuesta: el campo conserva su placeholder y el servidor asigna el código al guardar.
+            }
+        }
+
+        source.addEventListener('input', function () {
+            clearTimeout(timer);
+            timer = setTimeout(refresh, 300);
+        });
+
+        $(source.closest('.modal')).on('show.bs.modal hidden.bs.modal', function () {
+            clearTimeout(timer);
+            sequence++;
+            show('', '');
+        });
+
+        if (source.value.trim()) {
+            refresh(); // el modal se reabrió con un nombre devuelto por el servidor
+        }
+    }
+
+    $('[data-code-preview-url]').each(function () {
+        bindCodePreview(this);
+    });
 
     function capitalizeFirstLetter(input) {
         const value = input.value.trim();
@@ -197,6 +396,8 @@
         this.form.submit();
     });
 
+    window.initUniqueChecks(document);
+
     $('.modal-form').each(function () {
         const form = this;
 
@@ -223,6 +424,29 @@
 
             if (!valid) {
                 event.preventDefault();
+                focusUniqueError(form);
+                return;
+            }
+
+            // Si el valor actual aún no se consultó (se escribió y se pulsó Guardar enseguida) se
+            // consulta primero; solo si no hay duplicado se envía el formulario.
+            const pending = uniqueAnchors(form).filter(anchor =>
+                anchor.value.trim() && anchor._uniqueCheckedKey !== uniqueQuery(anchor));
+
+            if (pending.length > 0) {
+                event.preventDefault();
+
+                if (form.dataset.checking !== 'true') {
+                    form.dataset.checking = 'true';
+                    Promise.all(pending.map(checkUnique)).finally(function () {
+                        delete form.dataset.checking;
+
+                        if (!focusUniqueError(form)) {
+                            form.requestSubmit();
+                        }
+                    });
+                }
+
                 return;
             }
 
