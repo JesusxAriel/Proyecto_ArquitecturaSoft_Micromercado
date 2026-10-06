@@ -115,9 +115,7 @@ public sealed class MySqlCategoryRepository : ICategoryRepository
         }
         catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
         {
-            throw new ArgumentException(
-                CategoryValidation.CodeDuplicateMessage,
-                ex);
+            throw new DuplicateCategoryCodeException(ex);
         }
 
         category.Id = generatedId;
@@ -161,26 +159,16 @@ public sealed class MySqlCategoryRepository : ICategoryRepository
         }
         catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
         {
-            throw new ArgumentException(
-                CategoryValidation.CodeDuplicateMessage,
-                ex);
+            throw new DuplicateCategoryCodeException(ex);
         }
     }
 
-    public async Task<bool> ExistsCodeAsync(
-        string code,
-        int idExcluido,
+    public async Task<IReadOnlyList<string>> GetAllCodesAsync(
         CancellationToken cancellationToken = default)
     {
-        // Incluye categorías inactivas: el índice UNIQUE de la BD también las considera.
-        const string sql = """
-            SELECT EXISTS (
-                SELECT 1
-                FROM CATEGORIAS
-                WHERE codigo = @codigo
-                  AND id <> @idExcluido
-            );
-            """;
+        const string sql = "SELECT codigo FROM CATEGORIAS;";
+
+        var codes = new List<string>();
 
         await using var connection =
             await OpenConnectionAsync(cancellationToken);
@@ -188,11 +176,15 @@ public sealed class MySqlCategoryRepository : ICategoryRepository
         await using var command =
             new MySqlCommand(sql, connection);
 
-        command.Parameters.AddWithValue("@codigo", code.Trim());
-        command.Parameters.AddWithValue("@idExcluido", idExcluido);
+        await using var reader =
+            await command.ExecuteReaderAsync(cancellationToken);
 
-        return Convert.ToInt32(
-            await command.ExecuteScalarAsync(cancellationToken)) == 1;
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            codes.Add(reader.GetString(0));
+        }
+
+        return codes;
     }
 
     public async Task<bool> SoftDeleteAsync(

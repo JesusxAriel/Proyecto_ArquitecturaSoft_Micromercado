@@ -21,12 +21,11 @@ namespace Proyecto_Arquitectura_Micromercado.Domain.Categories
         [CategoryDescription]
         public string? Description { get; set; }
 
+        // Lo genera el servicio a partir del nombre; no se captura en el formulario.
         [Display(Name = "Código")]
-        [Required(ErrorMessage = "Campo obligatorio.")]
         [StringLength(
             20,
             ErrorMessage = "El código no puede exceder los 20 caracteres.")]
-        [CategoryCode]
         public string Code { get; set; } = string.Empty;
 
         [Display(Name = "Ubicación en pasillo")]

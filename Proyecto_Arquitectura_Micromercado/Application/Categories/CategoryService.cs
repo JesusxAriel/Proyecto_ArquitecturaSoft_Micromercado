@@ -6,6 +6,8 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
 {
     public class CategoryService : ICategoryService
     {
+        private const int MaxCodeAttempts = 3;
+
         private readonly ICategoryRepository categoryRepository;
 
         public CategoryService(ICategoryRepository categoryRepository)
@@ -35,23 +37,48 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
         {
             Normalize(category);
             Validate(category);
-            await EnsureCodeIsUniqueAsync(category, cancellationToken);
 
             category.AdminUserId = 1;
 
-            return await categoryRepository.CreateAsync(
-                category,
-                cancellationToken);
+            for (int attempt = 1; ; attempt++)
+            {
+                category.Code = await GenerateCodeAsync(
+                    category.Name,
+                    cancellationToken);
+
+                try
+                {
+                    return await categoryRepository.CreateAsync(
+                        category,
+                        cancellationToken);
+                }
+                catch (DuplicateCategoryCodeException)
+                    when (attempt < MaxCodeAttempts)
+                {
+                    // Otra solicitud tomó el mismo código entre la lectura y el INSERT:
+                    // se vuelve a generar con la lista actualizada.
+                }
+            }
         }
 
         public async Task<bool> UpdateAsync(
             Category category,
             CancellationToken cancellationToken = default)
         {
+            Category? current = await categoryRepository.GetByIdAsync(
+                category.Id,
+                cancellationToken);
+
+            if (current is null)
+            {
+                return false;
+            }
+
             Normalize(category);
             Validate(category);
-            await EnsureCodeIsUniqueAsync(category, cancellationToken);
 
+            // El código se asigna al crear y no cambia al editar el nombre.
+            category.Code = current.Code;
             category.AdminUserId = 1;
 
             return await categoryRepository.UpdateAsync(
@@ -68,26 +95,28 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
                 cancellationToken);
         }
 
-        private async Task EnsureCodeIsUniqueAsync(
-            Category category,
+        private async Task<string> GenerateCodeAsync(
+            string name,
             CancellationToken cancellationToken)
         {
-            if (await categoryRepository.ExistsCodeAsync(
-                    category.Code,
-                    category.Id,
-                    cancellationToken))
+            if (!CategoryCodeGenerator.HasEnoughLetters(name))
             {
                 throw new ArgumentException(
-                    CategoryValidation.CodeDuplicateMessage);
+                    CategoryValidation.CodeNotEnoughLettersMessage);
             }
+
+            var existingCodes = new HashSet<string>(
+                await categoryRepository.GetAllCodesAsync(cancellationToken),
+                StringComparer.OrdinalIgnoreCase);
+
+            return CategoryCodeGenerator.Generate(name, existingCodes)
+                ?? throw new ArgumentException(
+                    CategoryValidation.CodeExhaustedMessage);
         }
 
         private static void Normalize(Category category)
         {
             category.Name = ToTitleCase(category.Name);
-
-            category.Code = NormalizeCategoryCode(
-                category.Code);
 
             category.Description =
                 string.IsNullOrWhiteSpace(category.Description)
@@ -118,20 +147,6 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
                 .ToTitleCase(normalized.ToLower());
         }
 
-        private static string NormalizeCategoryCode(string value)
-        {
-            string code = value.Trim().ToUpperInvariant();
-
-            if (code.StartsWith("CAT-"))
-            {
-                code = code[4..];
-            }
-
-            code = Regex.Replace(code, @"\s+", "");
-
-            return $"CAT-{code}";
-        }
-
         private static void Validate(Category category)
         {
             if (string.IsNullOrWhiteSpace(category.Name))
@@ -153,27 +168,6 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
             {
                 throw new ArgumentException(
                     CategoryValidation.NameMessage);
-            }
-
-            if (string.IsNullOrWhiteSpace(category.Code))
-            {
-                throw new ArgumentException(
-                    "El código de la categoría es obligatorio.");
-            }
-
-            if (category.Code.Length > 20)
-            {
-                throw new ArgumentException(
-                    "El código no puede exceder los 20 caracteres.");
-            }
-
-            if (!Regex.IsMatch(
-                    category.Code,
-                    CategoryValidation.CodePattern,
-                    RegexOptions.CultureInvariant))
-            {
-                throw new ArgumentException(
-                    CategoryValidation.CodeMessage);
             }
 
             if (category.Description?.Length > 255)
