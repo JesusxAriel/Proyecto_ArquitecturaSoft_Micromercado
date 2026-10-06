@@ -181,6 +181,8 @@
                                    autocomplete="off"
                                    data-sanitize="text"
                                    data-validate-input
+                                   data-unique-url="@Url.Page("/Products/Index", "CheckUnique")"
+                                   data-unique-fields="nombre=#createProductName,idEmpaque=#createProductPackaging"
                                    pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
 
                             <div class="input-error text-danger small d-none"></div>
@@ -457,9 +459,15 @@
                                    autocomplete="off"
                                    data-sanitize="text"
                                    data-validate-input
+                                   data-unique-url="@Url.Page("/Products/Index", "CheckUnique")"
+                                   data-unique-fields="nombre=#editProductName,idEmpaque=#editProductPackaging,id=#editProductId"
                                    pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$" />
 
                             <div class="input-error text-danger small d-none"></div>
+
+                            <span asp-validation-for="EditProduct.Nombre"
+                                  class="text-danger">
+                            </span>
 
                         </div>
 
