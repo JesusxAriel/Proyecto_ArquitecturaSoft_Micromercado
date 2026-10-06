@@ -1,4 +1,6 @@
-﻿using Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
+﻿using Proyecto_Arquitectura_Micromercado.Application.Common;
+using Proyecto_Arquitectura_Micromercado.Domain.Common;
+using Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -11,6 +13,21 @@ public sealed class SupplierService(ISupplierRepository repository) : ISupplierS
 
     public Task<IReadOnlyList<SupplierListItem>> GetAllAsync(CancellationToken cancellationToken = default) =>
         repository.GetAllAsync(cancellationToken);
+
+    public async Task<PagedResult<SupplierListItem>> GetPagedAsync(
+        int page,
+        int pageSize,
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        search = PagedQuery.NormalizeSearch(search);
+
+        return await PagedQuery.ExecuteAsync(
+            page,
+            pageSize,
+            (currentPage, currentSize) =>
+                repository.GetPagedAsync(currentPage, currentSize, search, cancellationToken));
+    }
 
     public Task<Supplier?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
         repository.GetByIdAsync(id, cancellationToken);

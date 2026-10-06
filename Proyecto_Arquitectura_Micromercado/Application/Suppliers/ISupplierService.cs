@@ -6,6 +6,7 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 public interface ISupplierService :
     IServicioCRUD<Supplier, int, Supplier, Supplier>,
     IConListado,
+    IConListadoPaginado,
     IConBusqueda
 {
 }

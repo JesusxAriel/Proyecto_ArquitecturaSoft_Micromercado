@@ -1,5 +1,6 @@
 using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
+using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 
@@ -38,6 +39,41 @@ public sealed class MySqlSupplierRepository : ISupplierRepository
         }
 
         return suppliers;
+    }
+
+    public async Task<PagedResult<SupplierListItem>> GetPagedAsync(
+        int page,
+        int pageSize,
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+
+        return await PagedSqlRunner.RunAsync(
+            connection,
+            columns: "id, nombreEmpresa, numeroEmpresa, correoReferencia, esAutogestionado",
+            from: "PROVEEDOR",
+            baseWhere: "estaActivo = 1",
+            searchCondition: """
+                nombreEmpresa LIKE @search
+                OR numeroEmpresa LIKE @search
+                OR correoReferencia LIKE @search
+                """,
+            orderBy: "nombreEmpresa, id",
+            search,
+            page,
+            pageSize,
+            reader => new SupplierListItem
+            {
+                Id = reader.GetInt32(reader.GetOrdinal("id")),
+                NombreEmpresa = reader.GetString(reader.GetOrdinal("nombreEmpresa")),
+                NumeroEmpresa = reader.GetString(reader.GetOrdinal("numeroEmpresa")),
+                CorreoReferencia = reader.IsDBNull(reader.GetOrdinal("correoReferencia"))
+                    ? string.Empty
+                    : reader.GetString(reader.GetOrdinal("correoReferencia")),
+                EsAutogestionado = reader.GetBoolean(reader.GetOrdinal("esAutogestionado"))
+            },
+            cancellationToken);
     }
 
     public async Task<Supplier?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
