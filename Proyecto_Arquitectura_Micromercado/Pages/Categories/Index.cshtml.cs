@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Domain.Categories;
+using Proyecto_Arquitectura_Micromercado.Domain.Common;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 {
@@ -9,8 +10,21 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
     {
         private readonly ICategoryService categoryService;
 
-        public List<Category> Categories { get; set; } =
-            new List<Category>();
+        public PagedResult<Category> PagedCategories { get; private set; } =
+            new PagedResult<Category>();
+
+        public IReadOnlyList<Category> Categories => PagedCategories.Items;
+
+        [BindProperty(SupportsGet = true)]
+        public int Pagina { get; set; } = 1;
+
+        [BindProperty(SupportsGet = true)]
+        public int Tamano { get; set; } = PageSizes.Default;
+
+        [BindProperty(SupportsGet = true)]
+        public string? Q { get; set; }
+
+        private object ListRouteValues => new { Pagina, Tamano, Q };
 
         public string ErrorMessage { get; set; } = string.Empty;
 
@@ -47,13 +61,15 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
         {
             try
             {
-                IReadOnlyList<Category> categories =
-                    await categoryService.GetAllAsync(
+                PagedCategories =
+                    await categoryService.GetPagedAsync(
+                        Pagina,
+                        Tamano,
+                        Q,
                         cancellationToken);
 
-                Categories = categories
-                    .OrderBy(category => category.Name)
-                    .ToList();
+                Pagina = PagedCategories.Page;
+                Tamano = PagedCategories.PageSize;
             }
             catch (Exception ex)
             {
@@ -92,7 +108,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
                 StatusMessage =
                     "Categoría creada correctamente.";
 
-                return RedirectToPage();
+                return RedirectToPage(ListRouteValues);
             }
             catch (ArgumentException ex)
             {
@@ -143,7 +159,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
             StatusMessage =
                 "Categoría eliminada correctamente.";
 
-            return RedirectToPage();
+            return RedirectToPage(ListRouteValues);
         }
 
         public async Task<IActionResult> OnPostEditAsync(
@@ -184,7 +200,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
                 StatusMessage =
                     "Categoría actualizada correctamente.";
 
-                return RedirectToPage();
+                return RedirectToPage(ListRouteValues);
             }
             catch (ArgumentException ex)
             {

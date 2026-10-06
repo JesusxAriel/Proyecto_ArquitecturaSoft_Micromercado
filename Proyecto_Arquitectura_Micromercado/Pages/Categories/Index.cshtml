@@ -1,5 +1,6 @@
 @page
 @model Proyecto_Arquitectura_Micromercado.Pages.Categories.IndexModel
+@using Proyecto_Arquitectura_Micromercado.Pages.Shared
 
 @{
     ViewData["Title"] = "Categorías";
@@ -29,63 +30,60 @@
     </div>
 }
 
+<partial name="_SearchBox" model="@(new SearchBoxModel(
+    "Buscar categorías",
+    "Buscar por nombre, código, pasillo o descripción...",
+    Model.Q,
+    Model.Tamano))" />
+
+<div class="table-responsive shadow-sm rounded-3">
+    <table id="categoriesTable" class="table table-hover align-middle mb-0">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Código</th>
+                <th>Pasillo</th>
+                <th>Descripción</th>
+                <th class="text-end pe-3">ACCIONES</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var category in Model.Categories)
+        {
+            <tr>
+                <td>@category.Name</td>
+                <td>@category.Code</td>
+                <td>@(category.AisleLocation ?? "Sin ubicación")</td>
+                <td>@(category.Description ?? "Sin descripción")</td>
+                <td class="text-end pe-3">
+                    <div class="d-flex justify-content-end align-items-center gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-warning edit-category-button"
+                                title="Editar" aria-label="Editar @category.Name"
+                                data-bs-toggle="modal" data-bs-target="#editCategoryModal"
+                                data-id="@category.Id" data-name="@category.Name"
+                                data-code="@category.Code" data-aisle="@category.AisleLocation"
+                                data-description="@category.Description">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger delete-category-button"
+                                title="Eliminar" aria-label="Eliminar @category.Name"
+                                data-bs-toggle="modal" data-bs-target="#deleteCategoryModal"
+                                data-id="@category.Id" data-name="@category.Name">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<partial name="_Pager" model="Model.PagedCategories" view-data="@(new ViewDataDictionary(ViewData) { ["ItemLabel"] = "categorías" })" />
+
 @if (Model.Categories.Count == 0)
 {
-    <div class="alert alert-info">No existen categorías activas registradas.</div>
-}
-else
-{
-    <div class="mb-3">
-        <label for="categorySearch" class="visually-hidden">Buscar categorías</label>
-        <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
-            <input id="categorySearch" class="form-control" type="search"
-                   placeholder="Buscar por nombre, código o pasillo..." autocomplete="off" />
-        </div>
-    </div>
-
-    <div class="table-responsive shadow-sm rounded-3">
-        <table id="categoriesTable" class="table table-hover align-middle mb-0">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Código</th>
-                    <th>Pasillo</th>
-                    <th>Descripción</th>
-                    <th class="text-end pe-3">ACCIONES</th>
-                </tr>
-            </thead>
-            <tbody>
-            @foreach (var category in Model.Categories)
-            {
-                <tr>
-                    <td>@category.Name</td>
-                    <td>@category.Code</td>
-                    <td>@(category.AisleLocation ?? "Sin ubicación")</td>
-                    <td>@(category.Description ?? "Sin descripción")</td>
-                    <td class="text-end pe-3">
-                        <div class="d-flex justify-content-end align-items-center gap-1">
-                            <button type="button" class="btn btn-sm btn-outline-warning edit-category-button"
-                                    title="Editar" aria-label="Editar @category.Name"
-                                    data-bs-toggle="modal" data-bs-target="#editCategoryModal"
-                                    data-id="@category.Id" data-name="@category.Name"
-                                    data-code="@category.Code" data-aisle="@category.AisleLocation"
-                                    data-description="@category.Description">
-                                <i class="bi bi-pencil-square"></i>
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-danger delete-category-button"
-                                    title="Eliminar" aria-label="Eliminar @category.Name"
-                                    data-bs-toggle="modal" data-bs-target="#deleteCategoryModal"
-                                    data-id="@category.Id" data-name="@category.Name">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
-    </div>
+    <div class="alert alert-info mt-3">@(string.IsNullOrWhiteSpace(Model.Q) ? "No existen categorías activas registradas." : "No se encontraron categorías para la búsqueda.")</div>
 }
 
 <div class="modal fade" id="createCategoryModal" tabindex="-1"
@@ -94,6 +92,9 @@ else
         <div class="modal-content">
             <form method="post" asp-page-handler="Create" class="modal-form" novalidate>
                 @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Pagina" />
+                <input type="hidden" asp-for="Tamano" />
+                <input type="hidden" asp-for="Q" />
                 <div class="modal-header">
                     <h2 class="modal-title h5" id="createCategoryLabel">Agregar categoría</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"
@@ -167,6 +168,9 @@ else
         <div class="modal-content">
             <form method="post" asp-page-handler="Edit" class="modal-form" novalidate>
                 @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Pagina" />
+                <input type="hidden" asp-for="Tamano" />
+                <input type="hidden" asp-for="Q" />
                 <div class="modal-header">
                     <h2 class="modal-title h5" id="editCategoryLabel">Editar categoría</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"
@@ -236,6 +240,9 @@ else
         <div class="modal-content">
             <form method="post" asp-page-handler="Delete">
                 @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Pagina" />
+                <input type="hidden" asp-for="Tamano" />
+                <input type="hidden" asp-for="Q" />
                 <div class="modal-header">
                     <h2 class="modal-title h5" id="deleteCategoryLabel">Eliminar categoría</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
@@ -293,13 +300,6 @@ else
             $(form).find('.input-error').text('').addClass('d-none');
             $(form).find('input').each(function () {
                 this.setCustomValidity('');
-            });
-        });
-
-        $('#categorySearch').on('input', function () {
-            const query = $(this).val().toString().toLocaleLowerCase();
-            $('#categoriesTable tbody tr').each(function () {
-                $(this).toggle($(this).text().toLocaleLowerCase().includes(query));
             });
         });
 
