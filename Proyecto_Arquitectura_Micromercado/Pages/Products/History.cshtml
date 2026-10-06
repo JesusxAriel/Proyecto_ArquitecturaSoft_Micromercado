@@ -16,10 +16,10 @@
         <thead>
             <tr>
                 <th>Producto</th>
-                <th>Precio Venta Ant.</th>
-                <th>Precio Venta Nuevo</th>
-                <th>Precio Costo Ant.</th>
-                <th>Precio Costo Nuevo</th>
+                <th>Precio Venta Ant. <span class="th-unit">(Bs)</span></th>
+                <th>Precio Venta Nuevo <span class="th-unit">(Bs)</span></th>
+                <th>Precio Costo Ant. <span class="th-unit">(Bs)</span></th>
+                <th>Precio Costo Nuevo <span class="th-unit">(Bs)</span></th>
                 <th>Motivo de Cambio</th>
                 <th>Usuario</th>
                 <th>Fecha de Cambio</th>
@@ -30,16 +30,16 @@
         {
             <tr>
                 <td>@change.NombreProducto</td>
-                <td>Bs. @change.PrecioVentaAnterior.ToString("N2")</td>
-                <td>Bs. @change.PrecioVentaNuevo.ToString("N2")</td>
+                <td>@change.PrecioVentaAnterior.ToString("N2")</td>
+                <td>@change.PrecioVentaNuevo.ToString("N2")</td>
                 <td>
                     @(change.PrecioCostoAnterior.HasValue
-                        ? $"Bs. {change.PrecioCostoAnterior.Value:N2}"
+                        ? change.PrecioCostoAnterior.Value.ToString("N2")
                         : "—")
                 </td>
                 <td>
                     @(change.PrecioCostoNuevo.HasValue
-                        ? $"Bs. {change.PrecioCostoNuevo.Value:N2}"
+                        ? change.PrecioCostoNuevo.Value.ToString("N2")
                         : "—")
                 </td>
                 <td>@change.MotivoCambio</td>

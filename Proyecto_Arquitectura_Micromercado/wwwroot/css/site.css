@@ -309,6 +309,11 @@ body {
   white-space: nowrap;
 }
 
+/* La unidad de moneda se muestra "Bs", no "BS", aunque el encabezado esté en mayúsculas. */
+.table thead th .th-unit {
+  text-transform: none;
+}
+
 .table tbody {
   font-size: .9375rem;
 }
