@@ -115,22 +115,10 @@ else
                             <span asp-validation-for="CreateCategory.Name" class="text-danger"></span>
                     </div>
                     <div class="mb-3">
-                        <label for="createCategoryCode" class="form-label">Código *</label>
-                        <div class="input-group">
-                            <span class="input-group-text">CAT-</span>
-                            <input asp-for="CreateCategory.Code"
-                                id="createCategoryCode"
-                                class="form-control"
-                                required
-                                data-category-code
-                                data-validate-input
-                                maxlength="3"
-                                autocomplete="off"
-                                pattern="^[A-Za-z]{3}$" 
-                                placeholder="ABC" />
-                        </div>
-                        <div class="input-error text-danger small d-none"></div>
-                        <span asp-validation-for="CreateCategory.Code" class="text-danger"></span>
+                        <label for="createCategoryCode" class="form-label">Código</label>
+                        <input id="createCategoryCode" class="form-control"
+                               placeholder="Se genera automáticamente (CAT-XXX)" readonly disabled />
+                        <div class="form-text">Se genera a partir del nombre y no se puede modificar.</div>
                     </div>
                     <div class="mb-3">
                         <label for="createCategoryAisle" class="form-label">Ubicación en pasillo *</label>
@@ -199,20 +187,9 @@ else
                         <div class="input-error text-danger small d-none"></div>
                     </div>
                     <div class="mb-3">
-                        <label for="editCategoryCode" class="form-label">Código *</label>
-                        <div class="input-group">
-                            <span class="input-group-text">CAT-</span>
-                            <input asp-for="EditCategory.Code"
-                                id="editCategoryCode"
-                                class="form-control"
-                                required
-                                maxlength="3"
-                                autocomplete="off"
-                                data-category-code
-                                data-validate-input
-                                pattern="^[A-Za-z]{3}$" />
-                        </div>
-                        <div class="input-error text-danger small d-none"></div>
+                        <label for="editCategoryCode" class="form-label">Código</label>
+                        <input id="editCategoryCode" class="form-control" readonly disabled />
+                        <div class="form-text">El código no cambia al editar la categoría.</div>
                     </div>
                     <div class="mb-3">
                         <label for="editCategoryAisle" class="form-label">Ubicación en pasillo *</label>
@@ -293,12 +270,7 @@ else
             const button = $(this);
             $('#editCategoryId').val(button.attr('data-id'));
             $('#editCategoryName').val(button.attr('data-name'));
-            $('#editCategoryCode').val(
-                (button.attr('data-code') || '')
-                    .replace(/^CAT-/i, '')
-                    .substring(0, 3)
-                    .toUpperCase()
-            );
+            $('#editCategoryCode').val(button.attr('data-code') || '');
             $('#editCategoryAisle').val(button.attr('data-aisle') || '');
             $('#editCategoryDescription').val(button.attr('data-description') || '');
             $('#editCategoryModal .input-error').text('').addClass('d-none');
