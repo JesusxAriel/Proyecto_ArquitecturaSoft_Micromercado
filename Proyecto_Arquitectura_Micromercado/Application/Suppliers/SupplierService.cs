@@ -1,10 +1,14 @@
 ﻿using Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 
 public sealed class SupplierService(ISupplierRepository repository) : ISupplierService
 {
+    // Tras normalizar (sin +591), el teléfono guardado son 8 dígitos que inician con 6 o 7.
+    private static readonly Regex TelefonoBolivia = new(@"^[67]\d{7}$", RegexOptions.CultureInvariant);
+
     public Task<IReadOnlyList<SupplierListItem>> GetAllAsync(CancellationToken cancellationToken = default) =>
         repository.GetAllAsync(cancellationToken);
 
@@ -54,6 +58,11 @@ public sealed class SupplierService(ISupplierRepository repository) : ISupplierS
             throw new ArgumentException("El teléfono de contacto es obligatorio.");
         }
 
+        if (!TelefonoBolivia.IsMatch(supplier.NumeroEmpresa))
+        {
+            throw new ArgumentException(SupplierValidation.TelefonoMessage);
+        }
+
         if (supplier.EsAutogestionado && string.IsNullOrWhiteSpace(supplier.CorreoReferencia))
         {
             throw new ArgumentException("Un proveedor autogestionado requiere correo.");
@@ -63,7 +72,7 @@ public sealed class SupplierService(ISupplierRepository repository) : ISupplierS
     private static void NormalizeText(Supplier supplier)
     {
         supplier.NombreEmpresa = ToTitleCase(supplier.NombreEmpresa);
-        supplier.NumeroEmpresa = supplier.NumeroEmpresa.Trim();
+        supplier.NumeroEmpresa = SupplierValidation.NormalizeTelefono(supplier.NumeroEmpresa);
         supplier.CorreoReferencia = string.IsNullOrWhiteSpace(supplier.CorreoReferencia)
             ? null
             : supplier.CorreoReferencia.Trim().ToLowerInvariant();

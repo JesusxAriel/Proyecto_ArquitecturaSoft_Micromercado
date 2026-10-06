@@ -126,9 +126,9 @@
                     <div class="mb-3">
                         <label for="CreateSupplier_NumeroEmpresa" class="form-label">Teléfono de contacto *</label>
                         <input asp-for="CreateSupplier.NumeroEmpresa" id="CreateSupplier_NumeroEmpresa" class="form-control"
-                               required data-validate-input pattern="^\d{7,15}$"
-                               data-validation-message="El teléfono debe contener entre 7 y 15 dígitos numéricos."
-                               inputmode="numeric" placeholder="Ej: 71234567" />
+                               required data-validate-input pattern="^(\+591\s?)?[67]\d{7}$"
+                               data-validation-message="Ingrese un celular boliviano de 8 dígitos que empiece con 6 o 7. Ej: 71234567 o +591 71234567."
+                               inputmode="tel" maxlength="14" placeholder="Ej: 71234567" />
                         <span asp-validation-for="CreateSupplier.NumeroEmpresa" class="text-danger"></span>
                         <div class="input-error text-danger small d-none"></div>
                     </div>
@@ -189,9 +189,9 @@
                         <label for="EditSupplier_NumeroEmpresa" class="form-label">Teléfono de contacto *</label>
                         <input asp-for="EditSupplier.NumeroEmpresa" id="EditSupplier_NumeroEmpresa"
                                class="form-control" required data-validate-input
-                               pattern="^\d{7,15}$"
-                               data-validation-message="El teléfono debe contener entre 7 y 15 dígitos numéricos."
-                               inputmode="numeric" placeholder="Ej: 71234567" />
+                               pattern="^(\+591\s?)?[67]\d{7}$"
+                               data-validation-message="Ingrese un celular boliviano de 8 dígitos que empiece con 6 o 7. Ej: 71234567 o +591 71234567."
+                               inputmode="tel" maxlength="14" placeholder="Ej: 71234567" />
                         <span asp-validation-for="EditSupplier.NumeroEmpresa" class="text-danger"></span>
                         <div class="input-error text-danger small d-none"></div>
                     </div>

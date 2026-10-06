@@ -73,9 +73,7 @@
             message = input.dataset.validationMessage ||
                 (input.id === 'createCategoryCode' || input.id === 'editCategoryCode'
                     ? 'El código debe tener exactamente 3 letras. Ej: LAC.'
-                    : input.pattern === '^\\d{7,15}$'
-                        ? 'El teléfono debe contener entre 7 y 15 dígitos numéricos.'
-                        : 'El formato ingresado no es válido.');
+                    : 'El formato ingresado no es válido.');
         } else if (input.type === 'number' && input.value && Number.isNaN(Number(input.value))) {
             message = 'Ingresa un número válido.';
         } else if (input.dataset.sanitize === 'text' && input.value && !validationPattern.test(input.value)) {
