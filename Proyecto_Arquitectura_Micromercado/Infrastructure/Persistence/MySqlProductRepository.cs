@@ -228,7 +228,7 @@ public sealed class MySqlProductRepository(IPriceHistoryRepository priceHistoryR
         }
         catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
         {
-            throw new ArgumentException(ProductValidation.DuplicateMessage, ex);
+            throw new DuplicateProductException(ex);
         }
 
         product.Id = generatedId;
@@ -288,7 +288,7 @@ public sealed class MySqlProductRepository(IPriceHistoryRepository priceHistoryR
             catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
             {
                 await transaction.RollbackAsync(cancellationToken);
-                throw new ArgumentException(ProductValidation.DuplicateMessage, ex);
+                throw new DuplicateProductException(ex);
             }
         }
 

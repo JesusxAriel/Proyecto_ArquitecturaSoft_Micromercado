@@ -10,4 +10,10 @@ public interface IProductService :
     IConCatalogo,
     IConHistorialPrecios
 {
+    // Misma comparación que al guardar: sin distinguir mayúsculas, tildes ni espacios extra.
+    Task<bool> IsDuplicateAsync(
+        string nombre,
+        int idEmpaque,
+        int idExcluido,
+        CancellationToken cancellationToken = default);
 }

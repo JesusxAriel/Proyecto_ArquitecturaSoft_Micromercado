@@ -63,16 +63,19 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
         return await repository.UpdateAsync(product, cancellationToken);
     }
 
+    public Task<bool> IsDuplicateAsync(
+        string nombre,
+        int idEmpaque,
+        int idExcluido,
+        CancellationToken cancellationToken = default) =>
+        repository.ExistsNombreEmpaqueAsync(ToTitleCase(nombre), idEmpaque, idExcluido, cancellationToken);
+
     // Al crear Id vale 0, así que no excluye a nadie; al editar excluye el propio registro.
     private async Task EnsureNotDuplicatedAsync(Product product, CancellationToken cancellationToken)
     {
-        if (await repository.ExistsNombreEmpaqueAsync(
-                product.Nombre,
-                product.IdEmpaque,
-                product.Id,
-                cancellationToken))
+        if (await IsDuplicateAsync(product.Nombre, product.IdEmpaque, product.Id, cancellationToken))
         {
-            throw new ArgumentException(ProductValidation.DuplicateMessage);
+            throw new DuplicateProductException();
         }
     }
 
