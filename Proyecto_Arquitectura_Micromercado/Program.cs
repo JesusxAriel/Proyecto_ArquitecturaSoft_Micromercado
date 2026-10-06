@@ -19,6 +19,8 @@ builder.Services.AddRazorPages()
     });
 
 builder.Services.AddScoped<CreatorPriceHistoryRepository>();
+builder.Services.AddScoped<CreatorRepositorio<IPriceHistoryRepository>>(sp =>
+    sp.GetRequiredService<CreatorPriceHistoryRepository>());
 builder.Services.AddScoped<IPriceHistoryRepository>(sp =>
     sp.GetRequiredService<CreatorPriceHistoryRepository>().CrearRepositorio());
 

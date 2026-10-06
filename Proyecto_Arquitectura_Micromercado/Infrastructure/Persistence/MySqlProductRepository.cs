@@ -6,10 +6,10 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-public sealed class MySqlProductRepository : IProductRepository
+public sealed class MySqlProductRepository(IPriceHistoryRepository priceHistoryRepository) : IProductRepository
 {
     private const int SystemAdminId = 1;
-    private readonly IPriceHistoryRepository _priceHistoryRepository = new MySqlPriceHistoryRepository();
+    private readonly IPriceHistoryRepository _priceHistoryRepository = priceHistoryRepository;
 
     public async Task<IReadOnlyList<ProductListItem>> GetAllAsync(CancellationToken cancellationToken = default)
     {
