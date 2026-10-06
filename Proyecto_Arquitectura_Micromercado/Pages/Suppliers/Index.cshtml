@@ -122,6 +122,8 @@
                                required data-validate-input
                                pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-\(\)]+$"
                                data-validation-message="Solo se permiten letras, números, espacios y los signos . , - ( )."
+                               data-unique-url="@Url.Page("/Suppliers/Index", "CheckUnique")"
+                               data-unique-fields="nombre=#CreateSupplier_NombreEmpresa"
                                placeholder="Ej: Embol S.A." />
                         <span asp-validation-for="CreateSupplier.NombreEmpresa" class="text-danger"></span>
                         <div class="input-error text-danger small d-none"></div>
@@ -187,6 +189,8 @@
                                data-validate-input
                                pattern="^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-\(\)]+$"
                                data-validation-message="Solo se permiten letras, números, espacios y los signos . , - ( )."
+                               data-unique-url="@Url.Page("/Suppliers/Index", "CheckUnique")"
+                               data-unique-fields="nombre=#EditSupplier_NombreEmpresa,id=#EditSupplier_Id"
                                placeholder="Ej: Embol S.A." />
                         <span asp-validation-for="EditSupplier.NombreEmpresa" class="text-danger"></span>
                         <div class="input-error text-danger small d-none"></div>
@@ -261,6 +265,16 @@
 </div>
 
 @section Scripts {
+    @if (Model.ShowCreateModal)
+    {
+        <script>bootstrap.Modal.getOrCreateInstance(document.getElementById('createSupplierModal')).show();</script>
+    }
+
+    @if (Model.ShowEditModal)
+    {
+        <script>bootstrap.Modal.getOrCreateInstance(document.getElementById('editSupplierModal')).show();</script>
+    }
+
     <script>
         $('.edit-supplier-button').on('click', function () {
             const button = $(this);
