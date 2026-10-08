@@ -66,19 +66,49 @@ hace `pull` antes de empezar su Creador Concreto.
 ```csharp
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Factories
 {
-    // Creador Abstracto genérico: declara el método fábrica que cada
-    // Creador Concreto debe implementar para decidir qué repositorio construir.
     public abstract class CreatorRepositorio<TRepositorio> where TRepositorio : class
     {
-        public abstract TRepositorio CrearRepositorio();
+        private TRepositorio? repositorio;
+
+        // Método fábrica (hook): lo implementa cada Creador Concreto.
+        protected abstract TRepositorio CrearRepositorio();
+
+        // Operación del Creator que usa el producto del método fábrica.
+        public TRepositorio ObtenerRepositorio() => repositorio ??= CrearRepositorio();
     }
 }
 ```
+
+Dos cosas que **no** hay que cambiar al copiar esto:
+
+- `CrearRepositorio()` es **`protected`**. Es un hook interno; nadie lo llama de
+  afuera. Los clientes usan `ObtenerRepositorio()`.
+- `ObtenerRepositorio()` **memoiza**. Esto no es una optimización: es lo que hace
+  que el ciclo de vida `Scoped` se cumpla. Si un Creador llamara a
+  `CrearRepositorio()` para resolver una dependencia, crearía una instancia
+  paralela a la que el contenedor DI ya entregó al resto de la petición.
 
 Esto reemplaza al `CreatorCRUD<T>` del ejemplo del docente, pero parametrizado por
 el **tipo de repositorio** (`TRepositorio`) en vez de por la entidad — porque acá
 cada repositorio ya es una interfaz distinta (`ICategoryRepository`,
 `IProductRepository`, etc.), no un genérico único como `ICRUD<T>`.
+
+### 2.1. Además, una raíz abstracta por cada tabla
+
+El genérico solo no alcanza: en C#, `CreatorRepositorio<ICategoryRepository>` y
+`CreatorRepositorio<IProductRepository>` son tipos **sin relación de herencia**, así
+que ninguna variable puede contener a dos Creadores distintos y el polimorfismo del
+patrón queda inalcanzable. Por eso cada tabla aporta una raíz no genérica:
+
+```csharp
+public abstract class Creator<Entidad>Repository : CreatorRepositorio<I<Entidad>Repository>
+{
+}
+```
+
+Ese es el tipo que se registra y se declara en todos lados. Las subclases son los
+Creadores Concretos, y **lo que varía entre ellas es el motor de persistencia**, no
+la entidad.
 
 ---
 
@@ -99,39 +129,72 @@ desde cero, ver sección 6).
 `MySql<Entidad>Repository.cs` ya implementa esa interfaz con SQL parametrizado.
 Tampoco se toca, salvo en Producto e Historial.
 
-### Paso 3 — Creá tu Creador Concreto
+### Paso 3 — Creá tu raíz abstracta y tu Creador Concreto
 
+Son **dos** archivos. Primero la raíz, en
 `Infrastructure/Factories/Creator<Entidad>Repository.cs`:
 
 ```csharp
-using Proyecto_Arquitectura_Micromercado.Application.Categories; // ajustá el namespace a tu entidad
+using Proyecto_Arquitectura_Micromercado.Application.<Modulo>;
+
+namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Factories
+{
+    public abstract class Creator<Entidad>Repository : CreatorRepositorio<I<Entidad>Repository>
+    {
+    }
+}
+```
+
+Después el Creador Concreto de MySQL, en
+`Infrastructure/Factories/Creator<Entidad>RepositoryMySql.cs`:
+
+```csharp
+using Proyecto_Arquitectura_Micromercado.Application.<Modulo>;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Factories
 {
-    public class Creator<Entidad>Repository : CreatorRepositorio<I<Entidad>Repository>
+    public sealed class Creator<Entidad>RepositoryMySql(DatabaseConnection conexion)
+        : Creator<Entidad>Repository
     {
-        private readonly IConfiguration _configuration;
-
-        public Creator<Entidad>Repository(IConfiguration configuration)
+        protected override I<Entidad>Repository CrearRepositorio()
         {
-            _configuration = configuration;
-        }
-
-        public override I<Entidad>Repository CrearRepositorio()
-        {
-            return new MySql<Entidad>Repository(_configuration);
+            return new MySql<Entidad>Repository(conexion);
         }
     }
 }
 ```
 
 **Antes de copiar esto**: abrí tu `MySql<Entidad>Repository.cs` y fijate qué recibe
-su constructor hoy (probablemente `IConfiguration`, porque así lee la cadena
-`MySqlConnection`). El Creador debe recibir **exactamente lo mismo** que hoy recibe
-el constructor de tu repositorio MySQL, y pasárselo tal cual al `new`. Si tu
-repositorio recibe otra cosa (por ejemplo, directamente el `string` de conexión),
-ajustá el constructor del Creador para recibir esa misma dependencia.
+su constructor. Todos reciben `DatabaseConnection`, y el de Producto recibe además
+`IPriceHistoryRepository`. El Creador debe recibir **exactamente lo mismo** que
+recibe el constructor de tu repositorio y pasárselo tal cual al `new`.
+
+**Si tu repositorio necesita otro repositorio** (el caso de Producto), el Creador
+recibe el **Creador abstracto** de esa dependencia y la obtiene con
+`ObtenerRepositorio()` — nunca con un `new` directo ni con `CrearRepositorio()`:
+
+```csharp
+public sealed class CreatorProductRepositoryMySql(
+    DatabaseConnection conexion,
+    CreatorPriceHistoryRepository creatorHistorialPrecios) : CreatorProductRepository
+{
+    protected override IProductRepository CrearRepositorio() =>
+        new MySqlProductRepository(conexion, creatorHistorialPrecios.ObtenerRepositorio());
+}
+```
+
+### Paso 3.1 (opcional) — Tu Creador Concreto en memoria
+
+Si querés poder probar tu servicio sin base de datos, agregá un segundo Creador
+Concreto, `Creator<Entidad>RepositoryEnMemoria`, que devuelva un
+`InMemory<Entidad>Repository`. Ya existen los cuatro en
+`Infrastructure/Persistence/EnMemoria/`, así que lo más probable es que el tuyo ya
+esté hecho. Si escribís uno nuevo, tiene que respetar el **mismo comportamiento
+observable** que el de MySQL (baja lógica, las mismas excepciones de duplicado y
+comparaciones que ignoren mayúsculas, tildes y espacios repetidos), o estarás
+rompiendo el LSP y las pruebas lo van a detectar.
 
 ### Paso 4 — Conectá en `Program.cs` (Opción A, la única válida)
 
@@ -140,10 +203,17 @@ Buscá el bloque donde hoy está registrado tu repositorio (algo como
 y reemplazalo por:
 
 ```csharp
-builder.Services.AddScoped<Creator<Entidad>Repository>();
+builder.Services.AddScoped<Creator<Entidad>Repository, Creator<Entidad>RepositoryMySql>();
 builder.Services.AddScoped<I<Entidad>Repository>(sp =>
-    sp.GetRequiredService<Creator<Entidad>Repository>().CrearRepositorio());
+    sp.GetRequiredService<Creator<Entidad>Repository>().ObtenerRepositorio());
 ```
+
+Fijate en las dos cosas que importan acá:
+
+- Lo que se **registra** es el tipo abstracto; lo que se **elige** es el concreto.
+  Cambiar de motor = cambiar sólo el segundo tipo de la primera línea.
+- Se llama a `ObtenerRepositorio()`, nunca a `CrearRepositorio()` (que además es
+  `protected` y no compilaría).
 
 No toques el registro de tu `I<Entidad>Service` — ese sigue exactamente igual que
 antes.
@@ -241,11 +311,18 @@ Este grupo crea el repositorio desde cero, no modifica uno existente:
       exactamente como dice mi sección especial, si soy Producto o Historial).
 - [ ] Mi `MySql<Entidad>Repository` sigue con el mismo SQL, solo reorganizado si
       corresponde.
-- [ ] Creé `Creator<Entidad>Repository.cs` en `Infrastructure/Factories/`.
-- [ ] `Program.cs` registra mi Creador y resuelve mi interfaz a través de él
-      (Opción A — dos líneas, sin tocar el registro de mi Service).
+- [ ] Creé `Creator<Entidad>Repository.cs` (raíz abstracta) y
+      `Creator<Entidad>RepositoryMySql.cs` (Creador Concreto) en
+      `Infrastructure/Factories/`.
+- [ ] Mi método fábrica es `protected override`, no `public override`.
+- [ ] Si mi repositorio depende de otro repositorio, mi Creador recibe el Creador
+      **abstracto** de esa dependencia y la obtiene con `ObtenerRepositorio()`.
+- [ ] `Program.cs` registra el Creador abstracto apuntando al concreto y resuelve mi
+      interfaz con `ObtenerRepositorio()` (dos líneas, sin tocar el registro de mi
+      Service).
 - [ ] Mi `<Entidad>Service.cs` NO recibe el Creador por constructor.
 - [ ] `dotnet build` da 0 errores.
 - [ ] Probé crear/editar/listar/eliminar desde la UI de mi tabla y funciona igual
       que antes.
+- [ ] `dotnet test` pasa en verde.
 - [ ] No toqué ningún archivo de `Pages/`, `Domain/`, `Validations/` ni `wwwroot/`.
