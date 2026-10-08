@@ -7,15 +7,17 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Factories
     {
         private readonly CreatorRepositorio<IPriceHistoryRepository> priceHistoryCreator;
 
-        // El repositorio de historial también se obtiene de su propia fábrica, nunca con new directo.
+        // El repositorio de historial se obtiene de su propia fábrica mediante ObtenerRepositorio(),
+        // nunca con new directo ni con CrearRepositorio(): así se reutiliza la misma instancia
+        // que el contenedor DI entrega al resto de la petición, en vez de crear una paralela.
         public CreatorProductRepository(CreatorRepositorio<IPriceHistoryRepository> priceHistoryCreator)
         {
             this.priceHistoryCreator = priceHistoryCreator;
         }
 
-        public override IProductRepository CrearRepositorio()
+        protected override IProductRepository CrearRepositorio()
         {
-            return new MySqlProductRepository(priceHistoryCreator.CrearRepositorio());
+            return new MySqlProductRepository(priceHistoryCreator.ObtenerRepositorio());
         }
     }
 }

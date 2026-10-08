@@ -5,7 +5,7 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Factories
 {
     public class CreatorSupplierRepository : CreatorRepositorio<ISupplierRepository>
     {
-        public override ISupplierRepository CrearRepositorio()
+        protected override ISupplierRepository CrearRepositorio()
         {
             return new MySqlSupplierRepository();
         }

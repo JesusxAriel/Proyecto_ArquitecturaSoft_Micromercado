@@ -5,7 +5,7 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Factories
 {
     public class CreatorPriceHistoryRepository : CreatorRepositorio<IPriceHistoryRepository>
     {
-        public override IPriceHistoryRepository CrearRepositorio()
+        protected override IPriceHistoryRepository CrearRepositorio()
         {
             return new MySqlPriceHistoryRepository();
         }

@@ -5,7 +5,7 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Factories
 {
     public class CreatorCategoryRepository : CreatorRepositorio<ICategoryRepository>
     {
-        public override ICategoryRepository CrearRepositorio()
+        protected override ICategoryRepository CrearRepositorio()
         {
             return new MySqlCategoryRepository();
         }
