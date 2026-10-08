@@ -18,6 +18,13 @@ builder.Services.AddRazorPages()
             _ => "Ingrese un número válido.");
     });
 
+// El Singleton de conexion se inicializa una sola vez y se registra como dependencia,
+// para que los repositorios la reciban por constructor en vez de leerla de un estatico
+// global. Asi la dependencia queda explicita y el repositorio se puede construir en un
+// test apuntando a otra cadena de conexion.
+builder.Services.AddSingleton(
+    DatabaseConnection.GetInstance(builder.Configuration.GetConnectionString("MySqlConnection")!));
+
 // Cada repositorio se resuelve a traves de su Creador (Factory Method). El Creador es
 // Scoped y ObtenerRepositorio() memoiza, por lo que hay exactamente un repositorio por
 // peticion HTTP, incluso cuando otro Creador lo reutiliza como dependencia.
@@ -39,8 +46,6 @@ builder.Services.AddScoped<CreatorSupplierRepository>();
 builder.Services.AddScoped<ISupplierRepository>(sp =>
     sp.GetRequiredService<CreatorSupplierRepository>().ObtenerRepositorio());
 builder.Services.AddScoped<ISupplierService, SupplierService>();
-
-DatabaseConnection.GetInstance(builder.Configuration.GetConnectionString("MySqlConnection")!);
 
 var app = builder.Build();
 var boliviaCulture = new CultureInfo("es-BO");
