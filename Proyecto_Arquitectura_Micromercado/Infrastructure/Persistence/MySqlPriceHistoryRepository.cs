@@ -6,7 +6,7 @@ using System.Data;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-public sealed class MySqlPriceHistoryRepository : IPriceHistoryRepository
+public sealed class MySqlPriceHistoryRepository(DatabaseConnection conexion) : IPriceHistoryRepository
 {
     public async Task<IReadOnlyList<ProductPriceHistory>> GetPriceHistoryAsync(CancellationToken cancellationToken = default)
     {
@@ -86,7 +86,7 @@ public sealed class MySqlPriceHistoryRepository : IPriceHistoryRepository
 
     private async Task<MySqlConnection> OpenConnectionAsync(CancellationToken cancellationToken)
     {
-        var connection = DatabaseConnection.Instance.CreateConnection();
+        var connection = conexion.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         return connection;
     }

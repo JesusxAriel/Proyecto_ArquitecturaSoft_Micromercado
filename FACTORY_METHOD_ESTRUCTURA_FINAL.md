@@ -32,12 +32,20 @@ Proyecto_Arquitectura_Micromercado/
 │   │   ├── MySqlProductRepository.cs
 │   │   ├── MySqlSupplierRepository.cs
 │   │   └── MySqlPriceHistoryRepository.cs   ← NUEVO: se extrae de Product
-│   ├── Factories/                            ← NUEVA carpeta (acá vive el patrón)
-│   │   ├── CreatorRepositorio.cs             (Creador Abstracto genérico)
-│   │   ├── CreatorCategoryRepository.cs      (Creador Concreto)
-│   │   ├── CreatorProductRepository.cs       (Creador Concreto)
-│   │   ├── CreatorSupplierRepository.cs      (Creador Concreto)
-│   │   └── CreatorPriceHistoryRepository.cs  (Creador Concreto)
+│   ├── Persistence/EnMemoria/                 ← segundo motor (Productos Concretos)
+│   │   ├── TextoEnMemoria.cs                  (normalización + paginación)
+│   │   ├── InMemoryCategoryRepository.cs
+│   │   ├── InMemoryProductRepository.cs
+│   │   ├── InMemorySupplierRepository.cs
+│   │   └── InMemoryPriceHistoryRepository.cs
+│   ├── Factories/                             ← acá vive el patrón
+│   │   ├── CreatorRepositorio.cs              (Creador Abstracto genérico)
+│   │   ├── CreatorCategoryRepository.cs       (raíz de jerarquía, abstracta)
+│   │   ├── CreatorProductRepository.cs        (raíz de jerarquía, abstracta)
+│   │   ├── CreatorSupplierRepository.cs       (raíz de jerarquía, abstracta)
+│   │   ├── CreatorPriceHistoryRepository.cs   (raíz de jerarquía, abstracta)
+│   │   ├── Creator*RepositoryMySql.cs         (4 Creadores Concretos)
+│   │   └── Creator*RepositoryEnMemoria.cs     (4 Creadores Concretos)
 │   └── Web/
 │       └── DecimalModelBinder.cs
 ├── Pages/                               (sin cambios)
@@ -95,12 +103,43 @@ patrón):
 |---|---|---|
 | **Producto** (interfaz que se crea) | `ICRUD<T>` | `IRepositorioBase<TEntidad, TListItem, TId>` y las interfaces específicas (`ICategoryRepository`, `IProductRepository`, `ISupplierRepository`, `IPriceHistoryRepository`) |
 | **Producto Concreto** | `ClienteRepositorio`, `ProductoRepositorio` | `MySqlCategoryRepository`, `MySqlProductRepository`, `MySqlSupplierRepository`, `MySqlPriceHistoryRepository` |
-| **Creador** (declara el método fábrica) | `CreatorCRUD<T>` | `CreatorRepositorio<TRepositorio>` |
-| **Creador Concreto** (decide qué clase concreta instanciar) | `CreatorCliente` | `CreatorCategoryRepository`, `CreatorProductRepository`, `CreatorSupplierRepository`, `CreatorPriceHistoryRepository` |
+| **Creador** (declara el método fábrica y lo consume en una operación propia) | `CreatorCRUD<T>` | `CreatorRepositorio<TRepositorio>`, más una raíz abstracta por contrato: `CreatorCategoryRepository`, `CreatorProductRepository`, `CreatorSupplierRepository`, `CreatorPriceHistoryRepository` |
+| **Creador Concreto** (decide qué clase concreta instanciar) | `CreatorCliente` | `Creator*RepositoryMySql` y `Creator*RepositoryEnMemoria` (dos por jerarquía) |
 
-Cada Creador Concreto sobrescribe `CrearRepositorio()` devolviendo su
-implementación MySQL, exactamente igual que `CreatorCliente.CrearRepositorio()`
+Cada Creador Concreto sobrescribe `CrearRepositorio()` devolviendo la
+implementación de su motor, igual que `CreatorCliente.CrearRepositorio()`
 devuelve `new ClienteRepositorio()` en el ejemplo del docente.
+
+Dos detalles del Creador Abstracto que son los que lo vuelven un Factory Method
+y no una fábrica simple:
+
+1. **`CrearRepositorio()` es `protected`, no `public`.** Es un *hook* interno del
+   patrón: los clientes no lo llaman.
+2. **El Creador tiene una operación propia, `ObtenerRepositorio()`**, que consume
+   ese hook y memoiza el resultado. En el GoF el Creador siempre tiene una
+   operación que usa el producto del método fábrica; sin ella la clase abstracta
+   sería una interfaz de fábrica y nada más. La memoización, además, es lo que
+   hace que el ciclo de vida `Scoped` se respete: un Creador por petición HTTP
+   significa un repositorio por petición HTTP, incluso cuando otro Creador
+   reutiliza ese repositorio como dependencia.
+
+### Por qué hay una raíz abstracta por contrato
+
+`CreatorRepositorio<ICategoryRepository>` y `CreatorRepositorio<IProductRepository>`
+son, en C#, dos tipos **sin relación de herencia**: su único ancestro común es
+`object`. Apoyando la jerarquía sólo en el genérico, ninguna variable del programa
+podía apuntar a dos Creadores distintos, y sin eso no hay polimorfismo — que es
+toda la razón de existir del patrón. Las raíces no genéricas
+(`CreatorCategoryRepository` y sus hermanas) resuelven exactamente eso: son el
+tipo que `Program.cs` y las pruebas declaran, sin saber qué motor hay detrás.
+
+### Por qué el eje de variación es el motor y no la entidad
+
+El patrón sirve para intercambiar **implementaciones alternativas del mismo
+producto**. `ICategoryRepository` e `IProductRepository` no son alternativas entre
+sí: son productos distintos que nunca van a sustituirse. Lo que sí varía en una
+capa de persistencia es la tecnología, así que cada jerarquía varía por motor
+(MySQL / en memoria) y no por tabla.
 
 ### Por qué se necesitaban 4 Creadores y no 3
 
@@ -115,13 +154,19 @@ demostrar el patrón sobre él.
 
 ### Relación con los principios SOLID (según la guía del docente, sección 4)
 
-| Principio | Cómo se cumple acá |
-|---|---|
-| **SRP** | Se separa la responsabilidad de *crear* el repositorio (el Creador) de la responsabilidad de *usarlo* (el Servicio). También se separa la responsabilidad de "gestionar productos" de "gestionar su historial". |
-| **OCP** | Si mañana se agrega una quinta tabla, se crea un quinto Creador Concreto sin tocar ninguno de los 4 existentes ni `Program.cs` más que para agregar una línea. |
-| **LSP** | Los 4 repositorios concretos cumplen el contrato de su interfaz sin lanzar excepciones inesperadas ni romper el comportamiento esperado — son intercambiables desde el punto de vista del Servicio. |
-| **ISP** | Cada entidad implementa solo las interfaces segregadas que realmente necesita (`IConCatalogo`, `IConListado`, etc.), en vez de una interfaz única con todos los métodos de todas las entidades. |
-| **DIP** | `ProductService` y `Program.cs` dependen de las abstracciones (`IProductRepository`, `IPriceHistoryRepository`), nunca de `MySqlProductRepository` o `MySqlPriceHistoryRepository` directamente. |
+| Principio | Cómo se cumple acá | Cómo se verifica |
+|---|---|---|
+| **SRP** | Se separa la responsabilidad de *crear* el repositorio (el Creador) de la de *usarlo* (el Servicio). También se separa "gestionar productos" de "gestionar su historial": el SQL del historial vive en su propio repositorio y el de producto se lo delega. | Lectura de código: `MySqlProductRepository` ya no contiene SQL de `HISTORIAL_PRECIO`. |
+| **OCP** | Para cambiar de motor de persistencia se cambia **un tipo por par de líneas en `Program.cs`** y nada más: ni los Creadores, ni los repositorios, ni los servicios, ni las páginas. Agregar un tercer motor es agregar archivos nuevos y una subclase por jerarquía, sin modificar las existentes. | `CategoryServiceEnMemoriaTests` ejercita `CategoryService` entero sobre otro motor sin que el servicio cambie. |
+| **LSP** | El repositorio en memoria respeta el mismo contrato observable que el de MySQL: baja lógica, los mismos índices UNIQUE traducidos a validaciones, las mismas excepciones de duplicado, y comparaciones que ignoran mayúsculas, tildes y espacios repetidos (equivalente a la collation `utf8mb4_unicode_ci`). | `CategoryServiceEnMemoriaTests` comprueba ese comportamiento esperado caso por caso. |
+| **ISP** | Cada entidad implementa sólo las interfaces segregadas que necesita (`IConCatalogo`, `IConListado`, `IConBusqueda`, `IConHistorialPrecios`, `IConRegistroHistorial`), en vez de una interfaz única con todos los métodos de todas las entidades. | Lectura de código: ningún repositorio implementa métodos que no usa. |
+| **DIP** | Los servicios dependen sólo de abstracciones de `Application/`. Los repositorios reciben la conexión por constructor en vez de leerla del estático `DatabaseConnection.Instance`, así que ya no tienen dependencias ocultas. `Program.cs` conoce los tipos concretos, y eso es correcto: es el *composition root*, el único lugar que tiene permitido conocerlos. | `FactoryMethodTests` construye los Creadores de los dos motores sin abrir ninguna conexión. |
+
+**Advertencia honesta sobre OCP.** "Agregar una quinta tabla sin tocar las otras
+cuatro" **no es** un beneficio del patrón: agregar una entidad siempre fue agregar
+archivos nuevos, con fábrica o sin ella. El beneficio real y medible es el otro:
+cambiar la implementación de un repositorio existente sin modificar a sus
+clientes. Conviene no acreditarle al patrón lo que ya era gratis.
 
 ---
 
@@ -133,3 +178,41 @@ demostrar el patrón sobre él.
 - El ciclo de vida `Scoped` de las dependencias se mantiene igual.
 - No se implementa nada más que Factory Method: no se agregan otros patrones
   creacionales en este sprint.
+
+---
+
+## 5. Correcciones aplicadas sobre la primera versión
+
+La primera implementación de este sprint no era un Factory Method del GoF, sino
+cuatro fábricas simples (una por entidad) unificadas sólo en apariencia por la
+clase base genérica. Se corrigieron estos puntos, en este orden:
+
+1. **Defecto de ciclo de vida.** `CreatorProductRepository` llamaba directamente a
+   `CrearRepositorio()` del Creador de historial, salteando el contenedor DI, con
+   lo que había **dos instancias** de `IPriceHistoryRepository` por petición HTTP:
+   una la recibía `ProductService` y otra quedaba dentro de
+   `MySqlProductRepository`. El `AddScoped` declarado en `Program.cs` era una
+   promesa incumplida. Era inofensivo sólo porque los repositorios no guardan
+   estado, pero rompía en cuanto el historial compartiera una transacción.
+   Corregido con la operación memoizada `ObtenerRepositorio()`.
+
+2. **Creador sin operación propia.** La clase abstracta sólo declaraba el método
+   fábrica. Se le agregó `ObtenerRepositorio()` y `CrearRepositorio()` pasó a ser
+   `protected`.
+
+3. **Dependencia oculta en los repositorios.** Los cuatro repositorios MySQL
+   resolvían su conexión con `DatabaseConnection.Instance` dentro de
+   `OpenConnectionAsync`. Ahora la reciben por constructor. Esto es también lo que
+   le dio trabajo real al método fábrica: antes hacía un `new` sin argumentos, o
+   sea devolvía un tipo fijo sin ninguna decisión ni dato que entregar.
+
+4. **Eje de variación equivocado.** El patrón variaba por entidad. Ahora varía por
+   motor, con una raíz abstracta no genérica por contrato.
+
+5. **Punto de extensión sin ejercitar.** Cada jerarquía tenía una sola subclase y
+   cada contrato una sola implementación, así que OCP y LSP se afirmaban sin poder
+   verificarse. Se agregó el motor en memoria y las pruebas que lo demuestran.
+
+El comportamiento de la aplicación no cambió: `Program.cs` sigue registrando el
+motor MySQL y las páginas siguen llamando a los mismos métodos de los mismos
+servicios.

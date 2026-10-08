@@ -6,7 +6,9 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-public sealed class MySqlProductRepository(IPriceHistoryRepository priceHistoryRepository) : IProductRepository
+public sealed class MySqlProductRepository(
+    DatabaseConnection conexion,
+    IPriceHistoryRepository priceHistoryRepository) : IProductRepository
 {
     private const int SystemAdminId = 1;
     private const int DuplicateKeyErrorNumber = 1062;
@@ -356,7 +358,7 @@ public sealed class MySqlProductRepository(IPriceHistoryRepository priceHistoryR
 
     private async Task<MySqlConnection> OpenConnectionAsync(CancellationToken cancellationToken)
     {
-        var connection = DatabaseConnection.Instance.CreateConnection();
+        var connection = conexion.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         return connection;
     }

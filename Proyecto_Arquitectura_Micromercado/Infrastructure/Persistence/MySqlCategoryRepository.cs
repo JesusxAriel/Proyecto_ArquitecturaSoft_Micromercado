@@ -6,7 +6,7 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-public sealed class MySqlCategoryRepository : ICategoryRepository
+public sealed class MySqlCategoryRepository(DatabaseConnection conexion) : ICategoryRepository
 {
     private const int SystemAdminId = 1;
     private const int DuplicateKeyErrorNumber = 1062;
@@ -288,7 +288,7 @@ public sealed class MySqlCategoryRepository : ICategoryRepository
         CancellationToken cancellationToken)
     {
         var connection =
-            DatabaseConnection.Instance.CreateConnection();
+            conexion.CreateConnection();
 
         await connection.OpenAsync(cancellationToken);
 
