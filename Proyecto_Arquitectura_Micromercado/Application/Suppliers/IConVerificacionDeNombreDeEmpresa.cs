@@ -1,6 +1,6 @@
 namespace Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 
-public interface IConBusqueda
+public interface IConVerificacionDeNombreDeEmpresa
 {
     Task<bool> ExistsNombreEmpresaAsync(
         string nombreEmpresa,

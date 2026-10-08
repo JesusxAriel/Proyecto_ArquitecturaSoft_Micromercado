@@ -6,6 +6,6 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 public interface ISupplierRepository :
     IRepositorioBase<Supplier, SupplierListItem, int>,
     IConListadoPaginado,
-    IConBusqueda
+    IConVerificacionDeNombreDeEmpresa
 {
 }
