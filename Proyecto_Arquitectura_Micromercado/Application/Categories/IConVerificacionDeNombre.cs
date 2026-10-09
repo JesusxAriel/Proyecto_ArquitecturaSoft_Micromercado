@@ -1,6 +1,6 @@
 namespace Proyecto_Arquitectura_Micromercado.Application.Categories;
 
-public interface IConBusqueda
+public interface IConVerificacionDeNombre
 {
     // Compara sin distinguir mayúsculas, tildes ni espacios extra, solo entre categorías activas.
     Task<bool> ExistsNameAsync(

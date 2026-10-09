@@ -6,8 +6,11 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
+// Recibe la unidad de trabajo en vez de la conexion suelta. Eso le permite abrir un
+// limite transaccional y que el repositorio de historial, que comparte la misma unidad
+// por inyeccion, quede dentro de esa transaccion sin recibirla por parametro.
 public sealed class MySqlProductRepository(
-    DatabaseConnection conexion,
+    MySqlUnidadDeTrabajo unidadDeTrabajo,
     IPriceHistoryRepository priceHistoryRepository) : IProductRepository
 {
     private const int SystemAdminId = 1;
@@ -25,8 +28,8 @@ public sealed class MySqlProductRepository(
             """;
 
         var products = new List<ProductListItem>();
-        await using var connection = await OpenConnectionAsync(cancellationToken);
-        await using var command = new MySqlCommand(sql, connection);
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         await using var reader = await command.ExecuteReaderAsync(
             System.Data.CommandBehavior.SequentialAccess,
             cancellationToken);
@@ -45,10 +48,11 @@ public sealed class MySqlProductRepository(
         string? search,
         CancellationToken cancellationToken = default)
     {
-        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
         return await PagedSqlRunner.RunAsync(
-            connection,
+            alquiler.Conexion,
+            alquiler.Transaccion,
             columns: """
                 id, nombre, idEmpaque, empaquePresentacion, precioVenta, precioCosto,
                 stockMinimo, idCategoria, nombreCategoria, idProveedor,
@@ -95,8 +99,8 @@ public sealed class MySqlProductRepository(
             WHERE id = @id AND estaActivo = 1;
             """;
 
-        await using var connection = await OpenConnectionAsync(cancellationToken);
-        await using var command = new MySqlCommand(sql, connection);
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         command.Parameters.AddWithValue("@id", id);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
@@ -137,8 +141,8 @@ public sealed class MySqlProductRepository(
             );
             """;
 
-        await using var connection = await OpenConnectionAsync(cancellationToken);
-        await using var command = new MySqlCommand(sql, connection);
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         command.Parameters.AddWithValue("@nombre", nombre.Trim());
         command.Parameters.AddWithValue("@idEmpaque", idEmpaque);
         command.Parameters.AddWithValue("@idExcluido", idExcluido);
@@ -168,8 +172,8 @@ public sealed class MySqlProductRepository(
             """;
 
         var history = new List<ProductPriceHistory>();
-        await using var connection = await OpenConnectionAsync(cancellationToken);
-        await using var command = new MySqlCommand(sql, connection);
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
         while (await reader.ReadAsync(cancellationToken))
@@ -218,8 +222,8 @@ public sealed class MySqlProductRepository(
             SELECT LAST_INSERT_ID();
             """;
 
-        await using var connection = await OpenConnectionAsync(cancellationToken);
-        await using var command = new MySqlCommand(sql, connection);
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         AddProductParameters(command, product);
         command.Parameters.AddWithValue("@idUsuarioAdmin", SystemAdminId);
 
@@ -257,72 +261,91 @@ public sealed class MySqlProductRepository(
             WHERE id = @id AND estaActivo = 1;
             """;
 
-        await using var connection = await OpenConnectionAsync(cancellationToken);
-        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        // El limite transaccional lo declara la unidad de trabajo. El repositorio de
+        // historial comparte esa misma unidad por inyeccion, asi que su insercion cae
+        // dentro de esta transaccion sin que haya que pasarle la conexion.
+        await unidadDeTrabajo.IniciarAsync(cancellationToken);
 
-        decimal precioVentaAnterior;
-        decimal precioCostoAnterior;
-        await using (var selectCommand = new MySqlCommand(selectSql, connection, transaction))
+        try
         {
-            selectCommand.Parameters.AddWithValue("@id", product.Id);
-            await using var reader = await selectCommand.ExecuteReaderAsync(cancellationToken);
+            await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
-            if (!await reader.ReadAsync(cancellationToken))
+            decimal precioVentaAnterior;
+            decimal precioCostoAnterior;
+            await using (var selectCommand = new MySqlCommand(selectSql, alquiler.Conexion, alquiler.Transaccion))
             {
-                await transaction.RollbackAsync(cancellationToken);
-                return false;
+                selectCommand.Parameters.AddWithValue("@id", product.Id);
+                await using var reader = await selectCommand.ExecuteReaderAsync(cancellationToken);
+
+                if (!await reader.ReadAsync(cancellationToken))
+                {
+                    await unidadDeTrabajo.RevertirAsync(cancellationToken);
+                    return false;
+                }
+
+                precioVentaAnterior = reader.GetDecimal(reader.GetOrdinal("precioVenta"));
+                precioCostoAnterior = reader.GetDecimal(reader.GetOrdinal("precioCosto"));
             }
 
-            precioVentaAnterior = reader.GetDecimal(reader.GetOrdinal("precioVenta"));
-            precioCostoAnterior = reader.GetDecimal(reader.GetOrdinal("precioCosto"));
-        }
-
-        int affectedRows;
-        await using (var updateCommand = new MySqlCommand(updateSql, connection, transaction))
-        {
-            AddProductParameters(updateCommand, product);
-            updateCommand.Parameters.AddWithValue("@id", product.Id);
-
-            try
+            int affectedRows;
+            await using (var updateCommand = new MySqlCommand(updateSql, alquiler.Conexion, alquiler.Transaccion))
             {
-                affectedRows = await updateCommand.ExecuteNonQueryAsync(cancellationToken);
+                AddProductParameters(updateCommand, product);
+                updateCommand.Parameters.AddWithValue("@id", product.Id);
+
+                try
+                {
+                    affectedRows = await updateCommand.ExecuteNonQueryAsync(cancellationToken);
+                }
+                catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
+                {
+                    await unidadDeTrabajo.RevertirAsync(cancellationToken);
+                    throw new DuplicateProductException(ex);
+                }
             }
-            catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
+
+            if (affectedRows == 1 &&
+                (precioVentaAnterior != product.PrecioVenta || precioCostoAnterior != product.PrecioCosto))
             {
-                await transaction.RollbackAsync(cancellationToken);
-                throw new DuplicateProductException(ex);
+                var history = new ProductPriceHistory
+                {
+                    IdProducto = product.Id,
+                    PrecioVentaAnterior = precioVentaAnterior,
+                    PrecioVentaNuevo = product.PrecioVenta,
+                    PrecioCostoAnterior = precioCostoAnterior,
+                    PrecioCostoNuevo = product.PrecioCosto,
+                    MotivoCambio = string.IsNullOrWhiteSpace(product.MotivoCambio)
+                        ? "Actualización de precio"
+                        : product.MotivoCambio.Trim(),
+                    IdUsuario = SystemAdminId
+                };
+
+                // Firma limpia del puerto: ya no se le pasa conexion ni transaccion.
+                await _priceHistoryRepository.AddPriceHistoryAsync(history, cancellationToken);
             }
-        }
 
-        if (affectedRows == 1 &&
-            (precioVentaAnterior != product.PrecioVenta || precioCostoAnterior != product.PrecioCosto))
-        {
-            var history = new ProductPriceHistory
+            if (affectedRows == 1)
             {
-                IdProducto = product.Id,
-                PrecioVentaAnterior = precioVentaAnterior,
-                PrecioVentaNuevo = product.PrecioVenta,
-                PrecioCostoAnterior = precioCostoAnterior,
-                PrecioCostoNuevo = product.PrecioCosto,
-                MotivoCambio = string.IsNullOrWhiteSpace(product.MotivoCambio)
-                    ? "Actualización de precio"
-                    : product.MotivoCambio.Trim(),
-                IdUsuario = SystemAdminId
-            };
+                await unidadDeTrabajo.ConfirmarAsync(cancellationToken);
+            }
+            else
+            {
+                await unidadDeTrabajo.RevertirAsync(cancellationToken);
+            }
 
-            await _priceHistoryRepository.AddPriceHistoryAsync(connection, transaction, history, cancellationToken);
+            return affectedRows == 1;
         }
-
-        if (affectedRows == 1)
+        catch (DuplicateProductException)
         {
-            await transaction.CommitAsync(cancellationToken);
+            // Ya se revirtio en el punto donde se detecto; se deja subir tal cual.
+            throw;
         }
-        else
+        catch
         {
-            await transaction.RollbackAsync(cancellationToken);
+            // Cualquier otro fallo no debe dejar la transaccion abierta.
+            await unidadDeTrabajo.RevertirAsync(cancellationToken);
+            throw;
         }
-
-        return affectedRows == 1;
     }
 
     public async Task<bool> SoftDeleteAsync(int id, CancellationToken cancellationToken = default)
@@ -333,8 +356,8 @@ public sealed class MySqlProductRepository(
             WHERE id = @id AND estaActivo = 1;
             """;
 
-        await using var connection = await OpenConnectionAsync(cancellationToken);
-        await using var command = new MySqlCommand(sql, connection);
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         command.Parameters.AddWithValue("@id", id);
         return await command.ExecuteNonQueryAsync(cancellationToken) == 1;
     }
@@ -344,8 +367,8 @@ public sealed class MySqlProductRepository(
         CancellationToken cancellationToken)
     {
         var options = new List<LookupOption>();
-        await using var connection = await OpenConnectionAsync(cancellationToken);
-        await using var command = new MySqlCommand(sql, connection);
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
         while (await reader.ReadAsync(cancellationToken))
@@ -354,13 +377,6 @@ public sealed class MySqlProductRepository(
         }
 
         return options;
-    }
-
-    private async Task<MySqlConnection> OpenConnectionAsync(CancellationToken cancellationToken)
-    {
-        var connection = conexion.CreateConnection();
-        await connection.OpenAsync(cancellationToken);
-        return connection;
     }
 
     private static void AddProductParameters(MySqlCommand command, Product product)

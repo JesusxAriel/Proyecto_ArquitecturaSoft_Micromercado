@@ -1,6 +1,5 @@
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
-using System.Data;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.EnMemoria;
 
@@ -41,17 +40,6 @@ public sealed class InMemoryPriceHistoryRepository : IPriceHistoryRepository
 
         return Task.CompletedTask;
     }
-
-    // La sobrecarga transaccional existe para que el repositorio de producto pueda
-    // delegar dentro de una transacción. En memoria no hay transacción, así que se
-    // ignoran la conexión y la transacción. Aceptar cualquier conexión (incluida null)
-    // es una precondición más débil que la de MySQL, por lo que no se rompe el LSP.
-    public Task AddPriceHistoryAsync(
-        IDbConnection connection,
-        IDbTransaction? transaction,
-        ProductPriceHistory history,
-        CancellationToken cancellationToken = default) =>
-        AddPriceHistoryAsync(history, cancellationToken);
 
     private static ProductPriceHistory Clonar(ProductPriceHistory origen) => new()
     {

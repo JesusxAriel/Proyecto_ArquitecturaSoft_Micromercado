@@ -3,6 +3,7 @@ using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Factories;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
 namespace Proyecto_Arquitectura_Micromercado.Tests;
 
@@ -11,10 +12,11 @@ namespace Proyecto_Arquitectura_Micromercado.Tests;
 // base de datos, asi que el motor MySQL tambien se puede verificar aca.
 public class FactoryMethodTests
 {
-    // Cadena de conexion de mentira: nunca se abre, solo se necesita para construir
-    // el Creador Concreto de MySQL.
-    private static DatabaseConnection ConexionDePrueba() =>
-        DatabaseConnection.GetInstance("Server=localhost;Database=prueba;Uid=prueba;Pwd=prueba;");
+    // Unidad de trabajo de mentira: nunca se abre una conexion, solo se necesita para
+    // construir el Creador Concreto de MySQL. Construir el Creador y pedirle su
+    // repositorio no toca la base de datos.
+    private static MySqlUnidadDeTrabajo UnidadDePrueba() =>
+        new(DatabaseConnection.GetInstance("Server=localhost;Database=prueba;Uid=prueba;Pwd=prueba;"));
 
     // Los dos Creadores Concretos de la misma jerarquia, declarados con el tipo ABSTRACTO.
     // Que esta linea compile es la demostracion de que el polimorfismo del patron existe:
@@ -22,7 +24,7 @@ public class FactoryMethodTests
     private static CreatorCategoryRepository[] CreadoresDeCategoria() =>
     [
         new CreatorCategoryRepositoryEnMemoria(),
-        new CreatorCategoryRepositoryMySql(ConexionDePrueba())
+        new CreatorCategoryRepositoryMySql(UnidadDePrueba())
     ];
 
     [Fact]

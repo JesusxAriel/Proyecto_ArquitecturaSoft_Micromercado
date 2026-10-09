@@ -2,11 +2,10 @@
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Domain.Categories;
 using Proyecto_Arquitectura_Micromercado.Domain.Common;
-using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-public sealed class MySqlCategoryRepository(DatabaseConnection conexion) : ICategoryRepository
+public sealed class MySqlCategoryRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) : ICategoryRepository
 {
     private const int SystemAdminId = 1;
     private const int DuplicateKeyErrorNumber = 1062;
@@ -31,11 +30,11 @@ public sealed class MySqlCategoryRepository(DatabaseConnection conexion) : ICate
 
         var categories = new List<Category>();
 
-        await using var connection =
-            await OpenConnectionAsync(cancellationToken);
+        await using var alquiler =
+            await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
         await using var command =
-            new MySqlCommand(sql, connection);
+            new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
 
         await using var reader =
             await command.ExecuteReaderAsync(cancellationToken);
@@ -54,11 +53,12 @@ public sealed class MySqlCategoryRepository(DatabaseConnection conexion) : ICate
         string? search,
         CancellationToken cancellationToken = default)
     {
-        await using var connection =
-            await OpenConnectionAsync(cancellationToken);
+        await using var alquiler =
+            await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
         return await PagedSqlRunner.RunAsync(
-            connection,
+            alquiler.Conexion,
+            alquiler.Transaccion,
             columns: """
                 id, nombre, descripcion, codigo, pasilloUbicacion, estaActivo,
                 idUsuarioAdmin, fechaCreacion, fechaActualizacion
@@ -98,11 +98,11 @@ public sealed class MySqlCategoryRepository(DatabaseConnection conexion) : ICate
               AND estaActivo = 1;
             """;
 
-        await using var connection =
-            await OpenConnectionAsync(cancellationToken);
+        await using var alquiler =
+            await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
         await using var command =
-            new MySqlCommand(sql, connection);
+            new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
 
         command.Parameters.AddWithValue("@id", id);
 
@@ -129,11 +129,11 @@ public sealed class MySqlCategoryRepository(DatabaseConnection conexion) : ICate
             SELECT LAST_INSERT_ID();
             """;
 
-        await using var connection =
-            await OpenConnectionAsync(cancellationToken);
+        await using var alquiler =
+            await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
         await using var command =
-            new MySqlCommand(sql, connection);
+            new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
 
         AddCategoryParameters(command, category);
 
@@ -170,11 +170,11 @@ public sealed class MySqlCategoryRepository(DatabaseConnection conexion) : ICate
               AND estaActivo = 1;
             """;
 
-        await using var connection =
-            await OpenConnectionAsync(cancellationToken);
+        await using var alquiler =
+            await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
         await using var command =
-            new MySqlCommand(sql, connection);
+            new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
 
         AddCategoryParameters(command, category);
 
@@ -211,11 +211,11 @@ public sealed class MySqlCategoryRepository(DatabaseConnection conexion) : ICate
             );
             """;
 
-        await using var connection =
-            await OpenConnectionAsync(cancellationToken);
+        await using var alquiler =
+            await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
         await using var command =
-            new MySqlCommand(sql, connection);
+            new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
 
         command.Parameters.AddWithValue("@nombre", name.Trim());
         command.Parameters.AddWithValue("@idExcluido", idExcluido);
@@ -231,11 +231,11 @@ public sealed class MySqlCategoryRepository(DatabaseConnection conexion) : ICate
 
         var codes = new List<string>();
 
-        await using var connection =
-            await OpenConnectionAsync(cancellationToken);
+        await using var alquiler =
+            await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
         await using var command =
-            new MySqlCommand(sql, connection);
+            new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
 
         await using var reader =
             await command.ExecuteReaderAsync(cancellationToken);
@@ -260,11 +260,11 @@ public sealed class MySqlCategoryRepository(DatabaseConnection conexion) : ICate
               AND estaActivo = 1;
             """;
 
-        await using var connection =
-            await OpenConnectionAsync(cancellationToken);
+        await using var alquiler =
+            await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
         await using var command =
-            new MySqlCommand(sql, connection);
+            new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
 
         command.Parameters.AddWithValue(
             "@id",
@@ -283,17 +283,6 @@ public sealed class MySqlCategoryRepository(DatabaseConnection conexion) : ICate
         ex.Message.Contains("UQ_Categorias_nombre_activo", StringComparison.OrdinalIgnoreCase)
             ? new DuplicateCategoryNameException(ex)
             : new DuplicateCategoryCodeException(ex);
-
-    private async Task<MySqlConnection> OpenConnectionAsync(
-        CancellationToken cancellationToken)
-    {
-        var connection =
-            conexion.CreateConnection();
-
-        await connection.OpenAsync(cancellationToken);
-
-        return connection;
-    }
 
     private static void AddCategoryParameters(
         MySqlCommand command,
