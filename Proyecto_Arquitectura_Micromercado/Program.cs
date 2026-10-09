@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Localization;
+using Proyecto_Arquitectura_Micromercado.Application.Common;
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
@@ -24,6 +25,15 @@ builder.Services.AddRazorPages()
 // test apuntando a otra cadena de conexion.
 builder.Services.AddSingleton(
     DatabaseConnection.GetInstance(builder.Configuration.GetConnectionString("MySqlConnection")!));
+
+// Unidad de trabajo: una por peticion HTTP. Los adaptadores MySQL la reciben por
+// constructor, asi que todos comparten la misma conexion mientras haya una transaccion
+// abierta. Se registra dos veces a proposito, sobre la MISMA instancia: el tipo concreto
+// para los adaptadores, que necesitan pedirle la conexion, y el puerto para Application,
+// que solo debe ver iniciar, confirmar y revertir.
+builder.Services.AddScoped<MySqlUnidadDeTrabajo>();
+builder.Services.AddScoped<IUnidadDeTrabajo>(sp =>
+    sp.GetRequiredService<MySqlUnidadDeTrabajo>());
 
 // Factory Method: unico punto de la aplicacion donde se elige el motor de persistencia.
 // Se registra el Creador ABSTRACTO apuntando al Creador Concreto; para cambiar de motor

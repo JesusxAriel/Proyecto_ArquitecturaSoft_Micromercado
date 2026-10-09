@@ -10,6 +10,7 @@ internal static class PagedSqlRunner
 {
     public static async Task<PagedResult<T>> RunAsync<T>(
         MySqlConnection connection,
+        MySqlTransaction? transaction,
         string columns,
         string from,
         string? baseWhere,
@@ -36,14 +37,14 @@ internal static class PagedSqlRunner
         var searchPattern = SqlLike.ContainsPattern(search);
 
         int totalCount;
-        await using (var countCommand = new MySqlCommand(countSql, connection))
+        await using (var countCommand = new MySqlCommand(countSql, connection, transaction))
         {
             countCommand.Parameters.AddWithValue("@search", searchPattern);
             totalCount = Convert.ToInt32(await countCommand.ExecuteScalarAsync(cancellationToken));
         }
 
         var items = new List<T>();
-        await using (var pageCommand = new MySqlCommand(pageSql, connection))
+        await using (var pageCommand = new MySqlCommand(pageSql, connection, transaction))
         {
             pageCommand.Parameters.AddWithValue("@search", searchPattern);
             pageCommand.Parameters.AddWithValue("@limit", pageSize);

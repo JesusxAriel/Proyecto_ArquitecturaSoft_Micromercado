@@ -1,12 +1,13 @@
 using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
-using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
-using System.Data;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-public sealed class MySqlPriceHistoryRepository(DatabaseConnection conexion) : IPriceHistoryRepository
+// Recibe la unidad de trabajo en vez de la conexion suelta: cuando el repositorio de
+// producto abre una transaccion, esta insercion queda dentro de ella sin necesidad de
+// que nadie le pase la transaccion por parametro.
+public sealed class MySqlPriceHistoryRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) : IPriceHistoryRepository
 {
     public async Task<IReadOnlyList<ProductPriceHistory>> GetPriceHistoryAsync(CancellationToken cancellationToken = default)
     {
@@ -21,8 +22,8 @@ public sealed class MySqlPriceHistoryRepository(DatabaseConnection conexion) : I
             """;
 
         var history = new List<ProductPriceHistory>();
-        await using var connection = await OpenConnectionAsync(cancellationToken);
-        await using var command = new MySqlCommand(sql, connection);
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
         while (await reader.ReadAsync(cancellationToken))
@@ -55,21 +56,6 @@ public sealed class MySqlPriceHistoryRepository(DatabaseConnection conexion) : I
     {
         ArgumentNullException.ThrowIfNull(history);
 
-        await using var connection = await OpenConnectionAsync(cancellationToken);
-        await AddPriceHistoryAsync(connection, null, history, cancellationToken);
-    }
-
-    public async Task AddPriceHistoryAsync(IDbConnection connection, IDbTransaction? transaction, ProductPriceHistory history, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(history);
-
-        if (connection is not MySqlConnection mySqlConnection)
-        {
-            throw new ArgumentException("Connection must be a MySqlConnection.", nameof(connection));
-        }
-
-        var mySqlTransaction = transaction as MySqlTransaction;
-
         const string sql = """
             INSERT INTO HISTORIAL_PRECIO
                 (idProducto, precioVentaAnterior, precioVentaNuevo,
@@ -79,16 +65,10 @@ public sealed class MySqlPriceHistoryRepository(DatabaseConnection conexion) : I
                  @precioCostoAnterior, @precioCostoNuevo, @motivoCambio, @idUsuario);
             """;
 
-        await using var command = new MySqlCommand(sql, mySqlConnection, mySqlTransaction);
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         AddPriceHistoryParameters(command, history);
         await command.ExecuteNonQueryAsync(cancellationToken);
-    }
-
-    private async Task<MySqlConnection> OpenConnectionAsync(CancellationToken cancellationToken)
-    {
-        var connection = conexion.CreateConnection();
-        await connection.OpenAsync(cancellationToken);
-        return connection;
     }
 
     private static void AddPriceHistoryParameters(MySqlCommand command, ProductPriceHistory history)

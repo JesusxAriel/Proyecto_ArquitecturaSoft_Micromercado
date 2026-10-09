@@ -1,5 +1,4 @@
 using Proyecto_Arquitectura_Micromercado.Application.Products;
-using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Factories
@@ -14,13 +13,13 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Factories
     // CrearRepositorio(): así se reutiliza la misma instancia que el contenedor DI
     // entrega al resto de la petición, en vez de crear una paralela.
     public sealed class CreatorProductRepositoryMySql(
-        DatabaseConnection conexion,
+        MySqlUnidadDeTrabajo unidadDeTrabajo,
         CreatorPriceHistoryRepository creatorHistorialPrecios) : CreatorProductRepository
     {
         protected override IProductRepository CrearRepositorio()
         {
             return new MySqlProductRepository(
-                conexion,
+                unidadDeTrabajo,
                 creatorHistorialPrecios.ObtenerRepositorio());
         }
     }

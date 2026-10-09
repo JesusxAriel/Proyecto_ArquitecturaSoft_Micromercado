@@ -2,11 +2,10 @@ using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
-using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-public sealed class MySqlSupplierRepository(DatabaseConnection conexion) : ISupplierRepository
+public sealed class MySqlSupplierRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) : ISupplierRepository
 {
     private const int SystemAdminId = 1;
     private const int DuplicateKeyErrorNumber = 1062;
@@ -21,8 +20,8 @@ public sealed class MySqlSupplierRepository(DatabaseConnection conexion) : ISupp
             """;
 
         var suppliers = new List<SupplierListItem>();
-        await using var connection = await OpenConnectionAsync(cancellationToken);
-        await using var command = new MySqlCommand(sql, connection);
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
         while (await reader.ReadAsync(cancellationToken))
@@ -48,10 +47,11 @@ public sealed class MySqlSupplierRepository(DatabaseConnection conexion) : ISupp
         string? search,
         CancellationToken cancellationToken = default)
     {
-        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
         return await PagedSqlRunner.RunAsync(
-            connection,
+            alquiler.Conexion,
+            alquiler.Transaccion,
             columns: "id, nombreEmpresa, numeroEmpresa, correoReferencia, esAutogestionado",
             from: "PROVEEDOR",
             baseWhere: "estaActivo = 1",
@@ -86,8 +86,8 @@ public sealed class MySqlSupplierRepository(DatabaseConnection conexion) : ISupp
             WHERE id = @id AND estaActivo = 1;
             """;
 
-        await using var connection = await OpenConnectionAsync(cancellationToken);
-        await using var command = new MySqlCommand(sql, connection);
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         command.Parameters.AddWithValue("@id", id);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
@@ -122,8 +122,8 @@ public sealed class MySqlSupplierRepository(DatabaseConnection conexion) : ISupp
               AND estaActivo = 1;
             """;
 
-        await using var connection = await OpenConnectionAsync(cancellationToken);
-        await using var command = new MySqlCommand(sql, connection);
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         command.Parameters.AddWithValue("@nombreEmpresa", nombreEmpresa);
         command.Parameters.AddWithValue("@idExcluido", idExcluido);
 
@@ -142,8 +142,8 @@ public sealed class MySqlSupplierRepository(DatabaseConnection conexion) : ISupp
             SELECT LAST_INSERT_ID();
             """;
 
-        await using var connection = await OpenConnectionAsync(cancellationToken);
-        await using var command = new MySqlCommand(sql, connection);
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         AddSupplierParameters(command, supplier);
         command.Parameters.AddWithValue("@idUsuarioAdmin", SystemAdminId);
 
@@ -172,8 +172,8 @@ public sealed class MySqlSupplierRepository(DatabaseConnection conexion) : ISupp
             WHERE id = @id AND estaActivo = 1;
             """;
 
-        await using var connection = await OpenConnectionAsync(cancellationToken);
-        await using var command = new MySqlCommand(sql, connection);
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         AddSupplierParameters(command, supplier);
         command.Parameters.AddWithValue("@id", supplier.Id);
 
@@ -195,17 +195,10 @@ public sealed class MySqlSupplierRepository(DatabaseConnection conexion) : ISupp
             WHERE id = @id AND estaActivo = 1;
             """;
 
-        await using var connection = await OpenConnectionAsync(cancellationToken);
-        await using var command = new MySqlCommand(sql, connection);
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         command.Parameters.AddWithValue("@id", id);
         return await command.ExecuteNonQueryAsync(cancellationToken) == 1;
-    }
-
-    private async Task<MySqlConnection> OpenConnectionAsync(CancellationToken cancellationToken)
-    {
-        var connection = conexion.CreateConnection();
-        await connection.OpenAsync(cancellationToken);
-        return connection;
     }
 
     private static void AddSupplierParameters(MySqlCommand command, Supplier supplier)
