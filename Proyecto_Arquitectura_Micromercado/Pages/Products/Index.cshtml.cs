@@ -130,33 +130,9 @@ public sealed class IndexModel(
 
         try
         {
-            var currentProduct = await productService.GetByIdAsync(EditProduct.Id, cancellationToken);
-            if (currentProduct is null)
-            {
-                return NotFound();
-            }
-
-            var pricesChanged = currentProduct.PrecioVenta != EditProduct.PrecioVenta ||
-                currentProduct.PrecioCosto != EditProduct.PrecioCosto;
-            if (pricesChanged)
-            {
-                PriceChangeReason = NormalizeReason(PriceChangeReason);
-                if (!IsValidReason(PriceChangeReason))
-                {
-                    ShowEditModal = true;
-                    ModelState.AddModelError(nameof(PriceChangeReason),
-                        "Ingresa una justificación de al menos 3 caracteres. Evita etiquetas HTML, comillas y caracteres de control.");
-                    await ReloadProductsAsync(cancellationToken);
-                    return Page();
-                }
-
-                EditProduct.MotivoCambio = PriceChangeReason;
-            }
-            else
-            {
-                PriceChangeReason = null;
-                EditProduct.MotivoCambio = null;
-            }
+            // El servicio decide si el cambio de precio exige justificacion, la normaliza
+            // y la valida. La pagina solo traslada lo que escribio el usuario.
+            EditProduct.MotivoCambio = PriceChangeReason;
 
             if (!await productService.UpdateAsync(EditProduct, cancellationToken))
             {
@@ -169,9 +145,21 @@ public sealed class IndexModel(
         catch (ArgumentException ex)
         {
             ShowEditModal = true;
+
+            // Cada error se muestra junto al campo que lo origina; el resto, en el resumen.
             ModelState.AddModelError(
-                ex is DuplicateProductException ? "EditProduct.Nombre" : string.Empty,
+                ex switch
+                {
+                    DuplicateProductException => "EditProduct.Nombre",
+                    MotivoDeCambioInvalidoException => nameof(PriceChangeReason),
+                    _ => string.Empty
+                },
                 ex.Message);
+
+            // El servicio ya normalizo el motivo, asi que el modal lo vuelve a mostrar
+            // tal como quedara guardado.
+            PriceChangeReason = EditProduct.MotivoCambio;
+
             await ReloadProductsAsync(cancellationToken);
             return Page();
         }
@@ -191,47 +179,6 @@ public sealed class IndexModel(
         ModelState.Remove(nameof(Pagina));
         ModelState.Remove(nameof(Tamano));
         ModelState.Remove(nameof(Q));
-    }
-
-    private static string NormalizeReason(string? value)
-    {
-        var normalized = string.Join(
-            " ",
-            (value ?? string.Empty).TrimStart().Split(
-                [' ', '\t', '\r', '\n'],
-                StringSplitOptions.RemoveEmptyEntries));
-
-        if (string.IsNullOrEmpty(normalized))
-        {
-            return string.Empty;
-        }
-
-        var firstLetterIndex = normalized
-            .Select((character, index) => (character, index))
-            .FirstOrDefault(item => char.IsLetter(item.character))
-            .index;
-
-        if (firstLetterIndex == 0 && char.IsLetter(normalized[0]))
-        {
-            return char.ToUpperInvariant(normalized[0]) + normalized[1..];
-        }
-
-        if (firstLetterIndex > 0)
-        {
-            return normalized[..firstLetterIndex] +
-                char.ToUpperInvariant(normalized[firstLetterIndex]) +
-                normalized[(firstLetterIndex + 1)..];
-        }
-
-        return normalized;
-    }
-
-    private static bool IsValidReason(string value)
-    {
-        return value.Length >= 3 &&
-            !value.Any(character =>
-                char.IsControl(character) ||
-                character is '<' or '>' or '"' or '\'' or '`' or '\\' or ';');
     }
 
     public async Task<IActionResult> OnPostDeleteAsync(CancellationToken cancellationToken)

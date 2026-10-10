@@ -304,8 +304,14 @@ public sealed class MySqlProductRepository(
                 }
             }
 
+            // La comparacion tiene una sola definicion, en Domain: antes estaba copiada
+            // aqui, en el repositorio en memoria y en el PageModel.
             if (affectedRows == 1 &&
-                (precioVentaAnterior != product.PrecioVenta || precioCostoAnterior != product.PrecioCosto))
+                CambioDePrecio.Hubo(
+                    precioVentaAnterior,
+                    precioCostoAnterior,
+                    product.PrecioVenta,
+                    product.PrecioCosto))
             {
                 var history = new ProductPriceHistory
                 {
@@ -315,7 +321,7 @@ public sealed class MySqlProductRepository(
                     PrecioCostoAnterior = precioCostoAnterior,
                     PrecioCostoNuevo = product.PrecioCosto,
                     MotivoCambio = string.IsNullOrWhiteSpace(product.MotivoCambio)
-                        ? "Actualización de precio"
+                        ? CambioDePrecio.MotivoPorDefecto
                         : product.MotivoCambio.Trim(),
                     IdUsuario = SystemAdminId
                 };

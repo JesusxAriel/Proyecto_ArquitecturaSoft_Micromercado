@@ -56,11 +56,42 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
 
     public async Task<bool> UpdateAsync(Product product, CancellationToken cancellationToken = default)
     {
+        // Validate normaliza y redondea los precios, asi que va primero: la comparacion
+        // con lo almacenado debe hacerse sobre los valores ya normalizados.
         Validate(product);
+
+        var almacenado = await repository.GetByIdAsync(product.Id, cancellationToken);
+
+        if (almacenado is null)
+        {
+            return false;
+        }
+
+        // Regla de aplicacion: si el precio cambia, hay que justificarlo. Antes vivia
+        // como metodo privado del PageModel, de modo que este servicio no la aplicaba y
+        // cualquier otra entrada al sistema se la saltaba.
+        AsignarMotivoDeCambio(product, almacenado);
+
         await EnsureNotDuplicatedAsync(product, cancellationToken);
         await EnsureReferencesExistAsync(product, cancellationToken);
 
         return await repository.UpdateAsync(product, cancellationToken);
+    }
+
+    private static void AsignarMotivoDeCambio(Product product, Product almacenado)
+    {
+        var huboCambio = CambioDePrecio.Hubo(
+            almacenado.PrecioVenta,
+            almacenado.PrecioCosto,
+            product.PrecioVenta,
+            product.PrecioCosto);
+
+        product.MotivoCambio = CambioDePrecio.ResolverMotivo(huboCambio, product.MotivoCambio);
+
+        if (huboCambio && !CambioDePrecio.EsMotivoValido(product.MotivoCambio))
+        {
+            throw new MotivoDeCambioInvalidoException();
+        }
     }
 
     public Task<bool> IsDuplicateAsync(
