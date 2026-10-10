@@ -1,6 +1,6 @@
-using MySql.Data.MySqlClient;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc;
+using Proyecto_Arquitectura_Micromercado.Application.Common;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
@@ -45,7 +45,7 @@ public sealed class IndexModel(
             Categories = await productService.GetCategoriesAsync(cancellationToken);
             Suppliers = await productService.GetSuppliersAsync(cancellationToken);
         }
-        catch (MySqlException)
+        catch (ErrorDePersistenciaException)
         {
             PagedProducts = new PagedResult<ProductListItem>();
             DatabaseWarning = "No se pudo conectar con la base de datos. No hay productos para mostrar.";
@@ -107,7 +107,7 @@ public sealed class IndexModel(
             await ReloadProductsAsync(cancellationToken);
             return Page();
         }
-        catch (MySqlException)
+        catch (ErrorDePersistenciaException)
         {
             ShowCreateModal = true;
             ModelState.AddModelError(string.Empty, "No se pudo guardar el producto. Intente nuevamente.");
@@ -163,7 +163,7 @@ public sealed class IndexModel(
             await ReloadProductsAsync(cancellationToken);
             return Page();
         }
-        catch (MySqlException)
+        catch (ErrorDePersistenciaException)
         {
             ShowEditModal = true;
             DatabaseWarning = "No se pudo actualizar el producto por un problema de conexión.";
@@ -203,7 +203,7 @@ public sealed class IndexModel(
             await ReloadProductsAsync(cancellationToken);
             return Page();
         }
-        catch (MySqlException)
+        catch (ErrorDePersistenciaException)
         {
             DatabaseWarning = "No se pudo eliminar el producto debido a un error en la base de datos.";
             await ReloadProductsAsync(cancellationToken);
@@ -221,7 +221,7 @@ public sealed class IndexModel(
             Categories = await productService.GetCategoriesAsync(cancellationToken);
             Suppliers = await productService.GetSuppliersAsync(cancellationToken);
         }
-        catch (MySqlException)
+        catch (ErrorDePersistenciaException)
         {
             PagedProducts = new PagedResult<ProductListItem>();
             Packagings = [];

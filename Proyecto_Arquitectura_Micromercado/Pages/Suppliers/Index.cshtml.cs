@@ -1,6 +1,6 @@
-using MySql.Data.MySqlClient;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Proyecto_Arquitectura_Micromercado.Application.Common;
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
@@ -94,7 +94,7 @@ public sealed class IndexModel(
             await LoadSuppliersAsync(cancellationToken);
             return Page();
         }
-        catch (MySqlException)
+        catch (ErrorDePersistenciaException)
         {
             DatabaseWarning = "No se pudo guardar el proveedor por un problema de conexión.";
             ShowCreateModal = true;
@@ -137,7 +137,7 @@ public sealed class IndexModel(
             await LoadSuppliersAsync(cancellationToken);
             return Page();
         }
-        catch (MySqlException)
+        catch (ErrorDePersistenciaException)
         {
             DatabaseWarning = "No se pudo actualizar el proveedor por un problema de conexión.";
             ShowEditModal = true;
