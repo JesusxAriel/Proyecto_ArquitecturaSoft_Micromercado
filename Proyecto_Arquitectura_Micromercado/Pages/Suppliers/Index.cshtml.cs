@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Proyecto_Arquitectura_Micromercado.Application.Security;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Proyecto_Arquitectura_Micromercado.Application.Common;
@@ -10,6 +12,7 @@ using Proyecto_Arquitectura_Micromercado.Application.Products;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Suppliers;
 
+[Authorize(Roles = Roles.Administrador)]
 public sealed class IndexModel(
     ISupplierService supplierService,
     IProductService productService,

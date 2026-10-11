@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Proyecto_Arquitectura_Micromercado.Application.Security;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc;
 using Proyecto_Arquitectura_Micromercado.Application.Common;
@@ -8,6 +10,7 @@ using Proyecto_Arquitectura_Micromercado.Pages.Shared;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Products;
 
+[Authorize(Roles = Roles.Administrador)]
 public sealed class IndexModel(
     IProductService productService,
     ILogger<IndexModel> logger) : PageModel
