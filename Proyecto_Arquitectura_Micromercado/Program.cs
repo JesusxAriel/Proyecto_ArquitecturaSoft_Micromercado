@@ -29,9 +29,6 @@ builder.Services.AddRazorPages()
             _ => "Ingrese un número válido.");
     });
 
-// Autenticacion por cookie. La identidad (id, usuario y rol) viaja en los claims de la
-// cookie, que va firmada y cifrada: es la unica fuente de la auditoria. La expiracion es
-// deslizante, por lo que la sesion se cierra tras 30 minutos sin actividad.
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -44,8 +41,6 @@ builder.Services
         options.Cookie.HttpOnly = true;
     });
 
-// Session: variables de la sesion de trabajo (nombre para mostrar, hora de inicio). No
-// guarda identidad ni permisos. Se respalda en memoria porque es un unico servidor.
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
@@ -60,9 +55,6 @@ builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IUsuarioRepository, MySqlUsuarioRepository>();
 builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
 
-// Comprobante de venta: el repositorio solo lee, el generador HTML es un adaptador
-// intercambiable (un generador de PDF se registraria aqui en su lugar) y el reloj entra
-// como dependencia para poder fijar la hora en las pruebas.
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IComprobanteRepository, MySqlComprobanteRepository>();
 builder.Services.AddScoped<IComprobanteService, ComprobanteService>();

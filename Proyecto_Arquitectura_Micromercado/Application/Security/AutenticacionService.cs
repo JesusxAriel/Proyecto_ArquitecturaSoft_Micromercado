@@ -4,9 +4,6 @@ public sealed class AutenticacionService(
     IUsuarioRepository usuarios,
     IPasswordHasher hasher) : IAutenticacionService
 {
-    // Hash de relleno para verificar cuando el usuario no existe. Sin esto, responder a un
-    // usuario inexistente seria mucho mas rapido que a uno real, y esa diferencia de
-    // tiempo permitiria descubrir que nombres de usuario existen.
     private readonly Lazy<string> hashDeRelleno = new(() => hasher.Hash("relleno"));
 
     public async Task<UsuarioAutenticado?> AutenticarAsync(

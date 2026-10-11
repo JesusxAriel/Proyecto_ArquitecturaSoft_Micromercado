@@ -2,8 +2,6 @@ using Proyecto_Arquitectura_Micromercado.Application.Security;
 
 namespace Proyecto_Arquitectura_Micromercado.Application.Comprobantes;
 
-// El reloj llega por TimeProvider para que las pruebas puedan fijar la fecha y hora de
-// generacion sin depender del momento en que corren.
 public sealed class ComprobanteService(
     IComprobanteRepository repositorio,
     IUsuarioActual usuarioActual,
@@ -38,10 +36,6 @@ public sealed class ComprobanteService(
             usuarioActual.NombreUsuario);
     }
 
-    // Una venta puede traer varias filas del mismo producto, una por cada lote del que
-    // salio la mercaderia. El comprobante las muestra como una sola linea con la cantidad
-    // y el importe sumados. Se agrupa por producto y precio, y las lineas conservan el
-    // orden en que aparece cada producto por primera vez.
     private static IReadOnlyList<LineaComprobanteDto> AgruparPorProducto(
         IReadOnlyList<DetalleDeVenta> detalle) =>
         detalle

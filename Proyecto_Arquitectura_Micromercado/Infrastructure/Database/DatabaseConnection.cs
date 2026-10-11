@@ -11,9 +11,6 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Database
 
         private DatabaseConnection(string connectionString)
         {
-            // Allow User Variables permite fijar @motivo_cambio_precio antes de actualizar
-            // un precio (lo lee el trigger del historial). Se activa aqui para que no
-            // dependa de que cada persona lo escriba en su appsettings.json.
             ConnectionString = new MySqlConnectionStringBuilder(connectionString)
             {
                 AllowUserVariables = true
