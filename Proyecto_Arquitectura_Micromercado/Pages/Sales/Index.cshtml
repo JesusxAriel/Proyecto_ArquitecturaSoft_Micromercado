@@ -9,20 +9,28 @@
     <span class="badge bg-secondary">En preparación</span>
 </div>
 
-<p class="text-muted mb-4">Prepare el cliente y los productos de la venta. La búsqueda y el registro estarán disponibles en los próximos bloques.</p>
+<p class="text-muted mb-4">Busque y seleccione el cliente de la venta. La búsqueda de productos y el registro estarán disponibles en los próximos bloques.</p>
 
 <div class="row g-4">
     <div class="col-12 col-lg-4">
-        <section class="card shadow-sm h-100" aria-labelledby="clienteHeading">
+        <section id="buscadorClientes" class="card shadow-sm h-100" aria-labelledby="clienteHeading"
+                 data-busqueda-url="@Url.Page("/Sales/Index", "BuscarClientes")">
             <div class="card-body">
                 <h2 id="clienteHeading" class="h5 mb-3">Cliente</h2>
                 <div class="mb-3">
-                    <label asp-for="Input.IdentificacionCliente" class="form-label"></label>
+                    <label asp-for="Input.IdentificacionCliente" class="form-label">Buscar por CI/NIT o razón social</label>
                     <input asp-for="Input.IdentificacionCliente" class="form-control"
-                           placeholder="Ingrese la identificación" aria-describedby="clienteHelp" />
-                    <div id="clienteHelp" class="form-text">La búsqueda de clientes estará disponible próximamente.</div>
+                           placeholder="Ingrese CI/NIT o razón social" autocomplete="off" aria-describedby="clienteHelp" />
+                    <div id="clienteHelp" class="form-text">Se muestran hasta 20 clientes activos. Seleccione uno de los resultados.</div>
                 </div>
-                <p class="text-muted mb-0">Ningún cliente seleccionado.</p>
+                <p id="estadoBusquedaClientes" class="small text-muted" role="status" aria-live="polite"></p>
+                <ul id="resultadosClientes" class="list-group mb-3" aria-label="Resultados de clientes" aria-busy="false"></ul>
+                <input asp-for="Input.IdCliente" type="hidden" />
+                <div class="border rounded p-3 bg-light">
+                    <p id="clienteSeleccionado" class="mb-0" role="status" aria-live="polite">Ningún cliente seleccionado.</p>
+                    <button id="quitarCliente" type="button" class="btn btn-outline-secondary btn-sm mt-2" hidden>Quitar selección</button>
+                </div>
+                <noscript><p class="text-danger mt-3">Active JavaScript para buscar y seleccionar clientes.</p></noscript>
             </div>
         </section>
     </div>
@@ -87,3 +95,7 @@
         </section>
     </div>
 </div>
+
+@section Scripts {
+    <script src="~/js/ventas.js" asp-append-version="true"></script>
+}
