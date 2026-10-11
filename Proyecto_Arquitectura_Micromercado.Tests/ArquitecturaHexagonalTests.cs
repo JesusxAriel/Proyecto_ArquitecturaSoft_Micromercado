@@ -60,6 +60,79 @@ public class ArquitecturaHexagonalTests
                     "con el motor en memoria estos catch nunca se disparan.");
     }
 
+    // Las pruebas anteriores solo miran los "using" de los .cs. Esta tambien revisa las
+    // vistas (.cshtml), donde un @using o un @inject de infraestructura pasaria inadvertido,
+    // y cualquier mencion en codigo a Infrastructure o al motor de base de datos.
+    [Fact]
+    public void Pages_no_referencia_Infrastructure_ni_el_motor_de_base_de_datos()
+    {
+        AssertPaginasSinPatrones(
+            patrones:
+            [
+                new Regex(Regex.Escape(NsInfraestructura), RegexOptions.CultureInvariant),
+                new Regex(@"\bMySql\w*", RegexOptions.CultureInvariant),
+                new Regex(@"\bDatabaseConnection\b", RegexOptions.CultureInvariant)
+            ],
+            porque: "La UI es el adaptador de entrada: habla con Application y no conoce a los " +
+                    "adaptadores de salida (Infrastructure) ni al motor que hay detras.");
+    }
+
+    [Fact]
+    public void Pages_no_depende_de_repositorios()
+    {
+        AssertPaginasSinPatrones(
+            patrones: [new Regex(@"\bI[A-Z]\w*Repository\b", RegexOptions.CultureInvariant)],
+            porque: "Los repositorios son puertos de salida de Application. Una Page debe pedir " +
+                    "un servicio o una fachada, nunca saltarse la capa de aplicacion para leer " +
+                    "o escribir datos.");
+    }
+
+    // Revisa linea por linea los .cs y .cshtml de Pages, salvo los comentarios, y falla
+    // diciendo archivo y linea de cada coincidencia.
+    private static void AssertPaginasSinPatrones(Regex[] patrones, string porque)
+    {
+        var carpeta = Path.Combine(RaizDelProyecto(), "Pages");
+
+        Assert.True(Directory.Exists(carpeta), $"No se encontro la carpeta Pages en {carpeta}.");
+
+        var infracciones = new List<string>();
+        var archivos = Directory.EnumerateFiles(carpeta, "*.*", SearchOption.AllDirectories)
+            .Where(ruta => ruta.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) ||
+                           ruta.EndsWith(".cshtml", StringComparison.OrdinalIgnoreCase));
+
+        foreach (var archivo in archivos)
+        {
+            var lineas = File.ReadAllLines(archivo);
+
+            for (var i = 0; i < lineas.Length; i++)
+            {
+                var linea = lineas[i].TrimStart();
+
+                if (linea.StartsWith("//", StringComparison.Ordinal) ||
+                    linea.StartsWith("@*", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (patrones.Any(patron => patron.IsMatch(linea)))
+                {
+                    infracciones.Add(
+                        $"  {Path.GetRelativePath(RaizDelProyecto(), archivo)}:{i + 1} -> {linea.Trim()}");
+                }
+            }
+        }
+
+        Assert.True(
+            infracciones.Count == 0,
+            $"""
+            Pages tiene {infracciones.Count} referencia(s) prohibida(s).
+
+            {porque}
+
+            {string.Join(Environment.NewLine, infracciones)}
+            """);
+    }
+
     private static void AssertSinDependenciasHacia(
         string capa,
         string[] prohibidos,
