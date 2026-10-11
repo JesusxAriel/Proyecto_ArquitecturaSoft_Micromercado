@@ -7,7 +7,7 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.EnMemori
 // No hay nada que confirmar ni revertir: los repositorios en memoria escriben en listas
 // y no existe atomicidad que gestionar. Igual implementa el puerto para que el motor en
 // memoria sea completo, y asi un caso de uso que orqueste una transaccion (la venta de
-// la Parte 3, o la fachada IVentaFacade) se pueda probar sin base de datos.
+// la Parte 3, o las fachadas de venta y anulacion) se pueda probar sin base de datos.
 //
 // Lleva la cuenta del estado para que el contrato se comporte igual que en MySQL:
 // iniciar dos veces sin cerrar es un error de orquestacion en los dos motores, y
