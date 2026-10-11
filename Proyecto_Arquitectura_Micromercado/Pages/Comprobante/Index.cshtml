@@ -1,0 +1,11 @@
+@page "{idVenta:int}"
+@model Proyecto_Arquitectura_Micromercado.Pages.Comprobante.IndexModel
+@{
+    ViewData["Title"] = "Comprobante no disponible";
+}
+
+<div class="text-center py-5">
+    <h1 class="page-heading">Comprobante no disponible</h1>
+    <p class="text-muted">@Model.MensajeDeError</p>
+    <a class="btn btn-primary" asp-page="/Index">Volver al inicio</a>
+</div>
