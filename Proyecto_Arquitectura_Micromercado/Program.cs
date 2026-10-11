@@ -55,6 +55,8 @@ builder.Services.AddSession(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUsuarioActual, UsuarioActualDesdeClaims>();
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+builder.Services.AddScoped<IUsuarioRepository, MySqlUsuarioRepository>();
+builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
 
 // El Singleton de conexion se inicializa una sola vez y se registra como dependencia,
 // para que los repositorios la reciban por constructor en vez de leerla de un estatico
