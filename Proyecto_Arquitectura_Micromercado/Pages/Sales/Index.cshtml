@@ -9,7 +9,7 @@
     <span class="badge bg-secondary">En preparación</span>
 </div>
 
-<p class="text-muted mb-4">Busque y seleccione el cliente de la venta. La búsqueda de productos y el registro estarán disponibles en los próximos bloques.</p>
+<p class="text-muted mb-4">Busque y seleccione el cliente y el producto de la venta. El detalle y el registro estarán disponibles en los próximos bloques.</p>
 
 <div class="row g-4">
     <div class="col-12 col-lg-4">
@@ -36,23 +36,31 @@
     </div>
 
     <div class="col-12 col-lg-8">
-        <section class="card shadow-sm h-100" aria-labelledby="productoHeading">
+        <section id="buscadorProductos" class="card shadow-sm h-100" aria-labelledby="productoHeading"
+                 data-busqueda-url="@Url.Page("/Sales/Index", "BuscarProductos")">
             <div class="card-body">
                 <h2 id="productoHeading" class="h5 mb-3">Producto</h2>
                 <div class="row g-3">
                     <div class="col-12 col-md-8">
                         <label asp-for="Input.BusquedaProducto" class="form-label"></label>
                         <input asp-for="Input.BusquedaProducto" class="form-control"
-                               placeholder="Nombre o código del producto" aria-describedby="productoHelp" />
-                        <div id="productoHelp" class="form-text">La búsqueda de productos estará disponible próximamente.</div>
+                               placeholder="Nombre o presentación del producto" autocomplete="off" aria-describedby="productoHelp" />
+                        <div id="productoHelp" class="form-text">Busque por nombre, presentación, categoría o proveedor. El stock es informativo; se validará al registrar la venta.</div>
                     </div>
                     <div class="col-12 col-md-4">
                         <label asp-for="Input.Cantidad" class="form-label"></label>
                         <input asp-for="Input.Cantidad" class="form-control" type="number" min="1" step="1" />
                     </div>
                 </div>
+                <p id="estadoBusquedaProductos" class="small text-muted mt-3" role="status" aria-live="polite"></p>
+                <ul id="resultadosProductos" class="list-group mb-3" aria-label="Resultados de productos" aria-busy="false"></ul>
+                <input asp-for="Input.IdProducto" type="hidden" />
+                <div class="border rounded p-3 bg-light">
+                    <p id="productoSeleccionado" class="mb-0 text-break" role="status" aria-live="polite">Ningún producto seleccionado.</p>
+                    <button id="quitarProducto" type="button" class="btn btn-outline-secondary btn-sm mt-2" hidden>Quitar selección</button>
+                </div>
+                <noscript><p class="text-danger mt-3">Active JavaScript para buscar y seleccionar productos.</p></noscript>
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3">
-                    <p class="text-muted mb-0">Ningún producto seleccionado.</p>
                     <button type="button" class="btn btn-warning fw-semibold" disabled>
                         <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Agregar al detalle
                     </button>
