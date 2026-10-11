@@ -224,6 +224,17 @@ Los campos que deben revisarse o reemplazarse son:
 
 No incluya contraseñas reales en commits o documentación pública. En entornos compartidos se recomienda utilizar variables de entorno, User Secrets o un gestor de secretos.
 
+### 3. Usuarios de prueba
+
+El script crea dos usuarios con contraseñas protegidas con BCrypt. Estas credenciales son solo para desarrollo y pruebas; cámbielas antes de cualquier uso real.
+
+| Usuario | Contraseña | Rol | Acceso |
+|---|---|---|---|
+| `admin` | `admin123` | Administrador | Todo el sistema: inventario, categorías, proveedores y caja. |
+| `cajero1` | `cajero123` | Cajero | Solo caja y ventas: registro, historial y comprobante. |
+
+La sesión se cierra tras 30 minutos sin actividad. La identidad del usuario (id, nombre de usuario y rol) viaja en los claims de la cookie de autenticación y es la única fuente de los datos de auditoría; la `Session` solo guarda datos de conveniencia, como el nombre para mostrar y la hora de inicio.
+
 ## 🚀 Instalación y Ejecución Local
 
 ### Requisitos previos
@@ -297,6 +308,8 @@ La validación del servidor es la autoridad final y no depende exclusivamente de
 
 ## 🔐 Seguridad y consistencia
 
+- Contraseñas protegidas con BCrypt (factor de trabajo 11) mediante el puerto `IPasswordHasher`.
+- Autenticación por cookie con dos roles (Administrador y Cajero) y autorización por `[Authorize(Roles = ...)]`.
 - Uso de parámetros SQL para mitigar inyección SQL.
 - Uso de `@Html.AntiForgeryToken()` en formularios de modificación.
 - Separación de responsabilidades mediante interfaces e inyección de dependencias.
