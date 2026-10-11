@@ -202,7 +202,7 @@ El script debe ejecutarse antes de iniciar la aplicación para que exista la bas
 
 ### 2. Configurar `appsettings.json`
 
-Edite [`appsettings.json`](./Proyecto_Arquitectura_Micromercado/appsettings.json) y reemplace los valores de la cadena `MySqlConnection`:
+El archivo `appsettings.json` no se versiona porque contiene la contraseña local. Copie la plantilla [`appsettings.example.json`](./Proyecto_Arquitectura_Micromercado/appsettings.example.json) como `appsettings.json` en la misma carpeta y reemplace los valores de la cadena `MySqlConnection`:
 
 ```json
 {
