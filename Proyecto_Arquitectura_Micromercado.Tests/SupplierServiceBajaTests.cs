@@ -5,9 +5,6 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.EnMemoria;
 
 namespace Proyecto_Arquitectura_Micromercado.Tests;
 
-// Prueba que la regla "no se da de baja un proveedor con productos" la aplique el
-// SERVICIO. Antes vivia en el PageModel de Proveedores, asi que cualquier otra entrada al
-// sistema se la saltaba. Estas pruebas no pasan por ninguna pagina.
 public class SupplierServiceBajaTests
 {
     private static readonly LookupOption[] Catalogo = [new(1, "Catalogo")];

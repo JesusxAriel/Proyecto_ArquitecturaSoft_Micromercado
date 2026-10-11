@@ -14,10 +14,8 @@ public sealed class SupplierService(
     // Tras normalizar (sin +591), el teléfono guardado son 8 dígitos que inician con 6 o 7.
     private static readonly Regex TelefonoBolivia = new(@"^[67]\d{7}$", RegexOptions.CultureInvariant);
 
-    // Misma forma que valida el formulario: algo@dominio.ext, sin espacios.
     private static readonly Regex CorreoValido = new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.CultureInvariant);
 
-    // Coinciden con VARCHAR(150) de PROVEEDOR.nombreEmpresa y PROVEEDOR.correoReferencia.
     private const int LargoMaximo = 150;
 
     public Task<IReadOnlyList<SupplierListItem>> GetAllAsync(CancellationToken cancellationToken = default) =>
@@ -70,8 +68,6 @@ public sealed class SupplierService(
         }
     }
 
-    // Regla de negocio: un proveedor con productos activos no se puede dar de baja.
-    // Vive aquí y no en la página para que se cumpla entre cualquier entrada al sistema.
     public async Task<bool> SoftDeleteAsync(int id, CancellationToken cancellationToken = default)
     {
         if (id <= 0)

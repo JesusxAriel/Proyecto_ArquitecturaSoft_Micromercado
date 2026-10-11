@@ -4,8 +4,6 @@ using Proyecto_Arquitectura_Micromercado.Pages.Suppliers;
 
 namespace Proyecto_Arquitectura_Micromercado.Tests;
 
-// Fija que el formulario de proveedores siga mostrando los mismos mensajes que mostraba
-// cuando los atributos vivian en la entidad de Domain.
 public class SupplierFormModelTests
 {
     private static SupplierFormModel Valido() => new()

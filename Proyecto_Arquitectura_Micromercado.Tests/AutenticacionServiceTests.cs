@@ -4,8 +4,6 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Security;
 
 namespace Proyecto_Arquitectura_Micromercado.Tests;
 
-// Prueba la logica del login con el repositorio en memoria y el hasher real: no hace
-// falta base de datos ni navegador.
 public class AutenticacionServiceTests
 {
     private readonly BCryptPasswordHasher hasher = new();

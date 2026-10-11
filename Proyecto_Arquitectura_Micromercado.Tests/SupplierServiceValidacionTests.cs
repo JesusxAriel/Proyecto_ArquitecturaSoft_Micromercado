@@ -5,9 +5,6 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.EnMemoria;
 
 namespace Proyecto_Arquitectura_Micromercado.Tests;
 
-// Prueba que SupplierService aplique las reglas de negocio por su cuenta: ninguna depende
-// de que la pagina haya validado el formulario antes. Estas pruebas no pasan por ninguna
-// pagina ni por DataAnnotations.
 public class SupplierServiceValidacionTests
 {
     private readonly SupplierService servicio = new(

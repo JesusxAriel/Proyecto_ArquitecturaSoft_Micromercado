@@ -1,8 +1,5 @@
 ﻿namespace Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
 
-// Entidad del negocio. No lleva atributos de validación de pantalla: eso es del modelo del
-// formulario (Pages/Suppliers/SupplierFormModel) y las reglas de negocio las aplica
-// SupplierService.
 public sealed class Supplier
 {
     public int Id { get; set; }
