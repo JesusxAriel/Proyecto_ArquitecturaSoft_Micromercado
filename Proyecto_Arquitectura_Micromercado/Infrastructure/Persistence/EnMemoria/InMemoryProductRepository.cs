@@ -1,3 +1,5 @@
+using Proyecto_Arquitectura_Micromercado.Application.Security;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
@@ -16,9 +18,10 @@ public sealed class InMemoryProductRepository(
     IPriceHistoryRepository priceHistoryRepository,
     IEnumerable<LookupOption>? empaques = null,
     IEnumerable<LookupOption>? categorias = null,
-    IEnumerable<LookupOption>? proveedores = null) : IProductRepository
+    IEnumerable<LookupOption>? proveedores = null,
+    IUsuarioActual? usuarioActual = null) : IProductRepository
 {
-    private const int SystemAdminId = 1;
+    private readonly IUsuarioActual usuario = usuarioActual ?? new UsuarioActualEnMemoria();
 
     private readonly List<Product> productos = [];
     private readonly List<LookupOption> catalogoEmpaques = [.. empaques ?? []];
@@ -114,7 +117,7 @@ public sealed class InMemoryProductRepository(
                     MotivoCambio = string.IsNullOrWhiteSpace(product.MotivoCambio)
                         ? CambioDePrecio.MotivoPorDefecto
                         : product.MotivoCambio.Trim(),
-                    IdUsuario = SystemAdminId
+                    IdUsuario = usuario.Id
                 },
                 cancellationToken);
         }

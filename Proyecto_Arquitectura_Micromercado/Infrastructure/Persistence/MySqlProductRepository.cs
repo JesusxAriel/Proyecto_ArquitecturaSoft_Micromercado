@@ -1,3 +1,4 @@
+using Proyecto_Arquitectura_Micromercado.Application.Security;
 using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Common;
@@ -11,9 +12,9 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 // por inyeccion, quede dentro de esa transaccion sin recibirla por parametro.
 public sealed class MySqlProductRepository(
     MySqlUnidadDeTrabajo unidadDeTrabajo,
-    IPriceHistoryRepository priceHistoryRepository) : IProductRepository
+    IPriceHistoryRepository priceHistoryRepository,
+    IUsuarioActual usuarioActual) : IProductRepository
 {
-    private const int SystemAdminId = 1;
     private const int DuplicateKeyErrorNumber = 1062;
     private readonly IPriceHistoryRepository _priceHistoryRepository = priceHistoryRepository;
 
@@ -225,7 +226,7 @@ public sealed class MySqlProductRepository(
         await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
         await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         AddProductParameters(command, product);
-        command.Parameters.AddWithValue("@idUsuarioAdmin", SystemAdminId);
+        command.Parameters.AddWithValue("@idUsuarioAdmin", usuarioActual.Id);
 
         int generatedId;
         try
@@ -323,7 +324,7 @@ public sealed class MySqlProductRepository(
                     MotivoCambio = string.IsNullOrWhiteSpace(product.MotivoCambio)
                         ? CambioDePrecio.MotivoPorDefecto
                         : product.MotivoCambio.Trim(),
-                    IdUsuario = SystemAdminId
+                    IdUsuario = usuarioActual.Id
                 };
 
                 // Firma limpia del puerto: ya no se le pasa conexion ni transaccion.
@@ -358,13 +359,15 @@ public sealed class MySqlProductRepository(
     {
         const string sql = """
             UPDATE PRODUCTO
-            SET estaActivo = 0
+            SET estaActivo = 0,
+                idUsuarioActualizacion = @idUsuarioActualizacion
             WHERE id = @id AND estaActivo = 1;
             """;
 
         await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
         await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         command.Parameters.AddWithValue("@id", id);
+        command.Parameters.AddWithValue("@idUsuarioActualizacion", usuarioActual.Id);
         return await command.ExecuteNonQueryAsync(cancellationToken) == 1;
     }
 
