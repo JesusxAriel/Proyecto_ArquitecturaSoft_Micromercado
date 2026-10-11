@@ -9,7 +9,7 @@
     <span class="badge bg-secondary">En preparación</span>
 </div>
 
-<p class="text-muted mb-4">Busque y seleccione el cliente y el producto de la venta. El detalle y el registro estarán disponibles en los próximos bloques.</p>
+<p class="text-muted mb-4">Busque y seleccione el cliente y agregue productos al detalle temporal. El registro estará disponible en los próximos bloques.</p>
 
 <div class="row g-4">
     <div class="col-12 col-lg-4">
@@ -49,7 +49,7 @@
                     </div>
                     <div class="col-12 col-md-4">
                         <label asp-for="Input.Cantidad" class="form-label"></label>
-                        <input asp-for="Input.Cantidad" class="form-control" type="number" min="1" step="1" />
+                        <input asp-for="Input.Cantidad" class="form-control" type="number" min="1" step="1" required aria-describedby="estadoDetalle" />
                     </div>
                 </div>
                 <p id="estadoBusquedaProductos" class="small text-muted mt-3" role="status" aria-live="polite"></p>
@@ -61,10 +61,11 @@
                 </div>
                 <noscript><p class="text-danger mt-3">Active JavaScript para buscar y seleccionar productos.</p></noscript>
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3">
-                    <button type="button" class="btn btn-warning fw-semibold" disabled>
+                    <button id="agregarAlDetalle" type="button" class="btn btn-warning fw-semibold">
                         <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Agregar al detalle
                     </button>
                 </div>
+                <p id="estadoDetalle" class="small mt-3 mb-0" role="status" aria-live="polite"></p>
             </div>
         </section>
     </div>
@@ -73,19 +74,19 @@
         <section class="card shadow-sm" aria-labelledby="detalleHeading">
             <div class="card-body">
                 <h2 id="detalleHeading" class="h5 mb-2">Detalle temporal</h2>
-                <p id="detalleHelp" class="text-muted">Los productos agregados aparecerán aquí antes de registrar la venta.</p>
+                <p id="detalleHelp" class="text-muted">El detalle se mantiene solo en esta página y se pierde al recargarla.</p>
                 <div class="table-responsive rounded-3 border">
                     <table class="table table-hover align-middle mb-0" aria-labelledby="detalleHeading" aria-describedby="detalleHelp">
                         <thead>
                             <tr>
                                 <th scope="col">Producto</th>
-                                <th scope="col" class="text-center">Cantidad</th>
+                                <th scope="col">Presentación</th>
                                 <th scope="col" class="text-end">Precio unitario (Bs)</th>
+                                <th scope="col" class="text-center">Cantidad</th>
                                 <th scope="col" class="text-end">Subtotal (Bs)</th>
-                                <th scope="col" class="text-end">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="detalleTemporal">
                             <tr>
                                 <td colspan="5" class="text-center text-muted py-4">Todavía no hay productos en el detalle.</td>
                             </tr>
@@ -95,7 +96,7 @@
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
                     <p class="text-muted mb-0">El registro de ventas aún no está habilitado.</p>
                     <div class="d-flex flex-wrap align-items-center gap-3">
-                        <span class="fs-5 fw-semibold">Total: Bs 0,00</span>
+                        <span class="text-muted">Total general pendiente.</span>
                         <button type="button" class="btn btn-warning fw-semibold" disabled>Registrar venta</button>
                     </div>
                 </div>

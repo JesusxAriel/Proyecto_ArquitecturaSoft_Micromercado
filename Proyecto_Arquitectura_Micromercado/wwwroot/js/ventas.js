@@ -103,6 +103,12 @@
     const seleccionado = document.getElementById("productoSeleccionado");
     const quitar = document.getElementById("quitarProducto");
     const precio = new Intl.NumberFormat("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const cantidad = document.getElementById("Input_Cantidad");
+    const agregar = document.getElementById("agregarAlDetalle");
+    const tablaDetalle = document.getElementById("detalleTemporal");
+    const estadoDetalle = document.getElementById("estadoDetalle");
+    const detalleTemporal = [];
+    let productoSeleccionado = null;
     let temporizador;
     let consulta;
     let version = 0;
@@ -116,8 +122,68 @@
         });
     }
 
+    function mostrarEstadoDetalle(mensaje, esError = false) {
+        estadoDetalle.textContent = mensaje;
+        estadoDetalle.className = `small mt-3 mb-0 text-${esError ? "danger" : "success"}`;
+    }
+
+    agregar.addEventListener("click", () => {
+        if (!productoSeleccionado) {
+            mostrarEstadoDetalle("Seleccione un producto antes de agregarlo al detalle.", true);
+            return;
+        }
+
+        const unidades = cantidad.valueAsNumber;
+        if (!Number.isSafeInteger(unidades) || unidades <= 0 || !cantidad.validity.valid) {
+            mostrarEstadoDetalle("Ingrese una cantidad entera mayor a cero.", true);
+            cantidad.focus();
+            return;
+        }
+
+        if (detalleTemporal.some((item) => item.idProducto === productoSeleccionado.id)) {
+            mostrarEstadoDetalle("El producto ya está en el detalle. No se agregó otra fila.", true);
+            return;
+        }
+
+        const precioUnitario = Number(productoSeleccionado.precioVenta);
+        const subtotal = Math.round((precioUnitario * unidades + Number.EPSILON) * 100) / 100;
+        if (!Number.isFinite(precioUnitario) || !Number.isFinite(subtotal)) {
+            mostrarEstadoDetalle("El precio del producto no es válido. Seleccione el producto nuevamente.", true);
+            return;
+        }
+
+        const item = {
+            idProducto: productoSeleccionado.id,
+            nombre: productoSeleccionado.nombre,
+            presentacion: productoSeleccionado.presentacion,
+            precioUnitario,
+            cantidad: unidades,
+            subtotal
+        };
+        detalleTemporal.push(item);
+
+        if (detalleTemporal.length === 1) tablaDetalle.replaceChildren();
+        const fila = document.createElement("tr");
+        [
+            [item.nombre, "text-break"],
+            [item.presentacion, "text-break"],
+            [precio.format(item.precioUnitario), "text-end"],
+            [String(item.cantidad), "text-center"],
+            [precio.format(item.subtotal), "text-end"]
+        ].forEach(([valor, clase]) => {
+            const celda = document.createElement("td");
+            celda.textContent = valor;
+            celda.className = clase;
+            fila.append(celda);
+        });
+        tablaDetalle.append(fila);
+        mostrarEstadoDetalle(`${item.nombre} agregado al detalle temporal.`);
+    });
+
     quitar.addEventListener("click", () => {
         idProducto.value = "";
+        productoSeleccionado = null;
+        mostrarEstadoDetalle("");
         seleccionado.textContent = "Ningún producto seleccionado.";
         quitar.hidden = true;
         actualizarSeleccion();
@@ -174,6 +240,8 @@
                 boton.setAttribute("aria-label", `Seleccionar ${producto.nombre}, ${producto.presentacion}`);
                 boton.addEventListener("click", () => {
                     idProducto.value = String(producto.id);
+                    productoSeleccionado = producto;
+                    mostrarEstadoDetalle("");
                     seleccionado.textContent = `Producto seleccionado: ${producto.nombre} — ${resumen}`;
                     quitar.hidden = false;
                     actualizarSeleccion();
