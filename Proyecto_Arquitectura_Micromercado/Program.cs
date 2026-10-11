@@ -15,6 +15,11 @@ builder.Services.AddRazorPages()
     .AddMvcOptions(options =>
     {
         options.ModelBinderProviders.Insert(0, new DecimalModelBinderProvider());
+
+        // Cierra el enlace de modelo de los campos de estado y auditoria de las
+        // entidades: el navegador no puede imponerlos aunque los envie en el POST.
+        options.ModelMetadataDetailsProviders.Add(new CamposNoEnlazablesProvider());
+
         options.ModelBindingMessageProvider.SetValueMustBeANumberAccessor(
             _ => "Ingrese un número válido.");
     });

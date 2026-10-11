@@ -1,6 +1,7 @@
 using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Common;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.Errores;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
@@ -22,7 +23,10 @@ public sealed class MySqlUnidadDeTrabajo(DatabaseConnection conexion) : IUnidadD
 
     public bool HayTransaccionActiva => transaccion is not null;
 
-    public async Task IniciarAsync(CancellationToken cancellationToken = default)
+    // Los tres metodos del puerto traducen los errores del driver, porque a quien
+    // orquesta la transaccion (el VentaFacade de la Parte 3) solo le llegan tipos de
+    // Application. Los repositorios ya quedan cubiertos por su propio decorador.
+    public Task IniciarAsync(CancellationToken cancellationToken = default)
     {
         if (transaccion is not null)
         {
@@ -30,31 +34,40 @@ public sealed class MySqlUnidadDeTrabajo(DatabaseConnection conexion) : IUnidadD
                 "Ya hay una transaccion en curso en esta unidad de trabajo.");
         }
 
-        conexionDeTransaccion = conexion.CreateConnection();
-        await conexionDeTransaccion.OpenAsync(cancellationToken);
-        transaccion = await conexionDeTransaccion.BeginTransactionAsync(cancellationToken);
+        return ErroresDePersistencia.TraducirAsync(async () =>
+        {
+            conexionDeTransaccion = conexion.CreateConnection();
+            await conexionDeTransaccion.OpenAsync(cancellationToken);
+            transaccion = await conexionDeTransaccion.BeginTransactionAsync(cancellationToken);
+        });
     }
 
-    public async Task ConfirmarAsync(CancellationToken cancellationToken = default)
+    public Task ConfirmarAsync(CancellationToken cancellationToken = default)
     {
         if (transaccion is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        await transaccion.CommitAsync(cancellationToken);
-        await CerrarAsync();
+        return ErroresDePersistencia.TraducirAsync(async () =>
+        {
+            await transaccion.CommitAsync(cancellationToken);
+            await CerrarAsync();
+        });
     }
 
-    public async Task RevertirAsync(CancellationToken cancellationToken = default)
+    public Task RevertirAsync(CancellationToken cancellationToken = default)
     {
         if (transaccion is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        await transaccion.RollbackAsync(cancellationToken);
-        await CerrarAsync();
+        return ErroresDePersistencia.TraducirAsync(async () =>
+        {
+            await transaccion.RollbackAsync(cancellationToken);
+            await CerrarAsync();
+        });
     }
 
     // Entrega la conexion que corresponde usar en este momento.
@@ -63,17 +76,21 @@ public sealed class MySqlUnidadDeTrabajo(DatabaseConnection conexion) : IUnidadD
     // como ajeno, para que el repositorio que lo libere NO cierre la conexion de la
     // transaccion. Sin transaccion devuelve una conexion propia y de vida corta, igual
     // que antes de existir esta clase: el comportamiento de las lecturas no cambia.
-    internal async Task<AlquilerDeConexion> AlquilarAsync(CancellationToken cancellationToken)
+    internal Task<AlquilerDeConexion> AlquilarAsync(CancellationToken cancellationToken)
     {
         if (transaccion is not null && conexionDeTransaccion is not null)
         {
-            return new AlquilerDeConexion(conexionDeTransaccion, transaccion, esPropia: false);
+            return Task.FromResult(
+                new AlquilerDeConexion(conexionDeTransaccion, transaccion, esPropia: false));
         }
 
-        var conexionNueva = conexion.CreateConnection();
-        await conexionNueva.OpenAsync(cancellationToken);
+        return ErroresDePersistencia.TraducirAsync(async () =>
+        {
+            var conexionNueva = conexion.CreateConnection();
+            await conexionNueva.OpenAsync(cancellationToken);
 
-        return new AlquilerDeConexion(conexionNueva, null, esPropia: true);
+            return new AlquilerDeConexion(conexionNueva, null, esPropia: true);
+        });
     }
 
     // Si alguien olvida confirmar o revertir, el contenedor de dependencias libera la

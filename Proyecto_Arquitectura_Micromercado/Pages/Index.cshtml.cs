@@ -1,4 +1,4 @@
-using MySql.Data.MySqlClient;
+using Proyecto_Arquitectura_Micromercado.Application.Common;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -28,7 +28,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages
                     .Take(5)
                     .ToList();
             }
-            catch (MySqlException)
+            catch (ErrorDePersistenciaException)
             {
                 ActiveProductCount = 0;
                 LowStockCount = 0;

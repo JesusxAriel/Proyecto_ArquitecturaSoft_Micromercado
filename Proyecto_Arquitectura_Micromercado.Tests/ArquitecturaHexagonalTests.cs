@@ -46,12 +46,11 @@ public class ArquitecturaHexagonalTests
             porque: "Los adaptadores de salida no pueden conocer al adaptador de entrada.");
     }
 
-    // Queda deshabilitada a proposito: hoy las Pages capturan MySqlException en 8 lugares
-    // (Pages/Index.cshtml.cs, Pages/Products/Index.cshtml.cs y Pages/Suppliers/Index.cshtml.cs),
-    // o sea el adaptador de entrada depende del driver del adaptador de salida. Se corrige en
-    // el bloque D del plan, traduciendo el error a una excepcion propia de Application; al
-    // hacerlo hay que quitar este Skip y la prueba debe pasar.
-    [Fact(Skip = "Pendiente del bloque D: quitar los 8 catch (MySqlException) de las Pages.")]
+    // Estuvo deshabilitada mientras las Pages capturaban MySqlException en 8 lugares, o sea
+    // mientras el adaptador de entrada dependia del driver del adaptador de salida. Ya se
+    // corrigio: los adaptadores traducen sus errores a ErrorDePersistenciaException y la UI
+    // captura esa. Si alguien vuelve a capturar el driver en una pagina, esta prueba falla.
+    [Fact]
     public void Pages_no_depende_del_driver_de_base_de_datos()
     {
         AssertSinDependenciasHacia(
