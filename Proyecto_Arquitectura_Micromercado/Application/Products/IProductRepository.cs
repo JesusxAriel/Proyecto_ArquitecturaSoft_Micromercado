@@ -7,6 +7,7 @@ public interface IProductRepository :
     IRepositorioBase<Product, ProductListItem, int>,
     IConListadoPaginado,
     IConVerificacionDeNombreYEmpaque,
+    IConConsultaPorProveedor,
     IConCatalogo
 {
 }

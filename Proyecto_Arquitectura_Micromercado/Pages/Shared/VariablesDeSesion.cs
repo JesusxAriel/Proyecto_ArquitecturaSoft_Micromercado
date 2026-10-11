@@ -1,4 +1,4 @@
-namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
+namespace Proyecto_Arquitectura_Micromercado.Pages.Shared;
 
 // Claves de las variables que se guardan en Session al iniciar sesion. Son datos de
 // conveniencia para la interfaz; la identidad para auditar sale de los claims.

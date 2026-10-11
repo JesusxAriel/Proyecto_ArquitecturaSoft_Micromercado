@@ -4,7 +4,7 @@
 
 PuntoMarket es una aplicación web para la gestión operativa de un micromercado. Centraliza la administración de productos, inventario, categorías, proveedores, precios y operaciones relacionadas con el control de caja.
 
-El sistema está desarrollado con ASP.NET Core Razor Pages sobre .NET 10 y utiliza una arquitectura monolítica modular en N-Capas. La separación entre Presentation, Application, Domain e Infrastructure permite mantener el proyecto organizado, facilitar el trabajo colaborativo y ampliar funcionalidades sin mezclar la interfaz, las reglas de negocio y el acceso a datos.
+El sistema está desarrollado con ASP.NET Core Razor Pages sobre .NET 10 y combina dos patrones de arquitectura: **monolito** y **arquitectura hexagonal**. Es un único proyecto desplegable cuyas carpetas se organizan por **responsabilidad técnica** (presentación, aplicación, dominio e infraestructura), no por módulos de negocio. La regla de dependencia de la hexagonal mantiene las reglas del negocio libres de la interfaz y del acceso a datos.
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -29,53 +29,41 @@ La configuración del proyecto se encuentra en [`Proyecto_Arquitectura_Micromerc
 El repositorio se organiza de la siguiente manera:
 
 ```text
-Proyecto_Arquitectura_Micromercado - copia/
+PuntoMarket/
 ├── README.md
 ├── doc/
-│   └── .gitkeep
 ├── bdMicroMercadoArqui.sql
 ├── Proyecto_Arquitectura_Micromercado.slnx
+├── Proyecto_Arquitectura_Micromercado.Tests/
 └── Proyecto_Arquitectura_Micromercado/
-    ├── Application/
-    │   ├── Categories/
-    │   ├── Products/
-    │   └── Suppliers/
-    ├── Domain/
-    │   ├── Categories/
-    │   ├── Products/
-    │   └── Suppliers/
-    ├── Infrastructure/
-    │   ├── Persistence/
-    │   └── Web/
-    ├── Pages/
-    │   ├── Categories/
-    │   ├── Products/
-    │   ├── Suppliers/
-    │   │   ├── Index.cshtml
-    │   │   └── Index.cshtml.cs
-    │   └── Shared/
-    ├── Properties/
-    ├── Validations/
+    ├── Domain/                  entidades, excepciones y reglas puras del negocio
+    ├── Application/             casos de uso y puertos
+    │   ├── Facades/             las tres fachadas del proceso de venta
+    │   ├── Security/            login, IUsuarioActual, IPasswordHasher, roles
+    │   └── Common/              IUnidadDeTrabajo, paginación y contratos comunes
+    ├── Infrastructure/          adaptadores de salida
+    │   ├── Factories/           Factory Method de repositorios
+    │   ├── Persistence/         repositorios MySQL, en memoria y decoradores de errores
+    │   ├── Database/            DatabaseConnection
+    │   ├── Security/            adaptador BCrypt
+    │   └── Web/                 adaptadores web (usuario actual, binders)
+    ├── Pages/                   adaptador de entrada (Razor Pages)
     ├── wwwroot/
     ├── Program.cs
-    ├── appsettings.json
+    ├── appsettings.example.json
     └── Proyecto_Arquitectura_Micromercado.csproj
 ```
 
 ### Responsabilidad de las carpetas
 
-- `Pages/`: capa de presentación. Contiene las vistas `.cshtml`, sus PageModels y los handlers de las solicitudes.
-- `Pages/Products/`: catálogo, inventario, formularios de productos e historial de precios.
-- `Pages/Categories/`: administración de categorías.
-- `Pages/Suppliers/`: administración de proveedores.
-- `Pages/Shared/`: layout, navbar y recursos Razor compartidos.
-- `Application/`: contratos y servicios de aplicación para Productos, Categorías y Proveedores.
-- `Domain/`: entidades del negocio, DTOs y validadores específicos.
-- `Infrastructure/Persistence/`: repositorios concretos que ejecutan SQL contra MySQL.
-- `Infrastructure/Web/`: adaptadores web, incluido `DecimalModelBinder`.
-- `Validations/`: espacio reservado para validaciones transversales de la solución.
+- `Pages/`: adaptador de entrada. Vistas `.cshtml`, PageModels y handlers HTTP. Solo conoce a `Application`.
+- `Application/`: casos de uso (servicios y fachadas) y los puertos que el resto del sistema debe implementar.
+- `Domain/`: entidades, excepciones de negocio y reglas que no dependen de ninguna tecnología.
+- `Infrastructure/`: adaptadores de salida que implementan los puertos de `Application` (MySQL, BCrypt, claims de la cookie).
 - `wwwroot/`: CSS, JavaScript, imágenes y demás recursos estáticos.
-- `doc/`: carpeta destinada al informe y documentación del proyecto.
+- `doc/`: informe y documentación del proyecto.
+
+Dentro de cada capa, las subcarpetas (`Products`, `Categories`, `Suppliers`) solo agrupan archivos por el recurso que gestionan; no son módulos independientes. Comparten el mismo ensamblado, el mismo contenedor de dependencias y la misma base de datos.
 
 ### CRUD centralizado de Proveedores
 
@@ -89,48 +77,73 @@ La vista contiene los modales de:
 
 Cada modal utiliza `asp-page-handler="Create"`, `asp-page-handler="Edit"` o `asp-page-handler="Delete"`. Los handlers correspondientes reciben los formularios y delegan las operaciones en `ISupplierService`. No se necesitan páginas independientes para estas tres operaciones.
 
-## 🏗️ Arquitectura en N-Capas
+## 🏗️ Arquitectura: monolito hexagonal por responsabilidad técnica
 
-La aplicación implementa una arquitectura monolítica modular con cuatro capas lógicas:
+### Flujo de dependencias
 
-### Presentation
+```text
+Pages (adaptador de entrada) ──► Application (puertos, servicios, fachadas) ──► Domain
+                                        ▲
+Infrastructure (adaptadores de salida) ─┘  implementa los puertos de salida
+```
 
-Está representada por `Pages/`. Las vistas Razor muestran la información y los PageModels coordinan cada solicitud. Esta capa recibe entradas, valida `ModelState`, llama a los servicios y devuelve una página o una redirección.
+- `Pages` depende de `Application` y nunca de `Infrastructure` ni de los repositorios.
+- `Application` depende de `Domain` y define los puertos; no conoce a `Infrastructure` ni a `Pages`.
+- `Infrastructure` depende de `Application` para implementar sus puertos (`IProductRepository`, `IUnidadDeTrabajo`, `IUsuarioActual`, `IPasswordHasher`).
+- `Domain` no depende de nadie.
 
-### Application
+Esta regla se comprueba automáticamente en `ArquitecturaHexagonalTests`, que revisa los `using` de `Domain`, `Application` e `Infrastructure` y también las vistas y PageModels de `Pages`. Si alguien la rompe, la prueba falla e indica archivo y línea.
 
-Está representada por `Application/`. Sus interfaces (`IProductService`, `ICategoryService` e `ISupplierService`) definen los casos de uso. Las implementaciones normalizan datos, aplican reglas de negocio y delegan la persistencia en repositorios.
+### Puertos
 
-### Domain
+| Tipo | Puertos |
+|---|---|
+| De entrada (casos de uso) | `IProductService`, `ICategoryService`, `ISupplierService`, `IAutenticacionService` y las fachadas |
+| De salida (lo que `Infrastructure` implementa) | `IProductRepository`, `ICategoryRepository`, `ISupplierRepository`, `IPriceHistoryRepository`, `IUsuarioRepository`, `IUnidadDeTrabajo`, `IUsuarioActual`, `IPasswordHasher` |
 
-Está representada por `Domain/`. Contiene `Product`, `Category`, `Supplier`, `ProductPriceHistory` y los DTOs relacionados. Las entidades expresan propiedades, anotaciones y validaciones propias del negocio sin depender de MySQL ni de Razor Pages.
+### Fachadas del proceso de venta (Facade)
 
-### Infrastructure
+La carpeta `Application/Facades/` define las tres fachadas acordadas para el proceso principal:
 
-Está representada por `Infrastructure/`. Contiene `MySqlProductRepository`, `MySqlCategoryRepository`, `MySqlSupplierRepository` y los adaptadores técnicos. Esta capa implementa las interfaces de persistencia con ADO.NET y consultas parametrizadas.
+| Fachada | Quién la usa | Rol |
+|---|---|---|
+| `IFachadaVenta` | Las Razor Pages | Registrar una venta completa de forma atómica. |
+| `IFachadaAnulacion` | Las Razor Pages | Anular una venta y devolver el stock. |
+| `IFachadaActualizacionStockProducto` | Solo las dos anteriores | Concentrar los cambios de stock; ambas la consumen bajo la misma `IUnidadDeTrabajo`. |
+
+La Page conoce una sola interfaz y llama un método; la coordinación de colaboradores y de la transacción queda dentro de la fachada. Por ahora están definidas solo como estructura: sus implementaciones, sus firmas finales y su registro en `Program.cs` corresponden a la parte transaccional del proyecto.
+
+### Patrones de diseño
+
+- **Facade:** las tres fachadas descritas arriba.
+- **Factory Method:** `Infrastructure/Factories/`. `CreatorRepositorio<T>` es el creador abstracto y cada `Creator*Repository*` concreto (MySQL o en memoria) decide qué repositorio construir. `Program.cs` es el único lugar donde se elige el motor de persistencia.
+- **Repository:** los puertos `I*Repository` aíslan al negocio del SQL.
+- **Decorator:** `Infrastructure/Persistence/Errores/` envuelve cada repositorio MySQL para traducir los errores del driver a `ErrorDePersistenciaException`.
+- **Unit of Work:** `IUnidadDeTrabajo` y `MySqlUnidadDeTrabajo` delimitan una transacción compartida por varios repositorios.
+- **Singleton:** `DatabaseConnection` guarda la cadena de conexión en una única instancia, creada una sola vez al arrancar. Existe para que la configuración de acceso a la base viva en un solo lugar inmutable. Además se registra en el contenedor de dependencias para que los repositorios la reciban por constructor y se puedan probar con otra cadena.
 
 ### Flujo de una operación
 
 1. El usuario completa un formulario o modal Razor.
 2. El PageModel recibe la solicitud mediante un handler `OnPostAsync`.
 3. ASP.NET Core ejecuta el model binding y las validaciones.
-4. El PageModel invoca un servicio de `Application`.
-5. El servicio normaliza los datos y aplica reglas de negocio.
-6. El repositorio de `Infrastructure` abre una conexión MySQL y ejecuta SQL parametrizado.
-7. El resultado vuelve al PageModel, que muestra un mensaje o redirige a la página correspondiente.
+4. El PageModel invoca un servicio o una fachada de `Application`.
+5. Application normaliza los datos, aplica las reglas de negocio y llama a los puertos de salida.
+6. El adaptador de `Infrastructure` abre una conexión MySQL y ejecuta SQL parametrizado.
+7. El resultado vuelve al PageModel, que muestra un mensaje o redirige.
 
-Las dependencias se registran en [`Program.cs`](./Proyecto_Arquitectura_Micromercado/Program.cs):
+Las dependencias se registran en [`Program.cs`](./Proyecto_Arquitectura_Micromercado/Program.cs). Por ejemplo, el repositorio de productos se resuelve a través de su creador:
 
 ```csharp
-builder.Services.AddScoped<IProductRepository, MySqlProductRepository>();
+builder.Services.AddScoped<CreatorProductRepository, CreatorProductRepositoryMySql>();
+builder.Services.AddScoped<IProductRepository>(sp =>
+    sp.GetRequiredService<CreatorProductRepository>().ObtenerRepositorio());
 builder.Services.AddScoped<IProductService, ProductService>();
-
-builder.Services.AddScoped<ICategoryRepository, MySqlCategoryRepository>();
-builder.Services.AddScoped<ICategoryService, CategoryService>();
-
-builder.Services.AddScoped<ISupplierRepository, MySqlSupplierRepository>();
-builder.Services.AddScoped<ISupplierService, SupplierService>();
 ```
+
+### Nota sobre el stock
+
+El stock no es una columna de `PRODUCTO`: se lleva por lote en `LOTE.cantidadDisponible`, con salida FEFO (primero en vencer, primero en salir). El stock de un producto es la suma de sus lotes vigentes y se consulta con la vista `vw_productos_con_stock`. Por eso la venta descuenta de `LOTE` y la anulación restaura en `LOTE`. Esta decisión fue aprobada por el magister.
 
 ## ✨ Funcionalidades Principales
 
@@ -324,7 +337,7 @@ La validación del servidor es la autoridad final y no depende exclusivamente de
 
 ## 🎓 Justificación de la arquitectura
 
-La arquitectura en N-Capas permite mantener una aplicación monolítica fácil de ejecutar y, al mismo tiempo, separar la presentación, los casos de uso, el dominio y la persistencia. Esta decisión es adecuada para un sistema de gestión de micromercado porque evita la complejidad operativa de los microservicios cuando el alcance del sistema todavía puede resolverse dentro de una única aplicación.
+El monolito hexagonal permite mantener una aplicación fácil de ejecutar y, al mismo tiempo, separar por responsabilidad técnica la presentación, los casos de uso, el dominio y la persistencia, con la dependencia siempre apuntando hacia el núcleo. Esta decisión es adecuada para un sistema de gestión de micromercado porque evita la complejidad operativa de los microservicios cuando el alcance del sistema todavía puede resolverse dentro de una única aplicación.
 
 La estructura favorece el trabajo colaborativo: cada equipo puede trabajar en una funcionalidad o capa concreta, las interfaces reducen el acoplamiento y los repositorios aíslan las consultas SQL. Además, el uso de operaciones asíncronas evita bloquear los hilos de la aplicación durante el acceso a MySQL.
 

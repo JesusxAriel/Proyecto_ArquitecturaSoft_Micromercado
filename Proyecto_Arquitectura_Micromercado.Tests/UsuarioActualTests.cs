@@ -3,6 +3,7 @@ using Proyecto_Arquitectura_Micromercado.Application.Security;
 using Proyecto_Arquitectura_Micromercado.Domain.Categories;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.EnMemoria;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
+using Proyecto_Arquitectura_Micromercado.Pages.Shared;
 
 namespace Proyecto_Arquitectura_Micromercado.Tests;
 
@@ -12,7 +13,7 @@ public class UsuarioActualTests
     {
         var contexto = new DefaultHttpContext
         {
-            User = ClaimsDeIdentidad.CrearPrincipal(id, nombre, rol, "Cookies")
+            User = PrincipalDeSesion.Crear(id, nombre, rol, "Cookies")
         };
 
         return new UsuarioActualDesdeClaims(new HttpContextAccessor { HttpContext = contexto });

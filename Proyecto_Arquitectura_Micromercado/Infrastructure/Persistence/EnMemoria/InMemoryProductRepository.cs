@@ -153,6 +153,11 @@ public sealed class InMemoryProductRepository(
         return Task.FromResult(existe);
     }
 
+    public Task<bool> ExistenProductosActivosDelProveedorAsync(
+        int idProveedor,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(Activos().Any(p => p.IdProveedor == idProveedor));
+
     public Task<IReadOnlyList<LookupOption>> GetPackagingsAsync(CancellationToken cancellationToken = default) =>
         Catalogo(catalogoEmpaques);
 

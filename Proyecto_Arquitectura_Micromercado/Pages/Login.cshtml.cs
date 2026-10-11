@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Proyecto_Arquitectura_Micromercado.Application.Common;
 using Proyecto_Arquitectura_Micromercado.Application.Security;
-using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
+using Proyecto_Arquitectura_Micromercado.Pages.Shared;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages;
 
@@ -59,7 +59,7 @@ public sealed class LoginModel(IAutenticacionService autenticacion) : PageModel
         // Se descarta cualquier sesion anterior antes de emitir la nueva identidad.
         HttpContext.Session.Clear();
 
-        var principal = ClaimsDeIdentidad.CrearPrincipal(
+        var principal = PrincipalDeSesion.Crear(
             usuario.Id,
             usuario.NombreUsuario,
             usuario.Rol,
