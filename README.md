@@ -147,7 +147,33 @@ El stock no es una columna de `PRODUCTO`: se lleva por lote en `LOTE.cantidadDis
 
 ## 🧾 Comprobante de venta
 
-El comprobante de una venta está disponible en `/Comprobante/{idVenta}` para los roles Administrador y Cajero.
+El comprobante de una venta está disponible en `/Comprobante/{idVenta}` para los roles Administrador y Cajero. Es un documento HTML imprimible, sin el menú del sitio, con el logo y los colores del proyecto. Muestra el comprobante y la fecha de la venta, el CI/NIT y la razón social del cliente, el detalle, el total (también en letras) y, al pie, la fecha y hora de generación con el usuario que genera el reporte, que no es necesariamente quien registró la venta. Si la venta está anulada, lo indica de forma visible; si no existe, muestra un mensaje claro.
+
+### Piezas y puertos
+
+| Pieza | Capa | Rol |
+|---|---|---|
+| `IComprobanteService` / `ComprobanteService` | Application | Arma el `ComprobanteDto` con la fecha y hora actuales (`TimeProvider`) y el usuario actual (`IUsuarioActual`). |
+| `IComprobanteRepository` | Application (puerto de salida) | Lectura de la venta y su detalle. Es un puerto nuevo y de solo lectura: no altera ningún repositorio existente. |
+| `IGeneradorComprobante` | Application (puerto de salida) | Convierte un `ComprobanteDto` en un documento. |
+| `MySqlComprobanteRepository` / `InMemoryComprobanteRepository` | Infrastructure | Adaptadores del puerto de lectura, con SQL parametrizado. |
+| `GeneradorComprobanteHtml` | Infrastructure | Adaptador HTML del generador, con su propio CSS de pantalla y de impresión. Escapa todo texto que viene de la base de datos. |
+| `Pages/Comprobante/Index` | Pages | Solo conoce los puertos de Application. Devuelve el HTML del generador. |
+| `MontoEnLetras` | Application | Convierte el total a letras en bolivianos, por ejemplo `Son Treinta y Un 00/100 Bolivianos`. |
+
+### Agrupación por producto
+
+Como el stock se lleva por lote, una venta puede tener varias filas de `DETALLE_VENTA` del mismo producto, una por lote. El adaptador de lectura las devuelve sin agrupar y `ComprobanteService` las agrupa por producto y precio: suma la cantidad y el importe para que el comprobante muestre una sola línea por producto. La regla vive en Application y no en el SQL, de modo que se prueba sin base de datos.
+
+### Cambiar a PDF
+
+Como la página y el servicio solo conocen `IGeneradorComprobante`, generar un PDF consiste en escribir otro adaptador que implemente ese puerto y cambiar su registro en [`Program.cs`](./Proyecto_Arquitectura_Micromercado/Program.cs):
+
+```csharp
+builder.Services.AddSingleton<IGeneradorComprobante, GeneradorComprobanteHtml>();
+```
+
+Habría que ajustar la página para devolver el formato nuevo, porque hoy responde con `text/html`.
 
 ### Cómo abrirlo tras guardar una venta
 
