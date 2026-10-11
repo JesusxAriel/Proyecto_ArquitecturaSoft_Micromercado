@@ -18,6 +18,7 @@
         idCliente.value = "";
         seleccionado.textContent = "Ningún cliente seleccionado.";
         quitar.hidden = true;
+        idCliente.dispatchEvent(new Event("change"));
     });
 
     entrada.addEventListener("keydown", (event) => {
@@ -73,6 +74,7 @@
                     idCliente.value = String(cliente.id);
                     seleccionado.textContent = `Cliente seleccionado: ${cliente.razonSocial} — CI/NIT: ${cliente.nitCi}`;
                     quitar.hidden = false;
+                    idCliente.dispatchEvent(new Event("change"));
                 });
                 fila.append(nombre, documento, boton);
                 resultados.append(fila);
@@ -111,6 +113,17 @@
     const productosDistintos = document.getElementById("productosDistintos");
     const unidadesTotales = document.getElementById("unidadesTotales");
     const totalGeneral = document.getElementById("totalGeneral");
+    const idCliente = document.getElementById("Input_IdCliente");
+    const clienteSeleccionado = document.getElementById("clienteSeleccionado");
+    const registrarVenta = document.getElementById("registrarVenta");
+    const confirmarVenta = document.getElementById("confirmarVenta");
+    const modalConfirmacion = document.getElementById("confirmarVentaModal");
+    const confirmacionCliente = document.getElementById("confirmacionCliente");
+    const confirmacionProductos = document.getElementById("confirmacionProductosDistintos");
+    const confirmacionUnidades = document.getElementById("confirmacionUnidadesTotales");
+    const confirmacionTotal = document.getElementById("confirmacionTotalGeneral");
+    const estadoConfirmacion = document.getElementById("estadoConfirmacionVenta");
+    const confirmacionModal = new bootstrap.Modal(modalConfirmacion);
     const modalEdicion = document.getElementById("editarCantidadModal");
     const formularioEdicion = document.getElementById("editarCantidadForm");
     const productoEdicion = document.getElementById("editarCantidadProducto");
@@ -192,7 +205,36 @@
         productosDistintos.textContent = String(detalleTemporal.length);
         unidadesTotales.textContent = String(unidades);
         totalGeneral.textContent = (totalCentavos / 100).toFixed(2);
+        actualizarConfirmacionVenta();
     }
+
+    function ventaListaParaConfirmar() {
+        return idCliente.value.trim() !== "" && detalleTemporal.length > 0;
+    }
+
+    function actualizarConfirmacionVenta() {
+        const lista = ventaListaParaConfirmar();
+        registrarVenta.disabled = !lista;
+        confirmarVenta.disabled = !lista;
+        confirmacionCliente.textContent = clienteSeleccionado.textContent;
+        confirmacionProductos.textContent = productosDistintos.textContent;
+        confirmacionUnidades.textContent = unidadesTotales.textContent;
+        confirmacionTotal.textContent = totalGeneral.textContent;
+        estadoConfirmacion.textContent = "";
+        estadoConfirmacion.hidden = true;
+    }
+
+    idCliente.addEventListener("change", actualizarConfirmacionVenta);
+    registrarVenta.addEventListener("click", () => {
+        actualizarResumenVenta();
+        if (!ventaListaParaConfirmar()) return;
+        confirmacionModal.show();
+    });
+    confirmarVenta.addEventListener("click", () => {
+        if (!ventaListaParaConfirmar()) return;
+        estadoConfirmacion.textContent = "La venta está lista para ser enviada al backend.";
+        estadoConfirmacion.hidden = false;
+    });
 
     actualizarResumenVenta();
 

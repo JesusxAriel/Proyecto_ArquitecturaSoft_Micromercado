@@ -101,9 +101,9 @@
                     <p class="fw-semibold mb-0">Total general: Bs <span id="totalGeneral">0.00</span></p>
                 </section>
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
-                    <p class="text-muted mb-0">El registro de ventas aún no está habilitado.</p>
+                    <p class="text-muted mb-0">Revise la venta antes de enviarla al backend. El guardado aún no está habilitado.</p>
                     <div class="d-flex flex-wrap align-items-center gap-3">
-                        <button type="button" class="btn btn-warning fw-semibold" disabled>Registrar venta</button>
+                        <button id="registrarVenta" type="button" class="btn btn-warning fw-semibold" disabled>Registrar venta</button>
                     </div>
                 </div>
             </div>
@@ -130,6 +130,29 @@
                 <button type="submit" class="btn btn-primary">Guardar cambios</button>
             </div>
         </form>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmarVentaModal" tabindex="-1" aria-labelledby="confirmarVentaTitulo" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="confirmarVentaTitulo" class="modal-title fs-5">Confirmar venta temporal</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmacionCliente" class="text-break"></p>
+                <p class="mb-1">Productos distintos: <span id="confirmacionProductosDistintos">0</span></p>
+                <p class="mb-1">Unidades totales: <span id="confirmacionUnidadesTotales">0</span></p>
+                <p class="fw-semibold">Total general: Bs <span id="confirmacionTotalGeneral">0.00</span></p>
+                <p class="small text-muted">Esta confirmación es visual. El guardado de la venta aún no está habilitado.</p>
+                <p id="estadoConfirmacionVenta" class="alert alert-info mb-0" role="status" aria-live="polite" hidden></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button id="confirmarVenta" type="button" class="btn btn-primary">Confirmar venta</button>
+            </div>
+        </div>
     </div>
 </div>
 
