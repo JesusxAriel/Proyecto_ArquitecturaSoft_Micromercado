@@ -70,6 +70,7 @@ public class ComprobanteTests
         Assert.Equal("JUAN PEREZ VARGAS", comprobante.RazonSocialCliente);
         Assert.Equal(new DateTime(2030, 6, 23, 9, 58, 0), comprobante.FechaVenta);
         Assert.Equal(20.50m, comprobante.Total);
+        Assert.Equal("Son Veinte 50/100 Bolivianos", comprobante.TotalEnLetras);
         Assert.Equal(MomentoDeGeneracion, comprobante.FechaGeneracion);
         Assert.Equal("cajero1", comprobante.UsuarioGenerador);
         Assert.False(comprobante.EstaAnulada);
@@ -184,6 +185,7 @@ public class ComprobanteTests
 
         Assert.Contains("COMPROBANTE DE VENTA", html);
         Assert.Contains("28,00", html);
+        Assert.Contains("Son Veintiocho 00/100 Bolivianos", html);
         Assert.Contains("cajero1", html);
         Assert.Contains("23/06/2030", html);
         Assert.Contains("10:15:45", html);

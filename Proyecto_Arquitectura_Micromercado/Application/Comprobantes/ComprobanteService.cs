@@ -33,6 +33,7 @@ public sealed class ComprobanteService(
             venta.Estado,
             AgruparPorProducto(venta.Detalle),
             venta.MontoTotal,
+            MontoEnLetras.Convertir(venta.MontoTotal),
             reloj.GetLocalNow().DateTime,
             usuarioActual.NombreUsuario);
     }

@@ -45,6 +45,7 @@ public sealed record ComprobanteDto(
     string Estado,
     IReadOnlyList<LineaComprobanteDto> Lineas,
     decimal Total,
+    string TotalEnLetras,
     DateTime FechaGeneracion,
     string UsuarioGenerador)
 {

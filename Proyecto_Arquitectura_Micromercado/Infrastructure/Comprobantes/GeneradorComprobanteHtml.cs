@@ -77,6 +77,7 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
         html.AppendLine($"<td colspan=\"3\" class=\"num total\">Total Bs.:</td><td class=\"num total\">{Dinero(comprobante.Total)}</td>");
         html.AppendLine("</tr></tfoot>");
         html.AppendLine("</table>");
+        html.AppendLine($"<p class=\"letras\">{Esc(comprobante.TotalEnLetras)}</p>");
 
         html.AppendLine("<footer class=\"pie\">");
         html.AppendLine($"<p>Generado el {comprobante.FechaGeneracion.ToString("dd/MM/yyyy", Cultura)} a las {comprobante.FechaGeneracion.ToString("HH:mm:ss", Cultura)} por {Esc(comprobante.UsuarioGenerador)}</p>");
@@ -156,6 +157,7 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
         .detalle th.num { text-align: right; }
         .total { padding-top: 10px; font-size: 16px; font-weight: 700; border-bottom: 0 !important; }
         .total + .total { color: #B45309; }
+        .letras { margin: 10px 0 0; font-weight: 600; }
         .pie { margin-top: 18px; text-align: right; font-size: 12px; font-style: italic; color: #475569; }
         .pie p { margin: 0; }
         .acciones { margin-top: 18px; text-align: center; }
