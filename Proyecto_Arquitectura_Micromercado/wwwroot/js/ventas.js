@@ -108,6 +108,9 @@
     const tablaDetalle = document.getElementById("detalleTemporal");
     const estadoDetalle = document.getElementById("estadoDetalle");
     const detalleTemporal = [];
+    const productosDistintos = document.getElementById("productosDistintos");
+    const unidadesTotales = document.getElementById("unidadesTotales");
+    const totalGeneral = document.getElementById("totalGeneral");
     const modalEdicion = document.getElementById("editarCantidadModal");
     const formularioEdicion = document.getElementById("editarCantidadForm");
     const productoEdicion = document.getElementById("editarCantidadProducto");
@@ -182,7 +185,19 @@
         mostrarErrorEdicion();
     });
 
+    function actualizarResumenVenta() {
+        const unidades = detalleTemporal.reduce((total, item) => total + item.cantidad, 0);
+        const totalCentavos = detalleTemporal.reduce((total, item) => total + Math.round(item.subtotal * 100), 0);
+
+        productosDistintos.textContent = String(detalleTemporal.length);
+        unidadesTotales.textContent = String(unidades);
+        totalGeneral.textContent = (totalCentavos / 100).toFixed(2);
+    }
+
+    actualizarResumenVenta();
+
     function renderizarDetalle() {
+        actualizarResumenVenta();
         tablaDetalle.replaceChildren();
         if (detalleTemporal.length === 0) {
             const fila = document.createElement("tr");
