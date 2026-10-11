@@ -60,6 +60,20 @@ public class ArquitecturaHexagonalTests
                     "con el motor en memoria estos catch nunca se disparan.");
     }
 
+    // Piloto: Supplier ya no lleva atributos de validacion de pantalla; esa validacion vive
+    // en SupplierFormModel (Pages) y las reglas de negocio en SupplierService. Product y
+    // Category todavia usan DataAnnotations en Domain, por eso la regla se limita a
+    // Domain/Suppliers hasta aplicarles el mismo patron.
+    [Fact]
+    public void Domain_Suppliers_no_usa_DataAnnotations()
+    {
+        AssertSinDependenciasHacia(
+            capa: Path.Combine("Domain", "Suppliers"),
+            prohibidos: ["System.ComponentModel.DataAnnotations"],
+            porque: "Las entidades del dominio no llevan validacion de pantalla. Esos atributos " +
+                    "van en el modelo del formulario (Pages/Suppliers/SupplierFormModel).");
+    }
+
     // Las pruebas anteriores solo miran los "using" de los .cs. Esta tambien revisa las
     // vistas (.cshtml), donde un @using o un @inject de infraestructura pasaria inadvertido,
     // y cualquier mencion en codigo a Infrastructure o al motor de base de datos.
