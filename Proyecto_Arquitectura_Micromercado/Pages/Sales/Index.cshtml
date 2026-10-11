@@ -1,0 +1,89 @@
+@page
+@model Proyecto_Arquitectura_Micromercado.Pages.Sales.IndexModel
+@{
+    ViewData["Title"] = "Registro de ventas";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <h1 class="page-heading mb-0">Registro de ventas</h1>
+    <span class="badge bg-secondary">En preparación</span>
+</div>
+
+<p class="text-muted mb-4">Prepare el cliente y los productos de la venta. La búsqueda y el registro estarán disponibles en los próximos bloques.</p>
+
+<div class="row g-4">
+    <div class="col-12 col-lg-4">
+        <section class="card shadow-sm h-100" aria-labelledby="clienteHeading">
+            <div class="card-body">
+                <h2 id="clienteHeading" class="h5 mb-3">Cliente</h2>
+                <div class="mb-3">
+                    <label asp-for="Input.IdentificacionCliente" class="form-label"></label>
+                    <input asp-for="Input.IdentificacionCliente" class="form-control"
+                           placeholder="Ingrese la identificación" aria-describedby="clienteHelp" />
+                    <div id="clienteHelp" class="form-text">La búsqueda de clientes estará disponible próximamente.</div>
+                </div>
+                <p class="text-muted mb-0">Ningún cliente seleccionado.</p>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-12 col-lg-8">
+        <section class="card shadow-sm h-100" aria-labelledby="productoHeading">
+            <div class="card-body">
+                <h2 id="productoHeading" class="h5 mb-3">Producto</h2>
+                <div class="row g-3">
+                    <div class="col-12 col-md-8">
+                        <label asp-for="Input.BusquedaProducto" class="form-label"></label>
+                        <input asp-for="Input.BusquedaProducto" class="form-control"
+                               placeholder="Nombre o código del producto" aria-describedby="productoHelp" />
+                        <div id="productoHelp" class="form-text">La búsqueda de productos estará disponible próximamente.</div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label asp-for="Input.Cantidad" class="form-label"></label>
+                        <input asp-for="Input.Cantidad" class="form-control" type="number" min="1" step="1" />
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3">
+                    <p class="text-muted mb-0">Ningún producto seleccionado.</p>
+                    <button type="button" class="btn btn-warning fw-semibold" disabled>
+                        <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Agregar al detalle
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-12">
+        <section class="card shadow-sm" aria-labelledby="detalleHeading">
+            <div class="card-body">
+                <h2 id="detalleHeading" class="h5 mb-2">Detalle temporal</h2>
+                <p id="detalleHelp" class="text-muted">Los productos agregados aparecerán aquí antes de registrar la venta.</p>
+                <div class="table-responsive rounded-3 border">
+                    <table class="table table-hover align-middle mb-0" aria-labelledby="detalleHeading" aria-describedby="detalleHelp">
+                        <thead>
+                            <tr>
+                                <th scope="col">Producto</th>
+                                <th scope="col" class="text-center">Cantidad</th>
+                                <th scope="col" class="text-end">Precio unitario (Bs)</th>
+                                <th scope="col" class="text-end">Subtotal (Bs)</th>
+                                <th scope="col" class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">Todavía no hay productos en el detalle.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
+                    <p class="text-muted mb-0">El registro de ventas aún no está habilitado.</p>
+                    <div class="d-flex flex-wrap align-items-center gap-3">
+                        <span class="fs-5 fw-semibold">Total: Bs 0,00</span>
+                        <button type="button" class="btn btn-warning fw-semibold" disabled>Registrar venta</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
