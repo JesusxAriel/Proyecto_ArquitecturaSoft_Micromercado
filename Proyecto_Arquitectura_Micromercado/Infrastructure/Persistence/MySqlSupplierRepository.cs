@@ -1,3 +1,4 @@
+using Proyecto_Arquitectura_Micromercado.Application.Security;
 using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Domain.Common;
@@ -5,9 +6,10 @@ using Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-public sealed class MySqlSupplierRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) : ISupplierRepository
+public sealed class MySqlSupplierRepository(
+    MySqlUnidadDeTrabajo unidadDeTrabajo,
+    IUsuarioActual usuarioActual) : ISupplierRepository
 {
-    private const int SystemAdminId = 1;
     private const int DuplicateKeyErrorNumber = 1062;
 
     public async Task<IReadOnlyList<SupplierListItem>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -145,7 +147,7 @@ public sealed class MySqlSupplierRepository(MySqlUnidadDeTrabajo unidadDeTrabajo
         await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
         await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         AddSupplierParameters(command, supplier);
-        command.Parameters.AddWithValue("@idUsuarioAdmin", SystemAdminId);
+        command.Parameters.AddWithValue("@idUsuarioAdmin", usuarioActual.Id);
 
         int generatedId;
         try
@@ -168,7 +170,8 @@ public sealed class MySqlSupplierRepository(MySqlUnidadDeTrabajo unidadDeTrabajo
             SET nombreEmpresa = @nombreEmpresa,
                 numeroEmpresa = @numeroEmpresa,
                 correoReferencia = @correoReferencia,
-                esAutogestionado = @esAutogestionado
+                esAutogestionado = @esAutogestionado,
+                idUsuarioActualizacion = @idUsuarioActualizacion
             WHERE id = @id AND estaActivo = 1;
             """;
 
@@ -176,6 +179,7 @@ public sealed class MySqlSupplierRepository(MySqlUnidadDeTrabajo unidadDeTrabajo
         await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         AddSupplierParameters(command, supplier);
         command.Parameters.AddWithValue("@id", supplier.Id);
+        command.Parameters.AddWithValue("@idUsuarioActualizacion", usuarioActual.Id);
 
         try
         {
@@ -191,13 +195,15 @@ public sealed class MySqlSupplierRepository(MySqlUnidadDeTrabajo unidadDeTrabajo
     {
         const string sql = """
             UPDATE PROVEEDOR
-            SET estaActivo = 0
+            SET estaActivo = 0,
+                idUsuarioActualizacion = @idUsuarioActualizacion
             WHERE id = @id AND estaActivo = 1;
             """;
 
         await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
         await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         command.Parameters.AddWithValue("@id", id);
+        command.Parameters.AddWithValue("@idUsuarioActualizacion", usuarioActual.Id);
         return await command.ExecuteNonQueryAsync(cancellationToken) == 1;
     }
 

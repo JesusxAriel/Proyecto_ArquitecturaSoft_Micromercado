@@ -1,3 +1,4 @@
+using Proyecto_Arquitectura_Micromercado.Application.Security;
 using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Common;
@@ -6,14 +7,14 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-// Recibe la unidad de trabajo en vez de la conexion suelta. Eso le permite abrir un
-// limite transaccional y que el repositorio de historial, que comparte la misma unidad
-// por inyeccion, quede dentro de esa transaccion sin recibirla por parametro.
+// Recibe la unidad de trabajo en vez de la conexion suelta: si quien lo invoca abrio un
+// limite transaccional, todas las operaciones de este repositorio quedan dentro de el
+// sin recibir la transaccion por parametro.
 public sealed class MySqlProductRepository(
     MySqlUnidadDeTrabajo unidadDeTrabajo,
-    IPriceHistoryRepository priceHistoryRepository) : IProductRepository
+    IPriceHistoryRepository priceHistoryRepository,
+    IUsuarioActual usuarioActual) : IProductRepository
 {
-    private const int SystemAdminId = 1;
     private const int DuplicateKeyErrorNumber = 1062;
     private readonly IPriceHistoryRepository _priceHistoryRepository = priceHistoryRepository;
 
@@ -225,7 +226,7 @@ public sealed class MySqlProductRepository(
         await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
         await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         AddProductParameters(command, product);
-        command.Parameters.AddWithValue("@idUsuarioAdmin", SystemAdminId);
+        command.Parameters.AddWithValue("@idUsuarioAdmin", usuarioActual.Id);
 
         int generatedId;
         try
@@ -241,14 +242,23 @@ public sealed class MySqlProductRepository(
         return generatedId;
     }
 
+    // El historial de precios lo escribe la base de datos: el trigger
+    // trg_producto_historial_precio inserta la fila cuando cambia el precio de venta o de
+    // costo, usando idUsuarioActualizacion como autor. Por eso este metodo NO inserta en
+    // HISTORIAL_PRECIO: hacerlo duplicaria el registro.
+    //
+    // Dos cosas dependen del trigger y de este UPDATE:
+    //   - trg_producto_bu rechaza un cambio de precio sin idUsuarioActualizacion, asi que
+    //     siempre se envia el usuario de la sesion (IUsuarioActual nunca devuelve null).
+    //   - El motivo viaja en la variable de sesion @motivo_cambio_precio, que se fija en
+    //     la MISMA conexion justo antes del UPDATE. Se fija siempre, aunque no haya
+    //     motivo, para no arrastrar el de una operacion anterior de una conexion del pool.
+    //
+    // Un solo UPDATE es atomico: el trigger corre dentro de su misma sentencia, de modo
+    // que producto e historial se guardan juntos o no se guarda ninguno.
     public async Task<bool> UpdateAsync(Product product, CancellationToken cancellationToken = default)
     {
-        const string selectSql = """
-            SELECT precioVenta, precioCosto
-            FROM PRODUCTO
-            WHERE id = @id AND estaActivo = 1
-            FOR UPDATE;
-            """;
+        const string motivoSql = "SET @motivo_cambio_precio = @motivo;";
         const string updateSql = """
             UPDATE PRODUCTO
             SET nombre = @nombre,
@@ -257,100 +267,35 @@ public sealed class MySqlProductRepository(
                 precioCosto = @precioCosto,
                 stockMinimo = @stockMinimo,
                 idCategoria = @idCategoria,
-                idProveedor = @idProveedor
+                idProveedor = @idProveedor,
+                idUsuarioActualizacion = @idUsuarioActualizacion
             WHERE id = @id AND estaActivo = 1;
             """;
 
-        // El limite transaccional lo declara la unidad de trabajo. El repositorio de
-        // historial comparte esa misma unidad por inyeccion, asi que su insercion cae
-        // dentro de esta transaccion sin que haya que pasarle la conexion.
-        await unidadDeTrabajo.IniciarAsync(cancellationToken);
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+
+        await using (var motivoCommand = new MySqlCommand(motivoSql, alquiler.Conexion, alquiler.Transaccion))
+        {
+            motivoCommand.Parameters.AddWithValue(
+                "@motivo",
+                string.IsNullOrWhiteSpace(product.MotivoCambio)
+                    ? DBNull.Value
+                    : product.MotivoCambio.Trim());
+            await motivoCommand.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await using var updateCommand = new MySqlCommand(updateSql, alquiler.Conexion, alquiler.Transaccion);
+        AddProductParameters(updateCommand, product);
+        updateCommand.Parameters.AddWithValue("@id", product.Id);
+        updateCommand.Parameters.AddWithValue("@idUsuarioActualizacion", usuarioActual.Id);
 
         try
         {
-            await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
-
-            decimal precioVentaAnterior;
-            decimal precioCostoAnterior;
-            await using (var selectCommand = new MySqlCommand(selectSql, alquiler.Conexion, alquiler.Transaccion))
-            {
-                selectCommand.Parameters.AddWithValue("@id", product.Id);
-                await using var reader = await selectCommand.ExecuteReaderAsync(cancellationToken);
-
-                if (!await reader.ReadAsync(cancellationToken))
-                {
-                    await unidadDeTrabajo.RevertirAsync(cancellationToken);
-                    return false;
-                }
-
-                precioVentaAnterior = reader.GetDecimal(reader.GetOrdinal("precioVenta"));
-                precioCostoAnterior = reader.GetDecimal(reader.GetOrdinal("precioCosto"));
-            }
-
-            int affectedRows;
-            await using (var updateCommand = new MySqlCommand(updateSql, alquiler.Conexion, alquiler.Transaccion))
-            {
-                AddProductParameters(updateCommand, product);
-                updateCommand.Parameters.AddWithValue("@id", product.Id);
-
-                try
-                {
-                    affectedRows = await updateCommand.ExecuteNonQueryAsync(cancellationToken);
-                }
-                catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
-                {
-                    await unidadDeTrabajo.RevertirAsync(cancellationToken);
-                    throw new DuplicateProductException(ex);
-                }
-            }
-
-            // La comparacion tiene una sola definicion, en Domain: antes estaba copiada
-            // aqui, en el repositorio en memoria y en el PageModel.
-            if (affectedRows == 1 &&
-                CambioDePrecio.Hubo(
-                    precioVentaAnterior,
-                    precioCostoAnterior,
-                    product.PrecioVenta,
-                    product.PrecioCosto))
-            {
-                var history = new ProductPriceHistory
-                {
-                    IdProducto = product.Id,
-                    PrecioVentaAnterior = precioVentaAnterior,
-                    PrecioVentaNuevo = product.PrecioVenta,
-                    PrecioCostoAnterior = precioCostoAnterior,
-                    PrecioCostoNuevo = product.PrecioCosto,
-                    MotivoCambio = string.IsNullOrWhiteSpace(product.MotivoCambio)
-                        ? CambioDePrecio.MotivoPorDefecto
-                        : product.MotivoCambio.Trim(),
-                    IdUsuario = SystemAdminId
-                };
-
-                // Firma limpia del puerto: ya no se le pasa conexion ni transaccion.
-                await _priceHistoryRepository.AddPriceHistoryAsync(history, cancellationToken);
-            }
-
-            if (affectedRows == 1)
-            {
-                await unidadDeTrabajo.ConfirmarAsync(cancellationToken);
-            }
-            else
-            {
-                await unidadDeTrabajo.RevertirAsync(cancellationToken);
-            }
-
-            return affectedRows == 1;
+            return await updateCommand.ExecuteNonQueryAsync(cancellationToken) == 1;
         }
-        catch (DuplicateProductException)
+        catch (MySqlException ex) when (ex.Number == DuplicateKeyErrorNumber)
         {
-            // Ya se revirtio en el punto donde se detecto; se deja subir tal cual.
-            throw;
-        }
-        catch
-        {
-            // Cualquier otro fallo no debe dejar la transaccion abierta.
-            await unidadDeTrabajo.RevertirAsync(cancellationToken);
-            throw;
+            throw new DuplicateProductException(ex);
         }
     }
 
@@ -358,13 +303,15 @@ public sealed class MySqlProductRepository(
     {
         const string sql = """
             UPDATE PRODUCTO
-            SET estaActivo = 0
+            SET estaActivo = 0,
+                idUsuarioActualizacion = @idUsuarioActualizacion
             WHERE id = @id AND estaActivo = 1;
             """;
 
         await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
         await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         command.Parameters.AddWithValue("@id", id);
+        command.Parameters.AddWithValue("@idUsuarioActualizacion", usuarioActual.Id);
         return await command.ExecuteNonQueryAsync(cancellationToken) == 1;
     }
 

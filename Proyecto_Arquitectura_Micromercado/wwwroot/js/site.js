@@ -2,17 +2,6 @@
 // for details on configuring this project to bundle and minify static web assets.
 
 (function () {
-    const isLogin = document.body.dataset.isLogin === 'true';
-    if (!isLogin && !localStorage.getItem('puntoCaseroSession')) {
-        window.location.replace('/Login');
-        return;
-    }
-
-    $('#logoutButton').on('click', function () {
-        localStorage.removeItem('puntoCaseroSession');
-        window.location.replace('/Login');
-    });
-
     const invalidCharacters = /[*%$@{}\[\]?¿\^]/g;
     const validationPattern = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$/;
     const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;

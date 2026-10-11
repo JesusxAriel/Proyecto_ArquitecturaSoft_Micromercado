@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Proyecto_Arquitectura_Micromercado.Application.Security;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
@@ -7,6 +9,7 @@ using Proyecto_Arquitectura_Micromercado.Pages.Shared;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
 {
+    [Authorize(Roles = Roles.Administrador)]
     public class IndexModel : PageModel
     {
         private readonly ICategoryService categoryService;

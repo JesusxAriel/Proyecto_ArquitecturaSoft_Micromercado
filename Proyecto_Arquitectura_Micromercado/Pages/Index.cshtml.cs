@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Proyecto_Arquitectura_Micromercado.Application.Common;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
@@ -5,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages
 {
+    [Authorize]
     public sealed class IndexModel(IProductService productService) : PageModel
     {
         public decimal DailySales { get; private set; }

@@ -1,3 +1,4 @@
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
@@ -24,7 +25,7 @@ public class FactoryMethodTests
     private static CreatorCategoryRepository[] CreadoresDeCategoria() =>
     [
         new CreatorCategoryRepositoryEnMemoria(),
-        new CreatorCategoryRepositoryMySql(UnidadDePrueba())
+        new CreatorCategoryRepositoryMySql(UnidadDePrueba(), new UsuarioActualEnMemoria())
     ];
 
     [Fact]
