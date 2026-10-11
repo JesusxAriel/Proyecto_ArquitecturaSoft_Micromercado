@@ -43,7 +43,7 @@ public sealed class MySqlVentaRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) :
         return (idVenta, nroComprobante);
     }
 
-    public async Task<bool> AnularVentaConSpAsync(int idVenta, string motivo, CancellationToken cancellationToken = default)
+   public async Task<bool> AnularVentaConSpAsync(int idVenta, string motivo, CancellationToken cancellationToken = default)
     {
         await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
@@ -56,8 +56,9 @@ public sealed class MySqlVentaRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) :
         cmd.Parameters.AddWithValue("p_idUsuarioAnulacion", 1);
         cmd.Parameters.AddWithValue("p_motivo", motivo);
 
-        var rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
-        return rows > 0;
+        // Al tratarse de un Stored Procedure, si no lanza excepción, la anulación fue exitosa
+        await cmd.ExecuteNonQueryAsync(cancellationToken);
+        return true;
     }
 
     public async Task<int> CrearVentaAsync(Venta venta, CancellationToken cancellationToken = default)
