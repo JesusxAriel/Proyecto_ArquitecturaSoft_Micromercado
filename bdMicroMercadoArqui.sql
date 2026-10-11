@@ -86,7 +86,7 @@ CREATE TABLE `ROL` (
 CREATE TABLE `USUARIO` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `username` VARCHAR(50) NOT NULL,
-  `passwordHash` VARCHAR(255) NOT NULL,   -- NUNCA guardar texto plano
+  `passwordHash` VARCHAR(255) NOT NULL,   -- hash BCrypt (60 caracteres); NUNCA texto plano
   `nombreCompleto` VARCHAR(150) NOT NULL,
   `correo` VARCHAR(150) DEFAULT NULL,
   `idRol` INT NOT NULL,
@@ -903,10 +903,11 @@ INSERT INTO `ROL` (`id`, `nombre`, `descripcion`) VALUES
 (1, 'Administrador', 'Gerente / root: control total del sistema'),
 (2, 'Cajero', 'Registro de ventas, anulaciones y atencion al cliente');
 
--- USUARIOS (hash SHA-256 solo para pruebas; en la aplicacion usar bcrypt/argon2)
+-- USUARIOS (hashes BCrypt con factor de trabajo 11, los mismos que verifica la
+-- aplicacion; las contrasenas de prueba estan documentadas en el README)
 INSERT INTO `USUARIO` (`id`, `username`, `passwordHash`, `nombreCompleto`, `correo`, `idRol`) VALUES
-(1, 'admin',   SHA2('admin123', 256),  'Gerente General (root)', 'gerencia@micromercado.com', 1),
-(2, 'cajero1', SHA2('cajero123', 256), 'Carlos Mamani Quispe', 'carlos.mamani@micromercado.com', 2);
+(1, 'admin',   '$2a$11$vHYNXh3Q3oaQJ5htY0Z.OuWKDTj8OuOdGsSj3kDPOVYWU59C1tjlG', 'Gerente General (root)', 'gerencia@micromercado.com', 1),
+(2, 'cajero1', '$2a$11$5qT4nZN5lpU4t/byugwqv.fe93xMvkjMMXCpvs1oK3cWLElPUZAyG', 'Carlos Mamani Quispe', 'carlos.mamani@micromercado.com', 2);
 
 -- CATEGORIAS
 INSERT INTO `CATEGORIAS` (`id`, `nombre`, `descripcion`, `codigo`, `pasilloUbicacion`, `idUsuarioAdmin`) VALUES

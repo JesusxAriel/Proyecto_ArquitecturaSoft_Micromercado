@@ -60,8 +60,6 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
             Validate(category);
             await EnsureNameIsUniqueAsync(category, cancellationToken);
 
-            category.AdminUserId = 1;
-
             for (int attempt = 1; ; attempt++)
             {
                 category.Code = await GenerateCodeAsync(
@@ -102,7 +100,6 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
 
             // El código se asigna al crear y no cambia al editar el nombre.
             category.Code = current.Code;
-            category.AdminUserId = 1;
 
             return await categoryRepository.UpdateAsync(
                 category,

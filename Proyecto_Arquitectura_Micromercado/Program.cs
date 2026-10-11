@@ -1,11 +1,16 @@
-﻿using Microsoft.AspNetCore.Localization;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Localization;
 using Proyecto_Arquitectura_Micromercado.Application.Common;
+using Proyecto_Arquitectura_Micromercado.Application.Comprobantes;
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
+using Proyecto_Arquitectura_Micromercado.Application.Security;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Factories;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Comprobantes;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Security;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
 using System.Globalization;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
@@ -16,9 +21,53 @@ builder.Services.AddRazorPages()
     .AddMvcOptions(options =>
     {
         options.ModelBinderProviders.Insert(0, new DecimalModelBinderProvider());
+
+        // Cierra el enlace de modelo de los campos de estado y auditoria de las
+        // entidades: el navegador no puede imponerlos aunque los envie en el POST.
+        options.ModelMetadataDetailsProviders.Add(new CamposNoEnlazablesProvider());
+
         options.ModelBindingMessageProvider.SetValueMustBeANumberAccessor(
             _ => "Ingrese un número válido.");
     });
+
+// Autenticacion por cookie. La identidad (id, usuario y rol) viaja en los claims de la
+// cookie, que va firmada y cifrada: es la unica fuente de la auditoria. La expiracion es
+// deslizante, por lo que la sesion se cierra tras 30 minutos sin actividad.
+builder.Services
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Login";
+        options.LogoutPath = "/Logout";
+        options.AccessDeniedPath = "/AccesoDenegado";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+        options.SlidingExpiration = true;
+        options.Cookie.HttpOnly = true;
+    });
+
+// Session: variables de la sesion de trabajo (nombre para mostrar, hora de inicio). No
+// guarda identidad ni permisos. Se respalda en memoria porque es un unico servidor.
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUsuarioActual, UsuarioActualDesdeClaims>();
+builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+builder.Services.AddScoped<IUsuarioRepository, MySqlUsuarioRepository>();
+builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
+
+// Comprobante de venta: el repositorio solo lee, el generador HTML es un adaptador
+// intercambiable (un generador de PDF se registraria aqui en su lugar) y el reloj entra
+// como dependencia para poder fijar la hora en las pruebas.
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<IComprobanteRepository, MySqlComprobanteRepository>();
+builder.Services.AddScoped<IComprobanteService, ComprobanteService>();
+builder.Services.AddSingleton<IGeneradorComprobante, GeneradorComprobanteHtml>();
 
 // El Singleton de conexion se inicializa una sola vez y se registra como dependencia,
 // para que los repositorios la reciban por constructor en vez de leerla de un estatico
@@ -86,7 +135,9 @@ app.UseHttpsRedirection();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
+app.UseSession();
 
 app.MapStaticAssets();
 app.MapRazorPages()

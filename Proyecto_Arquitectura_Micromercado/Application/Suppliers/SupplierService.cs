@@ -1,4 +1,5 @@
 ﻿using Proyecto_Arquitectura_Micromercado.Application.Common;
+using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
 using System.Globalization;
@@ -6,7 +7,9 @@ using System.Text.RegularExpressions;
 
 namespace Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 
-public sealed class SupplierService(ISupplierRepository repository) : ISupplierService
+public sealed class SupplierService(
+    ISupplierRepository repository,
+    IProductRepository productos) : ISupplierService
 {
     // Tras normalizar (sin +591), el teléfono guardado son 8 dígitos que inician con 6 o 7.
     private static readonly Regex TelefonoBolivia = new(@"^[67]\d{7}$", RegexOptions.CultureInvariant);
@@ -61,14 +64,21 @@ public sealed class SupplierService(ISupplierRepository repository) : ISupplierS
         }
     }
 
-    public Task<bool> SoftDeleteAsync(int id, CancellationToken cancellationToken = default)
+    // Regla de negocio: un proveedor con productos activos no se puede dar de baja.
+    // Vive aquí y no en la página para que se cumpla entre cualquier entrada al sistema.
+    public async Task<bool> SoftDeleteAsync(int id, CancellationToken cancellationToken = default)
     {
         if (id <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(id), "El identificador debe ser positivo.");
         }
 
-        return repository.SoftDeleteAsync(id, cancellationToken);
+        if (await productos.ExistenProductosActivosDelProveedorAsync(id, cancellationToken))
+        {
+            throw new SupplierConProductosException();
+        }
+
+        return await repository.SoftDeleteAsync(id, cancellationToken);
     }
 
     private static void Validate(Supplier supplier)

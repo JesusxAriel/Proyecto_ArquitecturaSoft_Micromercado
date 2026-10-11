@@ -46,12 +46,11 @@ public class ArquitecturaHexagonalTests
             porque: "Los adaptadores de salida no pueden conocer al adaptador de entrada.");
     }
 
-    // Queda deshabilitada a proposito: hoy las Pages capturan MySqlException en 8 lugares
-    // (Pages/Index.cshtml.cs, Pages/Products/Index.cshtml.cs y Pages/Suppliers/Index.cshtml.cs),
-    // o sea el adaptador de entrada depende del driver del adaptador de salida. Se corrige en
-    // el bloque D del plan, traduciendo el error a una excepcion propia de Application; al
-    // hacerlo hay que quitar este Skip y la prueba debe pasar.
-    [Fact(Skip = "Pendiente del bloque D: quitar los 8 catch (MySqlException) de las Pages.")]
+    // Estuvo deshabilitada mientras las Pages capturaban MySqlException en 8 lugares, o sea
+    // mientras el adaptador de entrada dependia del driver del adaptador de salida. Ya se
+    // corrigio: los adaptadores traducen sus errores a ErrorDePersistenciaException y la UI
+    // captura esa. Si alguien vuelve a capturar el driver en una pagina, esta prueba falla.
+    [Fact]
     public void Pages_no_depende_del_driver_de_base_de_datos()
     {
         AssertSinDependenciasHacia(
@@ -59,6 +58,79 @@ public class ArquitecturaHexagonalTests
             prohibidos: ["MySql.Data"],
             porque: "La UI debe manejar errores de persistencia sin saber que motor hay detras: " +
                     "con el motor en memoria estos catch nunca se disparan.");
+    }
+
+    // Las pruebas anteriores solo miran los "using" de los .cs. Esta tambien revisa las
+    // vistas (.cshtml), donde un @using o un @inject de infraestructura pasaria inadvertido,
+    // y cualquier mencion en codigo a Infrastructure o al motor de base de datos.
+    [Fact]
+    public void Pages_no_referencia_Infrastructure_ni_el_motor_de_base_de_datos()
+    {
+        AssertPaginasSinPatrones(
+            patrones:
+            [
+                new Regex(Regex.Escape(NsInfraestructura), RegexOptions.CultureInvariant),
+                new Regex(@"\bMySql\w*", RegexOptions.CultureInvariant),
+                new Regex(@"\bDatabaseConnection\b", RegexOptions.CultureInvariant)
+            ],
+            porque: "La UI es el adaptador de entrada: habla con Application y no conoce a los " +
+                    "adaptadores de salida (Infrastructure) ni al motor que hay detras.");
+    }
+
+    [Fact]
+    public void Pages_no_depende_de_repositorios()
+    {
+        AssertPaginasSinPatrones(
+            patrones: [new Regex(@"\bI[A-Z]\w*Repository\b", RegexOptions.CultureInvariant)],
+            porque: "Los repositorios son puertos de salida de Application. Una Page debe pedir " +
+                    "un servicio o una fachada, nunca saltarse la capa de aplicacion para leer " +
+                    "o escribir datos.");
+    }
+
+    // Revisa linea por linea los .cs y .cshtml de Pages, salvo los comentarios, y falla
+    // diciendo archivo y linea de cada coincidencia.
+    private static void AssertPaginasSinPatrones(Regex[] patrones, string porque)
+    {
+        var carpeta = Path.Combine(RaizDelProyecto(), "Pages");
+
+        Assert.True(Directory.Exists(carpeta), $"No se encontro la carpeta Pages en {carpeta}.");
+
+        var infracciones = new List<string>();
+        var archivos = Directory.EnumerateFiles(carpeta, "*.*", SearchOption.AllDirectories)
+            .Where(ruta => ruta.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) ||
+                           ruta.EndsWith(".cshtml", StringComparison.OrdinalIgnoreCase));
+
+        foreach (var archivo in archivos)
+        {
+            var lineas = File.ReadAllLines(archivo);
+
+            for (var i = 0; i < lineas.Length; i++)
+            {
+                var linea = lineas[i].TrimStart();
+
+                if (linea.StartsWith("//", StringComparison.Ordinal) ||
+                    linea.StartsWith("@*", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (patrones.Any(patron => patron.IsMatch(linea)))
+                {
+                    infracciones.Add(
+                        $"  {Path.GetRelativePath(RaizDelProyecto(), archivo)}:{i + 1} -> {linea.Trim()}");
+                }
+            }
+        }
+
+        Assert.True(
+            infracciones.Count == 0,
+            $"""
+            Pages tiene {infracciones.Count} referencia(s) prohibida(s).
+
+            {porque}
+
+            {string.Join(Environment.NewLine, infracciones)}
+            """);
     }
 
     private static void AssertSinDependenciasHacia(

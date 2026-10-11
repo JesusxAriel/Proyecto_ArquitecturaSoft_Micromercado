@@ -1,3 +1,5 @@
+using Proyecto_Arquitectura_Micromercado.Application.Security;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Domain.Categories;
 using Proyecto_Arquitectura_Micromercado.Domain.Common;
@@ -8,9 +10,9 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.EnMemori
 // Respeta el mismo contrato que MySqlCategoryRepository (baja lógica, unicidad de nombre
 // entre activas, unicidad de código sobre todas las filas, y las mismas excepciones),
 // de modo que un servicio no pueda distinguir con cuál de los dos está trabajando.
-public sealed class InMemoryCategoryRepository : ICategoryRepository
+public sealed class InMemoryCategoryRepository(IUsuarioActual? usuarioActual = null) : ICategoryRepository
 {
-    private const int SystemAdminId = 1;
+    private readonly IUsuarioActual usuario = usuarioActual ?? new UsuarioActualEnMemoria();
 
     private readonly List<Category> categorias = [];
     private int ultimoId;
@@ -60,7 +62,7 @@ public sealed class InMemoryCategoryRepository : ICategoryRepository
         var nueva = Clonar(category);
         nueva.Id = ++ultimoId;
         nueva.IsActive = true;
-        nueva.AdminUserId = SystemAdminId;
+        nueva.AdminUserId = usuario.Id;
         nueva.CreatedAt = DateTime.Now;
         categorias.Add(nueva);
 
@@ -86,7 +88,6 @@ public sealed class InMemoryCategoryRepository : ICategoryRepository
         existente.Description = category.Description;
         existente.Code = category.Code;
         existente.AisleLocation = category.AisleLocation;
-        existente.AdminUserId = SystemAdminId;
         existente.UpdatedAt = DateTime.Now;
 
         return Task.FromResult(true);
@@ -102,7 +103,6 @@ public sealed class InMemoryCategoryRepository : ICategoryRepository
         }
 
         existente.IsActive = false;
-        existente.AdminUserId = SystemAdminId;
 
         return Task.FromResult(true);
     }

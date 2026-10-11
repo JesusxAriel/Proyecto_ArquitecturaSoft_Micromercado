@@ -1,10 +1,12 @@
-using MySql.Data.MySqlClient;
+using Microsoft.AspNetCore.Authorization;
+using Proyecto_Arquitectura_Micromercado.Application.Common;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages
 {
+    [Authorize]
     public sealed class IndexModel(IProductService productService) : PageModel
     {
         public decimal DailySales { get; private set; }
@@ -28,7 +30,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages
                     .Take(5)
                     .ToList();
             }
-            catch (MySqlException)
+            catch (ErrorDePersistenciaException)
             {
                 ActiveProductCount = 0;
                 LowStockCount = 0;

@@ -1,4 +1,6 @@
-﻿<!DOCTYPE html>
+﻿@using Proyecto_Arquitectura_Micromercado.Application.Security
+@using Proyecto_Arquitectura_Micromercado.Pages.Shared
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
@@ -15,6 +17,20 @@
     {
     <header>
         @{
+            var autenticado = User.Identity?.IsAuthenticated == true;
+            var esAdministrador = User.IsInRole(Roles.Administrador);
+            var rolActual = User.FindFirst(ClaimsDeIdentidad.Rol)?.Value ?? string.Empty;
+            var nombreMostrado = Context.Session.GetString(VariablesDeSesion.NombreParaMostrar)
+                ?? User.Identity?.Name
+                ?? string.Empty;
+            var inicioDeSesion = Context.Session.GetString(VariablesDeSesion.InicioDeSesion);
+            var iniciales = string.Concat(
+                nombreMostrado
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                    .Take(2)
+                    .Select(palabra => char.ToUpperInvariant(palabra[0])));
+        }
+        @{
             var currentPage = ViewContext.RouteData.Values["page"]?.ToString() ?? string.Empty;
         }
         <nav class="navbar navbar-expand-lg navbar-dark bg-navy fixed-top shadow-sm py-3">
@@ -28,6 +44,8 @@
                 </button>
                 <div class="collapse navbar-collapse" id="mainNavigation">
                     <ul class="navbar-nav navbar-center mx-auto mb-2 mb-lg-0">
+                        @if (esAdministrador)
+                        {
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle @(currentPage.StartsWith("/Products", StringComparison.OrdinalIgnoreCase) || currentPage.StartsWith("/Categories", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)"
                                href="#" role="button">Inventario</a>
@@ -36,11 +54,11 @@
                                 <li><a class="dropdown-item" asp-page="/Products/History">Historial de Cambios</a></li>
                                 <li><hr class="dropdown-divider" /></li>
                                 <li><a class="dropdown-item" asp-page="/Categories/Index">Listado de Categorías</a></li>
-                                    <li>
-                                        <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
-                                            Distribución por Pasillos <span class="badge bg-secondary ms-1">Próximamente</span>
-                                        </a>
-                                    </li>
+                                <li>
+                                    <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
+                                        Distribución por Pasillos <span class="badge bg-secondary ms-1">Próximamente</span>
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
@@ -48,16 +66,17 @@
                                href="#" role="button">Proveedores</a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" asp-page="/Suppliers/Index">Directorio de Proveedores</a></li>
-                                    <li>
-                                        <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
-                                            Productos por Proveedor <span class="badge bg-secondary ms-1">Próximamente</span>
-                                        </a>
-                                    </li>
+                                <li>
+                                    <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
+                                        Productos por Proveedor <span class="badge bg-secondary ms-1">Próximamente</span>
+                                    </a>
+                                </li>
                             </ul>
                         </li>
+                        }
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle @(currentPage.StartsWith("/Sales", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)"
-                            href="#" role="button">Caja y Ventas</a>
+                               href="#" role="button">Caja y Ventas</a>
                             <ul class="dropdown-menu">
                                 <li>
                                     <a class="dropdown-item" asp-page="/Sales/Index">
@@ -73,21 +92,31 @@
                         </li>
                     </ul>
                 </div>
-                <div class="dropdown ms-auto navbar-user">
-                    <button type="button" id="userDropdown"
-                            class="btn btn-link text-white text-decoration-none dropdown-toggle user-profile-dropdown d-flex align-items-center gap-2"
-                            data-bs-toggle="dropdown" aria-expanded="false">
-                        <span class="user-avatar" aria-label="Usuario Juan Pérez">JP</span>
-                        <span class="d-none d-md-block text-start">
-                            <span class="d-block fw-semibold user-name">Juan Pérez</span>
-                            <small class="d-block user-role">Admin</small>
-                            <span class="badge badge-ok">Caja Abierta</span>
-                        </span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><button type="button" id="logoutButton" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</button></li>
-                    </ul>
-                </div>
+                @if (autenticado)
+                {
+                    <div class="dropdown ms-auto navbar-user">
+                        <button type="button" id="userDropdown"
+                                class="btn btn-link text-white text-decoration-none dropdown-toggle user-profile-dropdown d-flex align-items-center gap-2"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="user-avatar" aria-label="Usuario @nombreMostrado">@iniciales</span>
+                            <span class="d-none d-md-block text-start">
+                                <span class="d-block fw-semibold user-name">@nombreMostrado</span>
+                                <small class="d-block user-role">@rolActual</small>
+                                @if (inicioDeSesion is not null)
+                                {
+                                    <small class="d-block text-white-50">Inicio: @inicioDeSesion</small>
+                                }
+                            </span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <form method="post" asp-page="/Logout">
+                                    <button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                }
             </div>
         </nav>
     </header>
@@ -99,7 +128,7 @@
     </div>
     <footer class="footer border-top text-muted">
         <div class="container">
-            &copy; @DateTime.Now.Year - PuntoMarket &middot;
+            &copy; @DateTime.Now.Year PuntoMarket &middot;
             <a asp-page="/Privacy" class="text-muted">Política de Privacidad</a>
         </div>
     </footer>
@@ -107,8 +136,6 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script>
-        // Publica la altura real de la barra fija para que el padding del body y los
-        // encabezados sticky (top) coincidan con ella en cualquier ancho de pantalla.
         (function () {
             var navbar = document.querySelector('.navbar.fixed-top');
             if (!navbar) {
@@ -118,7 +145,6 @@
             var menu = document.getElementById('mainNavigation');
 
             function publishNavbarHeight() {
-                // Con el menú móvil desplegándose no se actualiza para evitar saltos del contenido.
                 if (menu && (menu.classList.contains('show') || menu.classList.contains('collapsing'))) {
                     return;
                 }

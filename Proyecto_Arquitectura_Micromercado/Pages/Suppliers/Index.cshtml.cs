@@ -1,18 +1,19 @@
-using MySql.Data.MySqlClient;
+using Microsoft.AspNetCore.Authorization;
+using Proyecto_Arquitectura_Micromercado.Application.Security;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Proyecto_Arquitectura_Micromercado.Application.Common;
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Pages.Shared;
 
-using Proyecto_Arquitectura_Micromercado.Application.Products;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Suppliers;
 
+[Authorize(Roles = Roles.Administrador)]
 public sealed class IndexModel(
     ISupplierService supplierService,
-    IProductService productService,
     ILogger<IndexModel> logger) : PageModel
 {
     public PagedResult<SupplierListItem> PagedSuppliers { get; private set; } = new();
@@ -94,7 +95,7 @@ public sealed class IndexModel(
             await LoadSuppliersAsync(cancellationToken);
             return Page();
         }
-        catch (MySqlException)
+        catch (ErrorDePersistenciaException)
         {
             DatabaseWarning = "No se pudo guardar el proveedor por un problema de conexión.";
             ShowCreateModal = true;
@@ -137,7 +138,7 @@ public sealed class IndexModel(
             await LoadSuppliersAsync(cancellationToken);
             return Page();
         }
-        catch (MySqlException)
+        catch (ErrorDePersistenciaException)
         {
             DatabaseWarning = "No se pudo actualizar el proveedor por un problema de conexión.";
             ShowEditModal = true;
@@ -153,27 +154,21 @@ public sealed class IndexModel(
             return BadRequest("El proveedor no es válido.");
         }
 
-        if (await TieneProductosActivosAsync(DeleteSupplierId, cancellationToken))
+        try
         {
-            ErrorMessage = "No se puede eliminar el proveedor porque tiene productos asociados.";
-            return RedirectToPage(ListRouteValues);
+            if (!await supplierService.SoftDeleteAsync(DeleteSupplierId, cancellationToken))
+            {
+                return NotFound();
+            }
         }
-
-        if (!await supplierService.SoftDeleteAsync(DeleteSupplierId, cancellationToken))
+        catch (SupplierConProductosException ex)
         {
-            return NotFound();
+            ErrorMessage = ex.Message;
+            return RedirectToPage(ListRouteValues);
         }
 
         StatusMessage = "Proveedor eliminado correctamente.";
         return RedirectToPage(ListRouteValues);
-    }
-
-    private async Task<bool> TieneProductosActivosAsync(
-        int supplierId,
-        CancellationToken cancellationToken)
-    {
-        var productos = await productService.GetAllAsync(cancellationToken);
-        return productos.Any(producto => producto.IdProveedor == supplierId);
     }
 
     private async Task LoadSuppliersAsync(CancellationToken cancellationToken)

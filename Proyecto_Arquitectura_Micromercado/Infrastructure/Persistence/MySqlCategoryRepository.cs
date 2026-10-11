@@ -1,13 +1,15 @@
-﻿using MySql.Data.MySqlClient;
+﻿using Proyecto_Arquitectura_Micromercado.Application.Security;
+using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Domain.Categories;
 using Proyecto_Arquitectura_Micromercado.Domain.Common;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-public sealed class MySqlCategoryRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) : ICategoryRepository
+public sealed class MySqlCategoryRepository(
+    MySqlUnidadDeTrabajo unidadDeTrabajo,
+    IUsuarioActual usuarioActual) : ICategoryRepository
 {
-    private const int SystemAdminId = 1;
     private const int DuplicateKeyErrorNumber = 1062;
 
     public async Task<IReadOnlyList<Category>> GetAllAsync(
@@ -125,7 +127,7 @@ public sealed class MySqlCategoryRepository(MySqlUnidadDeTrabajo unidadDeTrabajo
             INSERT INTO CATEGORIAS
                 (nombre, descripcion, codigo, pasilloUbicacion, idUsuarioAdmin)
             VALUES
-                (@nombre, @descripcion, @codigo, @pasilloUbicacion, @idUsuarioAdmin);
+                (@nombre, @descripcion, @codigo, @pasilloUbicacion, @idUsuario);
             SELECT LAST_INSERT_ID();
             """;
 
@@ -165,7 +167,7 @@ public sealed class MySqlCategoryRepository(MySqlUnidadDeTrabajo unidadDeTrabajo
                 descripcion = @descripcion,
                 codigo = @codigo,
                 pasilloUbicacion = @pasilloUbicacion,
-                idUsuarioAdmin = @idUsuarioAdmin
+                idUsuarioActualizacion = @idUsuario
             WHERE id = @id
               AND estaActivo = 1;
             """;
@@ -255,7 +257,7 @@ public sealed class MySqlCategoryRepository(MySqlUnidadDeTrabajo unidadDeTrabajo
         const string sql = """
             UPDATE CATEGORIAS
             SET estaActivo = 0,
-                idUsuarioAdmin = @idUsuarioAdmin
+                idUsuarioActualizacion = @idUsuario
             WHERE id = @id
               AND estaActivo = 1;
             """;
@@ -271,8 +273,8 @@ public sealed class MySqlCategoryRepository(MySqlUnidadDeTrabajo unidadDeTrabajo
             id);
 
         command.Parameters.AddWithValue(
-            "@idUsuarioAdmin",
-            SystemAdminId);
+            "@idUsuario",
+            usuarioActual.Id);
 
         return await command.ExecuteNonQueryAsync(
             cancellationToken) == 1;
@@ -284,7 +286,7 @@ public sealed class MySqlCategoryRepository(MySqlUnidadDeTrabajo unidadDeTrabajo
             ? new DuplicateCategoryNameException(ex)
             : new DuplicateCategoryCodeException(ex);
 
-    private static void AddCategoryParameters(
+    private void AddCategoryParameters(
         MySqlCommand command,
         Category category)
     {
@@ -305,8 +307,8 @@ public sealed class MySqlCategoryRepository(MySqlUnidadDeTrabajo unidadDeTrabajo
             (object?)category.AisleLocation ?? DBNull.Value);
 
         command.Parameters.AddWithValue(
-            "@idUsuarioAdmin",
-            SystemAdminId);
+            "@idUsuario",
+            usuarioActual.Id);
     }
 
     private static Category MapCategory(

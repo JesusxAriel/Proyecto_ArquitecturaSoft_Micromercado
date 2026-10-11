@@ -1,3 +1,5 @@
+using Proyecto_Arquitectura_Micromercado.Application.Security;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
@@ -16,10 +18,10 @@ public sealed class InMemoryProductRepository(
     IPriceHistoryRepository priceHistoryRepository,
     IEnumerable<LookupOption>? empaques = null,
     IEnumerable<LookupOption>? categorias = null,
-    IEnumerable<LookupOption>? proveedores = null) : IProductRepository
+    IEnumerable<LookupOption>? proveedores = null,
+    IUsuarioActual? usuarioActual = null) : IProductRepository
 {
-    private const int SystemAdminId = 1;
-    private const string MotivoPorDefecto = "Actualización de precio";
+    private readonly IUsuarioActual usuario = usuarioActual ?? new UsuarioActualEnMemoria();
 
     private readonly List<Product> productos = [];
     private readonly List<LookupOption> catalogoEmpaques = [.. empaques ?? []];
@@ -96,8 +98,12 @@ public sealed class InMemoryProductRepository(
         existente.IdCategoria = product.IdCategoria;
         existente.IdProveedor = product.IdProveedor;
 
-        // Mismo criterio que en MySQL: solo se registra si algun precio cambio.
-        if (precioVentaAnterior != product.PrecioVenta || precioCostoAnterior != product.PrecioCosto)
+        // Mismo criterio que en MySQL, y ahora literalmente la misma definicion.
+        if (CambioDePrecio.Hubo(
+                precioVentaAnterior,
+                precioCostoAnterior,
+                product.PrecioVenta,
+                product.PrecioCosto))
         {
             await priceHistoryRepository.AddPriceHistoryAsync(
                 new ProductPriceHistory
@@ -109,9 +115,9 @@ public sealed class InMemoryProductRepository(
                     PrecioCostoAnterior = precioCostoAnterior,
                     PrecioCostoNuevo = product.PrecioCosto,
                     MotivoCambio = string.IsNullOrWhiteSpace(product.MotivoCambio)
-                        ? MotivoPorDefecto
+                        ? CambioDePrecio.MotivoPorDefecto
                         : product.MotivoCambio.Trim(),
-                    IdUsuario = SystemAdminId
+                    IdUsuario = usuario.Id
                 },
                 cancellationToken);
         }
@@ -146,6 +152,11 @@ public sealed class InMemoryProductRepository(
 
         return Task.FromResult(existe);
     }
+
+    public Task<bool> ExistenProductosActivosDelProveedorAsync(
+        int idProveedor,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(Activos().Any(p => p.IdProveedor == idProveedor));
 
     public Task<IReadOnlyList<LookupOption>> GetPackagingsAsync(CancellationToken cancellationToken = default) =>
         Catalogo(catalogoEmpaques);
