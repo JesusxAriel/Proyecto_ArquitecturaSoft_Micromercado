@@ -56,18 +56,19 @@
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button">Caja y Ventas</a>
+                            <a class="nav-link dropdown-toggle @(currentPage.StartsWith("/Sales", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)"
+                            href="#" role="button">Caja y Ventas</a>
                             <ul class="dropdown-menu">
-                                    <li>
-                                        <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
-                                            Registro de Ventas <span class="badge bg-secondary ms-1">Próximamente</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
-                                            Arqueo Diario <span class="badge bg-secondary ms-1">Próximamente</span>
-                                        </a>
-                                    </li>
+                                <li>
+                                    <a class="dropdown-item" asp-page="/Sales/Index">
+                                        Registro de Ventas
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
+                                        Arqueo Diario <span class="badge bg-secondary ms-1">Próximamente</span>
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                     </ul>
