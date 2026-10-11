@@ -84,11 +84,12 @@
                                 <th scope="col" class="text-end">Precio unitario (Bs)</th>
                                 <th scope="col" class="text-center">Cantidad</th>
                                 <th scope="col" class="text-end">Subtotal (Bs)</th>
+                                <th scope="col">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="detalleTemporal">
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-4">Todavía no hay productos en el detalle.</td>
+                                <td colspan="6" class="text-center text-muted py-4">Todavía no hay productos en el detalle.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -102,6 +103,28 @@
                 </div>
             </div>
         </section>
+    </div>
+</div>
+
+<div class="modal fade" id="editarCantidadModal" tabindex="-1" aria-labelledby="editarCantidadTitulo" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form id="editarCantidadForm" class="modal-content" novalidate>
+            <div class="modal-header">
+                <h2 id="editarCantidadTitulo" class="modal-title fs-5">Editar cantidad</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">Producto: <strong id="editarCantidadProducto" class="text-break"></strong></p>
+                <label for="editarCantidadInput" class="form-label">Cantidad</label>
+                <input id="editarCantidadInput" class="form-control" type="number" min="1" step="1" required
+                       aria-describedby="editarCantidadError" aria-invalid="false" />
+                <div id="editarCantidadError" class="invalid-feedback" role="alert" hidden>Ingrese una cantidad entera superior a 0.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            </div>
+        </form>
     </div>
 </div>
 

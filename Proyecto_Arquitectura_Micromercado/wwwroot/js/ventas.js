@@ -108,6 +108,13 @@
     const tablaDetalle = document.getElementById("detalleTemporal");
     const estadoDetalle = document.getElementById("estadoDetalle");
     const detalleTemporal = [];
+    const modalEdicion = document.getElementById("editarCantidadModal");
+    const formularioEdicion = document.getElementById("editarCantidadForm");
+    const productoEdicion = document.getElementById("editarCantidadProducto");
+    const cantidadEdicion = document.getElementById("editarCantidadInput");
+    const errorEdicion = document.getElementById("editarCantidadError");
+    const modalCantidad = new bootstrap.Modal(modalEdicion);
+    let itemEnEdicion = null;
     let productoSeleccionado = null;
     let temporizador;
     let consulta;
@@ -125,6 +132,104 @@
     function mostrarEstadoDetalle(mensaje, esError = false) {
         estadoDetalle.textContent = mensaje;
         estadoDetalle.className = `small mt-3 mb-0 text-${esError ? "danger" : "success"}`;
+    }
+
+    function mostrarErrorEdicion(mensaje = "") {
+        errorEdicion.textContent = mensaje;
+        errorEdicion.hidden = !mensaje;
+        cantidadEdicion.classList.toggle("is-invalid", Boolean(mensaje));
+        cantidadEdicion.setAttribute("aria-invalid", String(Boolean(mensaje)));
+    }
+
+    function abrirEdicion(item) {
+        itemEnEdicion = item;
+        productoEdicion.textContent = item.nombre;
+        cantidadEdicion.value = String(item.cantidad);
+        mostrarErrorEdicion();
+        modalCantidad.show();
+    }
+
+    function guardarCambiosCantidad(event) {
+        event.preventDefault();
+        if (!itemEnEdicion) return;
+
+        const unidades = cantidadEdicion.valueAsNumber;
+        if (!Number.isSafeInteger(unidades) || unidades <= 0 || !cantidadEdicion.validity.valid) {
+            mostrarErrorEdicion("Ingrese una cantidad entera superior a 0.");
+            cantidadEdicion.focus();
+            return;
+        }
+
+        const subtotal = Math.round((itemEnEdicion.precioUnitario * unidades + Number.EPSILON) * 100) / 100;
+        if (!Number.isFinite(subtotal)) {
+            mostrarErrorEdicion("El subtotal no es válido. Ingrese otra cantidad.");
+            cantidadEdicion.focus();
+            return;
+        }
+
+        mostrarErrorEdicion();
+        itemEnEdicion.cantidad = unidades;
+        itemEnEdicion.subtotal = subtotal;
+        renderizarDetalle();
+        mostrarEstadoDetalle(`${itemEnEdicion.nombre}: cantidad actualizada.`);
+        modalCantidad.hide();
+    }
+
+    formularioEdicion.addEventListener("submit", guardarCambiosCantidad);
+    modalEdicion.addEventListener("shown.bs.modal", () => cantidadEdicion.focus());
+    modalEdicion.addEventListener("hidden.bs.modal", () => {
+        itemEnEdicion = null;
+        mostrarErrorEdicion();
+    });
+
+    function renderizarDetalle() {
+        tablaDetalle.replaceChildren();
+        if (detalleTemporal.length === 0) {
+            const fila = document.createElement("tr");
+            const celda = document.createElement("td");
+            celda.colSpan = 6;
+            celda.className = "text-center text-muted py-4";
+            celda.textContent = "Todavía no hay productos en el detalle.";
+            fila.append(celda);
+            tablaDetalle.append(fila);
+            return;
+        }
+
+        detalleTemporal.forEach((item, indice) => {
+            const fila = document.createElement("tr");
+            [
+                [item.nombre, "text-break"],
+                [item.presentacion, "text-break"],
+                [precio.format(item.precioUnitario), "text-end"],
+                [String(item.cantidad), "text-center"],
+                [precio.format(item.subtotal), "text-end"]
+            ].forEach(([valor, clase]) => {
+                const celda = document.createElement("td");
+                celda.textContent = valor;
+                celda.className = clase;
+                fila.append(celda);
+            });
+
+            const acciones = document.createElement("td");
+            const editar = document.createElement("button");
+            editar.type = "button";
+            editar.className = "btn btn-outline-primary btn-sm me-2";
+            editar.textContent = "Editar";
+            editar.addEventListener("click", () => abrirEdicion(item));
+
+            const eliminar = document.createElement("button");
+            eliminar.type = "button";
+            eliminar.className = "btn btn-outline-danger btn-sm";
+            eliminar.textContent = "Eliminar";
+            eliminar.addEventListener("click", () => {
+                detalleTemporal.splice(indice, 1);
+                renderizarDetalle();
+                mostrarEstadoDetalle(`${item.nombre} eliminado del detalle temporal.`);
+            });
+            acciones.append(editar, eliminar);
+            fila.append(acciones);
+            tablaDetalle.append(fila);
+        });
     }
 
     agregar.addEventListener("click", () => {
@@ -162,21 +267,7 @@
         };
         detalleTemporal.push(item);
 
-        if (detalleTemporal.length === 1) tablaDetalle.replaceChildren();
-        const fila = document.createElement("tr");
-        [
-            [item.nombre, "text-break"],
-            [item.presentacion, "text-break"],
-            [precio.format(item.precioUnitario), "text-end"],
-            [String(item.cantidad), "text-center"],
-            [precio.format(item.subtotal), "text-end"]
-        ].forEach(([valor, clase]) => {
-            const celda = document.createElement("td");
-            celda.textContent = valor;
-            celda.className = clase;
-            fila.append(celda);
-        });
-        tablaDetalle.append(fila);
+        renderizarDetalle();
         mostrarEstadoDetalle(`${item.nombre} agregado al detalle temporal.`);
     });
 
