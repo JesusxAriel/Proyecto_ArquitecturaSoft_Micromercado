@@ -26,8 +26,11 @@ public sealed class BCryptPasswordHasher : IPasswordHasher
         {
             return BCrypt.Net.BCrypt.Verify(contrasena, hash);
         }
-        catch (BCrypt.Net.SaltParseException)
+        catch (Exception ex) when (ex is BCrypt.Net.SaltParseException or ArgumentException)
         {
+            // La libreria lanza SaltParseException ante un prefijo invalido y
+            // ArgumentOutOfRangeException ante un hash truncado. Ambos significan lo
+            // mismo para el login: ese hash no verifica a nadie.
             return false;
         }
     }
