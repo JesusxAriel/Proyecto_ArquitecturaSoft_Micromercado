@@ -4,6 +4,9 @@
     ViewData["Title"] = "Módulo de Ventas";
 }
 
+<!-- Estilos para el buscador desplegable -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css">
+
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>Módulo de Ventas</h2>
@@ -25,7 +28,7 @@
         </div>
     }
 
-    <!-- Panel para registrar nueva venta (Parte 3.1) -->
+    <!-- Panel para registrar nueva venta -->
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-dark text-white d-flex align-items-center gap-2">
             <i class="bi bi-cart-plus"></i>
@@ -37,12 +40,12 @@
                 <div class="row g-3 align-items-end">
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Seleccionar Producto</label>
-                        <select name="Lineas[0].IdProducto" class="form-select" required>
-                            <option value="">-- Seleccionar --</option>
+                        <select id="select-producto" name="Lineas[0].IdProducto" required>
+                            <option value="">-- Escribe para buscar un producto --</option>
                             @foreach (var prod in Model.ProductosDisponibles)
                             {
                                 <option value="@prod.Id">
-                                    @prod.Nombre — Stock: @prod.StockCalculado — Precio: Bs. @prod.PrecioVenta.ToString("N2")
+                                    @prod.Nombre — Stock: @prod.StockCalculado — Bs. @prod.PrecioVenta.ToString("N2")
                                 </option>
                             }
                         </select>
@@ -61,7 +64,7 @@
         </div>
     </div>
 
-    <!-- Historial de Ventas (Parte 3.2) -->
+    <!-- Historial de Ventas -->
     <div class="card shadow-sm">
         <div class="card-header bg-dark text-white d-flex align-items-center gap-2">
             <i class="bi bi-journal-text"></i>
@@ -110,7 +113,6 @@
                                                 <i class="bi bi-x-circle me-1"></i> Anular
                                             </button>
 
-                                            <!-- Modal de Confirmación Estilizado -->
                                             <div class="modal fade text-start" id="@modalId" tabindex="-1" aria-hidden="true">
                                                 <div class="modal-dialog modal-dialog-centered">
                                                     <div class="modal-content">
@@ -150,3 +152,28 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+    <script>
+        (function () {
+            function inicializarBuscador() {
+                var el = document.getElementById('select-producto');
+                if (el && typeof TomSelect !== 'undefined' && !el.tomselect) {
+                    new TomSelect(el, {
+                        create: false,
+                        maxOptions: null,
+                        sortField: { field: "text", direction: "asc" },
+                        placeholder: "-- Escribe para buscar un producto --"
+                    });
+                }
+            }
+
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                setTimeout(inicializarBuscador, 50);
+            } else {
+                document.addEventListener('DOMContentLoaded', inicializarBuscador);
+            }
+        })();
+    </script>
+}

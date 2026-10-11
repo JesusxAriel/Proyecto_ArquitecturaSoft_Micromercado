@@ -1,3 +1,5 @@
+using System.Data;
+using System.Text.Json;
 using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
 using Proyecto_Arquitectura_Micromercado.Domain.Sales;
@@ -6,6 +8,58 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
 public sealed class MySqlVentaRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) : IVentaRepository
 {
+    public async Task<(int IdVenta, string NroComprobante)> RegistrarVentaConSpAsync(NuevaVentaDto dto, CancellationToken cancellationToken = default)
+    {
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+
+        // Serializar las líneas de venta al formato JSON que requiere sp_RegistrarVenta
+        var detallesJson = JsonSerializer.Serialize(dto.Lineas.Select(l => new
+        {
+            idProducto = l.IdProducto,
+            cantidad = l.Cantidad
+        }));
+
+        await using var cmd = new MySqlCommand("sp_RegistrarVenta", alquiler.Conexion, alquiler.Transaccion)
+        {
+            CommandType = CommandType.StoredProcedure
+        };
+
+        cmd.Parameters.AddWithValue("p_idCliente", dto.IdCliente > 0 ? dto.IdCliente : 1);
+        cmd.Parameters.AddWithValue("p_idUsuario", 1);
+        cmd.Parameters.AddWithValue("p_efectivoPagado", 999999.00m);
+        cmd.Parameters.AddWithValue("p_detalles", detallesJson);
+
+        var pIdVenta = new MySqlParameter("p_idVenta", MySqlDbType.Int32) { Direction = ParameterDirection.Output };
+        var pNroComprobante = new MySqlParameter("p_nroComprobante", MySqlDbType.VarChar, 50) { Direction = ParameterDirection.Output };
+
+        cmd.Parameters.Add(pIdVenta);
+        cmd.Parameters.Add(pNroComprobante);
+
+        await cmd.ExecuteNonQueryAsync(cancellationToken);
+
+        int idVenta = Convert.ToInt32(pIdVenta.Value);
+        string nroComprobante = pNroComprobante.Value?.ToString() ?? string.Empty;
+
+        return (idVenta, nroComprobante);
+    }
+
+    public async Task<bool> AnularVentaConSpAsync(int idVenta, string motivo, CancellationToken cancellationToken = default)
+    {
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+
+        await using var cmd = new MySqlCommand("sp_AnularVenta", alquiler.Conexion, alquiler.Transaccion)
+        {
+            CommandType = CommandType.StoredProcedure
+        };
+
+        cmd.Parameters.AddWithValue("p_idVenta", idVenta);
+        cmd.Parameters.AddWithValue("p_idUsuarioAnulacion", 1);
+        cmd.Parameters.AddWithValue("p_motivo", motivo);
+
+        var rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
+        return rows > 0;
+    }
+
     public async Task<int> CrearVentaAsync(Venta venta, CancellationToken cancellationToken = default)
     {
         await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
