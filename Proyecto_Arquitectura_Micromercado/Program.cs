@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Localization;
 using Proyecto_Arquitectura_Micromercado.Application.Common;
+using Proyecto_Arquitectura_Micromercado.Application.Comprobantes;
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Application.Security;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Factories;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Comprobantes;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Security;
@@ -57,6 +59,14 @@ builder.Services.AddScoped<IUsuarioActual, UsuarioActualDesdeClaims>();
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IUsuarioRepository, MySqlUsuarioRepository>();
 builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
+
+// Comprobante de venta: el repositorio solo lee, el generador HTML es un adaptador
+// intercambiable (un generador de PDF se registraria aqui en su lugar) y el reloj entra
+// como dependencia para poder fijar la hora en las pruebas.
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<IComprobanteRepository, MySqlComprobanteRepository>();
+builder.Services.AddScoped<IComprobanteService, ComprobanteService>();
+builder.Services.AddSingleton<IGeneradorComprobante, GeneradorComprobanteHtml>();
 
 // El Singleton de conexion se inicializa una sola vez y se registra como dependencia,
 // para que los repositorios la reciban por constructor en vez de leerla de un estatico
