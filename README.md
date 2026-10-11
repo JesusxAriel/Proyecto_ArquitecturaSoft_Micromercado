@@ -145,6 +145,23 @@ builder.Services.AddScoped<IProductService, ProductService>();
 
 El stock no es una columna de `PRODUCTO`: se lleva por lote en `LOTE.cantidadDisponible`, con salida FEFO (primero en vencer, primero en salir). El stock de un producto es la suma de sus lotes vigentes y se consulta con la vista `vw_productos_con_stock`. Por eso la venta descuenta de `LOTE` y la anulación restaura en `LOTE`. Esta decisión fue aprobada por el magister.
 
+## 🧾 Comprobante de venta
+
+El comprobante de una venta está disponible en `/Comprobante/{idVenta}` para los roles Administrador y Cajero.
+
+### Cómo abrirlo tras guardar una venta
+
+Después de registrar la venta, la página que la guarda abre el comprobante en una pestaña nueva. La dirección se obtiene con `ComprobanteUrl.Para(idVenta)` (en `Pages/Shared`), sin armar la ruta a mano:
+
+```html
+<script>
+    // idVenta es el identificador que devolvió el registro de la venta
+    window.open('@ComprobanteUrl.Para(idVenta)', '_blank');
+</script>
+```
+
+Si el identificador llega por JavaScript, por ejemplo en la respuesta de un `fetch`, se arma igual: `window.open('/Comprobante/' + idVenta, '_blank');`. Conviene llamar a `window.open` dentro del manejador del clic o de la respuesta, porque el navegador puede bloquear las ventanas emergentes que no nacen de una acción de la persona usuaria.
+
 ## ✨ Funcionalidades Principales
 
 ### Productos e inventario
