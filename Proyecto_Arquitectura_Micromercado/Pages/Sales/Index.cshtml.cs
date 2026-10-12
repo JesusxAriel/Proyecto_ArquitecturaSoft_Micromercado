@@ -106,7 +106,7 @@ public sealed class IndexModel(
 
         try
         {
-            var listado = await productService.GetPagedAsync(1, 10, termino, cancellationToken);
+            var listado = await productService.GetPagedForSalesAsync(1, 10, termino, cancellationToken);
             return new JsonResult(new
             {
                 productos = listado.Items.Select(producto => new

@@ -40,11 +40,23 @@ public sealed class MySqlProductRepository(
         return products;
     }
 
-    public async Task<PagedResult<ProductListItem>> GetPagedAsync(
+    public Task<PagedResult<ProductListItem>> GetPagedAsync(
+        int page, int pageSize, string? search, CancellationToken cancellationToken = default) =>
+        GetPagedCoreAsync(page, pageSize, search,
+            "nombre LIKE @search OR empaquePresentacion LIKE @search OR nombreCategoria LIKE @search OR nombreProveedor LIKE @search",
+            cancellationToken);
+
+    public Task<PagedResult<ProductListItem>> GetPagedForSalesAsync(
+        int page, int pageSize, string? search, CancellationToken cancellationToken = default) =>
+        GetPagedCoreAsync(page, pageSize, search,
+            "nombre LIKE @search OR empaquePresentacion LIKE @search", cancellationToken);
+
+    private async Task<PagedResult<ProductListItem>> GetPagedCoreAsync(
         int page,
         int pageSize,
         string? search,
-        CancellationToken cancellationToken = default)
+        string searchCondition,
+        CancellationToken cancellationToken)
     {
         await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
@@ -58,12 +70,7 @@ public sealed class MySqlProductRepository(
                 """,
             from: "vw_productos_con_stock",
             baseWhere: null,
-            searchCondition: """
-                nombre LIKE @search
-                OR empaquePresentacion LIKE @search
-                OR nombreCategoria LIKE @search
-                OR nombreProveedor LIKE @search
-                """,
+            searchCondition: searchCondition,
             orderBy: "nombre, id",
             search,
             page,

@@ -33,6 +33,51 @@ public class ProductServiceEnMemoriaTests
         IdProveedor = 1
     };
 
+    [Theory]
+    [InlineData("  leche  ", true)]
+    [InlineData("bolsa", true)]
+    [InlineData("lacteos", false)]
+    [InlineData("distribuidora", false)]
+    public async Task Busqueda_de_sales_solo_incluye_nombre_y_presentacion(string termino, bool coincide)
+    {
+        var historial = new InMemoryPriceHistoryRepository();
+        var repositorio = new InMemoryProductRepository(historial,
+            Catalogo, [new(1, "Lacteos")], [new(1, "Distribuidora")]);
+        IProductService servicio = new ProductService(repositorio, historial);
+        var id = await servicio.CreateAsync(NuevoProducto());
+
+        var sales = await servicio.GetPagedForSalesAsync(1, 10, termino);
+        var general = await servicio.GetPagedAsync(1, 10, termino);
+
+        Assert.Equal(coincide ? 1 : 0, sales.TotalCount);
+        Assert.Equal(id, Assert.Single(general.Items).Id);
+        if (coincide)
+        {
+            var producto = Assert.Single(sales.Items);
+            Assert.Equal(id, producto.Id);
+            Assert.Equal("Bolsa 1L", producto.EmpaquePresentacion);
+            Assert.Equal(10.0m, producto.PrecioVenta);
+            Assert.Equal(0, producto.StockCalculado);
+        }
+    }
+
+    [Fact]
+    public async Task Busqueda_de_sales_conserva_limite_y_total_de_coincidencias()
+    {
+        var (servicio, _) = Crear();
+        for (var i = 0; i < 12; i++)
+        {
+            var producto = NuevoProducto();
+            producto.Nombre = $"Leche {i:D2}";
+            await servicio.CreateAsync(producto);
+        }
+
+        var resultado = await servicio.GetPagedForSalesAsync(1, 10, "leche");
+
+        Assert.Equal(12, resultado.TotalCount);
+        Assert.Equal(10, resultado.Items.Count);
+    }
+
     private static Product Editado(int id, decimal precioVenta, string? motivo)
     {
         var producto = NuevoProducto();
