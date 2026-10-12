@@ -17,11 +17,11 @@ public class VentaFacade(
 
         try
         {
-            var (idVenta, nroComprobante) = await ventaRepository.RegistrarVentaConSpAsync(dto, cancellationToken);
+            var (idVenta, nroComprobante, total) = await ventaRepository.RegistrarVentaConSpAsync(dto, cancellationToken);
 
             await unidadDeTrabajo.ConfirmarAsync(cancellationToken);
 
-            return new ResultadoVentaDto(idVenta, 0.00m);
+            return new ResultadoVentaDto(idVenta, total);
         }
         catch
         {

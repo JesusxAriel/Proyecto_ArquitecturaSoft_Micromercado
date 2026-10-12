@@ -10,7 +10,7 @@ public interface IVentaRepository
     Task<IReadOnlyList<Venta>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<bool> CambiarEstadoAnuladoAsync(int idVenta, string motivo, CancellationToken cancellationToken = default);
 
-    // Métodos para Stored Procedures (FEFO y atrocidad de lotes en MySQL)
-    Task<(int IdVenta, string NroComprobante)> RegistrarVentaConSpAsync(NuevaVentaDto dto, CancellationToken cancellationToken = default);
+    Task<(int IdVenta, string NroComprobante, decimal Total)> RegistrarVentaConSpAsync(NuevaVentaDto dto, CancellationToken cancellationToken = default);
     Task<bool> AnularVentaConSpAsync(int idVenta, string motivo, CancellationToken cancellationToken = default);
+    Task<decimal> GetVentasDelDiaAsync(CancellationToken cancellationToken = default);
 }

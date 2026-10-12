@@ -8,11 +8,10 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
 public sealed class MySqlVentaRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) : IVentaRepository
 {
-    public async Task<(int IdVenta, string NroComprobante)> RegistrarVentaConSpAsync(NuevaVentaDto dto, CancellationToken cancellationToken = default)
+    public async Task<(int IdVenta, string NroComprobante, decimal Total)> RegistrarVentaConSpAsync(NuevaVentaDto dto, CancellationToken cancellationToken = default)
     {
         await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
-        // Serializar las líneas de venta al formato JSON que requiere sp_RegistrarVenta
         var detallesJson = JsonSerializer.Serialize(dto.Lineas.Select(l => new
         {
             idProducto = l.IdProducto,
@@ -40,7 +39,14 @@ public sealed class MySqlVentaRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) :
         int idVenta = Convert.ToInt32(pIdVenta.Value);
         string nroComprobante = pNroComprobante.Value?.ToString() ?? string.Empty;
 
-        return (idVenta, nroComprobante);
+        // Obtener el total generado automáticamente por el Stored Procedure
+        const string sqlMonto = "SELECT montoTotal FROM VENTA WHERE id = @idVenta;";
+        await using var cmdMonto = new MySqlCommand(sqlMonto, alquiler.Conexion, alquiler.Transaccion);
+        cmdMonto.Parameters.AddWithValue("@idVenta", idVenta);
+        var resultMonto = await cmdMonto.ExecuteScalarAsync(cancellationToken);
+        decimal total = resultMonto != null && resultMonto != DBNull.Value ? Convert.ToDecimal(resultMonto) : 0.00m;
+
+        return (idVenta, nroComprobante, total);
     }
 
    public async Task<bool> AnularVentaConSpAsync(int idVenta, string motivo, CancellationToken cancellationToken = default)
@@ -230,5 +236,21 @@ public sealed class MySqlVentaRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) :
 
         var rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
         return rows > 0;
+    }
+
+    public async Task<decimal> GetVentasDelDiaAsync(CancellationToken cancellationToken = default)
+    {
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+
+        const string sql = @"
+            SELECT COALESCE(SUM(montoTotal), 0)
+            FROM VENTA
+            WHERE DATE(fechaVenta) = CURDATE()
+            AND estado = 'COMPLETADA';";
+
+        await using var cmd = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
+        var result = await cmd.ExecuteScalarAsync(cancellationToken);
+
+        return result != null && result != DBNull.Value ? Convert.ToDecimal(result) : 0m;
     }
 }
