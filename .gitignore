@@ -1,6 +1,7 @@
 Proyecto_Arquitectura_Micromercado/Proyecto_Arquitectura_Micromercado.csproj.user
 AUDIT_SOLID_CLEAN_FACTORY_REPORT.md
 appsettings.json
+appsettings.Development.json
 .vs/
 bin/
 obj/
