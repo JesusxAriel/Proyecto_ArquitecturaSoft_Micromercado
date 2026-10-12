@@ -4,6 +4,42 @@
     ViewData["Title"] = "Registro de ventas";
 }
 
+<style>
+    #resultadosClientes > .list-group-item,
+    #resultadosProductos > .list-group-item {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: .75rem;
+        padding: .5rem .75rem;
+    }
+
+    #resultadosClientes > .list-group-item > div,
+    #resultadosProductos > .list-group-item > div {
+        grid-column: 1;
+        min-width: 0;
+        line-height: 1.35;
+    }
+
+    #resultadosClientes > .list-group-item > button,
+    #resultadosProductos > .list-group-item > button {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        align-self: center;
+        margin-top: 0 !important;
+    }
+
+    #resultadosProductos {
+        max-height: 23rem;
+        overflow-y: auto;
+    }
+
+    #estadoBusquedaClientes:empty,
+    #estadoBusquedaProductos:empty,
+    #estadoDetalle:empty {
+        margin: 0 !important;
+    }
+</style>
+
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
     <h1 class="page-heading mb-0">Registro de ventas</h1>
     <span class="badge bg-secondary">En preparación</span>
@@ -16,22 +52,22 @@
         <section id="buscadorClientes" class="card shadow-sm h-100" aria-labelledby="clienteHeading"
                  data-busqueda-url="@Url.Page("/Sales/Index", "BuscarClientes")">
             <div class="card-body">
-                <h2 id="clienteHeading" class="h5 mb-3">Cliente</h2>
-                <div class="mb-3">
+                <h2 id="clienteHeading" class="h5 mb-2">Cliente</h2>
+                <div class="mb-2">
                     <label asp-for="Input.IdentificacionCliente" class="form-label">Buscar por CI/NIT o razón social</label>
                     <input asp-for="Input.IdentificacionCliente" class="form-control"
                            placeholder="Ingrese CI/NIT o razón social" autocomplete="off" aria-describedby="clienteHelp" />
-                    <div id="clienteHelp" class="form-text">Busque un cliente por CI/NIT o razón social.</div>
+                    <div id="clienteHelp" class="form-text">Seleccione un resultado para asociarlo a la venta.</div>
                 </div>
-                <p id="estadoBusquedaClientes" class="small text-muted" role="status" aria-live="polite"></p>
-                <ul id="resultadosClientes" class="list-group mb-3" aria-label="Resultados de clientes" aria-busy="false"></ul>
+                <p id="estadoBusquedaClientes" class="small text-muted mb-2" role="status" aria-live="polite"></p>
+                <ul id="resultadosClientes" class="list-group mb-2" aria-label="Resultados de clientes" aria-busy="false"></ul>
                 <input asp-for="Input.IdCliente" type="hidden" />
-                <div class="border rounded p-3 bg-light">
+                <div class="border rounded p-2 bg-light small">
                     <p id="clienteSeleccionado" class="mb-0" role="status" aria-live="polite">Ningún cliente seleccionado.</p>
                     <button id="quitarCliente" type="button" class="btn btn-outline-secondary btn-sm mt-2" hidden>Quitar selección</button>
                 </div>
                 <noscript><p class="text-danger mt-3">Active JavaScript para buscar y seleccionar clientes.</p></noscript>
-                <p class="mt-3 mb-0">
+                <p class="small mt-2 mb-0">
                     <a asp-page="/Customers/Create" target="_blank" rel="noopener">¿No encuentra al cliente? Registrar cliente</a>
                     <span class="form-text">Se abre en una nueva pestaña para conservar la venta actual.</span>
                 </p>
@@ -43,23 +79,23 @@
         <section id="buscadorProductos" class="card shadow-sm h-100" aria-labelledby="productoHeading"
                  data-busqueda-url="@Url.Page("/Sales/Index", "BuscarProductos")">
             <div class="card-body">
-                <h2 id="productoHeading" class="h5 mb-3">Producto</h2>
-                <div class="row g-3">
+                <h2 id="productoHeading" class="h5 mb-2">Producto</h2>
+                <div class="row g-2">
                     <div class="col-12 col-md-8">
                         <label asp-for="Input.BusquedaProducto" class="form-label"></label>
                         <input asp-for="Input.BusquedaProducto" class="form-control"
                                placeholder="Nombre o presentación del producto" autocomplete="off" aria-describedby="productoHelp" />
-                        <div id="productoHelp" class="form-text">Busque por nombre, presentación, categoría o proveedor. El stock es informativo; se validará al registrar la venta.</div>
+                        <div id="productoHelp" class="form-text">También puede buscar por categoría o proveedor. Stock informativo; se validará al registrar la venta.</div>
                     </div>
                     <div class="col-12 col-md-4">
                         <label asp-for="Input.Cantidad" class="form-label"></label>
                         <input asp-for="Input.Cantidad" class="form-control" type="number" min="1" step="1" required aria-describedby="estadoDetalle" />
                     </div>
                 </div>
-                <p id="estadoBusquedaProductos" class="small text-muted mt-3" role="status" aria-live="polite"></p>
-                <ul id="resultadosProductos" class="list-group mb-3" aria-label="Resultados de productos" aria-busy="false"></ul>
+                <p id="estadoBusquedaProductos" class="small text-muted mt-2 mb-2" role="status" aria-live="polite"></p>
+                <ul id="resultadosProductos" class="list-group mb-2" tabindex="0" aria-label="Resultados de productos" aria-busy="false"></ul>
                 <input asp-for="Input.IdProducto" type="hidden" />
-                <div class="border rounded p-3 bg-light">
+                <div class="border rounded p-2 bg-light small">
                     <p id="productoSeleccionado" class="mb-0 text-break" role="status" aria-live="polite">Ningún producto seleccionado.</p>
                     <button id="quitarProducto" type="button" class="btn btn-outline-secondary btn-sm mt-2" hidden>Quitar selección</button>
                 </div>
