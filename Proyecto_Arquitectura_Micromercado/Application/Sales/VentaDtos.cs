@@ -8,10 +8,11 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Sales;
 
 // Lo que la UI envia al registrar una venta.
 //
-// No incluye el total ni los precios: los pone la fachada leyendolos de la base. Si el
+// No incluye el total ni los precios: los calcula el Stored Procedure desde la base. Si el
 // precio viniera del navegador seria manipulable por el cliente.
 public sealed record NuevaVentaDto(
     int IdCliente,
+    decimal EfectivoPagado,
     IReadOnlyList<LineaVentaDto> Lineas);
 
 // Una linea del detalle tal como la arma la UI: que producto y cuantas unidades.
