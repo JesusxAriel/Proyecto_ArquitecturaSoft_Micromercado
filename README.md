@@ -280,6 +280,15 @@ Los campos que deben revisarse o reemplazarse son:
 
 No incluya contraseñas reales en commits o documentación pública. En entornos compartidos se recomienda utilizar variables de entorno, User Secrets o un gestor de secretos.
 
+`appsettings.Development.json` tampoco se versiona. En modo Desarrollo ese archivo tiene prioridad sobre `appsettings.json`, así que si contiene una cadena de conexión de otra persona, la aplicación muestra "No se pudo conectar con la base de datos" (error 1045, `Access denied`). Si después de actualizar el repositorio todavía conserva uno, elimínelo o reemplace su cadena por la suya.
+
+Una alternativa que no depende de ningún archivo del proyecto es User Secrets, que se guarda solo en su equipo y tiene prioridad sobre ambos `appsettings`. Desde la carpeta `Proyecto_Arquitectura_Micromercado`:
+
+```bash
+dotnet user-secrets init
+dotnet user-secrets set "ConnectionStrings:MySqlConnection" "Server=localhost;Port=3306;Database=bdMicroMercadoArqui;Uid=root;Pwd=SU_PASSWORD;"
+```
+
 ### 3. Usuarios de prueba
 
 El script crea dos usuarios con contraseñas protegidas con BCrypt. Estas credenciales son solo para desarrollo y pruebas; cámbielas antes de cualquier uso real.
