@@ -9,8 +9,6 @@ namespace Proyecto_Arquitectura_Micromercado.Pages;
 [AllowAnonymous]
 public sealed class LogoutModel : PageModel
 {
-    // Entrar por GET no cierra la sesion: asi un enlace o una imagen externa no pueden
-    // expulsar al usuario. El cierre solo ocurre por POST, que lleva token antifalsificacion.
     public IActionResult OnGet() => RedirectToPage("/Index");
 
     public async Task<IActionResult> OnPostAsync()

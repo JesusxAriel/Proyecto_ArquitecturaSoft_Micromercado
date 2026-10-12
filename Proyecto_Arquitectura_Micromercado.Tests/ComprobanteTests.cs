@@ -7,7 +7,6 @@ namespace Proyecto_Arquitectura_Micromercado.Tests;
 
 public class ComprobanteTests
 {
-    // Reloj que siempre marca la misma hora, para comprobar la fecha de generacion.
     private sealed class RelojFijo(DateTime momento) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => new(momento, TimeSpan.Zero);
@@ -50,8 +49,6 @@ public class ComprobanteTests
     private static DetalleDeVenta Fila(int idProducto, string nombre, int cantidad, decimal precio) =>
         new(idProducto, nombre, cantidad, precio, cantidad * precio);
 
-    // ---- Servicio
-
     [Fact]
     public async Task Arma_el_comprobante_con_los_datos_de_la_venta_la_hora_actual_y_el_usuario_actual()
     {
@@ -90,8 +87,6 @@ public class ComprobanteTests
     [Fact]
     public async Task Dos_lotes_del_mismo_producto_se_agrupan_en_una_sola_linea()
     {
-        // 100 unidades de leche salieron de dos lotes: 70 del que vence primero y 30 del
-        // siguiente. El comprobante debe mostrar una sola linea de 100.
         var venta = Venta(
             detalle:
             [
@@ -160,8 +155,6 @@ public class ComprobanteTests
         Assert.NotNull(comprobante);
         Assert.True(comprobante.EstaAnulada);
     }
-
-    // ---- Generador HTML
 
     private static async Task<string> HtmlDe(VentaParaComprobante venta, string usuario = "cajero1")
     {

@@ -7,11 +7,6 @@ using Proyecto_Arquitectura_Micromercado.Application.Security;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Comprobante;
 
-// Muestra el comprobante de una venta en /Comprobante/{idVenta}.
-//
-// Cuando la venta existe, la respuesta es el documento del generador tal cual: HTML
-// completo e imprimible, sin el menu ni el layout del sitio, pensado para abrirse en una
-// pestana nueva. Cuando no existe, se muestra un mensaje en la vista normal.
 [Authorize(Roles = Roles.AdministradorYCajero)]
 [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
 public sealed class IndexModel(

@@ -7,9 +7,6 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-// Recibe la unidad de trabajo en vez de la conexion suelta: si quien lo invoca abrio un
-// limite transaccional, todas las operaciones de este repositorio quedan dentro de el
-// sin recibir la transaccion por parametro.
 public sealed class MySqlProductRepository(
     MySqlUnidadDeTrabajo unidadDeTrabajo,
     IPriceHistoryRepository priceHistoryRepository,
@@ -261,20 +258,6 @@ public sealed class MySqlProductRepository(
         return generatedId;
     }
 
-    // El historial de precios lo escribe la base de datos: el trigger
-    // trg_producto_historial_precio inserta la fila cuando cambia el precio de venta o de
-    // costo, usando idUsuarioActualizacion como autor. Por eso este metodo NO inserta en
-    // HISTORIAL_PRECIO: hacerlo duplicaria el registro.
-    //
-    // Dos cosas dependen del trigger y de este UPDATE:
-    //   - trg_producto_bu rechaza un cambio de precio sin idUsuarioActualizacion, asi que
-    //     siempre se envia el usuario de la sesion (IUsuarioActual nunca devuelve null).
-    //   - El motivo viaja en la variable de sesion @motivo_cambio_precio, que se fija en
-    //     la MISMA conexion justo antes del UPDATE. Se fija siempre, aunque no haya
-    //     motivo, para no arrastrar el de una operacion anterior de una conexion del pool.
-    //
-    // Un solo UPDATE es atomico: el trigger corre dentro de su misma sentencia, de modo
-    // que producto e historial se guardan juntos o no se guarda ninguno.
     public async Task<bool> UpdateAsync(Product product, CancellationToken cancellationToken = default)
     {
         const string motivoSql = "SET @motivo_cambio_precio = @motivo;";

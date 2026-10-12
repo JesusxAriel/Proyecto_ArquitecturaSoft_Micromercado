@@ -36,9 +36,9 @@ public sealed class IndexModel(
     [TempData]
     public string? StatusMessage { get; set; }
 
-    public Supplier CreateSupplier { get; set; } = new();
+    public SupplierFormModel CreateSupplier { get; set; } = new();
 
-    public Supplier EditSupplier { get; set; } = new();
+    public SupplierFormModel EditSupplier { get; set; } = new();
 
     [BindProperty]
     public int DeleteSupplierId { get; set; }
@@ -65,7 +65,7 @@ public sealed class IndexModel(
     }
 
     public async Task<IActionResult> OnPostCreateAsync(
-        [FromForm] Supplier createSupplier,
+        [FromForm] SupplierFormModel createSupplier,
         CancellationToken cancellationToken)
     {
         CreateSupplier = createSupplier;
@@ -81,7 +81,7 @@ public sealed class IndexModel(
 
         try
         {
-            await supplierService.CreateAsync(CreateSupplier, cancellationToken);
+            await supplierService.CreateAsync(CreateSupplier.ToSupplier(), cancellationToken);
             StatusMessage = "Proveedor creado correctamente.";
             return RedirectToPage(ListRouteValues);
         }
@@ -105,7 +105,7 @@ public sealed class IndexModel(
     }
 
     public async Task<IActionResult> OnPostEditAsync(
-        [FromForm] Supplier editSupplier,
+        [FromForm] SupplierFormModel editSupplier,
         CancellationToken cancellationToken)
     {
         EditSupplier = editSupplier;
@@ -121,7 +121,7 @@ public sealed class IndexModel(
 
         try
         {
-            if (!await supplierService.UpdateAsync(EditSupplier, cancellationToken))
+            if (!await supplierService.UpdateAsync(EditSupplier.ToSupplier(), cancellationToken))
             {
                 return NotFound();
             }

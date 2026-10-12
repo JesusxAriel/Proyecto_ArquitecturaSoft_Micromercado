@@ -1,7 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Text.RegularExpressions;
-
-namespace Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
+﻿namespace Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
 
 public static class SupplierValidation
 {
@@ -24,39 +21,4 @@ public static class SupplierValidation
         "Ya existe un proveedor con ese nombre.";
     public const string CorreoRequeridoParaAutogestionadoMessage =
         "Un proveedor autogestionado necesita un correo para coordinar sus reposiciones.";
-}
-
-public sealed class SupplierTextAttribute : ValidationAttribute
-{
-    public override bool IsValid(object? value)
-    {
-        if (value is not string text || string.IsNullOrWhiteSpace(text))
-        {
-            return true;
-        }
-
-        return !text.Any(char.IsControl);
-    }
-
-    public override string FormatErrorMessage(string name) =>
-        $"El campo {name} debe tener palabras separadas por un solo espacio.";
-}
-
-public sealed class TelefonoAttribute : ValidationAttribute
-{
-    private static readonly Regex Pattern =
-        new(SupplierValidation.TelefonoPattern, RegexOptions.CultureInvariant);
-
-    public override bool IsValid(object? value)
-    {
-        if (value is not string text || string.IsNullOrWhiteSpace(text))
-        {
-            return true;
-        }
-
-        return Pattern.IsMatch(text.Trim());
-    }
-
-    public override string FormatErrorMessage(string name) =>
-        SupplierValidation.TelefonoMessage;
 }

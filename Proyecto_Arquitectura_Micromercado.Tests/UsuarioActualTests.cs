@@ -77,7 +77,6 @@ public class UsuarioActualTests
             AisleLocation = "Pasillo 1"
         });
 
-        // La edicion no debe sobrescribir al autor de la creacion.
         var editada = await creador.GetByIdAsync(id);
         Assert.NotNull(editada);
         editada.Description = "Leches y yogures";
