@@ -1,16 +1,5 @@
 namespace Proyecto_Arquitectura_Micromercado.Application.Comprobantes;
 
-// Escribe un monto en bolivianos con letras, como en el pie del comprobante:
-//
-//     31,00  ->  "Son Treinta y Un 00/100 Bolivianos"
-//
-// No usa librerias externas. Cada palabra va con inicial mayuscula, salvo la "y". El
-// numero se apocopa ("Un", "Veintiún") porque siempre le sigue un sustantivo: "Un Mil" no
-// se usa, pero "Veintiún Mil", "Un Millón" y "Un 00/100 Bolivianos" si. Los centavos van
-// en dos cifras sobre 100, y la moneda queda siempre en plural, como en los documentos
-// contables.
-//
-// Cubre de 0 a 999.999.999,99, que sobra para un DECIMAL(10,2) de la base de datos.
 public static class MontoEnLetras
 {
     public const decimal MontoMaximo = 999_999_999.99m;
@@ -78,7 +67,6 @@ public static class MontoEnLetras
         return ConInicialesMayusculas(string.Join(' ', partes));
     }
 
-    // De 1 a 999, ya apocopado ("un", "veintiún").
     private static string MenorQueMil(int numero)
     {
         if (numero == 100)

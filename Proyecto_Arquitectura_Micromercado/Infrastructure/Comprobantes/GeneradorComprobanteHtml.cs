@@ -5,14 +5,6 @@ using Proyecto_Arquitectura_Micromercado.Application.Comprobantes;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Comprobantes;
 
-// Adaptador del puerto IGeneradorComprobante que produce un documento HTML imprimible y
-// autosuficiente: lleva su propio CSS, asi que se puede abrir solo en una pestana nueva,
-// sin el menu ni el layout del sitio.
-//
-// Los colores son los de la linea grafica del sitio (wwwroot/css/site.css): azul
-// oscuro #1E293B, gris pizarra #334155 y ambar #F59E0B. Todo texto que viene de la base
-// de datos (razon social, descripciones, usuario) se escapa, porque lo escribe una
-// persona y no debe poder inyectar HTML en el comprobante.
 public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
 {
     private const string RutaDelLogo = "/images/logo.jpg";

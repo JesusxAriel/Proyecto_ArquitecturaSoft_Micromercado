@@ -57,9 +57,6 @@ public class BCryptPasswordHasherTests
         Assert.False(hasher.Verify("clave-segura-1", hashInvalido));
     }
 
-    // Los hashes del script SQL se generaron aparte y se pegaron a mano. Esta prueba
-    // garantiza que son verificables con el mismo adaptador que usa el login y que
-    // coinciden con las credenciales documentadas en el README.
     [Theory]
     [InlineData("admin", "admin123")]
     [InlineData("cajero1", "cajero123")]

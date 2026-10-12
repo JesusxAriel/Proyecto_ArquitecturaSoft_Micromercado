@@ -14,6 +14,10 @@ public sealed class SupplierService(
     // Tras normalizar (sin +591), el teléfono guardado son 8 dígitos que inician con 6 o 7.
     private static readonly Regex TelefonoBolivia = new(@"^[67]\d{7}$", RegexOptions.CultureInvariant);
 
+    private static readonly Regex CorreoValido = new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.CultureInvariant);
+
+    private const int LargoMaximo = 150;
+
     public Task<IReadOnlyList<SupplierListItem>> GetAllAsync(CancellationToken cancellationToken = default) =>
         repository.GetAllAsync(cancellationToken);
 
@@ -64,8 +68,6 @@ public sealed class SupplierService(
         }
     }
 
-    // Regla de negocio: un proveedor con productos activos no se puede dar de baja.
-    // Vive aquí y no en la página para que se cumpla entre cualquier entrada al sistema.
     public async Task<bool> SoftDeleteAsync(int id, CancellationToken cancellationToken = default)
     {
         if (id <= 0)
@@ -91,6 +93,16 @@ public sealed class SupplierService(
             throw new ArgumentException("El nombre de la empresa es obligatorio.");
         }
 
+        if (supplier.NombreEmpresa.Length > LargoMaximo)
+        {
+            throw new ArgumentException("El nombre no puede exceder los 150 caracteres.");
+        }
+
+        if (supplier.NombreEmpresa.Any(char.IsControl))
+        {
+            throw new ArgumentException("El nombre de la empresa contiene caracteres no permitidos.");
+        }
+
         if (string.IsNullOrWhiteSpace(supplier.NumeroEmpresa))
         {
             throw new ArgumentException("El teléfono de contacto es obligatorio.");
@@ -104,6 +116,19 @@ public sealed class SupplierService(
         if (supplier.EsAutogestionado && string.IsNullOrWhiteSpace(supplier.CorreoReferencia))
         {
             throw new ArgumentException("Un proveedor autogestionado requiere correo.");
+        }
+
+        if (supplier.CorreoReferencia is not null)
+        {
+            if (supplier.CorreoReferencia.Length > LargoMaximo)
+            {
+                throw new ArgumentException("El correo no puede exceder los 150 caracteres.");
+            }
+
+            if (!CorreoValido.IsMatch(supplier.CorreoReferencia))
+            {
+                throw new ArgumentException(SupplierValidation.CorreoMessage);
+            }
         }
     }
 

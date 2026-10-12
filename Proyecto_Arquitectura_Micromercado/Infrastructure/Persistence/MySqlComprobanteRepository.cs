@@ -4,12 +4,6 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.Errores;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-// Adaptador MySQL de solo lectura del puerto IComprobanteRepository.
-//
-// Lee las tablas directamente y no la vista vw_comprobante_venta porque la vista no
-// expone el identificador del producto, que hace falta para agrupar sin confundir dos
-// productos distintos que se llamen igual. Devuelve el detalle sin agrupar: una fila por
-// lote consumido. La agrupacion por producto es una regla de ComprobanteService.
 public sealed class MySqlComprobanteRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) : IComprobanteRepository
 {
     public Task<VentaParaComprobante?> ObtenerPorIdVentaAsync(

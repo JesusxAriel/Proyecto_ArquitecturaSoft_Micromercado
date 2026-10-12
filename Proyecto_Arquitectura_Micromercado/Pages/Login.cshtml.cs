@@ -56,7 +56,6 @@ public sealed class LoginModel(IAutenticacionService autenticacion) : PageModel
             return Page();
         }
 
-        // Se descarta cualquier sesion anterior antes de emitir la nueva identidad.
         HttpContext.Session.Clear();
 
         var principal = PrincipalDeSesion.Crear(

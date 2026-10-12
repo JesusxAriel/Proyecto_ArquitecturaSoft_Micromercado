@@ -17,7 +17,7 @@ El sistema está desarrollado con ASP.NET Core Razor Pages sobre .NET 10 y combi
 | Frontend | HTML5, Razor, CSS3 | Formularios, tablas, modales y estilos. |
 | Componentes visuales | Bootstrap | Grid, botones, alertas, modales y navegación responsive. |
 | Interactividad | JavaScript y jQuery | Llenado de modales, eventos y validaciones de interfaz. |
-| Validación | Data Annotations | Reglas declarativas en entidades y DTOs. |
+| Validación | Data Annotations | Reglas declarativas en los modelos de formulario (proveedores) y en las entidades de productos y categorías. |
 | Validación cliente | jQuery Validation Unobtrusive | Validación generada desde los modelos Razor. |
 | Valores decimales | `DecimalModelBinder` | Soporte de coma y punto decimal. |
 | Cultura | `es-BO` | Formatos regionales de números y mensajes. |
@@ -362,6 +362,15 @@ El sistema valida los datos en dos niveles:
 
 La validación del servidor es la autoridad final y no depende exclusivamente de las restricciones del navegador.
 
+### Dónde vive cada validación
+
+En proveedores la validación está separada en dos lugares:
+
+- **Pantalla:** `Pages/Suppliers/SupplierFormModel` lleva los atributos de Data Annotations (`[Required]`, `[StringLength]`, `[EmailAddress]` y los validadores de texto y teléfono), los mensajes junto a cada campo y la regla entre campos. La Page lo convierte con `ToSupplier()` antes de llamar al servicio.
+- **Negocio:** `SupplierService` aplica por su cuenta los campos obligatorios, el formato del teléfono y del correo, los largos máximos, la regla de proveedor autogestionado, la unicidad del nombre y la baja con productos, sin depender de que la Page haya validado.
+
+La entidad `Domain/Suppliers/Supplier` no lleva ningún atributo de validación. `ArquitecturaHexagonalTests` lo verifica.
+
 ## 🔐 Seguridad y consistencia
 
 - Contraseñas protegidas con BCrypt (factor de trabajo 11) mediante el puerto `IPasswordHasher`.
@@ -372,6 +381,10 @@ La validación del servidor es la autoridad final y no depende exclusivamente de
 - Eliminación lógica para conservar trazabilidad.
 - Transacciones para mantener sincronizados los precios y `HISTORIAL_PRECIO`.
 - No publicación de credenciales reales.
+
+## ⚠️ Limitaciones conocidas
+
+- **Validación por atributos en Domain (Product y Category).** `Supplier` ya usa un modelo de formulario (`SupplierFormModel`) y su entidad de Domain no tiene DataAnnotations. `Product` y `Category` mantienen sus validaciones por atributos en `Domain`, y las Pages las enlazan directamente. Están pendientes de aplicar el mismo patrón; hasta entonces, la prueba de arquitectura que prohíbe DataAnnotations en Domain se limita a `Domain/Suppliers`.
 
 ## 📚 Documentación adicional
 

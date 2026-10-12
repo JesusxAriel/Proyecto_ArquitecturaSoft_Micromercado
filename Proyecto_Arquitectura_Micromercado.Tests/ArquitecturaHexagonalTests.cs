@@ -60,9 +60,16 @@ public class ArquitecturaHexagonalTests
                     "con el motor en memoria estos catch nunca se disparan.");
     }
 
-    // Las pruebas anteriores solo miran los "using" de los .cs. Esta tambien revisa las
-    // vistas (.cshtml), donde un @using o un @inject de infraestructura pasaria inadvertido,
-    // y cualquier mencion en codigo a Infrastructure o al motor de base de datos.
+    [Fact]
+    public void Domain_Suppliers_no_usa_DataAnnotations()
+    {
+        AssertSinDependenciasHacia(
+            capa: Path.Combine("Domain", "Suppliers"),
+            prohibidos: ["System.ComponentModel.DataAnnotations"],
+            porque: "Las entidades del dominio no llevan validacion de pantalla. Esos atributos " +
+                    "van en el modelo del formulario (Pages/Suppliers/SupplierFormModel).");
+    }
+
     [Fact]
     public void Pages_no_referencia_Infrastructure_ni_el_motor_de_base_de_datos()
     {
@@ -87,8 +94,6 @@ public class ArquitecturaHexagonalTests
                     "o escribir datos.");
     }
 
-    // Revisa linea por linea los .cs y .cshtml de Pages, salvo los comentarios, y falla
-    // diciendo archivo y linea de cada coincidencia.
     private static void AssertPaginasSinPatrones(Regex[] patrones, string porque)
     {
         var carpeta = Path.Combine(RaizDelProyecto(), "Pages");

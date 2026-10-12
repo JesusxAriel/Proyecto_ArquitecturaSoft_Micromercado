@@ -4,7 +4,6 @@ namespace Proyecto_Arquitectura_Micromercado.Tests;
 
 public class MontoEnLetrasTests
 {
-    // Se lee con cultura invariante para que la prueba no dependa de la configuracion regional.
     private static decimal Monto(string texto) =>
         decimal.Parse(texto, System.Globalization.CultureInfo.InvariantCulture);
 
