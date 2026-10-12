@@ -70,7 +70,6 @@
                 <noscript><p class="text-danger mt-3">Active JavaScript para buscar y seleccionar clientes.</p></noscript>
                 <p class="small mt-2 mb-0">
                     <a asp-page="/Customers/Create" target="_blank" rel="noopener">¿No encuentra al cliente? Registrar cliente</a>
-                    <span class="form-text">Se abre en una nueva pestaña para conservar la venta actual.</span>
                 </p>
             </div>
         </section>
@@ -86,7 +85,7 @@
                         <label asp-for="Input.BusquedaProducto" class="form-label"></label>
                         <input asp-for="Input.BusquedaProducto" class="form-control"
                                placeholder="Nombre o presentación del producto" autocomplete="off" aria-describedby="productoHelp" />
-                        <div id="productoHelp" class="form-text">Busque por nombre o presentación del producto.</div>
+                        <div id="productoHelp" class="form-text">Seleccione un producto de los resultados para agregarlo al detalle.</div>
                     </div>
                     <div class="col-12 col-md-4">
                         <label asp-for="Input.Cantidad" class="form-label"></label>
