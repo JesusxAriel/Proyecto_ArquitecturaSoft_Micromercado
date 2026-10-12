@@ -71,6 +71,8 @@ builder.Services.AddSingleton<IGeneradorComprobante, GeneradorComprobanteHtml>()
 
 builder.Services.AddScoped<IClienteConsultaRepository, MySqlClienteConsultaRepository>();
 builder.Services.AddScoped<IClienteConsultaService, ClienteConsultaService>();
+builder.Services.AddScoped<IClienteCreacionRepository, MySqlClienteCreacionRepository>();
+builder.Services.AddScoped<IClienteCreacionService, ClienteCreacionService>();
 
 // El Singleton de conexion se inicializa una sola vez y se registra como dependencia,
 // para que los repositorios la reciban por constructor en vez de leerla de un estatico

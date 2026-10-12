@@ -1,0 +1,35 @@
+@page
+@model Proyecto_Arquitectura_Micromercado.Pages.Customers.CreateModel
+@{
+    ViewData["Title"] = "Registrar cliente";
+}
+
+<h1 class="page-heading mb-4">Registrar cliente</h1>
+@if (!string.IsNullOrEmpty(Model.Confirmacion))
+{
+    <div class="alert alert-success" role="status">@Model.Confirmacion</div>
+    <p>Puede cerrar esta pestaña y volver a la venta original para buscar y seleccionar al cliente registrado.</p>
+}
+else
+{
+    <form method="post" class="card card-body shadow-sm">
+        <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+        <div class="mb-3">
+            <label asp-for="Input.NitCi" class="form-label"></label>
+            <input asp-for="Input.NitCi" class="form-control" maxlength="30" required />
+            <span asp-validation-for="Input.NitCi" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Input.RazonSocial" class="form-label"></label>
+            <input asp-for="Input.RazonSocial" class="form-control" maxlength="150" required />
+            <span asp-validation-for="Input.RazonSocial" class="text-danger"></span>
+        </div>
+        <div><button type="submit" class="btn btn-primary">Guardar cliente</button></div>
+    </form>
+}
+<p class="text-muted mt-3">El enlace siguiente abre una nueva venta. Para conservar el detalle temporal, regrese a la pestaña original de ventas.</p>
+<a asp-page="/Sales/Index" class="btn btn-outline-secondary">Volver a /Sales</a>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
