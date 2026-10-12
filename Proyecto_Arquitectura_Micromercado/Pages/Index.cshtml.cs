@@ -3,11 +3,12 @@ using Proyecto_Arquitectura_Micromercado.Application.Common;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Proyecto_Arquitectura_Micromercado.Application.Sales;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages
 {
     [Authorize]
-    public sealed class IndexModel(IProductService productService) : PageModel
+    public sealed class IndexModel(IProductService productService, IVentaRepository ventaRepository) : PageModel
     {
         public decimal DailySales { get; private set; }
         public int ActiveProductCount { get; private set; }
@@ -18,10 +19,10 @@ namespace Proyecto_Arquitectura_Micromercado.Pages
 
         public async Task OnGetAsync(CancellationToken cancellationToken)
         {
-            DailySales = 0m;
-
             try
             {
+                DailySales = await ventaRepository.GetVentasDelDiaAsync(cancellationToken);
+
                 var products = await productService.GetAllAsync(cancellationToken);
                 ActiveProductCount = products.Count;
                 LowStockCount = products.Count(product => product.StockCalculado <= product.StockMinimo);
@@ -32,6 +33,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages
             }
             catch (ErrorDePersistenciaException)
             {
+                DailySales = 0m;
                 ActiveProductCount = 0;
                 LowStockCount = 0;
                 RecentPriceChanges = [];
