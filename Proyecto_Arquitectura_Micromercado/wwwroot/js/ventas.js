@@ -117,6 +117,9 @@
     const clienteSeleccionado = document.getElementById("clienteSeleccionado");
     const registrarVenta = document.getElementById("registrarVenta");
     const confirmarVenta = document.getElementById("confirmarVenta");
+    const efectivoPagado = document.getElementById("efectivoPagado");
+    const antiforgery = document.querySelector('input[name="__RequestVerificationToken"]');
+    let registrandoVenta = false;
     const modalConfirmacion = document.getElementById("confirmarVentaModal");
     const confirmacionCliente = document.getElementById("confirmacionCliente");
     const confirmacionProductos = document.getElementById("confirmacionProductosDistintos");
@@ -214,8 +217,8 @@
 
     function actualizarConfirmacionVenta() {
         const lista = ventaListaParaConfirmar();
-        registrarVenta.disabled = !lista;
-        confirmarVenta.disabled = !lista;
+        registrarVenta.disabled = registrandoVenta || !lista;
+        confirmarVenta.disabled = registrandoVenta || !lista;
         confirmacionCliente.textContent = clienteSeleccionado.textContent;
         confirmacionProductos.textContent = productosDistintos.textContent;
         confirmacionUnidades.textContent = unidadesTotales.textContent;
@@ -230,10 +233,91 @@
         if (!ventaListaParaConfirmar()) return;
         confirmacionModal.show();
     });
-    confirmarVenta.addEventListener("click", () => {
-        if (!ventaListaParaConfirmar()) return;
-        estadoConfirmacion.textContent = "La venta está lista para ser enviada al backend.";
+    function mostrarEstadoConfirmacion(mensaje, tipo = "info") {
+        estadoConfirmacion.textContent = mensaje;
+        estadoConfirmacion.className = `alert alert-${tipo} mb-0`;
         estadoConfirmacion.hidden = false;
+    }
+
+    modalConfirmacion.addEventListener("hide.bs.modal", (event) => {
+        if (registrandoVenta) event.preventDefault();
+    });
+
+    confirmarVenta.addEventListener("click", async () => {
+        if (registrandoVenta) return;
+        const cliente = Number(idCliente.value);
+        if (!Number.isInteger(cliente) || cliente <= 0 || cliente > 2147483647) {
+            mostrarEstadoConfirmacion("Seleccione un cliente para registrar la venta.", "danger");
+            return;
+        }
+        if (detalleTemporal.length === 0 || detalleTemporal.some(item =>
+            !Number.isInteger(item.idProducto) || item.idProducto <= 0 || item.idProducto > 2147483647 ||
+            !Number.isInteger(item.cantidad) || item.cantidad <= 0 || item.cantidad > 2147483647)) {
+            mostrarEstadoConfirmacion("Agregue al menos un producto y revise que las cantidades sean enteras mayores a cero.", "danger");
+            return;
+        }
+        const efectivo = efectivoPagado.valueAsNumber;
+        if (!Number.isFinite(efectivo) || efectivo < 0 || !efectivoPagado.validity.valid) {
+            mostrarEstadoConfirmacion("Ingrese un efectivo pagado válido, mayor o igual a cero y con hasta dos decimales.", "danger");
+            return;
+        }
+
+        const payload = {
+            idCliente: cliente,
+            efectivoPagado: efectivo,
+            lineas: detalleTemporal.map(item => ({ idProducto: item.idProducto, cantidad: item.cantidad }))
+        };
+        registrandoVenta = true;
+        confirmarVenta.disabled = true;
+        registrarVenta.disabled = true;
+        confirmarVenta.textContent = "Registrando venta...";
+        mostrarEstadoConfirmacion("Registrando venta...");
+        let mensajeExito = "";
+        try {
+            const respuesta = await fetch(confirmarVenta.dataset.registroUrl, {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                    RequestVerificationToken: antiforgery.value
+                },
+                body: JSON.stringify(payload)
+            });
+            const resultado = await respuesta.json().catch(() => null);
+            if (!respuesta.ok || !resultado?.exito) {
+                throw new Error(resultado?.mensaje || (respuesta.status === 400
+                    ? "No se pudo validar la solicitud. Revise los datos o recargue la página si su sesión expiró."
+                    : "No se pudo registrar la venta. Revise su sesión e intente nuevamente."));
+            }
+
+            mensajeExito = `Venta registrada: N.º ${resultado.idVenta}. Total definitivo: Bs ${precio.format(resultado.total)}.`;
+            detalleTemporal.length = 0;
+            document.getElementById("quitarCliente").click();
+            const busquedaCliente = document.getElementById("Input_IdentificacionCliente");
+            busquedaCliente.value = "";
+            busquedaCliente.dispatchEvent(new Event("input"));
+            quitar.click();
+            entrada.value = "";
+            entrada.dispatchEvent(new Event("input"));
+            cantidad.value = "1";
+            efectivoPagado.value = "";
+            renderizarDetalle();
+            mostrarEstadoDetalle(mensajeExito);
+        } catch (error) {
+            mostrarEstadoConfirmacion(error instanceof TypeError
+                ? "No se pudo conectar con el servidor. La venta temporal se conserva."
+                : error.message, "danger");
+        } finally {
+            registrandoVenta = false;
+            confirmarVenta.textContent = "Confirmar venta";
+            registrarVenta.disabled = !ventaListaParaConfirmar();
+            confirmarVenta.disabled = !ventaListaParaConfirmar();
+        }
+        if (mensajeExito) {
+            mostrarEstadoConfirmacion(mensajeExito, "success");
+            setTimeout(() => confirmacionModal.hide(), 1800);
+        }
     });
 
     actualizarResumenVenta();

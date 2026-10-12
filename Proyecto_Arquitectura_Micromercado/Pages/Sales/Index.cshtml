@@ -42,10 +42,11 @@
 
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
     <h1 class="page-heading mb-0">Registro de ventas</h1>
-    <span class="badge bg-secondary">En preparación</span>
+    <span class="badge bg-secondary">Registro de ventas</span>
 </div>
 
-<p class="text-muted mb-4">Busque y seleccione el cliente y agregue productos al detalle temporal. El registro estará disponible en los próximos bloques.</p>
+<p class="text-muted mb-4">Busque y seleccione el cliente, agregue productos al detalle e ingrese el efectivo pagado para registrar la venta.</p>
+@Html.AntiForgeryToken()
 
 <div class="row g-4">
     <div class="col-12 col-lg-4">
@@ -139,9 +140,13 @@
                     <p class="mb-1">Productos distintos: <span id="productosDistintos">0</span></p>
                     <p class="mb-1">Unidades totales: <span id="unidadesTotales">0</span></p>
                     <p class="fw-semibold mb-0">Total general: Bs <span id="totalGeneral">0.00</span></p>
+                    <div class="mt-3">
+                        <label for="efectivoPagado" class="form-label">Efectivo pagado (Bs)</label>
+                        <input id="efectivoPagado" class="form-control" type="number" min="0" step="0.01" required />
+                    </div>
                 </section>
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
-                    <p class="text-muted mb-0">Revise la venta antes de enviarla al backend. El guardado aún no está habilitado.</p>
+                    <p class="text-muted mb-0">Revise la venta antes de registrarla. El total definitivo se calculará al guardar.</p>
                     <div class="d-flex flex-wrap align-items-center gap-3">
                         <button id="registrarVenta" type="button" class="btn btn-warning fw-semibold" disabled>Registrar venta</button>
                     </div>
@@ -291,12 +296,13 @@
                 <p class="mb-1">Productos distintos: <span id="confirmacionProductosDistintos">0</span></p>
                 <p class="mb-1">Unidades totales: <span id="confirmacionUnidadesTotales">0</span></p>
                 <p class="fw-semibold">Total general: Bs <span id="confirmacionTotalGeneral">0.00</span></p>
-                <p class="small text-muted">Esta confirmación es visual. El guardado de la venta aún no está habilitado.</p>
+                <p class="small text-muted">El total mostrado es informativo. Al registrar se validarán los precios, el stock y el efectivo pagado.</p>
                 <p id="estadoConfirmacionVenta" class="alert alert-info mb-0" role="status" aria-live="polite" hidden></p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button id="confirmarVenta" type="button" class="btn btn-primary">Confirmar venta</button>
+                <button id="confirmarVenta" type="button" class="btn btn-primary"
+                        data-registro-url="@Url.Page("/Sales/Index", "RegistrarVenta")">Confirmar venta</button>
             </div>
         </div>
     </div>
