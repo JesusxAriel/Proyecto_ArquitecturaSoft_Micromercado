@@ -3,17 +3,6 @@ using System.Text;
 
 namespace Proyecto_Arquitectura_Micromercado.Application.Categories;
 
-/// <summary>
-/// Genera el código de categoría "CAT-" + 3 letras mayúsculas (sin tildes, espacios ni números)
-/// a partir del nombre. Es determinista: el mismo nombre y los mismos códigos ocupados dan
-/// siempre el mismo resultado. Nunca agrega números ni más caracteres; ante una colisión prueba
-/// otras combinaciones de 3 letras tomadas del propio nombre, en este orden:
-///   1. Base: iniciales de las palabras (hasta 3) completadas con las siguientes letras de la
-///      primera palabra. "Lácteos" -> LAC, "Jugos de Frutas" -> JDF, "Cuidado Personal" -> CPU.
-///   2. Primera letra del nombre + dos consonantes siguientes, en orden. "Lacticinios" -> LCT.
-///   3. Cualquier combinación de 3 letras del nombre conservando su orden (posiciones i&lt;j&lt;k).
-/// Si ninguna combinación está libre devuelve null y el llamador debe pedir otro nombre.
-/// </summary>
 public static class CategoryCodeGenerator
 {
     public const string Prefix = "CAT-";
@@ -50,7 +39,6 @@ public static class CategoryCodeGenerator
     {
         var seen = new HashSet<string>();
 
-        // Fase 1: base.
         var baseCode = BuildBase(words);
 
         if (seen.Add(baseCode))
@@ -58,7 +46,6 @@ public static class CategoryCodeGenerator
             yield return baseCode;
         }
 
-        // Fase 2: primera letra + dos consonantes posteriores.
         var consonants = letters[1..].Where(letter => !Vowels.Contains(letter)).ToArray();
 
         for (var a = 0; a < consonants.Length; a++)
@@ -74,7 +61,6 @@ public static class CategoryCodeGenerator
             }
         }
 
-        // Fase 3: todas las combinaciones de 3 posiciones en orden creciente.
         for (var i = 0; i < letters.Length - 2; i++)
         {
             for (var j = i + 1; j < letters.Length - 1; j++)
@@ -101,7 +87,6 @@ public static class CategoryCodeGenerator
             code.Append(word[0]);
         }
 
-        // Completa con las letras restantes empezando por la primera palabra.
         var filler = words
             .Select((word, index) => index < LetterCount ? word[1..] : word)
             .SelectMany(rest => rest);
@@ -119,7 +104,6 @@ public static class CategoryCodeGenerator
         return code.ToString();
     }
 
-    // Palabras en mayúsculas A-Z sin tildes; cualquier otro carácter separa palabras.
     private static List<string> ExtractWords(string name)
     {
         var words = new List<string>();

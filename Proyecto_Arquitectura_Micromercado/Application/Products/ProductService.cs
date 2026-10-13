@@ -7,8 +7,6 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Products;
 
 public sealed class ProductService(IProductRepository repository, IPriceHistoryRepository priceHistoryRepository) : IProductService
 {
-    // PRODUCTO.precioVenta / precioCosto son DECIMAL(10,2) en MySQL: 8 dígitos
-    // enteros + 2 decimales. Un valor mayor desborda la columna.
     private const decimal MaxPrice = 99_999_999.99m;
 
     public Task<IReadOnlyList<ProductListItem>> GetAllAsync(CancellationToken cancellationToken = default) =>
@@ -89,8 +87,6 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
 
     public async Task<bool> UpdateAsync(Product product, CancellationToken cancellationToken = default)
     {
-        // Validate normaliza y redondea los precios, asi que va primero: la comparacion
-        // con lo almacenado debe hacerse sobre los valores ya normalizados.
         Validate(product);
 
         var almacenado = await repository.GetByIdAsync(product.Id, cancellationToken);
@@ -100,9 +96,6 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
             return false;
         }
 
-        // Regla de aplicacion: si el precio cambia, hay que justificarlo. Antes vivia
-        // como metodo privado del PageModel, de modo que este servicio no la aplicaba y
-        // cualquier otra entrada al sistema se la saltaba.
         AsignarMotivoDeCambio(product, almacenado);
 
         await EnsureNotDuplicatedAsync(product, cancellationToken);
@@ -134,7 +127,6 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
         CancellationToken cancellationToken = default) =>
         repository.ExistsNombreEmpaqueAsync(ToTitleCase(nombre), idEmpaque, idExcluido, cancellationToken);
 
-    // Al crear Id vale 0, así que no excluye a nadie; al editar excluye el propio registro.
     private async Task EnsureNotDuplicatedAsync(Product product, CancellationToken cancellationToken)
     {
         if (await IsDuplicateAsync(product.Nombre, product.IdEmpaque, product.Id, cancellationToken))

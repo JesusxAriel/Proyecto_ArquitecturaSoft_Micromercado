@@ -11,7 +11,6 @@ public sealed class SupplierService(
     ISupplierRepository repository,
     IProductRepository productos) : ISupplierService
 {
-    // Tras normalizar (sin +591), el teléfono guardado son 8 dígitos que inician con 6 o 7.
     private static readonly Regex TelefonoBolivia = new(@"^[67]\d{7}$", RegexOptions.CultureInvariant);
 
     private static readonly Regex CorreoValido = new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.CultureInvariant);
@@ -59,7 +58,6 @@ public sealed class SupplierService(
         return await repository.UpdateAsync(supplier, cancellationToken);
     }
 
-    // Al crear Id vale 0, así que no excluye a nadie; al editar excluye el propio registro.
     private async Task EnsureNameIsUniqueAsync(Supplier supplier, CancellationToken cancellationToken)
     {
         if (await repository.ExistsNombreEmpresaAsync(supplier.NombreEmpresa, supplier.Id, cancellationToken))

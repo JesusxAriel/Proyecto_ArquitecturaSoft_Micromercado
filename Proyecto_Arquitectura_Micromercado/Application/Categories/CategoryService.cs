@@ -75,8 +75,6 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
                 catch (DuplicateCategoryCodeException)
                     when (attempt < MaxCodeAttempts)
                 {
-                    // Otra solicitud tomó el mismo código entre la lectura y el INSERT:
-                    // se vuelve a generar con la lista actualizada.
                 }
             }
         }
@@ -98,7 +96,6 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
             Validate(category);
             await EnsureNameIsUniqueAsync(category, cancellationToken);
 
-            // El código se asigna al crear y no cambia al editar el nombre.
             category.Code = current.Code;
 
             return await categoryRepository.UpdateAsync(
@@ -149,7 +146,6 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Categories
             }
         }
 
-        // Al crear Id vale 0, así que no excluye a nadie; al editar excluye el propio registro.
         private async Task EnsureNameIsUniqueAsync(
             Category category,
             CancellationToken cancellationToken)
