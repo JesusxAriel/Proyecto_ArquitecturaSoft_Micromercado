@@ -16,6 +16,7 @@ public sealed class IndexModel(
     IClienteConsultaService clienteConsultaService,
     IProductService productService,
     IFachadaVenta fachadaVenta,
+    IVentaConsultaService ventaConsultaService,
     ILogger<IndexModel> logger) : PageModel
 {
     public SaleInputModel Input { get; } = new();
@@ -83,6 +84,85 @@ public sealed class IndexModel(
 
         [Required, Range(1, int.MaxValue)]
         public int? Cantidad { get; init; }
+    }
+
+    public async Task<IActionResult> OnGetHistorialAsync(
+        bool incluirAnuladas, CancellationToken cancellationToken)
+    {
+        Response.Headers.CacheControl = "no-store";
+
+        try
+        {
+            var ventas = await ventaConsultaService.ListarAsync(incluirAnuladas, cancellationToken);
+            return new JsonResult(new
+            {
+                ventas = ventas.Select(venta => new
+                {
+                    id = venta.Id,
+                    nroComprobante = venta.NroComprobante,
+                    fechaHora = venta.FechaHora,
+                    nombreCliente = venta.NombreCliente,
+                    estado = venta.Estado,
+                    total = venta.Total
+                })
+            });
+        }
+        catch (ErrorDePersistenciaException)
+        {
+            return new JsonResult(new { mensaje = "No se pudo cargar el historial de ventas. Intente nuevamente." })
+            {
+                StatusCode = StatusCodes.Status503ServiceUnavailable
+            };
+        }
+    }
+
+    public async Task<IActionResult> OnGetDetalleAsync(
+        int idVenta, CancellationToken cancellationToken)
+    {
+        Response.Headers.CacheControl = "no-store";
+
+        try
+        {
+            var venta = await ventaConsultaService.ObtenerDetalleAsync(idVenta, cancellationToken);
+            if (venta is null)
+            {
+                return new JsonResult(new { mensaje = "La venta solicitada no existe." })
+                {
+                    StatusCode = StatusCodes.Status404NotFound
+                };
+            }
+
+            return new JsonResult(new
+            {
+                id = venta.Id,
+                nroComprobante = venta.NroComprobante,
+                fechaHora = venta.FechaHora,
+                nitCiCliente = venta.NitCiCliente,
+                razonSocialCliente = venta.RazonSocialCliente,
+                usuarioCajero = venta.UsuarioCajero,
+                estado = venta.Estado,
+                total = venta.Total,
+                efectivoPagado = venta.EfectivoPagado,
+                cambio = venta.Cambio,
+                motivoAnulacion = venta.MotivoAnulacion,
+                fechaAnulacion = venta.FechaAnulacion,
+                usuarioAnulacion = venta.UsuarioAnulacion,
+                lineas = venta.Lineas.Select(linea => new
+                {
+                    cantidad = linea.Cantidad,
+                    descripcion = linea.Descripcion,
+                    precioUnitario = linea.PrecioUnitario,
+                    subtotal = linea.Subtotal
+                })
+            });
+        }
+        catch (ErrorDePersistenciaException)
+        {
+            return new JsonResult(new { mensaje = "No se pudo cargar el detalle de la venta. Intente nuevamente." })
+            {
+                StatusCode = StatusCodes.Status503ServiceUnavailable
+            };
+        }
     }
 
     public async Task<JsonResult> OnGetBuscarClientesAsync(

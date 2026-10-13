@@ -63,7 +63,7 @@ public class SalesRegistroHandlerTests
     }
 
     private static IndexModel CrearPagina(FachadaPrueba fachada) =>
-        new(null!, null!, fachada, NullLogger<IndexModel>.Instance);
+        new(null!, null!, fachada, null!, NullLogger<IndexModel>.Instance);
 
     private static IndexModel.RegistrarVentaInput Entrada() => new()
     {
