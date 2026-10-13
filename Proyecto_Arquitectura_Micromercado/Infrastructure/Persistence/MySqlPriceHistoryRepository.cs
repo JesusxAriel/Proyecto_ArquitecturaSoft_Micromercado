@@ -44,6 +44,54 @@ public sealed class MySqlPriceHistoryRepository(MySqlUnidadDeTrabajo unidadDeTra
         return await GetHistoryAsync(sql, productId, cancellationToken);
     }
 
+    public async Task<ProductPriceHistory?> GetPriceHistoryByIdAsync(
+        int historyId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(historyId);
+
+        const string sql = """
+            SELECT h.id, h.idProducto, p.nombre AS NombreProducto,
+                   h.precioVentaAnterior, h.precioVentaNuevo,
+                   h.precioCostoAnterior, h.precioCostoNuevo,
+                   h.motivoCambio, h.idUsuario, h.fechaCambio
+            FROM HISTORIAL_PRECIO h
+            INNER JOIN PRODUCTO p ON p.id = h.idProducto
+            WHERE h.id = @idHistorial
+            LIMIT 1;
+            """;
+
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
+        command.Parameters.AddWithValue("@idHistorial", historyId);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+        if (!await reader.ReadAsync(cancellationToken))
+        {
+            return null;
+        }
+
+        return new ProductPriceHistory
+        {
+            Id = reader.GetInt32(reader.GetOrdinal("id")),
+            IdProducto = reader.GetInt32(reader.GetOrdinal("idProducto")),
+            NombreProducto = reader.GetString(reader.GetOrdinal("NombreProducto")),
+            PrecioVentaAnterior = reader.GetDecimal(reader.GetOrdinal("precioVentaAnterior")),
+            PrecioVentaNuevo = reader.GetDecimal(reader.GetOrdinal("precioVentaNuevo")),
+            PrecioCostoAnterior = reader.IsDBNull(reader.GetOrdinal("precioCostoAnterior"))
+                ? null
+                : reader.GetDecimal(reader.GetOrdinal("precioCostoAnterior")),
+            PrecioCostoNuevo = reader.IsDBNull(reader.GetOrdinal("precioCostoNuevo"))
+                ? null
+                : reader.GetDecimal(reader.GetOrdinal("precioCostoNuevo")),
+            MotivoCambio = reader.IsDBNull(reader.GetOrdinal("motivoCambio"))
+                ? string.Empty
+                : reader.GetString(reader.GetOrdinal("motivoCambio")),
+            IdUsuario = reader.GetInt32(reader.GetOrdinal("idUsuario")),
+            FechaCambio = reader.GetDateTime(reader.GetOrdinal("fechaCambio"))
+        };
+    }
+
     private async Task<IReadOnlyList<ProductPriceHistory>> GetHistoryAsync(
         string sql,
         int? productId,

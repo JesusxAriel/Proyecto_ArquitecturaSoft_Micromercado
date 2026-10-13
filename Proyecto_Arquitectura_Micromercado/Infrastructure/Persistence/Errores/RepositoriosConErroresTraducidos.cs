@@ -150,6 +150,12 @@ internal sealed class PriceHistoryRepositoryConErroresTraducidos(IPriceHistoryRe
         ErroresDePersistencia.TraducirAsync(
             () => interno.GetPriceHistoryByProductIdAsync(productId, cancellationToken));
 
+    public Task<ProductPriceHistory?> GetPriceHistoryByIdAsync(
+        int historyId,
+        CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(
+            () => interno.GetPriceHistoryByIdAsync(historyId, cancellationToken));
+
     public Task AddPriceHistoryAsync(
         ProductPriceHistory history,
         CancellationToken cancellationToken = default) =>

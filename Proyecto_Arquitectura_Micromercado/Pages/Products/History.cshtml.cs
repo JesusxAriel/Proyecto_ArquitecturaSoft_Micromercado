@@ -42,4 +42,20 @@ public sealed class HistoryModel(IProductService productService) : PageModel
         PriceHistory = await productService.GetPriceHistoryByProductIdAsync(product.Id, cancellationToken);
         return Page();
     }
+
+    public async Task<IActionResult> OnGetDetalleAsync(int id, CancellationToken cancellationToken)
+    {
+        if (id <= 0)
+        {
+            return BadRequest();
+        }
+
+        var history = await productService.GetPriceHistoryByIdAsync(id, cancellationToken);
+        if (history is null)
+        {
+            return NotFound();
+        }
+
+        return Partial("_PriceHistoryDetail", history);
+    }
 }

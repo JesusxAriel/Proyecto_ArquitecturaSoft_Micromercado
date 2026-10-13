@@ -10,4 +10,8 @@ public interface IConHistorialPrecios
     Task<IReadOnlyList<ProductPriceHistory>> GetPriceHistoryByProductIdAsync(
         int productId,
         CancellationToken cancellationToken = default);
+
+    Task<ProductPriceHistory?> GetPriceHistoryByIdAsync(
+        int historyId,
+        CancellationToken cancellationToken = default);
 }

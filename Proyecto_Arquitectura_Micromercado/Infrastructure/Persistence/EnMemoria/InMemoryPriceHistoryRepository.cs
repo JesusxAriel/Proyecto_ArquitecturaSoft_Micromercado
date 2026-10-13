@@ -25,6 +25,16 @@ public sealed class InMemoryPriceHistoryRepository : IPriceHistoryRepository
         return ObtenerOrdenados(historial.Where(h => h.IdProducto == productId));
     }
 
+    public Task<ProductPriceHistory?> GetPriceHistoryByIdAsync(
+        int historyId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(historyId);
+
+        var encontrado = historial.FirstOrDefault(h => h.Id == historyId);
+        return Task.FromResult(encontrado is null ? null : Clonar(encontrado));
+    }
+
     private static Task<IReadOnlyList<ProductPriceHistory>> ObtenerOrdenados(
         IEnumerable<ProductPriceHistory> registros)
     {

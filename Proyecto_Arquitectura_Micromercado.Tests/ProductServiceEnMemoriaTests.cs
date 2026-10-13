@@ -176,4 +176,60 @@ public class ProductServiceEnMemoriaTests
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => servicio.GetPriceHistoryByProductIdAsync(-1));
     }
+
+    [Fact]
+    public async Task Historial_por_id_devuelve_el_registro_exacto_y_no_modifica_su_contenido()
+    {
+        var (servicio, historial) = Crear();
+        var primero = new ProductPriceHistory
+        {
+            IdProducto = 1,
+            NombreProducto = "Producto A",
+            PrecioVentaAnterior = 10m,
+            PrecioVentaNuevo = 12m,
+            MotivoCambio = "Ajuste autorizado",
+            IdUsuario = 7,
+            FechaCambio = new DateTime(2025, 2, 3, 12, 30, 0)
+        };
+        var segundo = new ProductPriceHistory
+        {
+            IdProducto = 2,
+            NombreProducto = "Producto B",
+            PrecioVentaAnterior = 20m,
+            PrecioVentaNuevo = 22m,
+            MotivoCambio = "Actualización de costo",
+            IdUsuario = 8,
+            FechaCambio = new DateTime(2025, 2, 4, 12, 30, 0)
+        };
+
+        await historial.AddPriceHistoryAsync(primero);
+        await historial.AddPriceHistoryAsync(segundo);
+
+        var registros = await servicio.GetPriceHistoryAsync();
+        var registroSegundo = Assert.Single(registros.Where(registro => registro.NombreProducto == "Producto B"));
+        var encontrado = await servicio.GetPriceHistoryByIdAsync(registroSegundo.Id);
+        var inexistente = await servicio.GetPriceHistoryByIdAsync(999);
+
+        Assert.NotNull(encontrado);
+        Assert.Equal(registroSegundo.Id, encontrado.Id);
+        Assert.Equal(2, encontrado.IdProducto);
+        Assert.Equal("Producto B", encontrado.NombreProducto);
+        Assert.Equal(20m, encontrado.PrecioVentaAnterior);
+        Assert.Equal(22m, encontrado.PrecioVentaNuevo);
+        Assert.Equal("Actualización de costo", encontrado.MotivoCambio);
+        Assert.Equal(8, encontrado.IdUsuario);
+        Assert.Equal(segundo.FechaCambio, encontrado.FechaCambio);
+        Assert.Null(inexistente);
+    }
+
+    [Fact]
+    public async Task Historial_por_id_rechaza_identificador_no_positivo()
+    {
+        var (servicio, _) = Crear();
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => servicio.GetPriceHistoryByIdAsync(0));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => servicio.GetPriceHistoryByIdAsync(-1));
+    }
 }

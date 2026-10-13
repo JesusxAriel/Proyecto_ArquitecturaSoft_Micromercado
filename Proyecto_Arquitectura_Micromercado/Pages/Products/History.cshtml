@@ -49,6 +49,7 @@
                 <th>Motivo de Cambio</th>
                 <th>Usuario</th>
                 <th>Fecha de Cambio</th>
+                <th class="text-end">Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -71,11 +72,74 @@
                 <td>@change.MotivoCambio</td>
                 <td>@change.IdUsuario</td>
                 <td>@change.FechaCambio.ToString("dd/MM/yyyy HH:mm")</td>
+                <td class="text-end">
+                    <button type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#priceHistoryDetailModal"
+                            data-detail-url="@Url.Page("/Products/History", "Detalle", new { id = change.Id })">
+                        Ver detalle
+                    </button>
+                </td>
             </tr>
         }
         </tbody>
     </table>
 </div>
+
+<div class="modal fade" id="priceHistoryDetailModal" tabindex="-1" aria-labelledby="priceHistoryDetailTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" id="priceHistoryDetailContent">
+            <div class="modal-header">
+                <h2 class="modal-title h5" id="priceHistoryDetailTitle">Detalle de la transacción</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" aria-live="polite">
+                <p class="text-muted mb-0">Seleccione un registro para consultar sus datos.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('priceHistoryDetailModal');
+        const content = document.getElementById('priceHistoryDetailContent');
+
+        modal.addEventListener('show.bs.modal', async event => {
+            const trigger = event.relatedTarget;
+            const detailUrl = trigger?.getAttribute('data-detail-url');
+            const body = content.querySelector('.modal-body');
+
+            if (!detailUrl) {
+                body.textContent = 'No se pudo identificar el registro seleccionado.';
+                return;
+            }
+
+            body.textContent = 'Cargando detalle…';
+
+            try {
+                const response = await fetch(detailUrl, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (response.status === 404) {
+                    body.textContent = 'El registro histórico ya no existe.';
+                    return;
+                }
+
+                if (!response.ok) {
+                    body.textContent = 'No se pudo cargar el detalle de la transacción.';
+                    return;
+                }
+
+                body.innerHTML = await response.text();
+            } catch {
+                body.textContent = 'No se pudo conectar para cargar el detalle.';
+            }
+        });
+    });
+</script>
 
 @if (Model.PriceHistory.Count == 0)
 {
