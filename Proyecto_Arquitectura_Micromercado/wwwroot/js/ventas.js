@@ -446,6 +446,7 @@
             await esperarTiempoMinimoRegistro();
             mostrarEstadoConfirmacion(mensajeExito, "success");
             ventaRegistrada = true;
+            document.dispatchEvent(new CustomEvent("venta:registrada"));
             botonesCancelar.forEach(boton => { boton.hidden = true; });
         } catch (error) {
             ventanaComprobante?.close();
@@ -637,4 +638,153 @@
             if (actual === version) resultados.setAttribute("aria-busy", "false");
         }
     }
+})();
+
+(() => {
+    "use strict";
+
+    const seccion = document.getElementById("historialVentasSeccion");
+    if (!seccion) return;
+
+    const cuerpo = document.getElementById("historialVentas");
+    const estado = document.getElementById("estadoHistorial");
+    const actualizar = document.getElementById("actualizarHistorial");
+    const mostrarAnuladas = document.getElementById("mostrarAnuladas");
+    const puedeAnular = seccion.dataset.puedeAnular === "true";
+    const precio = new Intl.NumberFormat("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    let consulta;
+    let version = 0;
+
+    function dosDigitos(numero) {
+        return String(numero).padStart(2, "0");
+    }
+
+    function formatearFecha(valor) {
+        const fecha = new Date(valor);
+        if (Number.isNaN(fecha.getTime())) return "";
+        return `${dosDigitos(fecha.getDate())}/${dosDigitos(fecha.getMonth() + 1)}/${fecha.getFullYear()} ${dosDigitos(fecha.getHours())}:${dosDigitos(fecha.getMinutes())}`;
+    }
+
+    function crearBadgeEstado(valor) {
+        const anulada = valor === "ANULADA";
+        const badge = document.createElement("span");
+        badge.className = `badge bg-${anulada ? "danger" : "success"}`;
+        badge.textContent = anulada ? "Anulada" : "Completada";
+        return badge;
+    }
+
+    function crearFilaMensaje(mensaje, icono) {
+        const fila = document.createElement("tr");
+        const celda = document.createElement("td");
+        celda.colSpan = 6;
+        celda.className = "text-center py-4";
+        const marca = document.createElement("i");
+        marca.className = `bi ${icono} d-block fs-2 text-muted mb-2`;
+        marca.setAttribute("aria-hidden", "true");
+        const texto = document.createElement("p");
+        texto.className = "text-muted mb-0";
+        texto.textContent = mensaje;
+        celda.append(marca, texto);
+        fila.append(celda);
+        return fila;
+    }
+
+    function crearBotonAccion(texto, accion, venta, clase) {
+        const boton = document.createElement("button");
+        boton.type = "button";
+        boton.className = `btn ${clase} btn-sm`;
+        boton.textContent = texto;
+        boton.dataset.accion = accion;
+        boton.dataset.idVenta = String(venta.id);
+        boton.setAttribute("aria-label", `${texto} de la venta ${venta.nroComprobante}`);
+        return boton;
+    }
+
+    function renderizar(ventas) {
+        cuerpo.replaceChildren();
+        if (ventas.length === 0) {
+            cuerpo.append(crearFilaMensaje(
+                mostrarAnuladas.checked
+                    ? "No hay ventas registradas."
+                    : "No hay ventas completadas para mostrar.",
+                "bi-receipt"));
+            return;
+        }
+
+        ventas.forEach((venta) => {
+            const fila = document.createElement("tr");
+            [
+                [venta.nroComprobante, "text-nowrap"],
+                [formatearFecha(venta.fechaHora), "text-nowrap"],
+                [venta.nombreCliente, "text-break"]
+            ].forEach(([valor, clase]) => {
+                const celda = document.createElement("td");
+                celda.className = clase;
+                celda.textContent = valor;
+                fila.append(celda);
+            });
+
+            const celdaEstado = document.createElement("td");
+            celdaEstado.append(crearBadgeEstado(venta.estado));
+
+            const celdaTotal = document.createElement("td");
+            celdaTotal.className = "text-end text-nowrap";
+            celdaTotal.textContent = `Bs ${precio.format(venta.total)}`;
+
+            const acciones = document.createElement("td");
+            acciones.className = "text-end text-nowrap";
+            acciones.append(crearBotonAccion("Ver detalle", "detalle", venta, "btn-outline-primary"));
+            if (puedeAnular && venta.estado === "COMPLETADA") {
+                acciones.append(" ", crearBotonAccion("Anular", "anular", venta, "btn-outline-danger"));
+            }
+
+            fila.append(celdaEstado, celdaTotal, acciones);
+            cuerpo.append(fila);
+        });
+    }
+
+    async function cargarHistorial() {
+        consulta?.abort();
+        const actual = ++version;
+        const controlador = new AbortController();
+        consulta = controlador;
+        cuerpo.setAttribute("aria-busy", "true");
+        actualizar.disabled = true;
+        estado.textContent = "Cargando historial…";
+
+        try {
+            const url = new URL(seccion.dataset.historialUrl, window.location.href);
+            url.searchParams.set("incluirAnuladas", String(mostrarAnuladas.checked));
+            const respuesta = await fetch(url, {
+                signal: controlador.signal,
+                headers: { Accept: "application/json" },
+                cache: "no-store"
+            });
+            if (!respuesta.ok) throw new Error("No se pudo cargar el historial de ventas.");
+            const datos = await respuesta.json();
+            if (actual !== version) return;
+
+            renderizar(datos.ventas);
+            estado.textContent = datos.ventas.length
+                ? `${datos.ventas.length} venta(s) en el historial.`
+                : "No hay ventas para mostrar.";
+        } catch (error) {
+            if (actual !== version || error.name === "AbortError") return;
+            cuerpo.replaceChildren(crearFilaMensaje(
+                "No se pudo cargar el historial de ventas. Intente nuevamente.",
+                "bi-exclamation-triangle"));
+            estado.textContent = "No se pudo cargar el historial de ventas.";
+        } finally {
+            if (actual === version) {
+                cuerpo.setAttribute("aria-busy", "false");
+                actualizar.disabled = false;
+            }
+        }
+    }
+
+    actualizar.addEventListener("click", cargarHistorial);
+    mostrarAnuladas.addEventListener("change", cargarHistorial);
+    document.addEventListener("venta:registrada", cargarHistorial);
+
+    cargarHistorial();
 })();

@@ -251,13 +251,25 @@
     </div>
 </div>
 
-<section class="card shadow-sm mt-4" aria-labelledby="historialVentasHeading">
-    <div class="card-header bg-dark text-white d-flex align-items-center gap-2 py-3">
+<section id="historialVentasSeccion" class="card shadow-sm mt-4" aria-labelledby="historialVentasHeading"
+         data-historial-url="@Url.Page("/Sales/Index", "Historial")"
+         data-puede-anular="@(User.IsInRole(Proyecto_Arquitectura_Micromercado.Application.Security.Roles.Administrador) ? "true" : "false")">
+    <div class="card-header bg-dark text-white d-flex flex-wrap align-items-center gap-2 py-3">
         <i class="bi bi-journal-text" aria-hidden="true"></i>
         <h2 id="historialVentasHeading" class="h5 mb-0">Historial de ventas</h2>
+        <div class="d-flex flex-wrap align-items-center gap-3 ms-auto">
+            <div class="form-check mb-0">
+                <input id="mostrarAnuladas" class="form-check-input" type="checkbox" />
+                <label class="form-check-label" for="mostrarAnuladas">Mostrar anuladas</label>
+            </div>
+            <button id="actualizarHistorial" type="button" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Actualizar
+            </button>
+        </div>
     </div>
     <div class="card-body">
-        <p id="historialVentasHelp" class="text-muted mb-3">La consulta del historial estará disponible próximamente.</p>
+        <p id="historialVentasHelp" class="text-muted mb-3">Se muestran las últimas 50 ventas, de la más reciente a la más antigua.</p>
+        <p id="estadoHistorial" class="visually-hidden" role="status" aria-live="polite"></p>
         <div class="table-responsive rounded-3 border">
             <table class="table table-hover align-middle mb-0" aria-labelledby="historialVentasHeading" aria-describedby="historialVentasHelp">
                 <thead class="table-light">
@@ -270,11 +282,11 @@
                         <th scope="col" class="text-end">Acciones</th>
                     </tr>
                 </thead>
-                <tbody id="historialVentas">
+                <tbody id="historialVentas" aria-busy="false">
                     <tr>
                         <td colspan="6" class="text-center py-4">
                             <i class="bi bi-receipt d-block fs-2 text-muted mb-2" aria-hidden="true"></i>
-                            <p class="text-muted mb-3">Todavía no hay ventas cargadas en esta vista.</p>
+                            <p class="text-muted mb-3">Cargando historial…</p>
                         </td>
                     </tr>
                 </tbody>
