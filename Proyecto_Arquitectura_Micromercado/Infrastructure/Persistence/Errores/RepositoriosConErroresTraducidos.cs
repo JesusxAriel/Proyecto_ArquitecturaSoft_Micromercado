@@ -1,9 +1,11 @@
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
+using Proyecto_Arquitectura_Micromercado.Application.Stock;
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Domain.Categories;
 using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
+using Proyecto_Arquitectura_Micromercado.Domain.Stock;
 using Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.Errores;
@@ -164,4 +166,20 @@ internal sealed class PriceHistoryRepositoryConErroresTraducidos(IPriceHistoryRe
         ProductPriceHistory history,
         CancellationToken cancellationToken = default) =>
         ErroresDePersistencia.TraducirAsync(() => interno.AddPriceHistoryAsync(history, cancellationToken));
+}
+
+internal sealed class LoteRepositoryConErroresTraducidos(ILoteRepository interno)
+    : ILoteRepository
+{
+    public Task<IReadOnlyList<LoteDisponible>> ObtenerVigentesParaDescuentoAsync(
+        int idProducto,
+        CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(
+            () => interno.ObtenerVigentesParaDescuentoAsync(idProducto, cancellationToken));
+
+    public Task DescontarAsync(int idLote, int cantidad, CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(() => interno.DescontarAsync(idLote, cantidad, cancellationToken));
+
+    public Task RestaurarAsync(int idLote, int cantidad, CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(() => interno.RestaurarAsync(idLote, cantidad, cancellationToken));
 }
