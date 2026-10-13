@@ -120,4 +120,60 @@ public class ProductServiceEnMemoriaTests
 
         Assert.False(await servicio.UpdateAsync(Editado(999, 10.0m, motivo: null)));
     }
+
+    [Fact]
+    public async Task Historial_por_producto_no_incluye_cambios_de_otros_productos_y_conserva_orden()
+    {
+        var historial = new InMemoryPriceHistoryRepository();
+        var servicio = new ProductService(
+            new InMemoryProductRepository(historial, Catalogo, Catalogo, Catalogo),
+            historial);
+        var producto = NuevoProducto();
+        var idProducto = await servicio.CreateAsync(producto);
+        var fechaAntigua = new DateTime(2025, 1, 1, 10, 0, 0);
+        var fechaReciente = fechaAntigua.AddDays(1);
+
+        await historial.AddPriceHistoryAsync(new ProductPriceHistory
+        {
+            IdProducto = idProducto,
+            NombreProducto = producto.Nombre,
+            PrecioVentaAnterior = 10m,
+            PrecioVentaNuevo = 11m,
+            FechaCambio = fechaAntigua
+        });
+        await historial.AddPriceHistoryAsync(new ProductPriceHistory
+        {
+            IdProducto = 999,
+            NombreProducto = "Otro producto",
+            PrecioVentaAnterior = 20m,
+            PrecioVentaNuevo = 21m,
+            FechaCambio = fechaReciente
+        });
+        await historial.AddPriceHistoryAsync(new ProductPriceHistory
+        {
+            IdProducto = idProducto,
+            NombreProducto = producto.Nombre,
+            PrecioVentaAnterior = 11m,
+            PrecioVentaNuevo = 12m,
+            FechaCambio = fechaReciente
+        });
+
+        var registros = await servicio.GetPriceHistoryByProductIdAsync(idProducto);
+
+        Assert.Equal(2, registros.Count);
+        Assert.All(registros, registro => Assert.Equal(idProducto, registro.IdProducto));
+        Assert.Equal(12m, registros[0].PrecioVentaNuevo);
+        Assert.Equal(11m, registros[1].PrecioVentaNuevo);
+    }
+
+    [Fact]
+    public async Task Historial_por_producto_rechaza_identificador_invalido()
+    {
+        var (servicio, _) = Crear();
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => servicio.GetPriceHistoryByProductIdAsync(0));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => servicio.GetPriceHistoryByProductIdAsync(-1));
+    }
 }

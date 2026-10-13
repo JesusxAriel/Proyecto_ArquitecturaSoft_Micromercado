@@ -6,4 +6,8 @@ public interface IConHistorialPrecios
 {
     Task<IReadOnlyList<ProductPriceHistory>> GetPriceHistoryAsync(
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ProductPriceHistory>> GetPriceHistoryByProductIdAsync(
+        int productId,
+        CancellationToken cancellationToken = default);
 }

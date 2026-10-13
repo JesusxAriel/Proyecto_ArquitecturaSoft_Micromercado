@@ -45,6 +45,18 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
         CancellationToken cancellationToken = default) =>
         priceHistoryRepository.GetPriceHistoryAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<ProductPriceHistory>> GetPriceHistoryByProductIdAsync(
+        int productId,
+        CancellationToken cancellationToken = default)
+    {
+        if (productId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(productId), "El identificador del producto debe ser positivo.");
+        }
+
+        return await priceHistoryRepository.GetPriceHistoryByProductIdAsync(productId, cancellationToken);
+    }
+
     public async Task<int> CreateAsync(Product product, CancellationToken cancellationToken = default)
     {
         Validate(product);

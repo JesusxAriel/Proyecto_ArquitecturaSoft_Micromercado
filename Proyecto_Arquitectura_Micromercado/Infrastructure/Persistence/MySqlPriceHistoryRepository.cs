@@ -21,31 +21,74 @@ public sealed class MySqlPriceHistoryRepository(MySqlUnidadDeTrabajo unidadDeTra
             ORDER BY h.fechaCambio DESC;
             """;
 
+        return await GetHistoryAsync(sql, null, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ProductPriceHistory>> GetPriceHistoryByProductIdAsync(
+        int productId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(productId);
+
+        const string sql = """
+            SELECT h.id, h.idProducto, p.nombre AS NombreProducto,
+                   h.precioVentaAnterior, h.precioVentaNuevo,
+                   h.precioCostoAnterior, h.precioCostoNuevo,
+                   h.motivoCambio, h.idUsuario, h.fechaCambio
+            FROM HISTORIAL_PRECIO h
+            INNER JOIN PRODUCTO p ON p.id = h.idProducto
+            WHERE h.idProducto = @idProducto
+            ORDER BY h.fechaCambio DESC;
+            """;
+
+        return await GetHistoryAsync(sql, productId, cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<ProductPriceHistory>> GetHistoryAsync(
+        string sql,
+        int? productId,
+        CancellationToken cancellationToken)
+    {
         var history = new List<ProductPriceHistory>();
         await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
         await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
+        if (productId.HasValue)
+        {
+            command.Parameters.AddWithValue("@idProducto", productId.Value);
+        }
+
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var ordId = reader.GetOrdinal("id");
+        var ordIdProducto = reader.GetOrdinal("idProducto");
+        var ordNombreProducto = reader.GetOrdinal("NombreProducto");
+        var ordPrecioVentaAnterior = reader.GetOrdinal("precioVentaAnterior");
+        var ordPrecioVentaNuevo = reader.GetOrdinal("precioVentaNuevo");
+        var ordPrecioCostoAnterior = reader.GetOrdinal("precioCostoAnterior");
+        var ordPrecioCostoNuevo = reader.GetOrdinal("precioCostoNuevo");
+        var ordMotivoCambio = reader.GetOrdinal("motivoCambio");
+        var ordIdUsuario = reader.GetOrdinal("idUsuario");
+        var ordFechaCambio = reader.GetOrdinal("fechaCambio");
 
         while (await reader.ReadAsync(cancellationToken))
         {
             history.Add(new ProductPriceHistory
             {
-                Id = reader.GetInt32(reader.GetOrdinal("id")),
-                IdProducto = reader.GetInt32(reader.GetOrdinal("idProducto")),
-                NombreProducto = reader.GetString(reader.GetOrdinal("NombreProducto")),
-                PrecioVentaAnterior = reader.GetDecimal(reader.GetOrdinal("precioVentaAnterior")),
-                PrecioVentaNuevo = reader.GetDecimal(reader.GetOrdinal("precioVentaNuevo")),
-                PrecioCostoAnterior = reader.IsDBNull(reader.GetOrdinal("precioCostoAnterior"))
+                Id = reader.GetInt32(ordId),
+                IdProducto = reader.GetInt32(ordIdProducto),
+                NombreProducto = reader.GetString(ordNombreProducto),
+                PrecioVentaAnterior = reader.GetDecimal(ordPrecioVentaAnterior),
+                PrecioVentaNuevo = reader.GetDecimal(ordPrecioVentaNuevo),
+                PrecioCostoAnterior = reader.IsDBNull(ordPrecioCostoAnterior)
                     ? null
-                    : reader.GetDecimal(reader.GetOrdinal("precioCostoAnterior")),
-                PrecioCostoNuevo = reader.IsDBNull(reader.GetOrdinal("precioCostoNuevo"))
+                    : reader.GetDecimal(ordPrecioCostoAnterior),
+                PrecioCostoNuevo = reader.IsDBNull(ordPrecioCostoNuevo)
                     ? null
-                    : reader.GetDecimal(reader.GetOrdinal("precioCostoNuevo")),
-                MotivoCambio = reader.IsDBNull(reader.GetOrdinal("motivoCambio"))
+                    : reader.GetDecimal(ordPrecioCostoNuevo),
+                MotivoCambio = reader.IsDBNull(ordMotivoCambio)
                     ? string.Empty
-                    : reader.GetString(reader.GetOrdinal("motivoCambio")),
-                IdUsuario = reader.GetInt32(reader.GetOrdinal("idUsuario")),
-                FechaCambio = reader.GetDateTime(reader.GetOrdinal("fechaCambio"))
+                    : reader.GetString(ordMotivoCambio),
+                IdUsuario = reader.GetInt32(ordIdUsuario),
+                FechaCambio = reader.GetDateTime(ordFechaCambio)
             });
         }
 
