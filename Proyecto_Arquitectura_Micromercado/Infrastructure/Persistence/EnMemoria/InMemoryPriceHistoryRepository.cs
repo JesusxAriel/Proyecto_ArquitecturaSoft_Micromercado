@@ -13,7 +13,32 @@ public sealed class InMemoryPriceHistoryRepository : IPriceHistoryRepository
     public Task<IReadOnlyList<ProductPriceHistory>> GetPriceHistoryAsync(
         CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<ProductPriceHistory> resultado = historial
+        return ObtenerOrdenados(historial);
+    }
+
+    public Task<IReadOnlyList<ProductPriceHistory>> GetPriceHistoryByProductIdAsync(
+        int productId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(productId);
+
+        return ObtenerOrdenados(historial.Where(h => h.IdProducto == productId));
+    }
+
+    public Task<ProductPriceHistory?> GetPriceHistoryByIdAsync(
+        int historyId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(historyId);
+
+        var encontrado = historial.FirstOrDefault(h => h.Id == historyId);
+        return Task.FromResult(encontrado is null ? null : Clonar(encontrado));
+    }
+
+    private static Task<IReadOnlyList<ProductPriceHistory>> ObtenerOrdenados(
+        IEnumerable<ProductPriceHistory> registros)
+    {
+        IReadOnlyList<ProductPriceHistory> resultado = registros
             .OrderByDescending(h => h.FechaCambio)
             .ThenByDescending(h => h.Id)
             .Select(Clonar)

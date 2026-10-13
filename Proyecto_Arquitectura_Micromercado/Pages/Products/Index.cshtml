@@ -79,6 +79,14 @@
                     <td class="text-end pe-3">
                         <div class="d-flex justify-content-end align-items-center gap-1">
 
+                            <a asp-page="/Products/History"
+                               asp-route-id="@product.Id"
+                               class="btn btn-sm btn-outline-secondary"
+                               title="Ver historial de precios"
+                               aria-label="Ver historial de precios de @product.Nombre">
+                                <i class="bi bi-clock-history"></i>
+                            </a>
+
                             <button type="button"
                                     class="btn btn-sm btn-outline-warning edit-product-button"
                                     title="Editar"

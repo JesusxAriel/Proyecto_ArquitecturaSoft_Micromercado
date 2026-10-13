@@ -148,6 +148,18 @@ internal sealed class PriceHistoryRepositoryConErroresTraducidos(IPriceHistoryRe
         CancellationToken cancellationToken = default) =>
         ErroresDePersistencia.TraducirAsync(() => interno.GetPriceHistoryAsync(cancellationToken));
 
+    public Task<IReadOnlyList<ProductPriceHistory>> GetPriceHistoryByProductIdAsync(
+        int productId,
+        CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(
+            () => interno.GetPriceHistoryByProductIdAsync(productId, cancellationToken));
+
+    public Task<ProductPriceHistory?> GetPriceHistoryByIdAsync(
+        int historyId,
+        CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(
+            () => interno.GetPriceHistoryByIdAsync(historyId, cancellationToken));
+
     public Task AddPriceHistoryAsync(
         ProductPriceHistory history,
         CancellationToken cancellationToken = default) =>
