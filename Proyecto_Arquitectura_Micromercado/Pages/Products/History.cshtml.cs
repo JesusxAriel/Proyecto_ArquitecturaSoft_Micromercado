@@ -11,12 +11,15 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Products;
 public sealed class HistoryModel(IProductService productService) : PageModel
 {
     public IReadOnlyList<ProductPriceHistory> PriceHistory { get; private set; } = [];
+    public IReadOnlyList<ProductListItem> Products { get; private set; } = [];
     public int? ProductId { get; private set; }
     public string? ProductName { get; private set; }
     public bool IsProductHistory => ProductId.HasValue;
 
     public async Task<IActionResult> OnGetAsync(int? id, CancellationToken cancellationToken)
     {
+        Products = await productService.GetAllAsync(cancellationToken);
+
         if (!id.HasValue)
         {
             PriceHistory = await productService.GetPriceHistoryAsync(cancellationToken);
