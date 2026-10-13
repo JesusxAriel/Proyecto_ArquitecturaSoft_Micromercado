@@ -420,7 +420,8 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <button id="confirmarVenta" type="button" class="btn btn-primary"
-                        data-registro-url="@Url.Page("/Sales/Index", "RegistrarVenta")">Confirmar venta</button>
+                        data-registro-url="@Url.Page("/Sales/Index", "RegistrarVenta")"
+                        data-comprobante-base="@Url.Content("~/Comprobante/")">Confirmar venta</button>
             </div>
         </div>
     </div>

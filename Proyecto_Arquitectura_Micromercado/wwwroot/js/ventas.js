@@ -402,6 +402,7 @@
         registrandoVenta = true;
         confirmarVenta.disabled = true;
         confirmarVenta.textContent = "Registrando venta...";
+        const ventanaComprobante = window.open("", "_blank");
         mostrarEstadoConfirmacion("Registrando venta...");
         const inicioRegistro = performance.now();
         async function esperarTiempoMinimoRegistro() {
@@ -429,7 +430,16 @@
             }
 
             let mensajeExito = "Venta registrada correctamente.";
-            if (resultado.idVenta != null) mensajeExito += ` N.º ${resultado.idVenta}.`;
+            if (resultado.idVenta != null) {
+                mensajeExito += ` N.º ${resultado.idVenta}.`;
+                if (ventanaComprobante) {
+                    ventanaComprobante.location.href = confirmarVenta.dataset.comprobanteBase + resultado.idVenta;
+                } else {
+                    mensajeExito += " Habilite las ventanas emergentes para ver el comprobante.";
+                }
+            } else {
+                ventanaComprobante?.close();
+            }
             if (resultado.total != null && Number.isFinite(Number(resultado.total))) {
                 mensajeExito += ` Total definitivo: Bs ${precio.format(Number(resultado.total))}.`;
             }
@@ -438,6 +448,7 @@
             ventaRegistrada = true;
             botonesCancelar.forEach(boton => { boton.hidden = true; });
         } catch (error) {
+            ventanaComprobante?.close();
             await esperarTiempoMinimoRegistro();
             mostrarEstadoConfirmacion(error instanceof TypeError
                 ? "No se pudo conectar con el servidor. La venta temporal se conserva."
