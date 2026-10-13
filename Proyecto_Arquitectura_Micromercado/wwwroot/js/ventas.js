@@ -668,10 +668,21 @@
     const detalleUsuarioAnulacion = document.getElementById("detalleVentaUsuarioAnulacion");
     const detalleFechaAnulacion = document.getElementById("detalleVentaFechaAnulacion");
     const detalleModal = bootstrap.Modal.getOrCreateInstance(modalDetalle);
+    const modalAnulacion = document.getElementById("anularVentaModal");
+    const anulacionMensaje = document.getElementById("anularVentaMensaje");
+    const anulacionMotivo = document.getElementById("anularVentaMotivo");
+    const anulacionError = document.getElementById("anularVentaError");
+    const confirmarAnulacion = document.getElementById("confirmarAnulacionVenta");
+    const anulacionModal = bootstrap.Modal.getOrCreateInstance(modalAnulacion);
+    const aviso = document.getElementById("avisoHistorial");
+    const antiforgery = document.querySelector('input[name="__RequestVerificationToken"]');
+    const ventasPorId = new Map();
     let consulta;
     let version = 0;
     let consultaDetalle;
     let versionDetalle = 0;
+    let ventaEnAnulacion = null;
+    let anulando = false;
 
     function dosDigitos(numero) {
         return String(numero).padStart(2, "0");
@@ -721,6 +732,8 @@
 
     function renderizar(ventas) {
         cuerpo.replaceChildren();
+        ventasPorId.clear();
+        ventas.forEach((venta) => ventasPorId.set(venta.id, venta));
         if (ventas.length === 0) {
             cuerpo.append(crearFilaMensaje(
                 mostrarAnuladas.checked
@@ -915,6 +928,92 @@
 
         const idVenta = Number(boton.dataset.idVenta);
         if (boton.dataset.accion === "detalle") abrirDetalle(idVenta);
+        if (boton.dataset.accion === "anular") abrirAnulacion(idVenta);
+    });
+
+    function mostrarAviso(mensaje) {
+        aviso.textContent = mensaje;
+        aviso.hidden = false;
+    }
+
+    function mostrarErrorAnulacion(mensaje) {
+        anulacionError.textContent = mensaje;
+        anulacionError.hidden = !mensaje;
+    }
+
+    function actualizarBotonAnulacion() {
+        confirmarAnulacion.disabled = anulando || anulacionMotivo.value.trim() === "";
+    }
+
+    function abrirAnulacion(idVenta) {
+        const venta = ventasPorId.get(idVenta);
+        if (!venta || !puedeAnular) return;
+
+        ventaEnAnulacion = venta;
+        aviso.hidden = true;
+        anulacionMensaje.textContent = `¿Está seguro de que desea anular la venta ${venta.nroComprobante} por un total de Bs ${precio.format(venta.total)}?`;
+        anulacionMotivo.value = "";
+        mostrarErrorAnulacion("");
+        actualizarBotonAnulacion();
+        anulacionModal.show();
+    }
+
+    async function anularVenta() {
+        if (anulando || !ventaEnAnulacion) return;
+
+        const motivo = anulacionMotivo.value.trim();
+        if (!motivo) return;
+
+        const venta = ventaEnAnulacion;
+        anulando = true;
+        confirmarAnulacion.textContent = "Anulando…";
+        mostrarErrorAnulacion("");
+        actualizarBotonAnulacion();
+
+        try {
+            const respuesta = await fetch(seccion.dataset.anularUrl, {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                    RequestVerificationToken: antiforgery.value
+                },
+                body: JSON.stringify({ idVenta: venta.id, motivo })
+            });
+            const resultado = await respuesta.json().catch(() => null);
+            if (!respuesta.ok || !resultado?.exito) {
+                throw new Error(resultado?.mensaje || (respuesta.status === 400
+                    ? "No se pudo validar la solicitud. Revise los datos o recargue la página si su sesión expiró."
+                    : "No se pudo anular la venta. Revise su sesión e intente nuevamente."));
+            }
+
+            anulando = false;
+            anulacionModal.hide();
+            mostrarAviso(`La venta ${venta.nroComprobante} fue anulada correctamente.`);
+            cargarHistorial();
+        } catch (error) {
+            mostrarErrorAnulacion(error instanceof TypeError
+                ? "No se pudo conectar con el servidor. La venta no fue anulada."
+                : error.message);
+        } finally {
+            anulando = false;
+            confirmarAnulacion.textContent = "Confirmar anulación";
+            actualizarBotonAnulacion();
+        }
+    }
+
+    anulacionMotivo.addEventListener("input", actualizarBotonAnulacion);
+    confirmarAnulacion.addEventListener("click", anularVenta);
+    modalAnulacion.addEventListener("shown.bs.modal", () => anulacionMotivo.focus());
+    modalAnulacion.addEventListener("hide.bs.modal", (event) => {
+        if (anulando) event.preventDefault();
+    });
+    modalAnulacion.addEventListener("hidden.bs.modal", () => {
+        ventaEnAnulacion = null;
+        anulacionMotivo.value = "";
+        mostrarErrorAnulacion("");
+        actualizarBotonAnulacion();
     });
 
     actualizar.addEventListener("click", cargarHistorial);

@@ -254,6 +254,7 @@
 <section id="historialVentasSeccion" class="card shadow-sm mt-4" aria-labelledby="historialVentasHeading"
          data-historial-url="@Url.Page("/Sales/Index", "Historial")"
          data-detalle-url="@Url.Page("/Sales/Index", "Detalle")"
+         data-anular-url="@Url.Page("/Sales/Index", "AnularVenta")"
          data-puede-anular="@(User.IsInRole(Proyecto_Arquitectura_Micromercado.Application.Security.Roles.Administrador) ? "true" : "false")">
     <div class="card-header bg-dark text-white d-flex flex-wrap align-items-center gap-2 py-3">
         <i class="bi bi-journal-text" aria-hidden="true"></i>
@@ -271,6 +272,7 @@
     <div class="card-body">
         <p id="historialVentasHelp" class="text-muted mb-3">Se muestran las últimas 50 ventas, de la más reciente a la más antigua.</p>
         <p id="estadoHistorial" class="visually-hidden" role="status" aria-live="polite"></p>
+        <div id="avisoHistorial" class="alert alert-success" role="status" hidden></div>
         <div class="table-responsive rounded-3 border">
             <table class="table table-hover align-middle mb-0" aria-labelledby="historialVentasHeading" aria-describedby="historialVentasHelp">
                 <thead class="table-light">
@@ -382,11 +384,16 @@
                     <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>
                     La anulación cambiará el estado de la venta a <strong>ANULADA</strong> y devolverá las unidades vendidas al inventario.
                 </div>
-                <p id="anularVentaHelp" class="small text-muted mb-0">La anulación estará disponible cuando se integre el historial de ventas.</p>
+                <div class="mb-3">
+                    <label for="anularVentaMotivo" class="form-label">Motivo de la anulación</label>
+                    <textarea id="anularVentaMotivo" class="form-control" rows="3" maxlength="255" required aria-describedby="anularVentaHelp"></textarea>
+                    <p id="anularVentaHelp" class="form-text mb-0">Obligatorio. Máximo 255 caracteres.</p>
+                </div>
+                <div id="anularVentaError" class="alert alert-danger mb-0" role="alert" hidden></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button id="confirmarAnulacionVenta" type="button" class="btn btn-danger" aria-describedby="anularVentaHelp" disabled>Confirmar anulación</button>
+                <button id="confirmarAnulacionVenta" type="button" class="btn btn-danger" disabled>Confirmar anulación</button>
             </div>
         </div>
     </div>
