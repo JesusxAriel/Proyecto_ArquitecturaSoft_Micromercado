@@ -111,7 +111,7 @@ La carpeta `Application/Facades/` define las tres fachadas acordadas para el pro
 | `IFachadaAnulacion` | Las Razor Pages | Anular una venta y devolver el stock. |
 | `IFachadaActualizacionStockProducto` | Solo las dos anteriores | Concentrar los cambios de stock; ambas la consumen bajo la misma `IUnidadDeTrabajo`. |
 
-La Page conoce una sola interfaz y llama un método; la coordinación de colaboradores y de la transacción queda dentro de la fachada. Por ahora están definidas solo como estructura: sus implementaciones, sus firmas finales y su registro en `Program.cs` corresponden a la parte transaccional del proyecto.
+La Page conoce una sola interfaz y llama un método; la coordinación de colaboradores y de la transacción queda dentro de la fachada. `FachadaVenta` y `FachadaAnulacion` están implementadas y registradas en `Program.cs`: cada una abre, confirma y revierte una `IUnidadDeTrabajo` (una sola transacción por operación) y consume `FachadaActualizacionStockProducto` para descontar o restaurar el stock por lote. La regla FEFO (primero en vencer, primero en salir) vive en `Domain/Stock/AsignadorFefo`, como lógica pura de dominio. El proceso de venta y anulación ya no usa Stored Procedures: toda la lógica de negocio está en C# y la base solo guarda los datos y aplica sus restricciones.
 
 ### Patrones de diseño
 
