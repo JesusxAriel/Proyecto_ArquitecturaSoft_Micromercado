@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Proyecto_Arquitectura_Micromercado.Application.Common;
 using Proyecto_Arquitectura_Micromercado.Application.Customers;
+using Proyecto_Arquitectura_Micromercado.Application.Facades;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Application.Security;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
@@ -14,7 +15,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Sales;
 public sealed class IndexModel(
     IClienteConsultaService clienteConsultaService,
     IProductService productService,
-    IVentaFacade ventaFacade,
+    IFachadaVenta fachadaVenta,
     ILogger<IndexModel> logger) : PageModel
 {
     public SaleInputModel Input { get; } = new();
@@ -40,7 +41,7 @@ public sealed class IndexModel(
 
         try
         {
-            var resultado = await ventaFacade.RegistrarVentaAsync(new NuevaVentaDto(
+            var resultado = await fachadaVenta.RegistrarVentaAsync(new NuevaVentaDto(
                 venta.IdCliente!.Value, venta.EfectivoPagado!.Value,
                 venta.Lineas!.Select(linea => new LineaVentaDto(linea.IdProducto!.Value, linea.Cantidad!.Value)).ToArray()),
                 cancellationToken);
