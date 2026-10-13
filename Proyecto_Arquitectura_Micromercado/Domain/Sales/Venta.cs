@@ -13,16 +13,20 @@ public class Venta
         set => _total = value;
     }
 
-    public string Estado { get; set; } = "EN_PROCESO";
+    public string Estado { get; set; } = EstadoVenta.Completada;
     public string? MotivoAnulacion { get; set; }
     public int IdCliente { get; set; }
     public int IdUsuario { get; set; }
     public List<DetalleVenta> Detalles { get; set; } = [];
 
+    public static string GenerarNroComprobante(DateTime fecha, int idVenta)
+    {
+        return $"V-{fecha:yyyyMMdd}-{idVenta:0000}";
+    }
+
     public void AgregarDetalle(int idProducto, int cantidad, decimal precioUnitario)
     {
-        if (string.Equals(Estado, "ANULADA", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(Estado, "ANULADO", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(Estado, EstadoVenta.Anulada, StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException("No se pueden agregar detalles a una venta anulada.");
         }
@@ -42,6 +46,6 @@ public class Venta
             throw new InvalidOperationException("No se puede completar una venta sin detalles.");
         }
 
-        Estado = "COMPLETADA";
+        Estado = EstadoVenta.Completada;
     }
 }
