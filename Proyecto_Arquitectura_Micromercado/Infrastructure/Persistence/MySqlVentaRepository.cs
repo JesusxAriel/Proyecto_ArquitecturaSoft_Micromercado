@@ -1,5 +1,3 @@
-using System.Data;
-using System.Text.Json;
 using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
 using Proyecto_Arquitectura_Micromercado.Domain.Sales;
@@ -8,65 +6,6 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
 public sealed class MySqlVentaRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) : IVentaRepository
 {
-    public async Task<(int IdVenta, string NroComprobante, decimal Total)> RegistrarVentaConSpAsync(NuevaVentaDto dto, int idUsuario, CancellationToken cancellationToken = default)
-    {
-        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
-
-        var detallesJson = JsonSerializer.Serialize(dto.Lineas.Select(l => new
-        {
-            idProducto = l.IdProducto,
-            cantidad = l.Cantidad
-        }));
-
-        await using var cmd = new MySqlCommand("sp_RegistrarVenta", alquiler.Conexion, alquiler.Transaccion)
-        {
-            CommandType = CommandType.StoredProcedure
-        };
-
-        cmd.Parameters.AddWithValue("p_idCliente", dto.IdCliente);
-        cmd.Parameters.AddWithValue("p_idUsuario", idUsuario);
-        cmd.Parameters.AddWithValue("p_efectivoPagado", dto.EfectivoPagado);
-        cmd.Parameters.AddWithValue("p_detalles", detallesJson);
-
-        var pIdVenta = new MySqlParameter("p_idVenta", MySqlDbType.Int32) { Direction = ParameterDirection.Output };
-        var pNroComprobante = new MySqlParameter("p_nroComprobante", MySqlDbType.VarChar, 50) { Direction = ParameterDirection.Output };
-
-        cmd.Parameters.Add(pIdVenta);
-        cmd.Parameters.Add(pNroComprobante);
-
-        await cmd.ExecuteNonQueryAsync(cancellationToken);
-
-        int idVenta = Convert.ToInt32(pIdVenta.Value);
-        string nroComprobante = pNroComprobante.Value?.ToString() ?? string.Empty;
-
-        // Obtener el total generado automáticamente por el Stored Procedure
-        const string sqlMonto = "SELECT montoTotal FROM VENTA WHERE id = @idVenta;";
-        await using var cmdMonto = new MySqlCommand(sqlMonto, alquiler.Conexion, alquiler.Transaccion);
-        cmdMonto.Parameters.AddWithValue("@idVenta", idVenta);
-        var resultMonto = await cmdMonto.ExecuteScalarAsync(cancellationToken);
-        decimal total = resultMonto != null && resultMonto != DBNull.Value ? Convert.ToDecimal(resultMonto) : 0.00m;
-
-        return (idVenta, nroComprobante, total);
-    }
-
-    public async Task<bool> AnularVentaConSpAsync(int idVenta, string motivo, int idUsuarioAnulacion, CancellationToken cancellationToken = default)
-    {
-        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
-
-        await using var cmd = new MySqlCommand("sp_AnularVenta", alquiler.Conexion, alquiler.Transaccion)
-        {
-            CommandType = CommandType.StoredProcedure
-        };
-
-        cmd.Parameters.AddWithValue("p_idVenta", idVenta);
-        cmd.Parameters.AddWithValue("p_idUsuarioAnulacion", idUsuarioAnulacion);
-        cmd.Parameters.AddWithValue("p_motivo", motivo);
-
-        // Al tratarse de un Stored Procedure, si no lanza excepción, la anulación fue exitosa
-        await cmd.ExecuteNonQueryAsync(cancellationToken);
-        return true;
-    }
-
     public async Task<Venta?> GetByIdAsync(int idVenta, CancellationToken cancellationToken = default)
     {
         await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);

@@ -116,12 +116,6 @@ internal sealed class VentaRepositoryEnMemoria : IVentaRepository
     public Task<IReadOnlyList<Venta>> GetAllAsync(CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 
-    public Task<(int IdVenta, string NroComprobante, decimal Total)> RegistrarVentaConSpAsync(NuevaVentaDto dto, int idUsuario, CancellationToken cancellationToken = default) =>
-        throw new NotSupportedException();
-
-    public Task<bool> AnularVentaConSpAsync(int idVenta, string motivo, int idUsuarioAnulacion, CancellationToken cancellationToken = default) =>
-        throw new NotSupportedException();
-
     public Task<decimal> GetVentasDelDiaAsync(CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 }

@@ -200,20 +200,6 @@ internal sealed class VentaRepositoryConErroresTraducidos(IVentaRepository inter
     public Task<IReadOnlyList<Venta>> GetAllAsync(CancellationToken cancellationToken = default) =>
         ErroresDePersistencia.TraducirAsync(() => interno.GetAllAsync(cancellationToken));
 
-    public Task<(int IdVenta, string NroComprobante, decimal Total)> RegistrarVentaConSpAsync(
-        NuevaVentaDto dto,
-        int idUsuario,
-        CancellationToken cancellationToken = default) =>
-        ErroresDePersistencia.TraducirAsync(() => interno.RegistrarVentaConSpAsync(dto, idUsuario, cancellationToken));
-
-    public Task<bool> AnularVentaConSpAsync(
-        int idVenta,
-        string motivo,
-        int idUsuarioAnulacion,
-        CancellationToken cancellationToken = default) =>
-        ErroresDePersistencia.TraducirAsync(
-            () => interno.AnularVentaConSpAsync(idVenta, motivo, idUsuarioAnulacion, cancellationToken));
-
     public Task<decimal> GetVentasDelDiaAsync(CancellationToken cancellationToken = default) =>
         ErroresDePersistencia.TraducirAsync(() => interno.GetVentasDelDiaAsync(cancellationToken));
 
