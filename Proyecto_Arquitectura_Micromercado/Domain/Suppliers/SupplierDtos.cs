@@ -2,7 +2,6 @@
 
 public static class SupplierValidation
 {
-    // Celular boliviano: 8 dígitos que inician con 6 o 7. El prefijo +591 es opcional.
     public const string TelefonoPattern = @"^(\+591\s?)?[67]\d{7}$";
 
     public const string TelefonoMessage =

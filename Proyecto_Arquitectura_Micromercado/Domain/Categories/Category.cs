@@ -21,7 +21,6 @@ namespace Proyecto_Arquitectura_Micromercado.Domain.Categories
         [CategoryDescription]
         public string? Description { get; set; }
 
-        // Lo genera el servicio a partir del nombre; no se captura en el formulario.
         [Display(Name = "Código")]
         [StringLength(
             20,
