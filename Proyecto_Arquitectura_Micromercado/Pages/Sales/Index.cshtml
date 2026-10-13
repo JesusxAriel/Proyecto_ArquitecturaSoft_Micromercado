@@ -287,7 +287,7 @@
 
 <div class="modal fade" id="confirmarVentaModal" tabindex="-1" aria-labelledby="confirmarVentaTitulo" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="confirmarVentaTitulo" class="modal-title fs-5">Confirmar venta temporal</h2>
@@ -295,10 +295,32 @@
             </div>
             <div class="modal-body">
                 <p id="confirmacionCliente" class="text-break"></p>
+                <h3 id="confirmacionDetalleHeading" class="h6 mb-2">Productos de la venta</h3>
+                <div class="table-responsive rounded-3 border mb-3">
+                    <table class="table table-sm align-middle mb-0" aria-labelledby="confirmacionDetalleHeading">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Producto</th>
+                                <th scope="col" class="text-end">Precio unitario (Bs)</th>
+                                <th scope="col" class="text-center">Cantidad</th>
+                                <th scope="col" class="text-end">Subtotal (Bs)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="confirmacionDetalle">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">Sin productos.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
                 <p class="mb-1">Productos distintos: <span id="confirmacionProductosDistintos">0</span></p>
                 <p class="mb-1">Unidades totales: <span id="confirmacionUnidadesTotales">0</span></p>
                 <p class="fw-semibold">Total general: Bs <span id="confirmacionTotalGeneral">0.00</span></p>
-                <p class="small text-muted">El total mostrado es informativo. Al registrar se validarán los precios, el stock y el efectivo pagado.</p>
+                <div class="border rounded p-3 bg-light mb-3">
+                    <p class="mb-1">Efectivo pagado: Bs <span id="confirmacionEfectivo">Pendiente</span></p>
+                    <p id="confirmacionSaldo" class="small text-muted mb-0" role="status" aria-live="polite">Ingrese el efectivo pagado para calcular el cambio o faltante.</p>
+                </div>
+                <p class="small text-muted">El total y el cambio son estimados. Al registrar se validarán nuevamente los precios, el stock y el efectivo pagado.</p>
                 <p id="estadoConfirmacionVenta" class="alert alert-info mb-0" role="status" aria-live="polite" hidden></p>
             </div>
             <div class="modal-footer">

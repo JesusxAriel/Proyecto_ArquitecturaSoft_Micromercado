@@ -129,6 +129,9 @@
     const confirmacionProductos = document.getElementById("confirmacionProductosDistintos");
     const confirmacionUnidades = document.getElementById("confirmacionUnidadesTotales");
     const confirmacionTotal = document.getElementById("confirmacionTotalGeneral");
+    const confirmacionDetalle = document.getElementById("confirmacionDetalle");
+    const confirmacionEfectivo = document.getElementById("confirmacionEfectivo");
+    const confirmacionSaldo = document.getElementById("confirmacionSaldo");
     const estadoConfirmacion = document.getElementById("estadoConfirmacionVenta");
     const confirmacionModal = bootstrap.Modal.getOrCreateInstance(modalConfirmacion, {
         backdrop: "static",
@@ -222,6 +225,63 @@
         return idCliente.value.trim() !== "" && detalleTemporal.length > 0;
     }
 
+    function actualizarDesgloseConfirmacion() {
+        confirmacionDetalle.replaceChildren();
+
+        if (detalleTemporal.length === 0) {
+            const fila = document.createElement("tr");
+            const celda = document.createElement("td");
+            celda.colSpan = 4;
+            celda.className = "text-center text-muted py-3";
+            celda.textContent = "Sin productos.";
+            fila.append(celda);
+            confirmacionDetalle.append(fila);
+        } else {
+            detalleTemporal.forEach((item) => {
+                const fila = document.createElement("tr");
+                const producto = document.createElement("td");
+                producto.className = "text-break";
+                producto.textContent = `${item.nombre} — ${item.presentacion}`;
+
+                const precioUnitario = document.createElement("td");
+                precioUnitario.className = "text-end text-nowrap";
+                precioUnitario.textContent = precio.format(item.precioUnitario);
+
+                const unidades = document.createElement("td");
+                unidades.className = "text-center";
+                unidades.textContent = String(item.cantidad);
+
+                const subtotal = document.createElement("td");
+                subtotal.className = "text-end text-nowrap";
+                subtotal.textContent = precio.format(item.subtotal);
+
+                fila.append(producto, precioUnitario, unidades, subtotal);
+                confirmacionDetalle.append(fila);
+            });
+        }
+
+        const efectivo = efectivoPagado.valueAsNumber;
+        if (!efectivoPagado.value.trim() || !Number.isFinite(efectivo) || !efectivoPagado.validity.valid) {
+            confirmacionEfectivo.textContent = "Pendiente";
+            confirmacionSaldo.textContent = "Ingrese un efectivo válido para calcular el cambio o faltante.";
+            confirmacionSaldo.className = "small text-muted mb-0";
+            return;
+        }
+
+        confirmacionEfectivo.textContent = precio.format(efectivo);
+        const totalCentavos = detalleTemporal.reduce(
+            (total, item) => total + Math.round(item.subtotal * 100), 0);
+        const diferenciaCentavos = Math.round(efectivo * 100) - totalCentavos;
+
+        if (diferenciaCentavos >= 0) {
+            confirmacionSaldo.textContent = `Cambio estimado: Bs ${precio.format(diferenciaCentavos / 100)}`;
+            confirmacionSaldo.className = "small text-success mb-0";
+        } else {
+            confirmacionSaldo.textContent = `Falta: Bs ${precio.format(Math.abs(diferenciaCentavos) / 100)}`;
+            confirmacionSaldo.className = "small text-danger mb-0";
+        }
+    }
+
     function actualizarConfirmacionVenta() {
         const lista = ventaListaParaConfirmar();
         registrarVenta.disabled = !lista;
@@ -230,8 +290,10 @@
         confirmacionProductos.textContent = productosDistintos.textContent;
         confirmacionUnidades.textContent = unidadesTotales.textContent;
         confirmacionTotal.textContent = totalGeneral.textContent;
+        actualizarDesgloseConfirmacion();
     }
 
+    efectivoPagado.addEventListener("input", actualizarDesgloseConfirmacion);
     function actualizarClienteVenta() {
         const tieneCliente = idCliente.value.trim() !== "";
         agregar.disabled = !tieneCliente;
