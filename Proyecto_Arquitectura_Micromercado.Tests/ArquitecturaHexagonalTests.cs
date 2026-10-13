@@ -94,6 +94,16 @@ public class ArquitecturaHexagonalTests
                     "o escribir datos.");
     }
 
+    [Fact]
+    public void Pages_no_consume_la_fachada_de_stock()
+    {
+        AssertPaginasSinPatrones(
+            patrones: [new Regex(@"\bIFachadaActualizacionStockProducto\b", RegexOptions.CultureInvariant)],
+            porque: "La fachada de stock es de uso interno de las fachadas de venta y anulacion. " +
+                    "Las paginas solo deben conocer IFachadaVenta, IFachadaAnulacion y los " +
+                    "servicios de consulta.");
+    }
+
     private static void AssertPaginasSinPatrones(Regex[] patrones, string porque)
     {
         var carpeta = Path.Combine(RaizDelProyecto(), "Pages");
