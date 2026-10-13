@@ -1,6 +1,3 @@
-// Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
-// for details on configuring this project to bundle and minify static web assets.
-
 (function () {
     const invalidCharacters = /[*%$@{}\[\]?¿\^]/g;
     const validationPattern = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\.\,\-]+$/;
@@ -47,7 +44,6 @@
         return Number(String(value).trim().replace(',', '.'));
     }
 
-    // data-gte-field="#otroCampo": el valor de este campo debe ser >= al del otro campo.
     function isLessThanField(input) {
         const other = document.querySelector(input.dataset.gteField);
         if (!other || !input.value.trim() || !other.value.trim()) {
@@ -112,7 +108,6 @@
             const fieldValid = validateInput(this, showErrors);
             valid = fieldValid && valid;
 
-            // Un duplicado no deshabilita Guardar: al hacer clic el foco va al campo repetido.
             if (!fieldValid && !(this._uniqueError && this.validationMessage === this._uniqueError)) {
                 blocked = true;
             }
@@ -123,10 +118,6 @@
         return valid;
     }
 
-    // ---- Validación de unicidad en vivo ---------------------------------------------------
-    // Un campo con data-unique-url consulta ese endpoint (GET "?handler=CheckUnique") al escribir
-    // (con espera) y al salir del campo, y muestra el error junto a él. data-unique-fields indica
-    // qué valores se envían: "parametro=#selector,...". Lo usan categorías, productos y proveedores.
     const uniqueDelay = 400;
 
     function uniqueFields(anchor) {
@@ -153,7 +144,7 @@
     }
 
     function resetUnique(anchor) {
-        anchor._uniqueSequence = (anchor._uniqueSequence || 0) + 1; // descarta respuestas en vuelo
+        anchor._uniqueSequence = (anchor._uniqueSequence || 0) + 1;
         anchor._uniqueError = '';
         anchor._uniqueCheckedKey = null;
         clearTimeout(anchor._uniqueTimer);
@@ -175,12 +166,11 @@
                     result = await response.json();
                 }
             } catch {
-                // Sin respuesta del servidor: no se bloquea, el servidor valida de todos modos al guardar.
             }
         }
 
         if (sequence !== anchor._uniqueSequence) {
-            return; // llegó tarde: ya hay una consulta más reciente
+            return;
         }
 
         anchor._uniqueError = result && result.duplicate
@@ -189,7 +179,7 @@
         anchor._uniqueCheckedKey = key;
 
         if (!anchor.value.trim()) {
-            return; // campo vacío: no hay nada que comparar ni que mostrar (lo valida "required")
+            return;
         }
 
         validateInput(anchor, true);
@@ -201,7 +191,7 @@
 
     function bindUnique(anchor) {
         if (anchor._uniqueBound) {
-            return; // idempotente: nunca se enlazan dos veces los mismos listeners
+            return;
         }
 
         anchor._uniqueBound = true;
@@ -213,8 +203,6 @@
         };
 
         const onChange = () => {
-            // El navegador dispara "change" al salir del campo aunque el valor ya se haya comprobado:
-            // solo se descarta el resultado si el valor realmente cambió.
             if (anchor._uniqueCheckedKey === uniqueQuery(anchor)) {
                 return;
             }
@@ -254,15 +242,12 @@
         });
     };
 
-    // Cada vez que un modal se abre o se cierra se descarta el estado de la comprobación anterior.
     $(document).on('show.bs.modal hidden.bs.modal', '.modal', function () {
         $(this).find('[data-unique-url]').each(function () {
             resetUnique(this);
         });
     });
 
-    // ---- Vista previa del código generado --------------------------------------------------
-    // El servidor calcula el código con el mismo servicio que usa al guardar (no se repite el algoritmo aquí).
     function bindCodePreview(target) {
         const source = document.querySelector(target.dataset.codePreviewSource);
         const note = target.parentElement.querySelector('[data-code-preview-message]');
@@ -299,7 +284,6 @@
                 const data = await response.json();
                 show(data.code || '', data.message || '');
             } catch {
-                // Sin respuesta: el campo conserva su placeholder y el servidor asigna el código al guardar.
             }
         }
 
@@ -315,7 +299,7 @@
         });
 
         if (source.value.trim()) {
-            refresh(); // el modal se reabrió con un nombre devuelto por el servidor
+            refresh();
         }
     }
 
@@ -372,8 +356,6 @@
         }
     });
 
-    // Búsqueda de los listados paginados: el servidor filtra, así que se envía el formulario GET
-    // poco después de dejar de escribir y se devuelve el foco al campo al recargar.
     $('[data-auto-search]').each(function () {
         const input = this;
         let timer = null;
@@ -409,7 +391,6 @@
 
         $(form).on('submit', function (event) {
             if (form.dataset.submitting === 'true') {
-                // Segundo envío mientras el primero sigue en curso (doble clic o Enter repetido).
                 event.preventDefault();
                 return;
             }
@@ -427,8 +408,6 @@
                 return;
             }
 
-            // Si el valor actual aún no se consultó (se escribió y se pulsó Guardar enseguida) se
-            // consulta primero; solo si no hay duplicado se envía el formulario.
             const pending = uniqueAnchors(form).filter(anchor =>
                 anchor.value.trim() && anchor._uniqueCheckedKey !== uniqueQuery(anchor));
 
@@ -449,8 +428,6 @@
                 return;
             }
 
-            // Otros handlers del mismo formulario pueden cancelar el envío después de este,
-            // así que se decide al terminar el evento si realmente se está enviando.
             setTimeout(function () {
                 if (event.originalEvent && event.originalEvent.defaultPrevented) {
                     return;
@@ -461,7 +438,6 @@
             }, 0);
         });
 
-        // Al volver con "atrás" el navegador puede restaurar la página con el envío bloqueado.
         window.addEventListener('pageshow', function () {
             delete form.dataset.submitting;
             $(form).find('.modal-save-button, button[type="submit"]').prop('disabled', false);
