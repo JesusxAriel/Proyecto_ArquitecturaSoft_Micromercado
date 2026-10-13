@@ -82,6 +82,10 @@
                                             Registro de Ventas
                                         </a>
                                     </li>
+                                    @if (!esAdministrador)
+                                    {
+                                        <li><a class="dropdown-item" asp-page="/Products/Catalog">Consultar productos</a></li>
+                                    }
                                     <li>
                                         <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
                                             Historial de Ventas <span class="badge bg-secondary ms-1">Próximamente</span>
