@@ -6,10 +6,6 @@ using Proyecto_Arquitectura_Micromercado.Domain.Common;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.EnMemoria;
 
-// Producto Concreto alternativo de ICategoryRepository: guarda las categorías en memoria.
-// Respeta el mismo contrato que MySqlCategoryRepository (baja lógica, unicidad de nombre
-// entre activas, unicidad de código sobre todas las filas, y las mismas excepciones),
-// de modo que un servicio no pueda distinguir con cuál de los dos está trabajando.
 public sealed class InMemoryCategoryRepository(IUsuarioActual? usuarioActual = null) : ICategoryRepository
 {
     private readonly IUsuarioActual usuario = usuarioActual ?? new UsuarioActualEnMemoria();
@@ -118,8 +114,6 @@ public sealed class InMemoryCategoryRepository(IUsuarioActual? usuarioActual = n
         return Task.FromResult(existe);
     }
 
-    // Igual que en MySQL: devuelve todos los códigos, incluidas las categorías dadas de baja,
-    // porque el índice UNIQUE del código también las considera.
     public Task<IReadOnlyList<string>> GetAllCodesAsync(CancellationToken cancellationToken = default)
     {
         IReadOnlyList<string> codigos = categorias.Select(c => c.Code).ToList();
@@ -129,7 +123,6 @@ public sealed class InMemoryCategoryRepository(IUsuarioActual? usuarioActual = n
 
     private IEnumerable<Category> Activas() => categorias.Where(c => c.IsActive);
 
-    // Reproduce los dos índices UNIQUE de la tabla CATEGORIAS.
     private void ValidarUnicidad(Category category, int idExcluido)
     {
         if (Activas().Any(c => c.Id != idExcluido && TextoEnMemoria.SonIguales(c.Name, category.Name)))
@@ -143,8 +136,6 @@ public sealed class InMemoryCategoryRepository(IUsuarioActual? usuarioActual = n
         }
     }
 
-    // Se clona al entrar y al salir para que el llamador no pueda mutar el almacén por
-    // referencia, igual que una base de datos devuelve copias y no punteros a sus filas.
     private static Category Clonar(Category origen) => new()
     {
         Id = origen.Id,

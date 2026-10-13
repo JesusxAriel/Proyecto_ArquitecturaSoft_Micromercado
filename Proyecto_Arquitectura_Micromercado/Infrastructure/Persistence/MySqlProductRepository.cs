@@ -134,7 +134,6 @@ public sealed class MySqlProductRepository(
         int idExcluido,
         CancellationToken cancellationToken = default)
     {
-        // La collation utf8mb4_unicode_ci ignora mayúsculas y tildes; REGEXP_REPLACE los espacios extra.
         const string sql = """
             SELECT EXISTS (
                 SELECT 1

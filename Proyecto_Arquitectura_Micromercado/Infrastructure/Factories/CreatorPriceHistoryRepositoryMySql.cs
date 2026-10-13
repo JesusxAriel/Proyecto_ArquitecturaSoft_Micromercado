@@ -4,7 +4,6 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.Errores;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Factories
 {
-    // Creador Concreto: elige la implementación MySQL del repositorio de Historial.
     public sealed class CreatorPriceHistoryRepositoryMySql(MySqlUnidadDeTrabajo unidadDeTrabajo)
         : CreatorPriceHistoryRepository
     {

@@ -5,17 +5,6 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.Errores;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-// Adaptador MySQL del puerto IUnidadDeTrabajo.
-//
-// Cumple dos papeles:
-//   1. Hacia Application, implementa el puerto: iniciar, confirmar, revertir.
-//   2. Hacia los adaptadores MySQL, reparte la conexion con la que deben trabajar.
-//      Ese reparto es interno de Infrastructure, asi que ningun detalle de ADO.NET
-//      vuelve a asomarse por el borde del hexagono.
-//
-// Se registra con ciclo de vida Scoped: una unidad de trabajo por peticion HTTP. Por
-// eso basta con que los repositorios la reciban por constructor para quedar enlistados
-// en la misma transaccion, sin pasarsela por parametro.
 public sealed class MySqlUnidadDeTrabajo(DatabaseConnection conexion) : IUnidadDeTrabajo, IAsyncDisposable
 {
     private MySqlConnection? conexionDeTransaccion;
@@ -23,9 +12,6 @@ public sealed class MySqlUnidadDeTrabajo(DatabaseConnection conexion) : IUnidadD
 
     public bool HayTransaccionActiva => transaccion is not null;
 
-    // Los tres metodos del puerto traducen los errores del driver, porque a quien
-    // orquesta la transaccion (el VentaFacade de la Parte 3) solo le llegan tipos de
-    // Application. Los repositorios ya quedan cubiertos por su propio decorador.
     public Task IniciarAsync(CancellationToken cancellationToken = default)
     {
         if (transaccion is not null)
@@ -70,12 +56,6 @@ public sealed class MySqlUnidadDeTrabajo(DatabaseConnection conexion) : IUnidadD
         });
     }
 
-    // Entrega la conexion que corresponde usar en este momento.
-    //
-    // Con una transaccion abierta devuelve la conexion compartida y marca el alquiler
-    // como ajeno, para que el repositorio que lo libere NO cierre la conexion de la
-    // transaccion. Sin transaccion devuelve una conexion propia y de vida corta, igual
-    // que antes de existir esta clase: el comportamiento de las lecturas no cambia.
     internal Task<AlquilerDeConexion> AlquilarAsync(CancellationToken cancellationToken)
     {
         if (transaccion is not null && conexionDeTransaccion is not null)
@@ -93,8 +73,6 @@ public sealed class MySqlUnidadDeTrabajo(DatabaseConnection conexion) : IUnidadD
         });
     }
 
-    // Si alguien olvida confirmar o revertir, el contenedor de dependencias libera la
-    // unidad al cerrar el scope y la transaccion se descarta en vez de quedar colgada.
     public async ValueTask DisposeAsync()
     {
         if (transaccion is not null)
@@ -120,12 +98,6 @@ public sealed class MySqlUnidadDeTrabajo(DatabaseConnection conexion) : IUnidadD
     }
 }
 
-// Conexion prestada a un repositorio por la unidad de trabajo, junto con la transaccion
-// en curso si la hay.
-//
-// Liberarlo solo cierra la conexion cuando el alquiler es propio. Asi los repositorios
-// pueden seguir escribiendo "await using var alquiler = ..." sin riesgo de cerrarle la
-// conexion a una transaccion que no les pertenece.
 internal sealed class AlquilerDeConexion(
     MySqlConnection conexion,
     MySqlTransaction? transaccion,

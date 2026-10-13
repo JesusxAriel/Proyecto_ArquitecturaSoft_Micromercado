@@ -3,8 +3,6 @@ using Proyecto_Arquitectura_Micromercado.Domain.Products;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.EnMemoria;
 
-// Producto Concreto alternativo de IPriceHistoryRepository.
-// Igual que en MySQL, el historial se devuelve del cambio más reciente al más antiguo.
 public sealed class InMemoryPriceHistoryRepository : IPriceHistoryRepository
 {
     private readonly List<ProductPriceHistory> historial = [];

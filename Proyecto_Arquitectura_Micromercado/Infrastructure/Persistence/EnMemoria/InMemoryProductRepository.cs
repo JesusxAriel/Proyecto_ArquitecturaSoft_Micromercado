@@ -6,14 +6,6 @@ using Proyecto_Arquitectura_Micromercado.Domain.Products;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.EnMemoria;
 
-// Producto Concreto alternativo de IProductRepository.
-//
-// Igual que MySqlProductRepository, recibe el repositorio de historial y le delega el
-// registro del cambio de precio al actualizar: la responsabilidad del historial no vive
-// aqui, solo se la invoca (SRP).
-//
-// Los catalogos (empaques, categorias, proveedores) se reciben por constructor porque en
-// MySQL provienen de otras tablas; aca se inyectan ya resueltos.
 public sealed class InMemoryProductRepository(
     IPriceHistoryRepository priceHistoryRepository,
     IEnumerable<LookupOption>? empaques = null,
@@ -109,7 +101,6 @@ public sealed class InMemoryProductRepository(
         existente.IdCategoria = product.IdCategoria;
         existente.IdProveedor = product.IdProveedor;
 
-        // Mismo criterio que en MySQL, y ahora literalmente la misma definicion.
         if (CambioDePrecio.Hubo(
                 precioVentaAnterior,
                 precioCostoAnterior,
@@ -194,7 +185,6 @@ public sealed class InMemoryProductRepository(
 
     private IEnumerable<Product> Activos() => productos.Where(p => p.EstaActivo);
 
-    // Reproduce el indice UNIQUE (nombre, idEmpaque) entre productos activos.
     private void ValidarUnicidad(Product product, int idExcluido)
     {
         if (Activos().Any(p =>
@@ -225,8 +215,6 @@ public sealed class InMemoryProductRepository(
         IdProveedor = origen.IdProveedor,
         NombreProveedor = NombreDeCatalogo(catalogoProveedores, origen.IdProveedor),
 
-        // En MySQL lo calcula la vista vw_productos_con_stock a partir de los movimientos
-        // de inventario, que este motor no modela.
         StockCalculado = 0
     };
 

@@ -32,7 +32,6 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Database
             return _instance;
         }
 
-        // Propiedad para acceso rápido en los repositorios una vez inicializado
         public static DatabaseConnection Instance 
         { 
             get 

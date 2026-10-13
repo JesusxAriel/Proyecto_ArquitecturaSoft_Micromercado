@@ -4,8 +4,6 @@ using Proyecto_Arquitectura_Micromercado.Domain.Common;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-// Ejecuta COUNT + página (LIMIT/OFFSET) con filtro de búsqueda opcional. Lo comparten los
-// repositorios de productos, categorías y proveedores.
 internal static class PagedSqlRunner
 {
     public static async Task<PagedResult<T>> RunAsync<T>(

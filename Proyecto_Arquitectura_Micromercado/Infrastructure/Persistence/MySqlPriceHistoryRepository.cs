@@ -4,9 +4,6 @@ using Proyecto_Arquitectura_Micromercado.Domain.Products;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
-// Recibe la unidad de trabajo en vez de la conexion suelta: cuando el repositorio de
-// producto abre una transaccion, esta insercion queda dentro de ella sin necesidad de
-// que nadie le pase la transaccion por parametro.
 public sealed class MySqlPriceHistoryRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) : IPriceHistoryRepository
 {
     public async Task<IReadOnlyList<ProductPriceHistory>> GetPriceHistoryAsync(CancellationToken cancellationToken = default)
