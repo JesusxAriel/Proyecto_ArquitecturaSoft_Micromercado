@@ -12,18 +12,6 @@ using Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.Errores;
 
-// Decoradores que envuelven a un repositorio y traducen los errores de su motor a
-// ErrorDePersistenciaException.
-//
-// POR QUE UN DECORADOR Y NO UN TRY/CATCH EN CADA REPOSITORIO
-// Habria que repetir el mismo try/catch en 27 metodos y reindentar su cuerpo: mucho
-// ruido y mucho riesgo de romper SQL que hoy funciona. El decorador deja los
-// repositorios intactos y pone la traduccion en un solo lugar por contrato.
-//
-// Quien decide envolver es el Creador Concreto de MySQL, que es justamente el que sabe
-// que su producto habla con MySQL. El adaptador en memoria no se envuelve porque no
-// tiene errores de motor que traducir.
-
 internal sealed class CategoryRepositoryConErroresTraducidos(ICategoryRepository interno)
     : ICategoryRepository
 {

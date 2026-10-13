@@ -51,7 +51,6 @@ public sealed class IndexModel(
         await LoadSuppliersAsync(cancellationToken);
     }
 
-    // Endpoint GET para el script de validación en vivo (site.js).
     public async Task<IActionResult> OnGetCheckUniqueAsync(
         string? nombre,
         int id,
@@ -87,7 +86,6 @@ public sealed class IndexModel(
         }
         catch (ArgumentException ex)
         {
-            // Un duplicado (carrera con otra solicitud) se muestra junto al campo Nombre.
             ModelState.AddModelError(
                 ex is DuplicateSupplierException ? "CreateSupplier.NombreEmpresa" : string.Empty,
                 ex.Message);

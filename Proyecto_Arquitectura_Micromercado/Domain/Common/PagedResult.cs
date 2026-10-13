@@ -1,6 +1,5 @@
 namespace Proyecto_Arquitectura_Micromercado.Domain.Common;
 
-// Datos de paginación sin el tipo de los elementos; los consume el parcial _Pager.
 public interface IPagedInfo
 {
     int Page { get; }

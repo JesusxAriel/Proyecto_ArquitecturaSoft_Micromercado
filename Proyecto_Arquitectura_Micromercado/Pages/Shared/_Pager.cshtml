@@ -1,8 +1,6 @@
 @using Proyecto_Arquitectura_Micromercado.Domain.Common
 @model IPagedInfo
 @{
-    // Paginador de los listados. Parámetros: Pagina, Tamano y Q (la búsqueda se conserva al cambiar de página).
-    // ViewData["ItemLabel"]: nombre plural de lo que se lista, p. ej. "productos".
     var targetPage = ViewContext.RouteData.Values["page"]?.ToString();
     var search = Context.Request.Query["Q"].ToString();
     var query = string.IsNullOrEmpty(search) ? null : search;

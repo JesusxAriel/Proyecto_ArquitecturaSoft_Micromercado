@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Sales;
 
-// Campos exclusivos de la pantalla; no representan una venta persistida.
 public sealed class SaleInputModel
 {
     public int? IdCliente { get; set; }

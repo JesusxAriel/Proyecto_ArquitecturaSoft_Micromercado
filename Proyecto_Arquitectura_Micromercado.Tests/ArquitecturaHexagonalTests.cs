@@ -2,15 +2,8 @@ using System.Text.RegularExpressions;
 
 namespace Proyecto_Arquitectura_Micromercado.Tests;
 
-// Hace verificable la regla de dependencia de la arquitectura hexagonal.
-//
-// Las capas del proyecto son carpetas dentro de un mismo ensamblado, no proyectos
-// separados, asi que el compilador NO impide que alguien escriba un using prohibido.
-// Estas pruebas ocupan ese lugar: si una dependencia apunta hacia afuera en vez de
-// hacia adentro, la suite falla y dice exactamente en que archivo y linea.
 public class ArquitecturaHexagonalTests
 {
-    // Namespaces del propio proyecto, por capa.
     private const string Raiz = "Proyecto_Arquitectura_Micromercado";
     private const string NsDominio = Raiz + ".Domain";
     private const string NsAplicacion = Raiz + ".Application";
@@ -46,10 +39,6 @@ public class ArquitecturaHexagonalTests
             porque: "Los adaptadores de salida no pueden conocer al adaptador de entrada.");
     }
 
-    // Estuvo deshabilitada mientras las Pages capturaban MySqlException en 8 lugares, o sea
-    // mientras el adaptador de entrada dependia del driver del adaptador de salida. Ya se
-    // corrigio: los adaptadores traducen sus errores a ErrorDePersistenciaException y la UI
-    // captura esa. Si alguien vuelve a capturar el driver en una pagina, esta prueba falla.
     [Fact]
     public void Pages_no_depende_del_driver_de_base_de_datos()
     {
@@ -197,9 +186,6 @@ public class ArquitecturaHexagonalTests
             """);
     }
 
-    // Devuelve el namespace de un "using X.Y;" o null si la linea no es una directiva using.
-    // Ignora alias, using static y los using dentro de un bloque (indentados con sangria),
-    // que en este proyecto no existen pero no deben romper el analisis.
     private static string? DirectivaUsing(string linea)
     {
         var coincidencia = Regex.Match(
@@ -210,8 +196,6 @@ public class ArquitecturaHexagonalTests
         return coincidencia.Success ? coincidencia.Groups["ns"].Value : null;
     }
 
-    // Sube desde el directorio de ejecucion hasta encontrar la solucion, y entra al
-    // proyecto de la aplicacion. Asi la prueba no depende de rutas relativas fragiles.
     private static string RaizDelProyecto()
     {
         var directorio = new DirectoryInfo(AppContext.BaseDirectory);

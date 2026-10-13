@@ -9,20 +9,11 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
 namespace Proyecto_Arquitectura_Micromercado.Tests;
 
-// Pruebas del patron Factory Method en si mismo, no de una entidad en particular.
-// Ninguna abre una conexion: construir un Creador y pedirle su repositorio no toca la
-// base de datos, asi que el motor MySQL tambien se puede verificar aca.
 public class FactoryMethodTests
 {
-    // Unidad de trabajo de mentira: nunca se abre una conexion, solo se necesita para
-    // construir el Creador Concreto de MySQL. Construir el Creador y pedirle su
-    // repositorio no toca la base de datos.
     private static MySqlUnidadDeTrabajo UnidadDePrueba() =>
         new(DatabaseConnection.GetInstance("Server=localhost;Database=prueba;Uid=prueba;Pwd=prueba;"));
 
-    // Los dos Creadores Concretos de la misma jerarquia, declarados con el tipo ABSTRACTO.
-    // Que esta linea compile es la demostracion de que el polimorfismo del patron existe:
-    // antes de la correccion no habia ningun tipo capaz de contener a los dos.
     private static CreatorCategoryRepository[] CreadoresDeCategoria() =>
     [
         new CreatorCategoryRepositoryEnMemoria(),
@@ -58,10 +49,6 @@ public class FactoryMethodTests
         Assert.NotSame(primero.ObtenerRepositorio(), segundo.ObtenerRepositorio());
     }
 
-    // Regresion del defecto corregido: el Creador de Producto reutiliza el repositorio de
-    // historial de su fabrica en vez de crear uno paralelo. Si volviera a llamar a
-    // CrearRepositorio(), el producto escribiria en una instancia distinta de la que
-    // consulta el resto de la aplicacion y este historial vendria vacio.
     [Fact]
     public async Task El_creador_de_producto_comparte_la_instancia_de_historial()
     {

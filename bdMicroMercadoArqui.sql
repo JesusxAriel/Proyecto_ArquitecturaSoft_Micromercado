@@ -1,72 +1,9 @@
--- ================================================================
--- BASE DE DATOS: bdMicroMercadoArqui   (VERSION 2.2 - FINAL)
--- PROYECTO: Punto Casero POS  |  ARQUITECTURA DE SOFTWARE
--- MOTOR: MySQL 8.0.16+ (CHECK, JSON, columnas generadas, triggers)
--- ================================================================
--- PROCESO PRINCIPAL
---   VENTA     : 1 INSERT Venta, N INSERT Detalle_Venta, N UPDATE stock
---   ANULACION : 1 UPDATE Venta (estado), N UPDATE stock
---
--- IDEA CLAVE DE ESTA VERSION
---   Las FOREIGN KEY solo protegen el DELETE fisico. Pero el sistema
---   usa BAJA LOGICA (estaActivo = 0), que es un UPDATE y las FK NO lo
---   detectan. Por eso, ademas de las FK (RESTRICT), esta version agrega
---   TRIGGERS que bloquean las bajas y cambios peligrosos:
---
---   REGLAS DE INTEGRIDAD
---   1. No se puede desactivar una CATEGORIA / PROVEEDOR / EMPAQUE que
---      tenga PRODUCTOS ACTIVOS.
---   2. No se puede crear, reactivar ni mover un PRODUCTO hacia una
---      categoria / proveedor / empaque inactivo.
---   3. No se puede desactivar un PRODUCTO con stock en lotes activos.
---   4. No se puede crear un LOTE para un producto inactivo, ni un lote
---      ya vencido, ni cambiar un lote de producto.
---   5. Cambiar precios exige indicar QUIEN lo hizo (idUsuarioActualizacion).
---   6. El HISTORIAL_PRECIO es inmutable (no UPDATE / DELETE).
---   7. Las VENTAS no se borran ni se editan: solo se ANULAN. El detalle
---      es inmutable y solo se agrega mientras la venta esta en proceso.
---   8. Una venta solo puede hacerse con cliente y cajero ACTIVOS.
---   9. Siempre debe existir al menos 1 ADMINISTRADOR activo.
---  10. Los roles base (Administrador, Cajero) no se renombran ni desactivan,
---      y no se desactiva un rol con usuarios activos.
---  11. El cliente generico (id = 1) no se puede desactivar ni cambiar.
---
---   La aplicacion debe capturar los errores SQLSTATE '45000' y mostrar
---   el MESSAGE_TEXT al usuario.
---
--- NOTA SOBRE EL STOCK
---   El stock NO se guarda en PRODUCTO. Se controla por LOTE
---   (LOTE.cantidadDisponible) para manejar vencimientos (FEFO: el
---   primero que vence es el primero que sale). El stock de un
---   producto se obtiene con la vista vw_productos_con_stock.
---
--- AUDITORIA
---   idUsuarioAdmin = usuario que registro el dato, e idUsuarioActualizacion =
---   ultimo usuario que lo modifico (catalogos). CLIENTE usa idUsuarioCreacion
---   porque lo registra el cajero. + fechaCreacion / fechaActualizacion.
---   VENTA.idUsuario = cajero que registra la venta; ademas
---   idUsuarioAnulacion / fechaAnulacion / motivoAnulacion.
---   HISTORIAL_PRECIO.idUsuario = quien cambio el precio.
---
--- ROLES
---   Administrador = Gerente / usuario root: control total del sistema.
---   Cajero = registra clientes y ventas.
---   (Los permisos por pantalla/accion se validan en la aplicacion.)
---
--- NOTA: este script usa DELIMITER, ejecutalo en MySQL Workbench,
---       DBeaver o el cliente mysql (no en ejecutores que no lo soporten).
--- ================================================================
-
 DROP DATABASE IF EXISTS `bdMicroMercadoArqui`;
 CREATE DATABASE `bdMicroMercadoArqui`
   DEFAULT CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 USE `bdMicroMercadoArqui`;
 
-
--- ================================================================
--- 1. ROL
--- ================================================================
 CREATE TABLE `ROL` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `nombre` VARCHAR(50) NOT NULL,
@@ -79,14 +16,10 @@ CREATE TABLE `ROL` (
   CONSTRAINT `CK_Rol_estaActivo` CHECK (`estaActivo` IN (0,1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
--- ================================================================
--- 2. USUARIO (login, sesion y auditoria)
--- ================================================================
 CREATE TABLE `USUARIO` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `username` VARCHAR(50) NOT NULL,
-  `passwordHash` VARCHAR(255) NOT NULL,   -- hash BCrypt (60 caracteres); NUNCA texto plano
+  `passwordHash` VARCHAR(255) NOT NULL,
   `nombreCompleto` VARCHAR(150) NOT NULL,
   `correo` VARCHAR(150) DEFAULT NULL,
   `idRol` INT NOT NULL,
@@ -101,10 +34,6 @@ CREATE TABLE `USUARIO` (
     REFERENCES `ROL` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
--- ================================================================
--- 3. CATEGORIAS
--- ================================================================
 CREATE TABLE `CATEGORIAS` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `nombre` VARCHAR(150) NOT NULL,
@@ -118,7 +47,6 @@ CREATE TABLE `CATEGORIAS` (
   `fechaCreacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `fechaActualizacion` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
 
-  -- Permite repetir el nombre solo si el registro anterior esta inactivo
   `nombreActivo` VARCHAR(150)
     GENERATED ALWAYS AS (IF(`estaActivo` = 1, `nombre`, NULL)) VIRTUAL,
 
@@ -134,12 +62,6 @@ CREATE TABLE `CATEGORIAS` (
     REFERENCES `USUARIO` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
--- ================================================================
--- 4. PROVEEDOR
---    esAutogestionado = 1 -> el proveedor repone la mercaderia por
---    su cuenta (ej. distribuidor que visita el local).
--- ================================================================
 CREATE TABLE `PROVEEDOR` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `nombreEmpresa` VARCHAR(150) NOT NULL,
@@ -168,10 +90,6 @@ CREATE TABLE `PROVEEDOR` (
     REFERENCES `USUARIO` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
--- ================================================================
--- 5. EMPAQUE
--- ================================================================
 CREATE TABLE `EMPAQUE` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `nombre` VARCHAR(100) NOT NULL,
@@ -193,10 +111,6 @@ CREATE TABLE `EMPAQUE` (
     REFERENCES `USUARIO` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
--- ================================================================
--- 6. PRODUCTO  (SIN columna stock: se calcula desde LOTE)
--- ================================================================
 CREATE TABLE `PRODUCTO` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `nombre` VARCHAR(150) NOT NULL,
@@ -210,7 +124,7 @@ CREATE TABLE `PRODUCTO` (
 
   `estaActivo` TINYINT(1) NOT NULL DEFAULT 1,
   `idUsuarioAdmin` INT NOT NULL,
-  `idUsuarioActualizacion` INT DEFAULT NULL,   -- ultimo usuario que modifico
+  `idUsuarioActualizacion` INT DEFAULT NULL,
   `fechaCreacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `fechaActualizacion` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
 
@@ -241,17 +155,13 @@ CREATE TABLE `PRODUCTO` (
     REFERENCES `USUARIO` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
--- ================================================================
--- 7. LOTE (control de stock y vencimientos)
--- ================================================================
 CREATE TABLE `LOTE` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `idProducto` INT NOT NULL,
   `codigoLote` VARCHAR(50) NOT NULL,
   `cantidadInicial` INT NOT NULL,
   `cantidadDisponible` INT NOT NULL,
-  `fechaVencimiento` DATE DEFAULT NULL,   -- NULL = no perecible
+  `fechaVencimiento` DATE DEFAULT NULL,
 
   `estaActivo` TINYINT(1) NOT NULL DEFAULT 1,
   `idUsuarioAdmin` INT NOT NULL,
@@ -261,7 +171,6 @@ CREATE TABLE `LOTE` (
 
   PRIMARY KEY (`id`),
   UNIQUE KEY `UQ_Lote_producto_codigo` (`idProducto`, `codigoLote`),
-  -- Necesario para la FK compuesta de DETALLE_VENTA (lote + producto)
   UNIQUE KEY `UQ_Lote_id_producto` (`id`, `idProducto`),
   KEY `IX_Lote_producto_vencimiento` (`idProducto`, `fechaVencimiento`),
   KEY `FK_Lote_UsuarioAdmin` (`idUsuarioAdmin`),
@@ -272,7 +181,6 @@ CREATE TABLE `LOTE` (
     AND `cantidadDisponible` >= 0
     AND `cantidadDisponible` <= `cantidadInicial`
   ),
-  -- RESTRICT: un lote nunca debe desaparecer por borrar un producto
   CONSTRAINT `FK_Lote_Producto` FOREIGN KEY (`idProducto`)
     REFERENCES `PRODUCTO` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `FK_Lote_UsuarioAdmin` FOREIGN KEY (`idUsuarioAdmin`)
@@ -281,10 +189,6 @@ CREATE TABLE `LOTE` (
     REFERENCES `USUARIO` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
--- ================================================================
--- 8. HISTORIAL_PRECIO  (auditoria INMUTABLE: ver triggers)
--- ================================================================
 CREATE TABLE `HISTORIAL_PRECIO` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `idProducto` INT NOT NULL,
@@ -293,23 +197,18 @@ CREATE TABLE `HISTORIAL_PRECIO` (
   `precioCostoAnterior` DECIMAL(10,2) DEFAULT NULL,
   `precioCostoNuevo` DECIMAL(10,2) DEFAULT NULL,
   `motivoCambio` VARCHAR(255) DEFAULT 'Ajuste de precio',
-  `idUsuario` INT NOT NULL,              -- quien cambio el precio
+  `idUsuario` INT NOT NULL,
   `fechaCambio` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   PRIMARY KEY (`id`),
   KEY `FK_HistorialPrecio_Producto` (`idProducto`),
   KEY `FK_HistorialPrecio_Usuario` (`idUsuario`),
-  -- RESTRICT: la auditoria no se pierde si se intenta borrar el producto
   CONSTRAINT `FK_HistorialPrecio_Producto` FOREIGN KEY (`idProducto`)
     REFERENCES `PRODUCTO` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `FK_HistorialPrecio_Usuario` FOREIGN KEY (`idUsuario`)
     REFERENCES `USUARIO` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
--- ================================================================
--- 9. CLIENTE
--- ================================================================
 CREATE TABLE `CLIENTE` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `nitCi` VARCHAR(30) NOT NULL,
@@ -337,24 +236,17 @@ CREATE TABLE `CLIENTE` (
     REFERENCES `USUARIO` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
--- ================================================================
--- 10. VENTA (tabla principal del proceso)
---     Se quito `estaActivo`: el ciclo de vida es solo `estado`
---     (COMPLETADA / ANULADA). Una venta NUNCA se borra ni se edita.
--- ================================================================
 CREATE TABLE `VENTA` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `nroComprobante` VARCHAR(50) NOT NULL,
   `idCliente` INT NOT NULL,
-  `idUsuario` INT NOT NULL,                     -- Cajero que registra la venta
+  `idUsuario` INT NOT NULL,
   `fechaVenta` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `montoTotal` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `efectivoPagado` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `cambio` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `estado` ENUM('COMPLETADA','ANULADA') NOT NULL DEFAULT 'COMPLETADA',
 
-  -- Auditoria de anulacion
   `motivoAnulacion` VARCHAR(255) DEFAULT NULL,
   `idUsuarioAnulacion` INT DEFAULT NULL,
   `fechaAnulacion` DATETIME DEFAULT NULL,
@@ -373,7 +265,6 @@ CREATE TABLE `VENTA` (
     AND `efectivoPagado` >= `montoTotal`
     AND `cambio` = `efectivoPagado` - `montoTotal`
   ),
-  -- Coherencia del estado con los datos de anulacion
   CONSTRAINT `CK_Venta_anulacion` CHECK (
     (`estado` = 'COMPLETADA' AND `motivoAnulacion` IS NULL AND `fechaAnulacion` IS NULL)
     OR
@@ -387,14 +278,6 @@ CREATE TABLE `VENTA` (
     REFERENCES `USUARIO` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
--- ================================================================
--- 11. DETALLE_VENTA  (relacion N:M  VENTA <-> PRODUCTO)
---     - Registra el LOTE del que salio la mercaderia.
---     - FK COMPUESTA (idLote, idProducto): garantiza que el lote
---       realmente pertenece a ese producto.
---     - subtotal es columna GENERADA: no puede quedar inconsistente.
--- ================================================================
 CREATE TABLE `DETALLE_VENTA` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `idVenta` INT NOT NULL,
@@ -419,13 +302,6 @@ CREATE TABLE `DETALLE_VENTA` (
     REFERENCES `LOTE` (`id`, `idProducto`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
--- ================================================================
--- VISTAS
--- ================================================================
-
--- Vista 1: productos con stock calculado desde LOTE (ignora lotes vencidos)
---   stockCalculado se castea a entero (SUM devuelve DECIMAL en MySQL).
 CREATE OR REPLACE VIEW `vw_productos_con_stock` AS
 SELECT
     p.id,
@@ -456,8 +332,6 @@ GROUP BY
     p.stockMinimo, p.idCategoria, c.nombre, p.idProveedor, pr.nombreEmpresa,
     p.estaActivo;
 
--- Vista 2: resumen de ventas para tablas / listados de la UI
---   Incluye ANULADAS (filtrar por estado en la UI si hace falta).
 CREATE OR REPLACE VIEW `vw_resumen_ventas` AS
 SELECT
     v.id AS idVenta,
@@ -474,7 +348,6 @@ FROM `VENTA` v
 INNER JOIN `CLIENTE` c ON v.idCliente = c.id
 INNER JOIN `USUARIO` u ON v.idUsuario = u.id;
 
--- Vista 3: estructura completa del comprobante / recibo
 CREATE OR REPLACE VIEW `vw_comprobante_venta` AS
 SELECT
     v.id AS idVenta,
@@ -502,7 +375,6 @@ INNER JOIN `PRODUCTO` p       ON dv.idProducto = p.id
 INNER JOIN `EMPAQUE` e        ON p.idEmpaque = e.id
 INNER JOIN `LOTE` l           ON dv.idLote = l.id;
 
--- Vista 4: lotes proximos a vencer (30 dias) o ya vencidos
 CREATE OR REPLACE VIEW `vw_lotes_por_vencer` AS
 SELECT
     l.id AS idLote,
@@ -519,16 +391,8 @@ WHERE l.estaActivo = 1
   AND l.fechaVencimiento <= DATE_ADD(CURRENT_DATE(), INTERVAL 30 DAY)
 ORDER BY l.fechaVencimiento;
 
-
--- ================================================================
--- TRIGGERS DE INTEGRIDAD
--- (los mensajes de SIGNAL no pueden pasar de 128 caracteres)
--- ================================================================
 DELIMITER $$
 
--- ----------------------------------------------------------------
--- ROL: roles base protegidos + no desactivar rol con usuarios activos
--- ----------------------------------------------------------------
 CREATE TRIGGER `trg_rol_bu`
 BEFORE UPDATE ON `ROL`
 FOR EACH ROW
@@ -547,9 +411,6 @@ BEGIN
     END IF;
 END$$
 
--- ----------------------------------------------------------------
--- USUARIO: rol activo + siempre debe quedar 1 Administrador activo
--- ----------------------------------------------------------------
 CREATE TRIGGER `trg_usuario_bi`
 BEFORE INSERT ON `USUARIO`
 FOR EACH ROW
@@ -566,7 +427,6 @@ FOR EACH ROW
 BEGIN
     DECLARE v_idAdmin INT DEFAULT NULL;
 
-    -- Reactivar o cambiar de rol: el rol destino debe estar activo
     IF NEW.estaActivo = 1 AND (OLD.estaActivo = 0 OR NEW.idRol <> OLD.idRol) THEN
         IF NOT EXISTS (SELECT 1 FROM `ROL` WHERE id = NEW.idRol AND estaActivo = 1) THEN
             SIGNAL SQLSTATE '45000'
@@ -574,7 +434,6 @@ BEGIN
         END IF;
     END IF;
 
-    -- Nunca dejar el sistema sin Administrador activo
     SELECT id INTO v_idAdmin FROM `ROL` WHERE nombre = 'Administrador' LIMIT 1;
 
     IF OLD.estaActivo = 1 AND OLD.idRol = v_idAdmin
@@ -587,10 +446,6 @@ BEGIN
     END IF;
 END$$
 
--- ----------------------------------------------------------------
--- CATEGORIAS: no desactivar si tiene productos ACTIVOS
---   (el DELETE fisico ya lo bloquea la FK con RESTRICT)
--- ----------------------------------------------------------------
 CREATE TRIGGER `trg_categorias_bu`
 BEFORE UPDATE ON `CATEGORIAS`
 FOR EACH ROW
@@ -603,9 +458,6 @@ BEGIN
     END IF;
 END$$
 
--- ----------------------------------------------------------------
--- PROVEEDOR: no desactivar si tiene productos ACTIVOS
--- ----------------------------------------------------------------
 CREATE TRIGGER `trg_proveedor_bu`
 BEFORE UPDATE ON `PROVEEDOR`
 FOR EACH ROW
@@ -618,9 +470,6 @@ BEGIN
     END IF;
 END$$
 
--- ----------------------------------------------------------------
--- EMPAQUE: no desactivar si tiene productos ACTIVOS
--- ----------------------------------------------------------------
 CREATE TRIGGER `trg_empaque_bu`
 BEFORE UPDATE ON `EMPAQUE`
 FOR EACH ROW
@@ -633,9 +482,6 @@ BEGIN
     END IF;
 END$$
 
--- ----------------------------------------------------------------
--- PRODUCTO (INSERT): categoria, proveedor y empaque deben estar activos
--- ----------------------------------------------------------------
 CREATE TRIGGER `trg_producto_bi`
 BEFORE INSERT ON `PRODUCTO`
 FOR EACH ROW
@@ -656,18 +502,10 @@ BEGIN
     END IF;
 END$$
 
--- ----------------------------------------------------------------
--- PRODUCTO (UPDATE):
---   a) al reactivar o mover de categoria/proveedor/empaque, los
---      destinos deben estar activos
---   b) no desactivar si aun tiene stock en lotes activos
---   c) un cambio de precio exige idUsuarioActualizacion
--- ----------------------------------------------------------------
 CREATE TRIGGER `trg_producto_bu`
 BEFORE UPDATE ON `PRODUCTO`
 FOR EACH ROW
 BEGIN
-    -- a) padres activos
     IF NEW.estaActivo = 1
        AND (OLD.estaActivo = 0
             OR NEW.idCategoria <> OLD.idCategoria
@@ -687,7 +525,6 @@ BEGIN
         END IF;
     END IF;
 
-    -- b) baja de producto con stock
     IF OLD.estaActivo = 1 AND NEW.estaActivo = 0 THEN
         IF EXISTS (SELECT 1 FROM `LOTE`
                    WHERE idProducto = OLD.id AND estaActivo = 1 AND cantidadDisponible > 0) THEN
@@ -696,7 +533,6 @@ BEGIN
         END IF;
     END IF;
 
-    -- c) auditoria obligatoria al cambiar precios
     IF (NEW.precioVenta <> OLD.precioVenta OR NEW.precioCosto <> OLD.precioCosto)
        AND NEW.idUsuarioActualizacion IS NULL THEN
         SIGNAL SQLSTATE '45000'
@@ -704,12 +540,6 @@ BEGIN
     END IF;
 END$$
 
--- ----------------------------------------------------------------
--- PRODUCTO (AFTER UPDATE): registra el historial de precios.
---   La app puede indicar el motivo ANTES del UPDATE con:
---       SET @motivo_cambio_precio = 'Ajuste del proveedor';
---   y la app SIEMPRE debe enviar idUsuarioActualizacion en el UPDATE.
--- ----------------------------------------------------------------
 CREATE TRIGGER `trg_producto_historial_precio`
 AFTER UPDATE ON `PRODUCTO`
 FOR EACH ROW
@@ -726,9 +556,6 @@ BEGIN
     END IF;
 END$$
 
--- ----------------------------------------------------------------
--- HISTORIAL_PRECIO: inmutable
--- ----------------------------------------------------------------
 CREATE TRIGGER `trg_historial_precio_bu`
 BEFORE UPDATE ON `HISTORIAL_PRECIO`
 FOR EACH ROW
@@ -745,9 +572,6 @@ BEGIN
         SET MESSAGE_TEXT = 'El historial de precios es de auditoria y no se puede eliminar';
 END$$
 
--- ----------------------------------------------------------------
--- LOTE: producto activo, no nacer vencido, no cambiar de producto
--- ----------------------------------------------------------------
 CREATE TRIGGER `trg_lote_bi`
 BEFORE INSERT ON `LOTE`
 FOR EACH ROW
@@ -780,9 +604,6 @@ BEGIN
     END IF;
 END$$
 
--- ----------------------------------------------------------------
--- CLIENTE: el cliente generico (id = 1) esta protegido
--- ----------------------------------------------------------------
 CREATE TRIGGER `trg_cliente_bu`
 BEFORE UPDATE ON `CLIENTE`
 FOR EACH ROW
@@ -793,14 +614,6 @@ BEGIN
     END IF;
 END$$
 
--- ----------------------------------------------------------------
--- VENTA
---   INSERT : solo con cliente y cajero activos, siempre COMPLETADA
---   UPDATE : una venta ANULADA no se toca; una venta cerrada solo
---            puede pasar a ANULADA (sus datos no se editan)
---   DELETE : prohibido
---   (nroComprobante 'TMP-...' = venta aun en proceso dentro del SP)
--- ----------------------------------------------------------------
 CREATE TRIGGER `trg_venta_bi`
 BEFORE INSERT ON `VENTA`
 FOR EACH ROW
@@ -858,10 +671,6 @@ BEGIN
         SET MESSAGE_TEXT = 'Las ventas no se eliminan; se deben anular';
 END$$
 
--- ----------------------------------------------------------------
--- DETALLE_VENTA: solo se agrega mientras la venta esta en proceso;
---                despues es inmutable
--- ----------------------------------------------------------------
 CREATE TRIGGER `trg_detalle_venta_bi`
 BEFORE INSERT ON `DETALLE_VENTA`
 FOR EACH ROW
@@ -893,23 +702,14 @@ END$$
 
 DELIMITER ;
 
-
--- ================================================================
--- DATOS DE PRUEBA
--- ================================================================
-
--- ROLES
 INSERT INTO `ROL` (`id`, `nombre`, `descripcion`) VALUES
 (1, 'Administrador', 'Gerente / root: control total del sistema'),
 (2, 'Cajero', 'Registro de ventas, anulaciones y atencion al cliente');
 
--- USUARIOS (hashes BCrypt con factor de trabajo 11, los mismos que verifica la
--- aplicacion; las contrasenas de prueba estan documentadas en el README)
 INSERT INTO `USUARIO` (`id`, `username`, `passwordHash`, `nombreCompleto`, `correo`, `idRol`) VALUES
 (1, 'admin',   '$2a$11$vHYNXh3Q3oaQJ5htY0Z.OuWKDTj8OuOdGsSj3kDPOVYWU59C1tjlG', 'Gerente General (root)', 'gerencia@micromercado.com', 1),
 (2, 'cajero1', '$2a$11$5qT4nZN5lpU4t/byugwqv.fe93xMvkjMMXCpvs1oK3cWLElPUZAyG', 'Carlos Mamani Quispe', 'carlos.mamani@micromercado.com', 2);
 
--- CATEGORIAS
 INSERT INTO `CATEGORIAS` (`id`, `nombre`, `descripcion`, `codigo`, `pasilloUbicacion`, `idUsuarioAdmin`) VALUES
 (1, 'Lácteos y Derivados', 'Leches, yogures, quesos y mantequillas', 'CAT-LAC', 'Pasillo 1', 1),
 (2, 'Bebidas y Gaseosas', 'Refrescos, jugos, aguas y energizantes', 'CAT-BEB', 'Pasillo 2', 1),
@@ -920,7 +720,6 @@ INSERT INTO `CATEGORIAS` (`id`, `nombre`, `descripcion`, `codigo`, `pasilloUbica
 (7, 'Cuidado Personal', 'Jabones, champús, pasta dental y desodorantes', 'CAT-CUI', 'Pasillo 7', 1),
 (8, 'Panadería y Repostería', 'Pan fresco, kekes, tostadas y harinas', 'CAT-PAN', 'Pasillo 8', 1);
 
--- PROVEEDORES
 INSERT INTO `PROVEEDOR` (`id`, `nombreEmpresa`, `numeroEmpresa`, `correoReferencia`, `esAutogestionado`, `idUsuarioAdmin`) VALUES
 (1, 'PIL Andina S.A.', '44112233', 'ventas.cbba@pilandina.com.bo', 0, 1),
 (2, 'EMBOL S.A. (Coca-Cola)', '44556677', 'pedidos.cbba@embol.com.bo', 0, 1),
@@ -930,7 +729,6 @@ INSERT INTO `PROVEEDOR` (`id`, `nombreEmpresa`, `numeroEmpresa`, `correoReferenc
 (6, 'Industrias Venado S.A. (Kris)', '44118899', 'ventas@venado.com.bo', 0, 1),
 (7, 'Arcor Bolivia', '44778811', 'pedidos@arcor.com.bo', 0, 1);
 
--- EMPAQUES
 INSERT INTO `EMPAQUE` (`id`, `nombre`, `idUsuarioAdmin`) VALUES
 (1, 'Bolsa', 1),
 (2, 'Botella Plástica', 1),
@@ -942,10 +740,6 @@ INSERT INTO `EMPAQUE` (`id`, `nombre`, `idUsuarioAdmin`) VALUES
 (8, 'Tubo', 1),
 (9, 'Lata', 1);
 
--- PRODUCTOS
--- NOTA: EMPAQUE indica el TIPO de envase. La medida/presentacion
--- (1L, 500g, etc.) va en el nombre del producto, asi se mantiene
--- unico (nombre + empaque).
 INSERT INTO `PRODUCTO` (`id`, `nombre`, `idEmpaque`, `idCategoria`, `precioVenta`, `precioCosto`, `stockMinimo`, `idProveedor`, `idUsuarioAdmin`) VALUES
 (1,  'Leche Entera PIL 1L', 1, 1, 6.50, 5.20, 20, 1, 1),
 (2,  'Yogurt Frutado PIL 1kg', 2, 1, 12.00, 9.50, 10, 1, 1),
@@ -969,10 +763,6 @@ INSERT INTO `PRODUCTO` (`id`, `nombre`, `idEmpaque`, `idCategoria`, `precioVenta
 (20, 'Tostadas Trigo PIL 200g', 1, 8, 7.50, 5.80, 10, 1, 1),
 (21, 'Royal Polvo de Hornear 100g', 9, 8, 6.00, 4.50, 15, 6, 1);
 
--- LOTES
--- Las fechas de vencimiento son RELATIVAS a la fecha actual para que el
--- script siga funcionando sin importar cuando se ejecute (ningun lote
--- nace vencido). El producto 1 tiene 2 lotes para probar FEFO.
 INSERT INTO `LOTE` (`id`, `idProducto`, `codigoLote`, `cantidadInicial`, `cantidadDisponible`, `fechaVencimiento`, `idUsuarioAdmin`) VALUES
 (1,  1,  'LOT-PIL-A',   70,  70,  DATE_ADD(CURDATE(), INTERVAL 7 DAY),   1),
 (2,  1,  'LOT-PIL-B',   50,  50,  DATE_ADD(CURDATE(), INTERVAL 45 DAY),  1),
@@ -997,95 +787,26 @@ INSERT INTO `LOTE` (`id`, `idProducto`, `codigoLote`, `cantidadInicial`, `cantid
 (21, 20, 'LOT-TOS-A',   40,  40,  DATE_ADD(CURDATE(), INTERVAL 25 DAY),  1),
 (22, 21, 'LOT-ROY-A',   65,  65,  DATE_ADD(CURDATE(), INTERVAL 250 DAY), 1);
 
--- HISTORIAL DE PRECIOS (datos historicos de ejemplo)
 INSERT INTO `HISTORIAL_PRECIO`
 (`idProducto`, `precioVentaAnterior`, `precioVentaNuevo`, `precioCostoAnterior`, `precioCostoNuevo`, `motivoCambio`, `idUsuario`, `fechaCambio`) VALUES
 (1,  6.00, 6.50, 5.00, 5.20, 'Ajuste de precio del proveedor PIL', 1, '2026-01-15 08:30:00'),
 (4, 10.50, 11.00, 8.50, 9.00, 'Incremento de tarifa de EMBOL', 1, '2026-02-01 10:00:00'),
 (11, 26.00, 28.50, 21.00, 23.50, 'Ajuste de precio por temporada Sofía', 1, '2026-03-10 14:15:00');
 
--- CLIENTES
 INSERT INTO `CLIENTE` (`id`, `nitCi`, `razonSocial`, `correo`, `telefono`, `idUsuarioCreacion`) VALUES
 (1, '0', 'Sin Nombre / Cliente Genérico', NULL, NULL, 1),
 (2, '4545451226', 'JUAN PEREZ VARGAS', 'jperez@gmail.com', '77123456', 2),
 (3, '1020304050', 'MARIA ROJAS LOPEZ', 'mrojas@gmail.com', '70711223', 2);
 
-
--- ================================================================
--- CONSULTAS DE VERIFICACION
--- ================================================================
-
 SELECT * FROM `vw_resumen_ventas`;
 
--- Control cruzado: el total de la venta debe ser igual a la suma de sus detalles
 SELECT v.id, v.montoTotal, SUM(dv.subtotal) AS sumaDetalles,
        (v.montoTotal = SUM(dv.subtotal)) AS coincide
 FROM `VENTA` v
 INNER JOIN `DETALLE_VENTA` dv ON dv.idVenta = v.id
 GROUP BY v.id, v.montoTotal;
 
--- Stock calculado
 SELECT `id`, `nombre`, `stockCalculado`, `bajoStockMinimo`
 FROM `vw_productos_con_stock` ORDER BY `id`;
 
--- Lotes por vencer
 SELECT * FROM `vw_lotes_por_vencer`;
-
-
--- ----------------------------------------------------------------
--- PRUEBAS OPCIONALES (descomentar de a una; todas deben dar ERROR
--- salvo las marcadas como OK)
--- ----------------------------------------------------------------
-
--- ===== VENTAS =====
--- 6) Editar o borrar una venta / su detalle:
--- UPDATE `DETALLE_VENTA` SET `cantidad` = 99 WHERE `idVenta` = @idVenta;
--- DELETE FROM `DETALLE_VENTA` WHERE `idVenta` = @idVenta;
--- UPDATE `VENTA` SET `montoTotal` = 1 WHERE `id` = @idVenta;
--- DELETE FROM `VENTA` WHERE `id` = @idVenta;
-
--- ===== CATALOGOS (bajas peligrosas) =====
--- 7) Desactivar categoria / proveedor / empaque CON productos activos
--- UPDATE `CATEGORIAS` SET `estaActivo` = 0, `idUsuarioActualizacion` = 1 WHERE `id` = 1;
--- UPDATE `PROVEEDOR` SET `estaActivo` = 0, `idUsuarioActualizacion` = 1 WHERE `id` = 1;
--- UPDATE `EMPAQUE`   SET `estaActivo` = 0, `idUsuarioActualizacion` = 1 WHERE `id` = 1;
-
--- 8) Borrar fisicamente una categoria con productos (lo frena la FK, error 1451)
--- DELETE FROM `CATEGORIAS` WHERE `id` = 1;
-
--- 9) Desactivar un producto que todavia tiene stock
--- UPDATE `PRODUCTO` SET `estaActivo` = 0, `idUsuarioActualizacion` = 1 WHERE `id` = 1;
-
--- 10) Crear un producto en una categoria inactiva (primero crear y desactivar una categoria vacia)
--- INSERT INTO `CATEGORIAS` (`nombre`, `codigo`, `idUsuarioAdmin`) VALUES ('Temporal', 'CAT-TMP', 1);
--- UPDATE `CATEGORIAS` SET `estaActivo` = 0, `idUsuarioActualizacion` = 1 WHERE `codigo` = 'CAT-TMP';  -- OK (vacia)
--- INSERT INTO `PRODUCTO` (`nombre`, `idEmpaque`, `idCategoria`, `idProveedor`, `idUsuarioAdmin`)
---   VALUES ('Prueba', 1, (SELECT `id` FROM `CATEGORIAS` WHERE `codigo` = 'CAT-TMP'), 1, 1);
-
--- ===== PRECIOS =====
--- 11) Cambiar precio SIN indicar usuario: error
--- UPDATE `PRODUCTO` SET `precioVenta` = 7.00 WHERE `id` = 1;
-
--- 12) Cambiar precio CON usuario y motivo (OK) -> queda en HISTORIAL_PRECIO
--- SET @motivo_cambio_precio = 'Prueba de auditoria';
--- UPDATE `PRODUCTO` SET `precioVenta` = 7.00, `idUsuarioActualizacion` = 1 WHERE `id` = 1;
--- SELECT * FROM `HISTORIAL_PRECIO` ORDER BY `id` DESC LIMIT 1;
-
--- 13) Modificar o borrar el historial: error
--- UPDATE `HISTORIAL_PRECIO` SET `precioVentaNuevo` = 1 WHERE `id` = 1;
--- DELETE FROM `HISTORIAL_PRECIO` WHERE `id` = 1;
-
--- ===== USUARIOS / ROLES / CLIENTES =====
--- 14) Desactivar al unico Administrador, o quitarle el rol
--- UPDATE `USUARIO` SET `estaActivo` = 0 WHERE `id` = 1;
--- UPDATE `USUARIO` SET `idRol` = 2 WHERE `id` = 1;
-
--- 15) Desactivar o renombrar un rol base / rol con usuarios activos
--- UPDATE `ROL` SET `estaActivo` = 0 WHERE `id` = 2;
-
--- 16) Desactivar el cliente generico
--- UPDATE `CLIENTE` SET `estaActivo` = 0 WHERE `id` = 1;
-
--- 17) Lote ya vencido, o lote para producto inactivo
--- INSERT INTO `LOTE` (`idProducto`, `codigoLote`, `cantidadInicial`, `cantidadDisponible`, `fechaVencimiento`, `idUsuarioAdmin`)
---   VALUES (1, 'LOT-VENCIDO', 10, 10, DATE_SUB(CURDATE(), INTERVAL 1 DAY), 1);

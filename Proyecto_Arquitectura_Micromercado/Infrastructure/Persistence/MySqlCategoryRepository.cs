@@ -202,7 +202,6 @@ public sealed class MySqlCategoryRepository(
         int idExcluido,
         CancellationToken cancellationToken = default)
     {
-        // La collation utf8mb4_unicode_ci ignora mayúsculas y tildes; REGEXP_REPLACE los espacios extra.
         const string sql = """
             SELECT EXISTS (
                 SELECT 1
@@ -280,7 +279,6 @@ public sealed class MySqlCategoryRepository(
             cancellationToken) == 1;
     }
 
-    // El mensaje de MySQL indica qué índice UNIQUE se violó.
     private static ArgumentException ToDuplicateException(MySqlException ex) =>
         ex.Message.Contains("UQ_Categorias_nombre_activo", StringComparison.OrdinalIgnoreCase)
             ? new DuplicateCategoryNameException(ex)

@@ -4,10 +4,6 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Factories;
 
 namespace Proyecto_Arquitectura_Micromercado.Tests;
 
-// Estas pruebas son el beneficio concreto del patron corregido: CategoryService se ejercita
-// completo, sin base de datos, cambiando unicamente el Creador Concreto que se elige. El
-// servicio no se modifico ni se entera del cambio de motor (OCP + DIP), y el repositorio en
-// memoria cumple el mismo contrato que el de MySQL (LSP).
 public class CategoryServiceEnMemoriaTests
 {
     private static ICategoryService CrearServicio()
@@ -74,7 +70,6 @@ public class CategoryServiceEnMemoriaTests
         Assert.Empty(await servicio.GetAllAsync());
         Assert.Null(await servicio.GetByIdAsync(id));
 
-        // Una segunda baja ya no encuentra nada activo que dar de baja.
         Assert.False(await servicio.SoftDeleteAsync(id));
     }
 
@@ -85,8 +80,6 @@ public class CategoryServiceEnMemoriaTests
         int id = await servicio.CreateAsync(NuevaCategoria("Lácteos"));
         await servicio.SoftDeleteAsync(id);
 
-        // Mismo nombre otra vez: el nombre quedo libre, pero CAT-LAC no, porque el indice
-        // UNIQUE del codigo tambien cuenta las filas inactivas.
         int nuevo = await servicio.CreateAsync(NuevaCategoria("Lácteos"));
 
         Category? guardada = await servicio.GetByIdAsync(nuevo);

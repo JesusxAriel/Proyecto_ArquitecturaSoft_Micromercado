@@ -29,7 +29,6 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
         html.AppendLine("<body>");
         html.AppendLine("<main class=\"recibo\">");
 
-        // Encabezado con Logo y Título
         html.AppendLine("<header class=\"encabezado\">");
         html.AppendLine($"<img class=\"logo\" src=\"{RutaDelLogo}\" alt=\"Logo\" />");
         html.AppendLine("<h1>COMPROBANTE DE VENTA</h1>");
@@ -40,7 +39,6 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
             html.AppendLine("<p class=\"anulada\" role=\"alert\">ANULADA</p>");
         }
 
-        // Datos principales idénticos al Anexo 2
         html.AppendLine("<section class=\"datos\">");
         html.AppendLine($"<p><strong>Fecha:</strong> {comprobante.FechaVenta.ToString("dd/MM/yyyy", Cultura)}</p>");
         html.AppendLine("<div class=\"datos-cliente\">");
@@ -49,7 +47,6 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
         html.AppendLine("</div>");
         html.AppendLine("</section>");
 
-        // Tabla de detalle
         html.AppendLine("<table class=\"detalle\">");
         html.AppendLine("<thead><tr>");
         html.AppendLine("<th>Cantidad</th><th>Descripción</th><th class=\"num\">Precio Unitario Bs.</th><th class=\"num\">Importe Bs.</th>");
@@ -74,13 +71,11 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
         html.AppendLine("</tfoot>");
         html.AppendLine("</table>");
 
-        // Monto en letras y pie de página exacto al Anexo 2
         html.AppendLine("<div class=\"pie-container\">");
         html.AppendLine($"<p class=\"letras\">{Esc(comprobante.TotalEnLetras)}</p>");
         html.AppendLine($"<p class=\"firma-sistema\">{comprobante.FechaGeneracion.ToString("dd/MM/yyyy - HH:mm:ss", Cultura)}-{Esc(comprobante.UsuarioGenerador)}</p>");
         html.AppendLine("</div>");
 
-        // Botón de impresión (se oculta al imprimir)
         html.AppendLine("<div class=\"acciones\">");
         html.AppendLine("<button type=\"button\" onclick=\"window.print()\">Imprimir Comprobante</button>");
         html.AppendLine("</div>");

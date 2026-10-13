@@ -125,11 +125,6 @@
 
 <partial name="_Pager" model="Model.PagedProducts" view-data="@(new ViewDataDictionary(ViewData) { ["ItemLabel"] = "productos" })" />
 
-
-<!-- ========================================================= -->
-<!-- MODAL CREAR PRODUCTO                                      -->
-<!-- ========================================================= -->
-
 <div class="modal fade"
      id="createProductModal"
      tabindex="-1"
@@ -390,11 +385,6 @@
 
 </div>
 
-
-<!-- ========================================================= -->
-<!-- MODAL EDITAR PRODUCTO                                    -->
-<!-- ========================================================= -->
-
 <div class="modal fade"
      id="editProductModal"
      tabindex="-1"
@@ -595,11 +585,6 @@
 
                         </div>
 
-
-                        <!-- ================================================= -->
-                        <!-- JUSTIFICACIÓN                                     -->
-                        <!-- ================================================= -->
-
                         <div id="priceChangeReasonContainer"
                              class="col-12 d-none">
 
@@ -662,11 +647,6 @@
     </div>
 
 </div>
-
-
-<!-- ========================================================= -->
-<!-- MODAL ELIMINAR PRODUCTO                                  -->
-<!-- ========================================================= -->
 
 <div class="modal fade"
      id="deleteProductModal"
@@ -1136,11 +1116,6 @@
 
                 $('#editProductReason')
                     .val(reason);
-
-                // Sin preventDefault: el envío original continúa. No se debe volver a
-                // llamar a requestSubmit() aquí, el navegador lo ignora mientras se
-                // procesa el evento submit y obligaba a pulsar Guardar dos veces.
-
             }
         );
 

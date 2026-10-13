@@ -4,9 +4,6 @@ using Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.EnMemoria;
 
-// Producto Concreto alternativo de ISupplierRepository.
-// Mismo contrato que MySqlSupplierRepository: baja lógica, unicidad del nombre de
-// empresa entre proveedores activos y DuplicateSupplierException ante el duplicado.
 public sealed class InMemorySupplierRepository : ISupplierRepository
 {
     private readonly List<Supplier> proveedores = [];

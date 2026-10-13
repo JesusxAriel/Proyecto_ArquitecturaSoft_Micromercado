@@ -14,7 +14,6 @@ public interface IProductService :
     Task<PagedResult<ProductListItem>> GetPagedForSalesAsync(
         int page, int pageSize, string? search, CancellationToken cancellationToken = default);
 
-    // Misma comparación que al guardar: sin distinguir mayúsculas, tildes ni espacios extra.
     Task<bool> IsDuplicateAsync(
         string nombre,
         int idEmpaque,

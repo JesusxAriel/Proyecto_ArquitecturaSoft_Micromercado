@@ -25,7 +25,6 @@ public sealed class IndexModel(
 
     public void OnGet()
     {
-        // Las búsquedas se realizan bajo demanda desde la pantalla.
     }
 
     public async Task<JsonResult> OnPostRegistrarVentaAsync(

@@ -34,7 +34,6 @@ public class CategoryCodeGeneratorTests
     [Fact]
     public void Colision_usa_primera_letra_y_consonantes_siguientes()
     {
-        // "Lacticinios" daría CAT-LAC igual que "Lácteos": se usa L + consonantes C, T.
         Assert.Equal("CAT-LCT", CategoryCodeGenerator.Generate("Lacticinios", Taken("CAT-LAC")));
     }
 
@@ -70,7 +69,6 @@ public class CategoryCodeGeneratorTests
     [Fact]
     public void Cuando_se_agotan_las_combinaciones_devuelve_null()
     {
-        // "Sal" solo admite una combinación de 3 letras.
         Assert.Equal("CAT-SAL", CategoryCodeGenerator.Generate("Sal", Taken()));
         Assert.Null(CategoryCodeGenerator.Generate("Sal", Taken("CAT-SAL")));
     }
@@ -78,7 +76,6 @@ public class CategoryCodeGeneratorTests
     [Fact]
     public void Agota_todas_las_combinaciones_de_un_nombre_corto()
     {
-        // "Pasta" -> subsecuencias de 3 letras de P,A,S,T,A: PAS, PAT, PAA, PST, PSA, PTA, AST, ASA, ATA, STA.
         var taken = Taken();
         var generated = new List<string>();
 
