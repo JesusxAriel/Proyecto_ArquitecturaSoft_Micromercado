@@ -113,6 +113,14 @@ La carpeta `Application/Facades/` define las tres fachadas acordadas para el pro
 
 La Page conoce una sola interfaz y llama un método; la coordinación de colaboradores y de la transacción queda dentro de la fachada. `FachadaVenta` y `FachadaAnulacion` están implementadas y registradas en `Program.cs`: cada una abre, confirma y revierte una `IUnidadDeTrabajo` (una sola transacción por operación) y consume `FachadaActualizacionStockProducto` para descontar o restaurar el stock por lote. La regla FEFO (primero en vencer, primero en salir) vive en `Domain/Stock/AsignadorFefo`, como lógica pura de dominio. El proceso de venta y anulación ya no usa Stored Procedures: toda la lógica de negocio está en C# y la base solo guarda los datos y aplica sus restricciones.
 
+### Historial, detalle y anulación de ventas
+
+La pantalla `/Sales` incluye debajo del formulario de registro una sección **Historial de ventas**:
+
+- **Historial:** lista una fila por venta (número de comprobante, fecha y hora, cliente, estado, total y acciones) con las últimas 50 ventas, de la más reciente a la más antigua. Por defecto solo muestra las completadas; la casilla **Mostrar anuladas** incluye también las anuladas. Se actualiza con el botón **Actualizar** y de forma automática después de registrar una venta. Lo consulta `IVentaConsultaService`, que lee con un puerto de solo lectura (`IVentaConsultaRepository`).
+- **Detalle:** el botón **Ver detalle** abre un modal de solo lectura con los datos completos de la transacción: cliente, cajero, fecha y hora, estado, productos (una línea por producto), total, efectivo pagado y cambio. Si la venta está anulada, muestra además el motivo, quién la anuló y cuándo.
+- **Anulación:** solo el rol Administrador ve el botón **Anular** y puede ejecutarlo; el Cajero puede ver el historial y el detalle, pero no anular. La anulación pide confirmación y un motivo obligatorio (hasta 255 caracteres) y la ejecuta `IFachadaAnulacion` en una sola transacción: restaura el stock de cada lote usado y marca la venta como `ANULADA` con el motivo, el usuario y la fecha de anulación. No se borra ninguna fila: la venta y su detalle se conservan.
+
 ### Patrones de diseño
 
 - **Facade:** las tres fachadas descritas arriba.
