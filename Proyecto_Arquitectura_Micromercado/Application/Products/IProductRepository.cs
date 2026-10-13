@@ -9,7 +9,8 @@ public interface IProductRepository :
     IConListadoPaginado,
     IConVerificacionDeNombreYEmpaque,
     IConConsultaPorProveedor,
-    IConCatalogo
+    IConCatalogo,
+    IConPrecioVigente
 {
     Task<PagedResult<ProductListItem>> GetPagedForSalesAsync(
         int page, int pageSize, string? search, CancellationToken cancellationToken = default);

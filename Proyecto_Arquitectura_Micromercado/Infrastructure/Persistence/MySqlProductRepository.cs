@@ -173,6 +173,25 @@ public sealed class MySqlProductRepository(
         return Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken)) == 1;
     }
 
+    public async Task<decimal?> ObtenerPrecioVigenteAsync(
+        int idProducto,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT precioVenta
+            FROM PRODUCTO
+            WHERE id = @idProducto
+              AND estaActivo = 1
+            FOR SHARE;
+            """;
+
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
+        command.Parameters.AddWithValue("@idProducto", idProducto);
+        var resultado = await command.ExecuteScalarAsync(cancellationToken);
+        return resultado is null || resultado == DBNull.Value ? null : Convert.ToDecimal(resultado);
+    }
+
     public Task<IReadOnlyList<LookupOption>> GetPackagingsAsync(CancellationToken cancellationToken = default) =>
         GetLookupAsync("SELECT id, nombre FROM EMPAQUE WHERE estaActivo = 1 ORDER BY nombre;", cancellationToken);
 

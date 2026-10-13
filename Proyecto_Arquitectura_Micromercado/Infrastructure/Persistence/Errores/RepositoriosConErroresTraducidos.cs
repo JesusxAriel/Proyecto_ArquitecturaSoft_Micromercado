@@ -133,6 +133,11 @@ internal sealed class ProductRepositoryConErroresTraducidos(IProductRepository i
         ErroresDePersistencia.TraducirAsync(
             () => interno.ExistenProductosActivosDelProveedorAsync(idProveedor, cancellationToken));
 
+    public Task<decimal?> ObtenerPrecioVigenteAsync(
+        int idProducto,
+        CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(() => interno.ObtenerPrecioVigenteAsync(idProducto, cancellationToken));
+
     public Task<IReadOnlyList<LookupOption>> GetPackagingsAsync(CancellationToken cancellationToken = default) =>
         ErroresDePersistencia.TraducirAsync(() => interno.GetPackagingsAsync(cancellationToken));
 
