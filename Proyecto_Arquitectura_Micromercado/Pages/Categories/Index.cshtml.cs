@@ -83,7 +83,6 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
             }
         }
 
-        // Endpoints GET para el script de validación en vivo (site.js).
         public async Task<IActionResult> OnGetCheckUniqueAsync(
             string? nombre,
             int id,
@@ -152,7 +151,6 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Categories
             {
                 ShowCreateModal = true;
 
-                // Un nombre repetido (carrera con otra solicitud) se muestra junto al campo Nombre.
                 ModelState.AddModelError(
                     ex is DuplicateCategoryNameException
                         ? "CreateCategory.Name"

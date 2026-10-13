@@ -64,7 +64,6 @@ public sealed class IndexModel(
 
     private object ListRouteValues => new { Pagina, Tamano, Q };
 
-    // Endpoint GET para el script de validación en vivo (site.js).
     public async Task<IActionResult> OnGetCheckUniqueAsync(
         string? nombre,
         int idEmpaque,
@@ -103,7 +102,6 @@ public sealed class IndexModel(
         {
             ShowCreateModal = true;
 
-            // Un duplicado (carrera con otra solicitud) se muestra junto al campo Nombre.
             ModelState.AddModelError(
                 ex is DuplicateProductException ? "CreateProduct.Nombre" : string.Empty,
                 ex.Message);
@@ -133,8 +131,6 @@ public sealed class IndexModel(
 
         try
         {
-            // El servicio decide si el cambio de precio exige justificacion, la normaliza
-            // y la valida. La pagina solo traslada lo que escribio el usuario.
             EditProduct.MotivoCambio = PriceChangeReason;
 
             if (!await productService.UpdateAsync(EditProduct, cancellationToken))
@@ -149,7 +145,6 @@ public sealed class IndexModel(
         {
             ShowEditModal = true;
 
-            // Cada error se muestra junto al campo que lo origina; el resto, en el resumen.
             ModelState.AddModelError(
                 ex switch
                 {
@@ -159,8 +154,6 @@ public sealed class IndexModel(
                 },
                 ex.Message);
 
-            // El servicio ya normalizo el motivo, asi que el modal lo vuelve a mostrar
-            // tal como quedara guardado.
             PriceChangeReason = EditProduct.MotivoCambio;
 
             await ReloadProductsAsync(cancellationToken);
