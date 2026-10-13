@@ -12,12 +12,15 @@
 }
 else
 {
-    <form method="post" class="card card-body shadow-sm">
+    <form method="post" class="card card-body shadow-sm" data-validate-form>
         <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
         <div class="mb-3">
             <label asp-for="Input.NitCi" class="form-label"></label>
-            <input asp-for="Input.NitCi" class="form-control" maxlength="30" required />
-            <span asp-validation-for="Input.NitCi" class="text-danger"></span>
+                 <input asp-for="Input.NitCi" class="form-control" maxlength="30" required
+                     data-unique-url="@Url.Page("/Customers/Create", "CheckUnique")"
+                         data-unique-fields="nitCi=#Input_NitCi" data-validate-input
+                         aria-describedby="Input_NitCi-error" />
+                 <span asp-validation-for="Input.NitCi" class="text-danger input-error"></span>
         </div>
         <div class="mb-3">
             <label asp-for="Input.RazonSocial" class="form-label"></label>

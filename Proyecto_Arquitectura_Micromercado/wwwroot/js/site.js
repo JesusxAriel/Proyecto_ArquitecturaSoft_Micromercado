@@ -397,7 +397,7 @@
 
     window.initUniqueChecks(document);
 
-    $('.modal-form').each(function () {
+    $('form.modal-form, form[data-validate-form]').each(function () {
         const form = this;
 
         $(form).find('[data-validate-input]').on('input blur change', function () {
