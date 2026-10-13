@@ -1,0 +1,38 @@
+@model Proyecto_Arquitectura_Micromercado.Domain.Products.ProductPriceHistory
+
+<dl class="row mb-0">
+    <dt class="col-sm-5">Producto</dt>
+    <dd class="col-sm-7">@Model.NombreProducto</dd>
+
+    <dt class="col-sm-5">ID del producto</dt>
+    <dd class="col-sm-7">@Model.IdProducto</dd>
+
+    <dt class="col-sm-5">Precio de venta anterior</dt>
+    <dd class="col-sm-7">Bs. @Model.PrecioVentaAnterior.ToString("N2")</dd>
+
+    <dt class="col-sm-5">Precio de venta nuevo</dt>
+    <dd class="col-sm-7">Bs. @Model.PrecioVentaNuevo.ToString("N2")</dd>
+
+    <dt class="col-sm-5">Precio de costo anterior</dt>
+    <dd class="col-sm-7">
+        @(Model.PrecioCostoAnterior.HasValue
+            ? $"Bs. {Model.PrecioCostoAnterior.Value:N2}"
+            : "—")
+    </dd>
+
+    <dt class="col-sm-5">Precio de costo nuevo</dt>
+    <dd class="col-sm-7">
+        @(Model.PrecioCostoNuevo.HasValue
+            ? $"Bs. {Model.PrecioCostoNuevo.Value:N2}"
+            : "—")
+    </dd>
+
+    <dt class="col-sm-5">Motivo del cambio</dt>
+    <dd class="col-sm-7">@Model.MotivoCambio</dd>
+
+    <dt class="col-sm-5">ID de usuario responsable</dt>
+    <dd class="col-sm-7">@Model.IdUsuario</dd>
+
+    <dt class="col-sm-5">Fecha del cambio</dt>
+    <dd class="col-sm-7">@Model.FechaCambio.ToString("dd/MM/yyyy HH:mm:ss")</dd>
+</dl>
