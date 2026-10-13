@@ -402,6 +402,7 @@
         registrandoVenta = true;
         confirmarVenta.disabled = true;
         confirmarVenta.textContent = "Registrando venta...";
+        const ventanaComprobante = window.open("", "_blank");
         mostrarEstadoConfirmacion("Registrando venta...");
         const inicioRegistro = performance.now();
         async function esperarTiempoMinimoRegistro() {
@@ -429,15 +430,26 @@
             }
 
             let mensajeExito = "Venta registrada correctamente.";
-            if (resultado.idVenta != null) mensajeExito += ` N.º ${resultado.idVenta}.`;
+            if (resultado.idVenta != null) {
+                mensajeExito += ` N.º ${resultado.idVenta}.`;
+                if (ventanaComprobante) {
+                    ventanaComprobante.location.href = confirmarVenta.dataset.comprobanteBase + resultado.idVenta;
+                } else {
+                    mensajeExito += " Habilite las ventanas emergentes para ver el comprobante.";
+                }
+            } else {
+                ventanaComprobante?.close();
+            }
             if (resultado.total != null && Number.isFinite(Number(resultado.total))) {
                 mensajeExito += ` Total definitivo: Bs ${precio.format(Number(resultado.total))}.`;
             }
             await esperarTiempoMinimoRegistro();
             mostrarEstadoConfirmacion(mensajeExito, "success");
             ventaRegistrada = true;
+            document.dispatchEvent(new CustomEvent("venta:registrada"));
             botonesCancelar.forEach(boton => { boton.hidden = true; });
         } catch (error) {
+            ventanaComprobante?.close();
             await esperarTiempoMinimoRegistro();
             mostrarEstadoConfirmacion(error instanceof TypeError
                 ? "No se pudo conectar con el servidor. La venta temporal se conserva."
@@ -626,4 +638,387 @@
             if (actual === version) resultados.setAttribute("aria-busy", "false");
         }
     }
+})();
+
+(() => {
+    "use strict";
+
+    const seccion = document.getElementById("historialVentasSeccion");
+    if (!seccion) return;
+
+    const cuerpo = document.getElementById("historialVentas");
+    const estado = document.getElementById("estadoHistorial");
+    const actualizar = document.getElementById("actualizarHistorial");
+    const mostrarAnuladas = document.getElementById("mostrarAnuladas");
+    const puedeAnular = seccion.dataset.puedeAnular === "true";
+    const precio = new Intl.NumberFormat("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const modalDetalle = document.getElementById("detalleVentaModal");
+    const detalleError = document.getElementById("detalleVentaError");
+    const detalleComprobante = document.getElementById("detalleVentaComprobante");
+    const detalleCliente = document.getElementById("detalleVentaCliente");
+    const detalleFecha = document.getElementById("detalleVentaFecha");
+    const detalleUsuario = document.getElementById("detalleVentaUsuario");
+    const detalleEstado = document.getElementById("detalleVentaEstado");
+    const detalleProductos = document.getElementById("detalleVentaProductos");
+    const detalleTotal = document.getElementById("detalleVentaTotal");
+    const detalleEfectivo = document.getElementById("detalleVentaEfectivo");
+    const detalleCambio = document.getElementById("detalleVentaCambio");
+    const detalleAnulacion = document.getElementById("detalleVentaAnulacion");
+    const detalleMotivo = document.getElementById("detalleVentaMotivo");
+    const detalleUsuarioAnulacion = document.getElementById("detalleVentaUsuarioAnulacion");
+    const detalleFechaAnulacion = document.getElementById("detalleVentaFechaAnulacion");
+    const detalleModal = bootstrap.Modal.getOrCreateInstance(modalDetalle);
+    const modalAnulacion = document.getElementById("anularVentaModal");
+    const anulacionMensaje = document.getElementById("anularVentaMensaje");
+    const anulacionMotivo = document.getElementById("anularVentaMotivo");
+    const anulacionError = document.getElementById("anularVentaError");
+    const confirmarAnulacion = document.getElementById("confirmarAnulacionVenta");
+    const anulacionModal = bootstrap.Modal.getOrCreateInstance(modalAnulacion);
+    const aviso = document.getElementById("avisoHistorial");
+    const antiforgery = document.querySelector('input[name="__RequestVerificationToken"]');
+    const ventasPorId = new Map();
+    let consulta;
+    let version = 0;
+    let consultaDetalle;
+    let versionDetalle = 0;
+    let ventaEnAnulacion = null;
+    let anulando = false;
+
+    function dosDigitos(numero) {
+        return String(numero).padStart(2, "0");
+    }
+
+    function formatearFecha(valor, conSegundos = false) {
+        const fecha = new Date(valor);
+        if (Number.isNaN(fecha.getTime())) return "";
+        const segundos = conSegundos ? `:${dosDigitos(fecha.getSeconds())}` : "";
+        return `${dosDigitos(fecha.getDate())}/${dosDigitos(fecha.getMonth() + 1)}/${fecha.getFullYear()} ${dosDigitos(fecha.getHours())}:${dosDigitos(fecha.getMinutes())}${segundos}`;
+    }
+
+    function crearBadgeEstado(valor) {
+        const anulada = valor === "ANULADA";
+        const badge = document.createElement("span");
+        badge.className = `badge bg-${anulada ? "danger" : "success"}`;
+        badge.textContent = anulada ? "Anulada" : "Completada";
+        return badge;
+    }
+
+    function crearFilaMensaje(mensaje, icono) {
+        const fila = document.createElement("tr");
+        const celda = document.createElement("td");
+        celda.colSpan = 6;
+        celda.className = "text-center py-4";
+        const marca = document.createElement("i");
+        marca.className = `bi ${icono} d-block fs-2 text-muted mb-2`;
+        marca.setAttribute("aria-hidden", "true");
+        const texto = document.createElement("p");
+        texto.className = "text-muted mb-0";
+        texto.textContent = mensaje;
+        celda.append(marca, texto);
+        fila.append(celda);
+        return fila;
+    }
+
+    function crearBotonAccion(texto, accion, venta, clase) {
+        const boton = document.createElement("button");
+        boton.type = "button";
+        boton.className = `btn ${clase} btn-sm`;
+        boton.textContent = texto;
+        boton.dataset.accion = accion;
+        boton.dataset.idVenta = String(venta.id);
+        boton.setAttribute("aria-label", `${texto} de la venta ${venta.nroComprobante}`);
+        return boton;
+    }
+
+    function renderizar(ventas) {
+        cuerpo.replaceChildren();
+        ventasPorId.clear();
+        ventas.forEach((venta) => ventasPorId.set(venta.id, venta));
+        if (ventas.length === 0) {
+            cuerpo.append(crearFilaMensaje(
+                mostrarAnuladas.checked
+                    ? "No hay ventas registradas."
+                    : "No hay ventas completadas para mostrar.",
+                "bi-receipt"));
+            return;
+        }
+
+        ventas.forEach((venta) => {
+            const fila = document.createElement("tr");
+            [
+                [venta.nroComprobante, "text-nowrap"],
+                [formatearFecha(venta.fechaHora), "text-nowrap"],
+                [venta.nombreCliente, "text-break"]
+            ].forEach(([valor, clase]) => {
+                const celda = document.createElement("td");
+                celda.className = clase;
+                celda.textContent = valor;
+                fila.append(celda);
+            });
+
+            const celdaEstado = document.createElement("td");
+            celdaEstado.append(crearBadgeEstado(venta.estado));
+
+            const celdaTotal = document.createElement("td");
+            celdaTotal.className = "text-end text-nowrap";
+            celdaTotal.textContent = `Bs ${precio.format(venta.total)}`;
+
+            const acciones = document.createElement("td");
+            acciones.className = "text-end text-nowrap";
+            acciones.append(crearBotonAccion("Ver detalle", "detalle", venta, "btn-outline-primary"));
+            if (puedeAnular && venta.estado === "COMPLETADA") {
+                acciones.append(" ", crearBotonAccion("Anular", "anular", venta, "btn-outline-danger"));
+            }
+
+            fila.append(celdaEstado, celdaTotal, acciones);
+            cuerpo.append(fila);
+        });
+    }
+
+    async function cargarHistorial() {
+        consulta?.abort();
+        const actual = ++version;
+        const controlador = new AbortController();
+        consulta = controlador;
+        cuerpo.setAttribute("aria-busy", "true");
+        actualizar.disabled = true;
+        estado.textContent = "Cargando historial…";
+
+        try {
+            const url = new URL(seccion.dataset.historialUrl, window.location.href);
+            url.searchParams.set("incluirAnuladas", String(mostrarAnuladas.checked));
+            const respuesta = await fetch(url, {
+                signal: controlador.signal,
+                headers: { Accept: "application/json" },
+                cache: "no-store"
+            });
+            if (!respuesta.ok) throw new Error("No se pudo cargar el historial de ventas.");
+            const datos = await respuesta.json();
+            if (actual !== version) return;
+
+            renderizar(datos.ventas);
+            estado.textContent = datos.ventas.length
+                ? `${datos.ventas.length} venta(s) en el historial.`
+                : "No hay ventas para mostrar.";
+        } catch (error) {
+            if (actual !== version || error.name === "AbortError") return;
+            cuerpo.replaceChildren(crearFilaMensaje(
+                "No se pudo cargar el historial de ventas. Intente nuevamente.",
+                "bi-exclamation-triangle"));
+            estado.textContent = "No se pudo cargar el historial de ventas.";
+        } finally {
+            if (actual === version) {
+                cuerpo.setAttribute("aria-busy", "false");
+                actualizar.disabled = false;
+            }
+        }
+    }
+
+    function crearFilaDetalle(mensaje) {
+        const fila = document.createElement("tr");
+        const celda = document.createElement("td");
+        celda.colSpan = 4;
+        celda.className = "text-center text-muted py-4";
+        celda.textContent = mensaje;
+        fila.append(celda);
+        return fila;
+    }
+
+    function limpiarDetalle() {
+        detalleError.textContent = "";
+        detalleError.hidden = true;
+        detalleAnulacion.hidden = true;
+        [detalleComprobante, detalleCliente, detalleFecha, detalleUsuario, detalleEfectivo, detalleCambio]
+            .forEach((elemento) => { elemento.textContent = "Cargando…"; });
+        detalleTotal.textContent = "Cargando…";
+        detalleTotal.className = "fw-semibold text-muted";
+        detalleEstado.textContent = "Cargando…";
+        detalleEstado.className = "badge bg-secondary";
+        detalleProductos.replaceChildren(crearFilaDetalle("Cargando detalle…"));
+    }
+
+    function mostrarErrorDetalle(mensaje) {
+        limpiarDetalle();
+        [detalleComprobante, detalleCliente, detalleFecha, detalleUsuario, detalleEfectivo, detalleCambio, detalleTotal]
+            .forEach((elemento) => { elemento.textContent = "—"; });
+        detalleEstado.textContent = "—";
+        detalleProductos.replaceChildren(crearFilaDetalle("No hay productos para mostrar."));
+        detalleError.textContent = mensaje;
+        detalleError.hidden = false;
+    }
+
+    function mostrarDetalle(detalle) {
+        const anulada = detalle.estado === "ANULADA";
+        detalleError.hidden = true;
+        detalleComprobante.textContent = detalle.nroComprobante;
+        detalleCliente.textContent = `${detalle.razonSocialCliente} (CI/NIT: ${detalle.nitCiCliente})`;
+        detalleFecha.textContent = formatearFecha(detalle.fechaHora, true);
+        detalleUsuario.textContent = detalle.usuarioCajero;
+        detalleEstado.textContent = anulada ? "Anulada" : "Completada";
+        detalleEstado.className = `badge bg-${anulada ? "danger" : "success"}`;
+        detalleTotal.textContent = precio.format(detalle.total);
+        detalleTotal.className = "fw-semibold";
+        detalleEfectivo.textContent = precio.format(detalle.efectivoPagado);
+        detalleCambio.textContent = precio.format(detalle.cambio);
+
+        detalleProductos.replaceChildren();
+        detalle.lineas.forEach((linea) => {
+            const fila = document.createElement("tr");
+            [
+                [String(linea.cantidad), "text-center"],
+                [linea.descripcion, "text-break"],
+                [precio.format(linea.precioUnitario), "text-end text-nowrap"],
+                [precio.format(linea.subtotal), "text-end text-nowrap"]
+            ].forEach(([valor, clase]) => {
+                const celda = document.createElement("td");
+                celda.className = clase;
+                celda.textContent = valor;
+                fila.append(celda);
+            });
+            detalleProductos.append(fila);
+        });
+
+        detalleAnulacion.hidden = !anulada;
+        if (anulada) {
+            detalleMotivo.textContent = detalle.motivoAnulacion ?? "";
+            detalleUsuarioAnulacion.textContent = detalle.usuarioAnulacion ?? "";
+            detalleFechaAnulacion.textContent = detalle.fechaAnulacion ? formatearFecha(detalle.fechaAnulacion, true) : "";
+        }
+    }
+
+    async function abrirDetalle(idVenta) {
+        consultaDetalle?.abort();
+        const actual = ++versionDetalle;
+        const controlador = new AbortController();
+        consultaDetalle = controlador;
+        limpiarDetalle();
+        detalleModal.show();
+
+        try {
+            const url = new URL(seccion.dataset.detalleUrl, window.location.href);
+            url.searchParams.set("idVenta", String(idVenta));
+            const respuesta = await fetch(url, {
+                signal: controlador.signal,
+                headers: { Accept: "application/json" },
+                cache: "no-store"
+            });
+            const datos = await respuesta.json().catch(() => null);
+            if (actual !== versionDetalle) return;
+            if (!respuesta.ok) {
+                throw new Error(datos?.mensaje || "No se pudo cargar el detalle de la venta. Intente nuevamente.");
+            }
+
+            mostrarDetalle(datos);
+        } catch (error) {
+            if (actual !== versionDetalle || error.name === "AbortError") return;
+            mostrarErrorDetalle(error instanceof TypeError
+                ? "No se pudo conectar con el servidor. Intente nuevamente."
+                : error.message);
+        }
+    }
+
+    modalDetalle.addEventListener("hidden.bs.modal", () => {
+        consultaDetalle?.abort();
+        versionDetalle++;
+    });
+
+    cuerpo.addEventListener("click", (event) => {
+        const boton = event.target.closest("button[data-accion]");
+        if (!boton) return;
+
+        const idVenta = Number(boton.dataset.idVenta);
+        if (boton.dataset.accion === "detalle") abrirDetalle(idVenta);
+        if (boton.dataset.accion === "anular") abrirAnulacion(idVenta);
+    });
+
+    function mostrarAviso(mensaje) {
+        aviso.textContent = mensaje;
+        aviso.hidden = false;
+    }
+
+    function mostrarErrorAnulacion(mensaje) {
+        anulacionError.textContent = mensaje;
+        anulacionError.hidden = !mensaje;
+    }
+
+    function actualizarBotonAnulacion() {
+        confirmarAnulacion.disabled = anulando || anulacionMotivo.value.trim() === "";
+    }
+
+    function abrirAnulacion(idVenta) {
+        const venta = ventasPorId.get(idVenta);
+        if (!venta || !puedeAnular) return;
+
+        ventaEnAnulacion = venta;
+        aviso.hidden = true;
+        anulacionMensaje.textContent = `¿Está seguro de que desea anular la venta ${venta.nroComprobante} por un total de Bs ${precio.format(venta.total)}?`;
+        anulacionMotivo.value = "";
+        mostrarErrorAnulacion("");
+        actualizarBotonAnulacion();
+        anulacionModal.show();
+    }
+
+    async function anularVenta() {
+        if (anulando || !ventaEnAnulacion) return;
+
+        const motivo = anulacionMotivo.value.trim();
+        if (!motivo) return;
+
+        const venta = ventaEnAnulacion;
+        anulando = true;
+        confirmarAnulacion.textContent = "Anulando…";
+        mostrarErrorAnulacion("");
+        actualizarBotonAnulacion();
+
+        try {
+            const respuesta = await fetch(seccion.dataset.anularUrl, {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                    RequestVerificationToken: antiforgery.value
+                },
+                body: JSON.stringify({ idVenta: venta.id, motivo })
+            });
+            const resultado = await respuesta.json().catch(() => null);
+            if (!respuesta.ok || !resultado?.exito) {
+                throw new Error(resultado?.mensaje || (respuesta.status === 400
+                    ? "No se pudo validar la solicitud. Revise los datos o recargue la página si su sesión expiró."
+                    : "No se pudo anular la venta. Revise su sesión e intente nuevamente."));
+            }
+
+            anulando = false;
+            anulacionModal.hide();
+            mostrarAviso(`La venta ${venta.nroComprobante} fue anulada correctamente.`);
+            cargarHistorial();
+        } catch (error) {
+            mostrarErrorAnulacion(error instanceof TypeError
+                ? "No se pudo conectar con el servidor. La venta no fue anulada."
+                : error.message);
+        } finally {
+            anulando = false;
+            confirmarAnulacion.textContent = "Confirmar anulación";
+            actualizarBotonAnulacion();
+        }
+    }
+
+    anulacionMotivo.addEventListener("input", actualizarBotonAnulacion);
+    confirmarAnulacion.addEventListener("click", anularVenta);
+    modalAnulacion.addEventListener("shown.bs.modal", () => anulacionMotivo.focus());
+    modalAnulacion.addEventListener("hide.bs.modal", (event) => {
+        if (anulando) event.preventDefault();
+    });
+    modalAnulacion.addEventListener("hidden.bs.modal", () => {
+        ventaEnAnulacion = null;
+        anulacionMotivo.value = "";
+        mostrarErrorAnulacion("");
+        actualizarBotonAnulacion();
+    });
+
+    actualizar.addEventListener("click", cargarHistorial);
+    mostrarAnuladas.addEventListener("change", cargarHistorial);
+    document.addEventListener("venta:registrada", cargarHistorial);
+
+    cargarHistorial();
 })();

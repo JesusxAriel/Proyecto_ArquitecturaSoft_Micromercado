@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Proyecto_Arquitectura_Micromercado.Application.Common;
 using Proyecto_Arquitectura_Micromercado.Application.Customers;
+using Proyecto_Arquitectura_Micromercado.Application.Facades;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Application.Security;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
@@ -14,7 +15,9 @@ namespace Proyecto_Arquitectura_Micromercado.Pages.Sales;
 public sealed class IndexModel(
     IClienteConsultaService clienteConsultaService,
     IProductService productService,
-    IVentaFacade ventaFacade,
+    IFachadaVenta fachadaVenta,
+    IVentaConsultaService ventaConsultaService,
+    IFachadaAnulacion fachadaAnulacion,
     ILogger<IndexModel> logger) : PageModel
 {
     public SaleInputModel Input { get; } = new();
@@ -40,7 +43,7 @@ public sealed class IndexModel(
 
         try
         {
-            var resultado = await ventaFacade.RegistrarVentaAsync(new NuevaVentaDto(
+            var resultado = await fachadaVenta.RegistrarVentaAsync(new NuevaVentaDto(
                 venta.IdCliente!.Value, venta.EfectivoPagado!.Value,
                 venta.Lineas!.Select(linea => new LineaVentaDto(linea.IdProducto!.Value, linea.Cantidad!.Value)).ToArray()),
                 cancellationToken);
@@ -63,6 +66,47 @@ public sealed class IndexModel(
         }
     }
 
+    public async Task<JsonResult> OnPostAnularVentaAsync(
+        [FromBody] AnularVentaInput? entrada, CancellationToken cancellationToken)
+    {
+        if (!User.IsInRole(Roles.Administrador))
+        {
+            return new JsonResult(new { exito = false, mensaje = "Solo el administrador puede anular ventas." })
+            {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if (entrada is null || !ModelState.IsValid || entrada.IdVenta is null || entrada.Motivo is null)
+        {
+            return new JsonResult(new { exito = false, mensaje = "Indique la venta y el motivo de la anulación (máximo 255 caracteres)." })
+            {
+                StatusCode = StatusCodes.Status400BadRequest
+            };
+        }
+
+        try
+        {
+            await fachadaAnulacion.AnularVentaAsync(entrada.IdVenta.Value, entrada.Motivo, cancellationToken);
+            return new JsonResult(new { exito = true });
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or ValidationException)
+        {
+            return new JsonResult(new { exito = false, mensaje = ex.Message })
+            {
+                StatusCode = StatusCodes.Status400BadRequest
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "No se pudo anular la venta.");
+            return new JsonResult(new { exito = false, mensaje = "No se pudo anular la venta. Intente nuevamente." })
+            {
+                StatusCode = StatusCodes.Status503ServiceUnavailable
+            };
+        }
+    }
+
     public sealed class RegistrarVentaInput
     {
         [Required, Range(1, int.MaxValue)]
@@ -75,6 +119,15 @@ public sealed class IndexModel(
         public List<LineaInput>? Lineas { get; init; }
     }
 
+    public sealed class AnularVentaInput
+    {
+        [Required, Range(1, int.MaxValue)]
+        public int? IdVenta { get; init; }
+
+        [Required, StringLength(255)]
+        public string? Motivo { get; init; }
+    }
+
     public sealed class LineaInput
     {
         [Required, Range(1, int.MaxValue)]
@@ -82,6 +135,85 @@ public sealed class IndexModel(
 
         [Required, Range(1, int.MaxValue)]
         public int? Cantidad { get; init; }
+    }
+
+    public async Task<IActionResult> OnGetHistorialAsync(
+        bool incluirAnuladas, CancellationToken cancellationToken)
+    {
+        Response.Headers.CacheControl = "no-store";
+
+        try
+        {
+            var ventas = await ventaConsultaService.ListarAsync(incluirAnuladas, cancellationToken);
+            return new JsonResult(new
+            {
+                ventas = ventas.Select(venta => new
+                {
+                    id = venta.Id,
+                    nroComprobante = venta.NroComprobante,
+                    fechaHora = venta.FechaHora,
+                    nombreCliente = venta.NombreCliente,
+                    estado = venta.Estado,
+                    total = venta.Total
+                })
+            });
+        }
+        catch (ErrorDePersistenciaException)
+        {
+            return new JsonResult(new { mensaje = "No se pudo cargar el historial de ventas. Intente nuevamente." })
+            {
+                StatusCode = StatusCodes.Status503ServiceUnavailable
+            };
+        }
+    }
+
+    public async Task<IActionResult> OnGetDetalleAsync(
+        int idVenta, CancellationToken cancellationToken)
+    {
+        Response.Headers.CacheControl = "no-store";
+
+        try
+        {
+            var venta = await ventaConsultaService.ObtenerDetalleAsync(idVenta, cancellationToken);
+            if (venta is null)
+            {
+                return new JsonResult(new { mensaje = "La venta solicitada no existe." })
+                {
+                    StatusCode = StatusCodes.Status404NotFound
+                };
+            }
+
+            return new JsonResult(new
+            {
+                id = venta.Id,
+                nroComprobante = venta.NroComprobante,
+                fechaHora = venta.FechaHora,
+                nitCiCliente = venta.NitCiCliente,
+                razonSocialCliente = venta.RazonSocialCliente,
+                usuarioCajero = venta.UsuarioCajero,
+                estado = venta.Estado,
+                total = venta.Total,
+                efectivoPagado = venta.EfectivoPagado,
+                cambio = venta.Cambio,
+                motivoAnulacion = venta.MotivoAnulacion,
+                fechaAnulacion = venta.FechaAnulacion,
+                usuarioAnulacion = venta.UsuarioAnulacion,
+                lineas = venta.Lineas.Select(linea => new
+                {
+                    cantidad = linea.Cantidad,
+                    descripcion = linea.Descripcion,
+                    precioUnitario = linea.PrecioUnitario,
+                    subtotal = linea.Subtotal
+                })
+            });
+        }
+        catch (ErrorDePersistenciaException)
+        {
+            return new JsonResult(new { mensaje = "No se pudo cargar el detalle de la venta. Intente nuevamente." })
+            {
+                StatusCode = StatusCodes.Status503ServiceUnavailable
+            };
+        }
     }
 
     public async Task<JsonResult> OnGetBuscarClientesAsync(

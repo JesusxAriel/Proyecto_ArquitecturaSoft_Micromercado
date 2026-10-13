@@ -1,6 +1,7 @@
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
+using Proyecto_Arquitectura_Micromercado.Application.Stock;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Factories;
@@ -117,5 +118,15 @@ public class FactoryMethodTests
         await productos.UpdateAsync(producto);
 
         Assert.Empty(await creadorHistorial.ObtenerRepositorio().GetPriceHistoryAsync());
+    }
+
+    [Fact]
+    public void El_creador_de_lotes_en_memoria_devuelve_siempre_la_misma_instancia()
+    {
+        CreatorLoteRepository creador = new CreatorLoteRepositoryEnMemoria();
+
+        ILoteRepository primero = creador.ObtenerRepositorio();
+
+        Assert.Same(primero, creador.ObtenerRepositorio());
     }
 }

@@ -8,7 +8,7 @@ using Proyecto_Arquitectura_Micromercado.Application.Sales;
 namespace Proyecto_Arquitectura_Micromercado.Pages
 {
     [Authorize]
-    public sealed class IndexModel(IProductService productService, IVentaFacade ventaFacade) : PageModel
+    public sealed class IndexModel(IProductService productService, IVentaConsultaService ventaConsultaService) : PageModel
     {
         public decimal DailySales { get; private set; }
         public int ActiveProductCount { get; private set; }
@@ -21,7 +21,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages
         {
             try
             {
-                DailySales = await ventaFacade.ObtenerVentasDelDiaAsync(cancellationToken);
+                DailySales = await ventaConsultaService.ObtenerVentasDelDiaAsync(cancellationToken);
 
                 var products = await productService.GetAllAsync(cancellationToken);
                 ActiveProductCount = products.Count;

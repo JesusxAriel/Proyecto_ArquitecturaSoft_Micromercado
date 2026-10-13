@@ -3,9 +3,11 @@ using Microsoft.AspNetCore.Localization;
 using Proyecto_Arquitectura_Micromercado.Application.Common;
 using Proyecto_Arquitectura_Micromercado.Application.Comprobantes;
 using Proyecto_Arquitectura_Micromercado.Application.Customers;
+using Proyecto_Arquitectura_Micromercado.Application.Facades;
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
+using Proyecto_Arquitectura_Micromercado.Application.Stock;
 using Proyecto_Arquitectura_Micromercado.Application.Security;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Factories;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Comprobantes;
@@ -110,9 +112,17 @@ builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<CreatorVentaRepository, CreatorVentaRepositoryMySql>();
 builder.Services.AddScoped<IVentaRepository>(sp =>
     sp.GetRequiredService<CreatorVentaRepository>().ObtenerRepositorio());
+builder.Services.AddScoped<IVentaConsultaRepository, MySqlVentaConsultaRepository>();
+builder.Services.AddScoped<IVentaConsultaService, VentaConsultaService>();
 
-builder.Services.AddScoped<VentaFacade>();
-builder.Services.AddScoped<IVentaFacade>(sp => sp.GetRequiredService<VentaFacade>());
+builder.Services.AddScoped<CreatorLoteRepository, CreatorLoteRepositoryMySql>();
+builder.Services.AddScoped<ILoteRepository>(sp =>
+    sp.GetRequiredService<CreatorLoteRepository>().ObtenerRepositorio());
+
+builder.Services.AddScoped<IConPrecioVigente>(sp => sp.GetRequiredService<IProductRepository>());
+builder.Services.AddScoped<IFachadaActualizacionStockProducto, FachadaActualizacionStockProducto>();
+builder.Services.AddScoped<IFachadaVenta, FachadaVenta>();
+builder.Services.AddScoped<IFachadaAnulacion, FachadaAnulacion>();
 
 var app = builder.Build();
 var boliviaCulture = new CultureInfo("es-BO");

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
+using Proyecto_Arquitectura_Micromercado.Application.Facades;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
 using Proyecto_Arquitectura_Micromercado.Pages.Sales;
 using System.Text.Json;
@@ -62,7 +63,7 @@ public class SalesRegistroHandlerTests
     }
 
     private static IndexModel CrearPagina(FachadaPrueba fachada) =>
-        new(null!, null!, fachada, NullLogger<IndexModel>.Instance);
+        new(null!, null!, fachada, null!, null!, NullLogger<IndexModel>.Instance);
 
     private static IndexModel.RegistrarVentaInput Entrada() => new()
     {
@@ -71,7 +72,7 @@ public class SalesRegistroHandlerTests
         Lineas = [new() { IdProducto = 8, Cantidad = 2 }]
     };
 
-    private sealed class FachadaPrueba : IVentaFacade
+    private sealed class FachadaPrueba : IFachadaVenta
     {
         public NuevaVentaDto? Recibido { get; private set; }
         public Exception? Error { get; init; }
@@ -83,8 +84,5 @@ public class SalesRegistroHandlerTests
                 ? Task.FromResult(new ResultadoVentaDto(73, 19.75m))
                 : Task.FromException<ResultadoVentaDto>(Error);
         }
-
-        public Task<decimal> ObtenerVentasDelDiaAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
-        public Task<bool> AnularVentaAsync(int idVenta, CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
 }
