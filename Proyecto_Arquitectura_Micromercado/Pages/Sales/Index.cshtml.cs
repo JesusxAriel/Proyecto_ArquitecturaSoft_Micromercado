@@ -17,6 +17,7 @@ public sealed class IndexModel(
     IProductService productService,
     IFachadaVenta fachadaVenta,
     IVentaConsultaService ventaConsultaService,
+    IFachadaAnulacion fachadaAnulacion,
     ILogger<IndexModel> logger) : PageModel
 {
     public SaleInputModel Input { get; } = new();
@@ -65,6 +66,47 @@ public sealed class IndexModel(
         }
     }
 
+    public async Task<JsonResult> OnPostAnularVentaAsync(
+        [FromBody] AnularVentaInput? entrada, CancellationToken cancellationToken)
+    {
+        if (!User.IsInRole(Roles.Administrador))
+        {
+            return new JsonResult(new { exito = false, mensaje = "Solo el administrador puede anular ventas." })
+            {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if (entrada is null || !ModelState.IsValid || entrada.IdVenta is null || entrada.Motivo is null)
+        {
+            return new JsonResult(new { exito = false, mensaje = "Indique la venta y el motivo de la anulación (máximo 255 caracteres)." })
+            {
+                StatusCode = StatusCodes.Status400BadRequest
+            };
+        }
+
+        try
+        {
+            await fachadaAnulacion.AnularVentaAsync(entrada.IdVenta.Value, entrada.Motivo, cancellationToken);
+            return new JsonResult(new { exito = true });
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or ValidationException)
+        {
+            return new JsonResult(new { exito = false, mensaje = ex.Message })
+            {
+                StatusCode = StatusCodes.Status400BadRequest
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "No se pudo anular la venta.");
+            return new JsonResult(new { exito = false, mensaje = "No se pudo anular la venta. Intente nuevamente." })
+            {
+                StatusCode = StatusCodes.Status503ServiceUnavailable
+            };
+        }
+    }
+
     public sealed class RegistrarVentaInput
     {
         [Required, Range(1, int.MaxValue)]
@@ -75,6 +117,15 @@ public sealed class IndexModel(
 
         [Required, MinLength(1)]
         public List<LineaInput>? Lineas { get; init; }
+    }
+
+    public sealed class AnularVentaInput
+    {
+        [Required, Range(1, int.MaxValue)]
+        public int? IdVenta { get; init; }
+
+        [Required, StringLength(255)]
+        public string? Motivo { get; init; }
     }
 
     public sealed class LineaInput

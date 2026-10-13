@@ -84,7 +84,7 @@ public class SalesHistorialHandlerTests
     }
 
     private static IndexModel CrearPagina(ConsultaPrueba servicio) =>
-        new(null!, null!, null!, servicio, NullLogger<IndexModel>.Instance)
+        new(null!, null!, null!, servicio, null!, NullLogger<IndexModel>.Instance)
         {
             PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
         };
