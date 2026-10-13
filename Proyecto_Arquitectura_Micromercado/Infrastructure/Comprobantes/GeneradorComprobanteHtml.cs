@@ -41,11 +41,15 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
         }
 
         html.AppendLine("<section class=\"datos\">");
-        html.AppendLine($"<p><strong>Comprobante:</strong> {Esc(comprobante.NroComprobante)}</p>");
-        html.AppendLine($"<p><strong>Fecha de venta:</strong> {comprobante.FechaVenta.ToString("dd/MM/yyyy HH:mm", Cultura)}</p>");
+          html.AppendLine("<div class=\"datos-superiores\">");
+          html.AppendLine($"<p><strong>Fecha:</strong> {comprobante.FechaVenta.ToString("dd/MM/yyyy HH:mm", Cultura)}</p>");
+          html.AppendLine($"<p class=\"numero-comprobante\"><strong>Comprobante:</strong> {Esc(comprobante.NroComprobante)}</p>");
+          html.AppendLine("</div>");
+          html.AppendLine("<div class=\"datos-cliente\">");
         html.AppendLine($"<p><strong>CI/NIT:</strong> {Esc(comprobante.NitCiCliente)}</p>");
         html.AppendLine($"<p><strong>Razón social:</strong> {Esc(comprobante.RazonSocialCliente)}</p>");
-        html.AppendLine($"<p><strong>Estado:</strong> {Esc(comprobante.Estado)}</p>");
+          html.AppendLine("</div>");
+          html.AppendLine($"<p class=\"estado\"><strong>Estado:</strong> {Esc(comprobante.Estado)}</p>");
         html.AppendLine("</section>");
 
         html.AppendLine("<table class=\"detalle\">");
@@ -95,32 +99,28 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
         body {
           margin: 0;
           padding: 24px 12px;
-          background: #F8FAFC;
-          color: #1E293B;
+          background: #F1F5F9;
+          color: #111827;
           font-family: "Segoe UI", Arial, sans-serif;
           font-size: 14px;
         }
         .recibo {
-          max-width: 440px;
+          max-width: 620px;
           margin: 0 auto;
-          padding: 20px;
+          padding: 24px 26px;
           background: #FFFFFF;
-          border: 1px solid #E2E8F0;
-          border-top: 6px solid #F59E0B;
-          border-radius: 6px;
+          border: 1px solid #64748B;
+          border-top: 4px solid #F59E0B;
         }
         .encabezado {
           display: flex;
           align-items: center;
-          gap: 14px;
-          padding: 10px 12px;
-          background: #1E293B;
-          border-radius: 4px;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
+          gap: 18px;
+          padding: 0 0 16px;
+          border-bottom: 2px solid #1E293B;
         }
-        .logo { height: 48px; width: auto; border-radius: 3px; }
-        h1 { margin: 0; font-size: 18px; color: #FFFFFF; letter-spacing: 0.5px; }
+        .logo { height: 54px; width: auto; object-fit: contain; }
+        h1 { margin: 0; font-size: 21px; color: #1E293B; }
         .anulada {
           margin: 14px 0 0;
           padding: 6px;
@@ -131,19 +131,22 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
           border: 2px solid #EF4444;
           border-radius: 4px;
         }
-        .datos { margin: 16px 0; }
-        .datos p { margin: 3px 0; }
-        .detalle { width: 100%; border-collapse: collapse; }
+        .datos { margin: 14px 0 18px; }
+        .datos p { margin: 4px 0; }
+        .datos-superiores,
+        .datos-cliente { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 18px; }
+        .numero-comprobante { color: #475569; }
+        .estado { font-size: 12px; color: #475569; }
+        .detalle { width: 100%; border: 1px solid #475569; border-collapse: collapse; }
         .detalle th {
-          padding: 6px;
-          background: #334155;
-          color: #FFFFFF;
+          padding: 8px 7px;
+          background: #F1F5F9;
+          color: #1E293B;
           font-size: 12px;
           text-align: left;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
+          border: 1px solid #475569;
         }
-        .detalle td { padding: 6px; border-bottom: 1px solid #E2E8F0; }
+        .detalle td { padding: 8px 7px; border: 1px solid #64748B; }
         .num { text-align: right; white-space: nowrap; }
         .centro { text-align: center; }
         .detalle th.num { text-align: right; }
@@ -166,7 +169,7 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
         .acciones button:hover { background: #D97706; }
         @media print {
           body { padding: 0; background: #FFFFFF; }
-          .recibo { max-width: none; border: 0; border-radius: 0; padding: 0; }
+          .recibo { max-width: none; border: 0; padding: 0; }
           .acciones { display: none; }
           @page { margin: 10mm; }
         }

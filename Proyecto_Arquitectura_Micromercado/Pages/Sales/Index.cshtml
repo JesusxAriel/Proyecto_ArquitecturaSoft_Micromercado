@@ -5,6 +5,78 @@
 }
 
 <style>
+    .sale-heading {
+        border-bottom: 1px solid #d8e0e8;
+        padding-bottom: 1rem;
+    }
+
+    .sale-kicker {
+        color: #64748b;
+        font-size: .75rem;
+        font-weight: 700;
+        margin-bottom: .25rem;
+        text-transform: uppercase;
+    }
+
+    .sale-date {
+        border-left: 3px solid #f59e0b;
+        padding-left: .85rem;
+    }
+
+    .sale-date span,
+    .sale-date time {
+        display: block;
+    }
+
+    .sale-date span {
+        color: #64748b;
+        font-size: .8rem;
+    }
+
+    .sale-date time {
+        color: #1e293b;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .sale-panel {
+        border: 1px solid #d8e0e8;
+        border-radius: 6px;
+        box-shadow: none !important;
+    }
+
+    .sale-panel .card-body {
+        padding: 1.25rem;
+    }
+
+    .sale-panel h2 {
+        color: #1e293b;
+    }
+
+    .sale-lines thead th {
+        background: #f1f5f9;
+        color: #334155;
+        font-size: .8rem;
+        white-space: nowrap;
+    }
+
+    .sale-summary {
+        background: #f8fafc;
+        border: 1px solid #d8e0e8;
+        border-radius: 6px;
+    }
+
+    .sale-summary-total {
+        color: #1e293b;
+        font-size: 1.2rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .sale-primary-action {
+        min-width: 10rem;
+    }
+
     #resultadosClientes > .list-group-item,
     #resultadosProductos > .list-group-item {
         display: grid;
@@ -38,26 +110,47 @@
     #estadoDetalle:empty {
         margin: 0 !important;
     }
+
+    @@media (max-width: 575.98px) {
+        .sale-panel .card-body {
+            padding: 1rem;
+        }
+
+        .sale-date {
+            width: 100%;
+        }
+    }
 </style>
 
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-    <h1 class="page-heading mb-0">Registro de ventas</h1>
-    <span class="badge bg-secondary">Registro de ventas</span>
-</div>
-
-<p class="text-muted mb-4">Busque y seleccione el cliente, agregue productos al detalle e ingrese el efectivo pagado para registrar la venta.</p>
+<header class="sale-heading d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <p class="sale-kicker">Caja · Nueva transacción</p>
+        <h1 class="page-heading mb-0">Registro de venta</h1>
+    </div>
+    <div class="sale-date" aria-label="Fecha y hora automática de la venta">
+        <span>Fecha y hora</span>
+        <time>@Model.FechaActual.ToString("dd/MM/yyyy HH:mm")</time>
+    </div>
+</header>
 @Html.AntiForgeryToken()
 
 <div class="row g-4">
     <div class="col-12 col-lg-4">
-        <section id="buscadorClientes" class="card shadow-sm h-100" aria-labelledby="clienteHeading"
+        <section id="buscadorClientes" class="card sale-panel h-100" aria-labelledby="clienteHeading"
                  data-busqueda-url="@Url.Page("/Sales/Index", "BuscarClientes")">
             <div class="card-body">
                 <h2 id="clienteHeading" class="h5 mb-2">Cliente</h2>
                 <div class="mb-2">
                     <label asp-for="Input.IdentificacionCliente" class="form-label">Buscar por CI/NIT o razón social</label>
-                    <input asp-for="Input.IdentificacionCliente" class="form-control"
-                           placeholder="Ingrese CI/NIT o razón social" autocomplete="off" aria-describedby="clienteHelp" />
+                    <div class="input-group">
+                        <input asp-for="Input.IdentificacionCliente" class="form-control"
+                               placeholder="CI/NIT o razón social" autocomplete="off" aria-describedby="clienteHelp" />
+                        <a asp-page="/Customers/Create" target="_blank" rel="noopener"
+                           class="btn btn-outline-primary" title="Registrar cliente en otra pestaña"
+                           aria-label="Registrar cliente en otra pestaña">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                        </a>
+                    </div>
                     <div id="clienteHelp" class="form-text">Seleccione un resultado para asociarlo a la venta.</div>
                 </div>
                 <p id="estadoBusquedaClientes" class="small text-muted mb-2" role="status" aria-live="polite"></p>
@@ -68,15 +161,12 @@
                     <button id="quitarCliente" type="button" class="btn btn-outline-secondary btn-sm mt-2" hidden>Quitar selección</button>
                 </div>
                 <noscript><p class="text-danger mt-3">Active JavaScript para buscar y seleccionar clientes.</p></noscript>
-                <p class="small mt-2 mb-0">
-                    <a asp-page="/Customers/Create" target="_blank" rel="noopener">¿No encuentra al cliente? Registrar cliente</a>
-                </p>
             </div>
         </section>
     </div>
 
     <div class="col-12 col-lg-8">
-        <section id="buscadorProductos" class="card shadow-sm h-100" aria-labelledby="productoHeading"
+        <section id="buscadorProductos" class="card sale-panel h-100" aria-labelledby="productoHeading"
                  data-busqueda-url="@Url.Page("/Sales/Index", "BuscarProductos")">
             <div class="card-body">
                 <h2 id="productoHeading" class="h5 mb-2">Producto</h2>
@@ -112,13 +202,13 @@
     </div>
 
     <div class="col-12">
-        <section class="card shadow-sm" aria-labelledby="detalleHeading">
+        <section class="card sale-panel" aria-labelledby="detalleHeading">
             <div class="card-body">
                 <h2 id="detalleHeading" class="h5 mb-2">Detalle temporal</h2>
                 <p id="clienteDelDetalle" class="small text-muted mb-2" role="status" aria-live="polite">Cliente de esta venta: Ningún cliente seleccionado.</p>
                 <p id="detalleHelp" class="text-muted">Agregue los productos que formarán parte de la venta.</p>
                 <div class="table-responsive rounded-3 border">
-                    <table class="table table-hover align-middle mb-0" aria-labelledby="detalleHeading" aria-describedby="detalleHelp">
+                    <table class="table table-hover align-middle mb-0 sale-lines" aria-labelledby="detalleHeading" aria-describedby="detalleHelp">
                         <thead>
                             <tr>
                                 <th scope="col">Producto</th>
@@ -136,20 +226,24 @@
                         </tbody>
                     </table>
                 </div>
-                <section class="border rounded p-3 bg-light mt-3" aria-labelledby="resumenVentaHeading" aria-live="polite" aria-atomic="true">
-                    <h3 id="resumenVentaHeading" class="h6 mb-2">Resumen de la venta temporal</h3>
-                    <p class="mb-1">Productos distintos: <span id="productosDistintos">0</span></p>
-                    <p class="mb-1">Unidades totales: <span id="unidadesTotales">0</span></p>
-                    <p class="fw-semibold mb-0">Total general: Bs <span id="totalGeneral">0.00</span></p>
-                    <div class="mt-3">
-                        <label for="efectivoPagado" class="form-label">Efectivo pagado (Bs)</label>
-                        <input id="efectivoPagado" class="form-control" type="number" min="0" step="0.01" required />
+                <section class="sale-summary p-3 mt-3" aria-labelledby="resumenVentaHeading" aria-live="polite" aria-atomic="true">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-12 col-md">
+                            <h3 id="resumenVentaHeading" class="h6 mb-2">Resumen de la venta</h3>
+                            <p class="mb-1">Productos distintos: <span id="productosDistintos">0</span></p>
+                            <p class="mb-1">Unidades totales: <span id="unidadesTotales">0</span></p>
+                            <p class="sale-summary-total mb-0">Total: Bs <span id="totalGeneral">0.00</span></p>
+                        </div>
+                        <div class="col-12 col-md-5">
+                            <label for="efectivoPagado" class="form-label">Efectivo pagado (Bs)</label>
+                            <input id="efectivoPagado" class="form-control" type="number" min="0" step="0.01" required />
+                        </div>
                     </div>
                 </section>
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
-                    <p class="text-muted mb-0">Revise la venta antes de registrarla. El total definitivo se calculará al guardar.</p>
+                    <p class="text-muted mb-0">El total final se validará al guardar.</p>
                     <div class="d-flex flex-wrap align-items-center gap-3">
-                        <button id="registrarVenta" type="button" class="btn btn-warning fw-semibold" disabled>Registrar venta</button>
+                        <button id="registrarVenta" type="button" class="btn btn-warning fw-semibold sale-primary-action" disabled>Guardar venta</button>
                     </div>
                 </div>
             </div>

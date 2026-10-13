@@ -18,6 +18,7 @@ public sealed class IndexModel(
     ILogger<IndexModel> logger) : PageModel
 {
     public SaleInputModel Input { get; } = new();
+    public DateTime FechaActual { get; } = DateTime.Now;
 
     public void OnGet()
     {

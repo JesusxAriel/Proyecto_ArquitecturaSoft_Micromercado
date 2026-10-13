@@ -14,10 +14,20 @@
     let consulta;
     let version = 0;
 
+    function actualizarSeleccionCliente() {
+        resultados.querySelectorAll("button[data-cliente-id]").forEach((boton) => {
+            const activo = boton.dataset.clienteId === idCliente.value;
+            boton.textContent = activo ? "Seleccionado" : "Seleccionar";
+            boton.setAttribute("aria-pressed", String(activo));
+            boton.className = `btn btn-${activo ? "primary" : "outline-primary"} btn-sm mt-2`;
+        });
+    }
+
     quitar.addEventListener("click", () => {
         idCliente.value = "";
         seleccionado.textContent = "Ningún cliente seleccionado.";
         quitar.hidden = true;
+        actualizarSeleccionCliente();
         idCliente.dispatchEvent(new Event("change"));
     });
 
@@ -68,17 +78,21 @@
                 const boton = document.createElement("button");
                 boton.type = "button";
                 boton.className = "btn btn-outline-primary btn-sm mt-2";
+                boton.dataset.clienteId = String(cliente.id);
                 boton.textContent = "Seleccionar";
                 boton.setAttribute("aria-label", `Seleccionar ${cliente.razonSocial}, CI/NIT ${cliente.nitCi}`);
+                boton.setAttribute("aria-pressed", String(String(cliente.id) === idCliente.value));
                 boton.addEventListener("click", () => {
                     idCliente.value = String(cliente.id);
                     seleccionado.textContent = `Cliente seleccionado: ${cliente.razonSocial} — CI/NIT: ${cliente.nitCi}`;
                     quitar.hidden = false;
+                    actualizarSeleccionCliente();
                     idCliente.dispatchEvent(new Event("change"));
                 });
                 fila.append(nombre, documento, boton);
                 resultados.append(fila);
             });
+            actualizarSeleccionCliente();
             estado.textContent = clientes.length
                 ? `${clientes.length} cliente(s) encontrado(s).`
                 : "No se encontraron clientes activos con ese CI/NIT o razón social.";
