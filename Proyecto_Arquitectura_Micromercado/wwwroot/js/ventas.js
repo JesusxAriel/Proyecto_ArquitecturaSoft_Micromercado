@@ -652,17 +652,36 @@
     const mostrarAnuladas = document.getElementById("mostrarAnuladas");
     const puedeAnular = seccion.dataset.puedeAnular === "true";
     const precio = new Intl.NumberFormat("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const modalDetalle = document.getElementById("detalleVentaModal");
+    const detalleError = document.getElementById("detalleVentaError");
+    const detalleComprobante = document.getElementById("detalleVentaComprobante");
+    const detalleCliente = document.getElementById("detalleVentaCliente");
+    const detalleFecha = document.getElementById("detalleVentaFecha");
+    const detalleUsuario = document.getElementById("detalleVentaUsuario");
+    const detalleEstado = document.getElementById("detalleVentaEstado");
+    const detalleProductos = document.getElementById("detalleVentaProductos");
+    const detalleTotal = document.getElementById("detalleVentaTotal");
+    const detalleEfectivo = document.getElementById("detalleVentaEfectivo");
+    const detalleCambio = document.getElementById("detalleVentaCambio");
+    const detalleAnulacion = document.getElementById("detalleVentaAnulacion");
+    const detalleMotivo = document.getElementById("detalleVentaMotivo");
+    const detalleUsuarioAnulacion = document.getElementById("detalleVentaUsuarioAnulacion");
+    const detalleFechaAnulacion = document.getElementById("detalleVentaFechaAnulacion");
+    const detalleModal = bootstrap.Modal.getOrCreateInstance(modalDetalle);
     let consulta;
     let version = 0;
+    let consultaDetalle;
+    let versionDetalle = 0;
 
     function dosDigitos(numero) {
         return String(numero).padStart(2, "0");
     }
 
-    function formatearFecha(valor) {
+    function formatearFecha(valor, conSegundos = false) {
         const fecha = new Date(valor);
         if (Number.isNaN(fecha.getTime())) return "";
-        return `${dosDigitos(fecha.getDate())}/${dosDigitos(fecha.getMonth() + 1)}/${fecha.getFullYear()} ${dosDigitos(fecha.getHours())}:${dosDigitos(fecha.getMinutes())}`;
+        const segundos = conSegundos ? `:${dosDigitos(fecha.getSeconds())}` : "";
+        return `${dosDigitos(fecha.getDate())}/${dosDigitos(fecha.getMonth() + 1)}/${fecha.getFullYear()} ${dosDigitos(fecha.getHours())}:${dosDigitos(fecha.getMinutes())}${segundos}`;
     }
 
     function crearBadgeEstado(valor) {
@@ -781,6 +800,122 @@
             }
         }
     }
+
+    function crearFilaDetalle(mensaje) {
+        const fila = document.createElement("tr");
+        const celda = document.createElement("td");
+        celda.colSpan = 4;
+        celda.className = "text-center text-muted py-4";
+        celda.textContent = mensaje;
+        fila.append(celda);
+        return fila;
+    }
+
+    function limpiarDetalle() {
+        detalleError.textContent = "";
+        detalleError.hidden = true;
+        detalleAnulacion.hidden = true;
+        [detalleComprobante, detalleCliente, detalleFecha, detalleUsuario, detalleEfectivo, detalleCambio]
+            .forEach((elemento) => { elemento.textContent = "Cargando…"; });
+        detalleTotal.textContent = "Cargando…";
+        detalleTotal.className = "fw-semibold text-muted";
+        detalleEstado.textContent = "Cargando…";
+        detalleEstado.className = "badge bg-secondary";
+        detalleProductos.replaceChildren(crearFilaDetalle("Cargando detalle…"));
+    }
+
+    function mostrarErrorDetalle(mensaje) {
+        limpiarDetalle();
+        [detalleComprobante, detalleCliente, detalleFecha, detalleUsuario, detalleEfectivo, detalleCambio, detalleTotal]
+            .forEach((elemento) => { elemento.textContent = "—"; });
+        detalleEstado.textContent = "—";
+        detalleProductos.replaceChildren(crearFilaDetalle("No hay productos para mostrar."));
+        detalleError.textContent = mensaje;
+        detalleError.hidden = false;
+    }
+
+    function mostrarDetalle(detalle) {
+        const anulada = detalle.estado === "ANULADA";
+        detalleError.hidden = true;
+        detalleComprobante.textContent = detalle.nroComprobante;
+        detalleCliente.textContent = `${detalle.razonSocialCliente} (CI/NIT: ${detalle.nitCiCliente})`;
+        detalleFecha.textContent = formatearFecha(detalle.fechaHora, true);
+        detalleUsuario.textContent = detalle.usuarioCajero;
+        detalleEstado.textContent = anulada ? "Anulada" : "Completada";
+        detalleEstado.className = `badge bg-${anulada ? "danger" : "success"}`;
+        detalleTotal.textContent = precio.format(detalle.total);
+        detalleTotal.className = "fw-semibold";
+        detalleEfectivo.textContent = precio.format(detalle.efectivoPagado);
+        detalleCambio.textContent = precio.format(detalle.cambio);
+
+        detalleProductos.replaceChildren();
+        detalle.lineas.forEach((linea) => {
+            const fila = document.createElement("tr");
+            [
+                [String(linea.cantidad), "text-center"],
+                [linea.descripcion, "text-break"],
+                [precio.format(linea.precioUnitario), "text-end text-nowrap"],
+                [precio.format(linea.subtotal), "text-end text-nowrap"]
+            ].forEach(([valor, clase]) => {
+                const celda = document.createElement("td");
+                celda.className = clase;
+                celda.textContent = valor;
+                fila.append(celda);
+            });
+            detalleProductos.append(fila);
+        });
+
+        detalleAnulacion.hidden = !anulada;
+        if (anulada) {
+            detalleMotivo.textContent = detalle.motivoAnulacion ?? "";
+            detalleUsuarioAnulacion.textContent = detalle.usuarioAnulacion ?? "";
+            detalleFechaAnulacion.textContent = detalle.fechaAnulacion ? formatearFecha(detalle.fechaAnulacion, true) : "";
+        }
+    }
+
+    async function abrirDetalle(idVenta) {
+        consultaDetalle?.abort();
+        const actual = ++versionDetalle;
+        const controlador = new AbortController();
+        consultaDetalle = controlador;
+        limpiarDetalle();
+        detalleModal.show();
+
+        try {
+            const url = new URL(seccion.dataset.detalleUrl, window.location.href);
+            url.searchParams.set("idVenta", String(idVenta));
+            const respuesta = await fetch(url, {
+                signal: controlador.signal,
+                headers: { Accept: "application/json" },
+                cache: "no-store"
+            });
+            const datos = await respuesta.json().catch(() => null);
+            if (actual !== versionDetalle) return;
+            if (!respuesta.ok) {
+                throw new Error(datos?.mensaje || "No se pudo cargar el detalle de la venta. Intente nuevamente.");
+            }
+
+            mostrarDetalle(datos);
+        } catch (error) {
+            if (actual !== versionDetalle || error.name === "AbortError") return;
+            mostrarErrorDetalle(error instanceof TypeError
+                ? "No se pudo conectar con el servidor. Intente nuevamente."
+                : error.message);
+        }
+    }
+
+    modalDetalle.addEventListener("hidden.bs.modal", () => {
+        consultaDetalle?.abort();
+        versionDetalle++;
+    });
+
+    cuerpo.addEventListener("click", (event) => {
+        const boton = event.target.closest("button[data-accion]");
+        if (!boton) return;
+
+        const idVenta = Number(boton.dataset.idVenta);
+        if (boton.dataset.accion === "detalle") abrirDetalle(idVenta);
+    });
 
     actualizar.addEventListener("click", cargarHistorial);
     mostrarAnuladas.addEventListener("change", cargarHistorial);
