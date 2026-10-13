@@ -110,6 +110,8 @@
     const tablaDetalle = document.getElementById("detalleTemporal");
     const estadoDetalle = document.getElementById("estadoDetalle");
     const detalleTemporal = [];
+    const ayudaAgregar = document.getElementById("ayudaAgregarAlDetalle");
+    const clienteDelDetalle = document.getElementById("clienteDelDetalle");
     const productosDistintos = document.getElementById("productosDistintos");
     const unidadesTotales = document.getElementById("unidadesTotales");
     const totalGeneral = document.getElementById("totalGeneral");
@@ -230,7 +232,27 @@
         confirmacionTotal.textContent = totalGeneral.textContent;
     }
 
-    idCliente.addEventListener("change", actualizarConfirmacionVenta);
+    function actualizarClienteVenta() {
+        const tieneCliente = idCliente.value.trim() !== "";
+        agregar.disabled = !tieneCliente;
+
+        if (!tieneCliente) {
+            clienteDelDetalle.textContent = "Cliente de esta venta: Ningún cliente seleccionado.";
+            ayudaAgregar.textContent = "Seleccione un cliente para habilitar esta acción.";
+            ayudaAgregar.className = "small text-muted mt-2 mb-0";
+            return;
+        }
+
+        const datosCliente = clienteSeleccionado.textContent.replace(/^Cliente seleccionado:\s*/, "");
+        clienteDelDetalle.textContent = `Cliente de esta venta: ${datosCliente}`;
+        ayudaAgregar.textContent = "Cliente seleccionado. Ya puede agregar productos al detalle.";
+        ayudaAgregar.className = "small text-success mt-2 mb-0";
+    }
+
+    idCliente.addEventListener("change", () => {
+        actualizarClienteVenta();
+        actualizarConfirmacionVenta();
+    });
     registrarVenta.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -352,6 +374,7 @@
         }
     });
 
+    actualizarClienteVenta();
     actualizarResumenVenta();
 
     function renderizarDetalle() {

@@ -101,10 +101,11 @@
                 </div>
                 <noscript><p class="text-danger mt-3">Active JavaScript para buscar y seleccionar productos.</p></noscript>
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3">
-                    <button id="agregarAlDetalle" type="button" class="btn btn-warning fw-semibold">
+                    <button id="agregarAlDetalle" type="button" class="btn btn-warning fw-semibold" disabled aria-describedby="ayudaAgregarAlDetalle">
                         <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Agregar al detalle
                     </button>
                 </div>
+                <p id="ayudaAgregarAlDetalle" class="small text-muted mt-2 mb-0" role="status" aria-live="polite">Seleccione un cliente para habilitar esta acción.</p>
                 <p id="estadoDetalle" class="small mt-3 mb-0" role="status" aria-live="polite"></p>
             </div>
         </section>
@@ -114,6 +115,7 @@
         <section class="card shadow-sm" aria-labelledby="detalleHeading">
             <div class="card-body">
                 <h2 id="detalleHeading" class="h5 mb-2">Detalle temporal</h2>
+                <p id="clienteDelDetalle" class="small text-muted mb-2" role="status" aria-live="polite">Cliente de esta venta: Ningún cliente seleccionado.</p>
                 <p id="detalleHelp" class="text-muted">Agregue los productos que formarán parte de la venta.</p>
                 <div class="table-responsive rounded-3 border">
                     <table class="table table-hover align-middle mb-0" aria-labelledby="detalleHeading" aria-describedby="detalleHelp">
