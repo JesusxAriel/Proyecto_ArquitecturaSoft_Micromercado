@@ -111,6 +111,7 @@ builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<CreatorVentaRepository, CreatorVentaRepositoryMySql>();
 builder.Services.AddScoped<IVentaRepository>(sp =>
     sp.GetRequiredService<CreatorVentaRepository>().ObtenerRepositorio());
+builder.Services.AddScoped<IVentaConsultaService, VentaConsultaService>();
 
 builder.Services.AddScoped<CreatorLoteRepository, CreatorLoteRepositoryMySql>();
 builder.Services.AddScoped<ILoteRepository>(sp =>
