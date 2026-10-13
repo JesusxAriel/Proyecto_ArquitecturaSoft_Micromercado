@@ -8,7 +8,6 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Comprobantes;
 public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
 {
     private const string RutaDelLogo = "/images/logo.jpg";
-
     private static readonly CultureInfo Cultura = CultureInfo.GetCultureInfo("es-BO");
 
     public string GenerarHtml(ComprobanteDto comprobante)
@@ -30,8 +29,9 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
         html.AppendLine("<body>");
         html.AppendLine("<main class=\"recibo\">");
 
+        // Encabezado con Logo y Título
         html.AppendLine("<header class=\"encabezado\">");
-        html.AppendLine($"<img class=\"logo\" src=\"{RutaDelLogo}\" alt=\"PuntoMarket\" />");
+        html.AppendLine($"<img class=\"logo\" src=\"{RutaDelLogo}\" alt=\"Logo\" />");
         html.AppendLine("<h1>COMPROBANTE DE VENTA</h1>");
         html.AppendLine("</header>");
 
@@ -40,21 +40,19 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
             html.AppendLine("<p class=\"anulada\" role=\"alert\">ANULADA</p>");
         }
 
+        // Datos principales idénticos al Anexo 2
         html.AppendLine("<section class=\"datos\">");
-          html.AppendLine("<div class=\"datos-superiores\">");
-          html.AppendLine($"<p><strong>Fecha:</strong> {comprobante.FechaVenta.ToString("dd/MM/yyyy HH:mm", Cultura)}</p>");
-          html.AppendLine($"<p class=\"numero-comprobante\"><strong>Comprobante:</strong> {Esc(comprobante.NroComprobante)}</p>");
-          html.AppendLine("</div>");
-          html.AppendLine("<div class=\"datos-cliente\">");
-        html.AppendLine($"<p><strong>CI/NIT:</strong> {Esc(comprobante.NitCiCliente)}</p>");
-        html.AppendLine($"<p><strong>Razón social:</strong> {Esc(comprobante.RazonSocialCliente)}</p>");
-          html.AppendLine("</div>");
-          html.AppendLine($"<p class=\"estado\"><strong>Estado:</strong> {Esc(comprobante.Estado)}</p>");
+        html.AppendLine($"<p><strong>Fecha:</strong> {comprobante.FechaVenta.ToString("dd/MM/yyyy", Cultura)}</p>");
+        html.AppendLine("<div class=\"datos-cliente\">");
+        html.AppendLine($"<span><strong>CI/NIT:</strong> {Esc(comprobante.NitCiCliente)}</span>");
+        html.AppendLine($"<span><strong>Razón Social:</strong> {Esc(comprobante.RazonSocialCliente)}</span>");
+        html.AppendLine("</div>");
         html.AppendLine("</section>");
 
+        // Tabla de detalle
         html.AppendLine("<table class=\"detalle\">");
         html.AppendLine("<thead><tr>");
-        html.AppendLine("<th>Cantidad</th><th>Descripción</th><th class=\"num\">Precio unitario Bs.</th><th class=\"num\">Importe Bs.</th>");
+        html.AppendLine("<th>Cantidad</th><th>Descripción</th><th class=\"num\">Precio Unitario Bs.</th><th class=\"num\">Importe Bs.</th>");
         html.AppendLine("</tr></thead>");
         html.AppendLine("<tbody>");
 
@@ -69,18 +67,22 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
         }
 
         html.AppendLine("</tbody>");
-        html.AppendLine("<tfoot><tr>");
-        html.AppendLine($"<td colspan=\"3\" class=\"num total\">Total Bs.:</td><td class=\"num total\">{Dinero(comprobante.Total)}</td>");
-        html.AppendLine("</tr></tfoot>");
+        html.AppendLine("<tfoot>");
+        html.AppendLine("<tr>");
+        html.AppendLine($"<td colspan=\"3\" class=\"num total\">Total Bs:</td><td class=\"num total\">{Dinero(comprobante.Total)}</td>");
+        html.AppendLine("</tr>");
+        html.AppendLine("</tfoot>");
         html.AppendLine("</table>");
+
+        // Monto en letras y pie de página exacto al Anexo 2
+        html.AppendLine("<div class=\"pie-container\">");
         html.AppendLine($"<p class=\"letras\">{Esc(comprobante.TotalEnLetras)}</p>");
+        html.AppendLine($"<p class=\"firma-sistema\">{comprobante.FechaGeneracion.ToString("dd/MM/yyyy - HH:mm:ss", Cultura)}-{Esc(comprobante.UsuarioGenerador)}</p>");
+        html.AppendLine("</div>");
 
-        html.AppendLine("<footer class=\"pie\">");
-        html.AppendLine($"<p>Generado el {comprobante.FechaGeneracion.ToString("dd/MM/yyyy", Cultura)} a las {comprobante.FechaGeneracion.ToString("HH:mm:ss", Cultura)} por {Esc(comprobante.UsuarioGenerador)}</p>");
-        html.AppendLine("</footer>");
-
+        // Botón de impresión (se oculta al imprimir)
         html.AppendLine("<div class=\"acciones\">");
-        html.AppendLine("<button type=\"button\" onclick=\"window.print()\">Imprimir</button>");
+        html.AppendLine("<button type=\"button\" onclick=\"window.print()\">Imprimir Comprobante</button>");
         html.AppendLine("</div>");
 
         html.AppendLine("</main>");
@@ -91,85 +93,87 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
     }
 
     private static string Esc(string valor) => WebUtility.HtmlEncode(valor);
-
     private static string Dinero(decimal monto) => monto.ToString("N2", Cultura);
 
     private const string Estilos = """
         * { box-sizing: border-box; }
         body {
           margin: 0;
-          padding: 24px 12px;
-          background: #F1F5F9;
-          color: #111827;
-          font-family: "Segoe UI", Arial, sans-serif;
-          font-size: 14px;
+          padding: 20px;
+          background: #E2E8F0;
+          color: #000000;
+          font-family: Arial, sans-serif;
+          font-size: 13px;
         }
         .recibo {
-          max-width: 620px;
+          max-width: 680px;
           margin: 0 auto;
-          padding: 24px 26px;
+          padding: 25px 30px;
           background: #FFFFFF;
-          border: 1px solid #64748B;
-          border-top: 4px solid #F59E0B;
+          border: 1px solid #000000;
         }
         .encabezado {
           display: flex;
           align-items: center;
-          gap: 18px;
-          padding: 0 0 16px;
-          border-bottom: 2px solid #1E293B;
+          gap: 20px;
+          padding-bottom: 12px;
+          border-bottom: 2px solid #000000;
+          margin-bottom: 15px;
         }
-        .logo { height: 54px; width: auto; object-fit: contain; }
-        h1 { margin: 0; font-size: 21px; color: #1E293B; }
+        .logo { height: 50px; width: auto; object-fit: contain; }
+        h1 { margin: 0; font-size: 20px; font-weight: bold; color: #000000; letter-spacing: 0.5px; }
         .anulada {
-          margin: 14px 0 0;
-          padding: 6px;
+          margin: 10px 0;
+          padding: 5px;
           text-align: center;
-          font-weight: 700;
-          letter-spacing: 3px;
+          font-weight: bold;
           color: #EF4444;
           border: 2px solid #EF4444;
-          border-radius: 4px;
         }
-        .datos { margin: 14px 0 18px; }
-        .datos p { margin: 4px 0; }
-        .datos-superiores,
-        .datos-cliente { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 18px; }
-        .numero-comprobante { color: #475569; }
-        .estado { font-size: 12px; color: #475569; }
-        .detalle { width: 100%; border: 1px solid #475569; border-collapse: collapse; }
+        .datos { margin-bottom: 15px; }
+        .datos p { margin: 5px 0; }
+        .datos-cliente {
+          display: flex;
+          gap: 30px;
+          margin-top: 5px;
+        }
+        .detalle { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        .detalle th, .detalle td {
+          padding: 7px 10px;
+          border: 1px solid #000000;
+          font-size: 13px;
+        }
         .detalle th {
-          padding: 8px 7px;
-          background: #F1F5F9;
-          color: #1E293B;
-          font-size: 12px;
-          text-align: left;
-          border: 1px solid #475569;
+          background: #FFFFFF;
+          font-weight: bold;
+          text-align: center;
         }
-        .detalle td { padding: 8px 7px; border: 1px solid #64748B; }
         .num { text-align: right; white-space: nowrap; }
         .centro { text-align: center; }
-        .detalle th.num { text-align: right; }
-        .total { padding-top: 10px; font-size: 16px; font-weight: 700; border-bottom: 0 !important; }
-        .total + .total { color: #B45309; }
-        .letras { margin: 10px 0 0; font-weight: 600; }
-        .pie { margin-top: 18px; text-align: right; font-size: 12px; font-style: italic; color: #475569; }
-        .pie p { margin: 0; }
-        .acciones { margin-top: 18px; text-align: center; }
+        .total { font-weight: bold; font-size: 14px; border-top: 1px solid #000000; }
+        .pie-container {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          margin-top: 15px;
+        }
+        .letras { margin: 0; font-weight: bold; font-size: 13px; }
+        .firma-sistema { margin: 0; font-size: 12px; font-style: italic; white-space: nowrap; }
+        .acciones { margin-top: 25px; text-align: center; }
         .acciones button {
-          padding: 8px 28px;
-          background: #F59E0B;
-          border: 0;
-          border-radius: 6px;
-          color: #1E293B;
-          font-size: 14px;
-          font-weight: 600;
+          padding: 8px 20px;
+          background: #000000;
+          color: #FFFFFF;
+          border: none;
+          border-radius: 4px;
+          font-size: 13px;
+          font-weight: bold;
           cursor: pointer;
         }
-        .acciones button:hover { background: #D97706; }
+        .acciones button:hover { background: #333333; }
         @media print {
           body { padding: 0; background: #FFFFFF; }
-          .recibo { max-width: none; border: 0; padding: 0; }
+          .recibo { border: none; padding: 0; max-width: none; }
           .acciones { display: none; }
           @page { margin: 10mm; }
         }
