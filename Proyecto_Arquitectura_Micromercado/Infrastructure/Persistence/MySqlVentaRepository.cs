@@ -105,7 +105,7 @@ public sealed class MySqlVentaRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) :
         await reader.CloseAsync();
 
         const string sqlDetalle = @"
-            SELECT d.id, d.idVenta, d.idProducto, p.nombre AS nombreProducto, d.cantidad, d.precioUnitario
+            SELECT d.id, d.idVenta, d.idProducto, d.idLote, p.nombre AS nombreProducto, d.cantidad, d.precioUnitario
             FROM DETALLE_VENTA d
             INNER JOIN PRODUCTO p ON d.idProducto = p.id
             WHERE d.idVenta = @idVenta;";
@@ -117,6 +117,7 @@ public sealed class MySqlVentaRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) :
         var ordDetId = readerDetalle.GetOrdinal("id");
         var ordDetVenta = readerDetalle.GetOrdinal("idVenta");
         var ordDetProducto = readerDetalle.GetOrdinal("idProducto");
+        var ordDetLote = readerDetalle.GetOrdinal("idLote");
         var ordDetNombre = readerDetalle.GetOrdinal("nombreProducto");
         var ordDetCantidad = readerDetalle.GetOrdinal("cantidad");
         var ordDetPrecio = readerDetalle.GetOrdinal("precioUnitario");
@@ -128,6 +129,7 @@ public sealed class MySqlVentaRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) :
                 Id = readerDetalle.GetInt32(ordDetId),
                 IdVenta = readerDetalle.GetInt32(ordDetVenta),
                 IdProducto = readerDetalle.GetInt32(ordDetProducto),
+                IdLote = readerDetalle.GetInt32(ordDetLote),
                 NombreProducto = readerDetalle.GetString(ordDetNombre),
                 Cantidad = readerDetalle.GetInt32(ordDetCantidad),
                 PrecioUnitario = readerDetalle.GetDecimal(ordDetPrecio)
