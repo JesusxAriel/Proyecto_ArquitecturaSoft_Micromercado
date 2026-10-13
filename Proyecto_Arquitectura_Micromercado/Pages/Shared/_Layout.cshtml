@@ -54,11 +54,11 @@
                                 <li><a class="dropdown-item" asp-page="/Products/History">Historial de Cambios</a></li>
                                 <li><hr class="dropdown-divider" /></li>
                                 <li><a class="dropdown-item" asp-page="/Categories/Index">Listado de Categorías</a></li>
-                                <li>
-                                    <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
-                                        Distribución por Pasillos <span class="badge bg-secondary ms-1">Próximamente</span>
-                                    </a>
-                                </li>
+                                    <li>
+                                        <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
+                                            Distribución por Pasillos <span class="badge bg-secondary ms-1">Próximamente</span>
+                                        </a>
+                                    </li>
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
@@ -66,28 +66,39 @@
                                href="#" role="button">Proveedores</a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" asp-page="/Suppliers/Index">Directorio de Proveedores</a></li>
-                                <li>
-                                    <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
-                                        Productos por Proveedor <span class="badge bg-secondary ms-1">Próximamente</span>
-                                    </a>
-                                </li>
+                                    <li>
+                                        <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
+                                            Productos por Proveedor <span class="badge bg-secondary ms-1">Próximamente</span>
+                                        </a>
+                                    </li>
                             </ul>
                         </li>
                         }
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle @(currentPage.StartsWith("/Sales", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)"
-                               href="#" role="button">Caja y Ventas</a>
+                            <a class="nav-link dropdown-toggle" href="#" role="button">Caja y Ventas</a>
                             <ul class="dropdown-menu">
-                                <li>
-                                    <a class="dropdown-item" asp-page="/Sales/Index">
-                                        Registro de Ventas
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
-                                        Arqueo Diario <span class="badge bg-secondary ms-1">Próximamente</span>
-                                    </a>
-                                </li>
+                                    <li>
+                                        <a class="dropdown-item" asp-page="/Sales/Index">
+                                            Registro de Ventas
+                                        </a>
+                                    </li>
+                                    @if (!esAdministrador)
+                                    {
+                                        <li><a class="dropdown-item" asp-page="/Products/Catalog">Consultar productos</a></li>
+                                    }
+                                    <li>
+                                        <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
+                                            Historial de Ventas <span class="badge bg-secondary ms-1">Próximamente</span>
+                                        </a>
+                                    </li>
+                                    @if (esAdministrador)
+                                    {
+                                    <li>
+                                        <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
+                                            Arqueo Diario <span class="badge bg-secondary ms-1">Próximamente</span>
+                                        </a>
+                                    </li>
+                                    }
                             </ul>
                         </li>
                     </ul>
@@ -128,7 +139,7 @@
     </div>
     <footer class="footer border-top text-muted">
         <div class="container">
-            &copy; @DateTime.Now.Year PuntoMarket &middot;
+            &copy; @DateTime.Now.Year - PuntoMarket &middot;
             <a asp-page="/Privacy" class="text-muted">Política de Privacidad</a>
         </div>
     </footer>
@@ -136,6 +147,8 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script>
+        // Publica la altura real de la barra fija para que el padding del body y los
+        // encabezados sticky (top) coincidan con ella en cualquier ancho de pantalla.
         (function () {
             var navbar = document.querySelector('.navbar.fixed-top');
             if (!navbar) {
@@ -145,6 +158,7 @@
             var menu = document.getElementById('mainNavigation');
 
             function publishNavbarHeight() {
+                // Con el menú móvil desplegándose no se actualiza para evitar saltos del contenido.
                 if (menu && (menu.classList.contains('show') || menu.classList.contains('collapsing'))) {
                     return;
                 }

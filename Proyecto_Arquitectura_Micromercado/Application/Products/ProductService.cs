@@ -29,6 +29,15 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
                 repository.GetPagedAsync(currentPage, currentSize, search, cancellationToken));
     }
 
+    public Task<PagedResult<ProductListItem>> GetPagedForSalesAsync(
+        int page, int pageSize, string? search, CancellationToken cancellationToken = default)
+    {
+        search = PagedQuery.NormalizeSearch(search);
+        return PagedQuery.ExecuteAsync(page, pageSize,
+            (currentPage, currentSize) =>
+                repository.GetPagedForSalesAsync(currentPage, currentSize, search, cancellationToken));
+    }
+
     public Task<Product?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
         repository.GetByIdAsync(id, cancellationToken);
 

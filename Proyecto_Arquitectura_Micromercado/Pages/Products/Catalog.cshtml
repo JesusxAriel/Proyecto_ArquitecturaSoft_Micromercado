@@ -1,0 +1,60 @@
+@page
+@using Proyecto_Arquitectura_Micromercado.Pages.Shared
+@model Proyecto_Arquitectura_Micromercado.Pages.Products.CatalogModel
+@{
+    ViewData["Title"] = "Catálogo de productos";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <h1 class="page-heading mb-0">Catálogo de productos</h1>
+    <span class="badge bg-secondary">Solo lectura</span>
+</div>
+
+<partial name="_SearchBox" model="@(new SearchBoxModel(
+    "Buscar productos",
+    "Buscar por nombre o presentación...",
+    Model.Q,
+    Model.Tamano))" />
+
+@if (Model.DatabaseWarning is not null)
+{
+    <div class="alert alert-warning" role="alert">@Model.DatabaseWarning</div>
+}
+
+<div class="table-responsive rounded-3 border">
+    <table class="table table-hover align-middle mb-0">
+        <caption class="visually-hidden">Productos disponibles para consulta</caption>
+        <thead class="table-light">
+            <tr>
+                <th scope="col">Producto</th>
+                <th scope="col">Presentación</th>
+                <th scope="col" class="text-end">Precio de venta (Bs)</th>
+                <th scope="col" class="text-end">Stock disponible</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Products.Count == 0)
+            {
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">
+                        No se encontraron productos.
+                    </td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var producto in Model.Products)
+                {
+                    <tr>
+                        <td class="fw-semibold">@producto.Nombre</td>
+                        <td>@producto.EmpaquePresentacion</td>
+                        <td class="text-end">@producto.PrecioVenta.ToString("N2")</td>
+                        <td class="text-end">@producto.StockCalculado</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+<partial name="_Pager" model="Model.PagedProducts" view-data="@(new ViewDataDictionary(ViewData) { ["ItemLabel"] = "productos" })" />

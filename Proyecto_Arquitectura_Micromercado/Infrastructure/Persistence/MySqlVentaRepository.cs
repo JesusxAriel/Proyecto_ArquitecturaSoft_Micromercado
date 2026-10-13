@@ -8,7 +8,7 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 
 public sealed class MySqlVentaRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) : IVentaRepository
 {
-    public async Task<(int IdVenta, string NroComprobante, decimal Total)> RegistrarVentaConSpAsync(NuevaVentaDto dto, CancellationToken cancellationToken = default)
+    public async Task<(int IdVenta, string NroComprobante, decimal Total)> RegistrarVentaConSpAsync(NuevaVentaDto dto, int idUsuario, CancellationToken cancellationToken = default)
     {
         await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
@@ -23,9 +23,9 @@ public sealed class MySqlVentaRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) :
             CommandType = CommandType.StoredProcedure
         };
 
-        cmd.Parameters.AddWithValue("p_idCliente", dto.IdCliente > 0 ? dto.IdCliente : 1);
-        cmd.Parameters.AddWithValue("p_idUsuario", 1);
-        cmd.Parameters.AddWithValue("p_efectivoPagado", 999999.00m);
+        cmd.Parameters.AddWithValue("p_idCliente", dto.IdCliente);
+        cmd.Parameters.AddWithValue("p_idUsuario", idUsuario);
+        cmd.Parameters.AddWithValue("p_efectivoPagado", dto.EfectivoPagado);
         cmd.Parameters.AddWithValue("p_detalles", detallesJson);
 
         var pIdVenta = new MySqlParameter("p_idVenta", MySqlDbType.Int32) { Direction = ParameterDirection.Output };
@@ -49,7 +49,7 @@ public sealed class MySqlVentaRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) :
         return (idVenta, nroComprobante, total);
     }
 
-   public async Task<bool> AnularVentaConSpAsync(int idVenta, string motivo, CancellationToken cancellationToken = default)
+    public async Task<bool> AnularVentaConSpAsync(int idVenta, string motivo, int idUsuarioAnulacion, CancellationToken cancellationToken = default)
     {
         await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
@@ -59,53 +59,12 @@ public sealed class MySqlVentaRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) :
         };
 
         cmd.Parameters.AddWithValue("p_idVenta", idVenta);
-        cmd.Parameters.AddWithValue("p_idUsuarioAnulacion", 1);
+        cmd.Parameters.AddWithValue("p_idUsuarioAnulacion", idUsuarioAnulacion);
         cmd.Parameters.AddWithValue("p_motivo", motivo);
 
         // Al tratarse de un Stored Procedure, si no lanza excepción, la anulación fue exitosa
         await cmd.ExecuteNonQueryAsync(cancellationToken);
         return true;
-    }
-
-    public async Task<int> CrearVentaAsync(Venta venta, CancellationToken cancellationToken = default)
-    {
-        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
-
-        const string sql = @"
-            INSERT INTO VENTA (nroComprobante, fechaVenta, montoTotal, efectivoPagado, cambio, estado, idCliente, idUsuario)
-            VALUES (@nroComprobante, @fechaVenta, @montoTotal, @efectivoPagado, @cambio, @estado, @idCliente, @idUsuario);
-            SELECT LAST_INSERT_ID();";
-
-        await using var cmd = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
-        cmd.Parameters.AddWithValue("@nroComprobante", venta.NroComprobante);
-        cmd.Parameters.AddWithValue("@fechaVenta", venta.FechaHora);
-        cmd.Parameters.AddWithValue("@montoTotal", venta.Total);
-        cmd.Parameters.AddWithValue("@efectivoPagado", venta.Total);
-        cmd.Parameters.AddWithValue("@cambio", 0.00m);
-        cmd.Parameters.AddWithValue("@estado", string.Equals(venta.Estado, "COMPLETADO", StringComparison.OrdinalIgnoreCase) ? "COMPLETADA" : venta.Estado);
-        cmd.Parameters.AddWithValue("@idCliente", venta.IdCliente);
-        cmd.Parameters.AddWithValue("@idUsuario", venta.IdUsuario);
-
-        var result = await cmd.ExecuteScalarAsync(cancellationToken);
-        venta.Id = Convert.ToInt32(result);
-        return venta.Id;
-    }
-
-    public async Task CrearDetalleVentaAsync(DetalleVenta detalle, CancellationToken cancellationToken = default)
-    {
-        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
-
-        const string sql = @"
-            INSERT INTO DETALLE_VENTA (idVenta, idProducto, cantidad, precioUnitario)
-            VALUES (@idVenta, @idProducto, @cantidad, @precioUnitario);";
-
-        await using var cmd = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
-        cmd.Parameters.AddWithValue("@idVenta", detalle.IdVenta);
-        cmd.Parameters.AddWithValue("@idProducto", detalle.IdProducto);
-        cmd.Parameters.AddWithValue("@cantidad", detalle.Cantidad);
-        cmd.Parameters.AddWithValue("@precioUnitario", detalle.PrecioUnitario);
-
-        await cmd.ExecuteNonQueryAsync(cancellationToken);
     }
 
     public async Task<Venta?> GetByIdAsync(int idVenta, CancellationToken cancellationToken = default)
@@ -216,26 +175,6 @@ public sealed class MySqlVentaRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) :
         }
 
         return ventas;
-    }
-
-    public async Task<bool> CambiarEstadoAnuladoAsync(int idVenta, string motivo, CancellationToken cancellationToken = default)
-    {
-        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
-
-        const string sql = @"
-            UPDATE VENTA 
-            SET estado = 'ANULADA', 
-                motivoAnulacion = @motivo,
-                idUsuarioAnulacion = 1,
-                fechaAnulacion = NOW()
-            WHERE id = @idVenta;";
-
-        await using var cmd = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
-        cmd.Parameters.AddWithValue("@motivo", motivo);
-        cmd.Parameters.AddWithValue("@idVenta", idVenta);
-
-        var rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
-        return rows > 0;
     }
 
     public async Task<decimal> GetVentasDelDiaAsync(CancellationToken cancellationToken = default)

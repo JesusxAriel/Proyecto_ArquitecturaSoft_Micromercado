@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Localization;
 using Proyecto_Arquitectura_Micromercado.Application.Common;
 using Proyecto_Arquitectura_Micromercado.Application.Comprobantes;
+using Proyecto_Arquitectura_Micromercado.Application.Customers;
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
@@ -60,6 +61,11 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IComprobanteRepository, MySqlComprobanteRepository>();
 builder.Services.AddScoped<IComprobanteService, ComprobanteService>();
 builder.Services.AddSingleton<IGeneradorComprobante, GeneradorComprobanteHtml>();
+
+builder.Services.AddScoped<IClienteConsultaRepository, MySqlClienteConsultaRepository>();
+builder.Services.AddScoped<IClienteConsultaService, ClienteConsultaService>();
+builder.Services.AddScoped<IClienteCreacionRepository, MySqlClienteCreacionRepository>();
+builder.Services.AddScoped<IClienteCreacionService, ClienteCreacionService>();
 
 // El Singleton de conexion se inicializa una sola vez y se registra como dependencia,
 // para que los repositorios la reciban por constructor en vez de leerla de un estatico

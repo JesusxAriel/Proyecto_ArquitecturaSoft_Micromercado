@@ -52,6 +52,17 @@ public sealed class InMemoryProductRepository(
         return Task.FromResult(PaginadorEnMemoria.Paginar(coincidencias, page, pageSize));
     }
 
+    public Task<PagedResult<ProductListItem>> GetPagedForSalesAsync(
+        int page, int pageSize, string? search, CancellationToken cancellationToken = default)
+    {
+        var coincidencias = Ordenados(Activos())
+            .Where(p => string.IsNullOrWhiteSpace(search)
+                || TextoEnMemoria.Contiene(p.Nombre, search)
+                || TextoEnMemoria.Contiene(p.EmpaquePresentacion, search));
+
+        return Task.FromResult(PaginadorEnMemoria.Paginar(coincidencias, page, pageSize));
+    }
+
     public Task<Product?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var encontrado = Activos().FirstOrDefault(p => p.Id == id);

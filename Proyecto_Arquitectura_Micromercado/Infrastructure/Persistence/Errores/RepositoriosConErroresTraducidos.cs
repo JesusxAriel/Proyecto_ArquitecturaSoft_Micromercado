@@ -101,6 +101,10 @@ internal sealed class ProductRepositoryConErroresTraducidos(IProductRepository i
         CancellationToken cancellationToken = default) =>
         ErroresDePersistencia.TraducirAsync(() => interno.GetPagedAsync(page, pageSize, search, cancellationToken));
 
+    public Task<PagedResult<ProductListItem>> GetPagedForSalesAsync(
+        int page, int pageSize, string? search, CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(() => interno.GetPagedForSalesAsync(page, pageSize, search, cancellationToken));
+
     public Task<Product?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
         ErroresDePersistencia.TraducirAsync(() => interno.GetByIdAsync(id, cancellationToken));
 

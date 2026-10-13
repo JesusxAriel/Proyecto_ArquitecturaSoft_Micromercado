@@ -1,50 +1,45 @@
-using Proyecto_Arquitectura_Micromercado.Application.Common;
+using Proyecto_Arquitectura_Micromercado.Application.Security;
 
 namespace Proyecto_Arquitectura_Micromercado.Application.Sales;
 
 public class VentaFacade(
-    IUnidadDeTrabajo unidadDeTrabajo,
+    IUsuarioActual usuarioActual,
     IVentaRepository ventaRepository) : IVentaFacade
 {
+    public Task<decimal> ObtenerVentasDelDiaAsync(CancellationToken cancellationToken)
+        => ventaRepository.GetVentasDelDiaAsync(cancellationToken);
+
     public async Task<ResultadoVentaDto> RegistrarVentaAsync(NuevaVentaDto dto, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(dto);
+
+        if (dto.IdCliente <= 0)
+        {
+            throw new InvalidOperationException("Debe seleccionar un cliente para registrar la venta.");
+        }
+
         if (dto.Lineas == null || dto.Lineas.Count == 0)
         {
             throw new InvalidOperationException("Debe seleccionar al menos un producto para registrar la venta.");
         }
 
-        await unidadDeTrabajo.IniciarAsync(cancellationToken);
-
-        try
+        if (dto.Lineas.Any(linea => linea is null || linea.IdProducto <= 0 || linea.Cantidad <= 0))
         {
-            var (idVenta, nroComprobante, total) = await ventaRepository.RegistrarVentaConSpAsync(dto, cancellationToken);
-
-            await unidadDeTrabajo.ConfirmarAsync(cancellationToken);
-
-            return new ResultadoVentaDto(idVenta, total);
+            throw new InvalidOperationException("Cada línea debe tener un producto válido y una cantidad mayor a cero.");
         }
-        catch
+
+        if (dto.EfectivoPagado < 0)
         {
-            await unidadDeTrabajo.RevertirAsync(cancellationToken);
-            throw;
+            throw new InvalidOperationException("El efectivo pagado no puede ser negativo.");
         }
+
+        var (idVenta, _, total) = await ventaRepository.RegistrarVentaConSpAsync(
+            dto, usuarioActual.Id, cancellationToken);
+
+        return new ResultadoVentaDto(idVenta, total);
     }
 
-    public async Task<bool> AnularVentaAsync(int idVenta, CancellationToken cancellationToken = default)
-    {
-        await unidadDeTrabajo.IniciarAsync(cancellationToken);
-
-        try
-        {
-            var exito = await ventaRepository.AnularVentaConSpAsync(idVenta, "Anulación solicitada desde la interfaz", cancellationToken);
-
-            await unidadDeTrabajo.ConfirmarAsync(cancellationToken);
-            return exito;
-        }
-        catch
-        {
-            await unidadDeTrabajo.RevertirAsync(cancellationToken);
-            throw;
-        }
-    }
+    public Task<bool> AnularVentaAsync(int idVenta, CancellationToken cancellationToken = default)
+        => ventaRepository.AnularVentaConSpAsync(
+            idVenta, "Anulación solicitada desde la interfaz", usuarioActual.Id, cancellationToken);
 }
