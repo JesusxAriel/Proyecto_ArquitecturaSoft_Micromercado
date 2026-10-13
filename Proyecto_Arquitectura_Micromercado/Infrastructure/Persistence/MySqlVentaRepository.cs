@@ -194,4 +194,134 @@ public sealed class MySqlVentaRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) :
 
         return result != null && result != DBNull.Value ? Convert.ToDecimal(result) : 0m;
     }
+
+    public async Task<int> InsertarCabeceraAsync(int idCliente, int idUsuario, CancellationToken cancellationToken = default)
+    {
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+
+        const string sql = @"
+            INSERT INTO VENTA (nroComprobante, idCliente, idUsuario, fechaVenta, montoTotal, efectivoPagado, cambio, estado)
+            VALUES (CONCAT('TMP-', UUID()), @idCliente, @idUsuario, NOW(), 0, 0, 0, 'COMPLETADA');";
+
+        await using var cmd = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
+        cmd.Parameters.AddWithValue("@idCliente", idCliente);
+        cmd.Parameters.AddWithValue("@idUsuario", idUsuario);
+        await cmd.ExecuteNonQueryAsync(cancellationToken);
+
+        await using var cmdId = new MySqlCommand("SELECT LAST_INSERT_ID();", alquiler.Conexion, alquiler.Transaccion);
+        return Convert.ToInt32(await cmdId.ExecuteScalarAsync(cancellationToken));
+    }
+
+    public async Task InsertarDetalleAsync(int idVenta, int idProducto, int idLote, int cantidad, decimal precioUnitario, CancellationToken cancellationToken = default)
+    {
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+
+        const string sql = @"
+            INSERT INTO DETALLE_VENTA (idVenta, idProducto, idLote, cantidad, precioUnitario)
+            VALUES (@idVenta, @idProducto, @idLote, @cantidad, @precioUnitario);";
+
+        await using var cmd = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
+        cmd.Parameters.AddWithValue("@idVenta", idVenta);
+        cmd.Parameters.AddWithValue("@idProducto", idProducto);
+        cmd.Parameters.AddWithValue("@idLote", idLote);
+        cmd.Parameters.AddWithValue("@cantidad", cantidad);
+        cmd.Parameters.AddWithValue("@precioUnitario", precioUnitario);
+        await cmd.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task CerrarVentaAsync(int idVenta, string nroComprobante, decimal montoTotal, decimal efectivoPagado, CancellationToken cancellationToken = default)
+    {
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+
+        const string sql = @"
+            UPDATE VENTA
+            SET nroComprobante = @nro, montoTotal = @total, efectivoPagado = @efectivo, cambio = @efectivo - @total
+            WHERE id = @idVenta;";
+
+        await using var cmd = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
+        cmd.Parameters.AddWithValue("@nro", nroComprobante);
+        cmd.Parameters.AddWithValue("@total", montoTotal);
+        cmd.Parameters.AddWithValue("@efectivo", efectivoPagado);
+        cmd.Parameters.AddWithValue("@idVenta", idVenta);
+        await cmd.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task<Venta?> ObtenerParaAnularAsync(int idVenta, CancellationToken cancellationToken = default)
+    {
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+
+        const string sqlVenta = @"
+            SELECT id, nroComprobante, fechaVenta, montoTotal, estado, motivoAnulacion, idCliente, idUsuario
+            FROM VENTA
+            WHERE id = @idVenta
+            FOR UPDATE;";
+
+        await using var cmdVenta = new MySqlCommand(sqlVenta, alquiler.Conexion, alquiler.Transaccion);
+        cmdVenta.Parameters.AddWithValue("@idVenta", idVenta);
+
+        await using var reader = await cmdVenta.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken)) return null;
+
+        var ordMotivo = reader.GetOrdinal("motivoAnulacion");
+
+        var venta = new Venta
+        {
+            Id = reader.GetInt32(reader.GetOrdinal("id")),
+            NroComprobante = reader.GetString(reader.GetOrdinal("nroComprobante")),
+            FechaHora = reader.GetDateTime(reader.GetOrdinal("fechaVenta")),
+            Total = reader.GetDecimal(reader.GetOrdinal("montoTotal")),
+            Estado = reader.GetString(reader.GetOrdinal("estado")),
+            MotivoAnulacion = reader.IsDBNull(ordMotivo) ? null : reader.GetString(ordMotivo),
+            IdCliente = reader.GetInt32(reader.GetOrdinal("idCliente")),
+            IdUsuario = reader.GetInt32(reader.GetOrdinal("idUsuario"))
+        };
+        await reader.CloseAsync();
+
+        const string sqlDetalle = @"
+            SELECT id, idVenta, idProducto, idLote, cantidad, precioUnitario
+            FROM DETALLE_VENTA
+            WHERE idVenta = @idVenta;";
+
+        await using var cmdDetalle = new MySqlCommand(sqlDetalle, alquiler.Conexion, alquiler.Transaccion);
+        cmdDetalle.Parameters.AddWithValue("@idVenta", idVenta);
+
+        await using var readerDetalle = await cmdDetalle.ExecuteReaderAsync(cancellationToken);
+        var ordDetId = readerDetalle.GetOrdinal("id");
+        var ordDetVenta = readerDetalle.GetOrdinal("idVenta");
+        var ordDetProducto = readerDetalle.GetOrdinal("idProducto");
+        var ordDetLote = readerDetalle.GetOrdinal("idLote");
+        var ordDetCantidad = readerDetalle.GetOrdinal("cantidad");
+        var ordDetPrecio = readerDetalle.GetOrdinal("precioUnitario");
+
+        while (await readerDetalle.ReadAsync(cancellationToken))
+        {
+            venta.Detalles.Add(new DetalleVenta
+            {
+                Id = readerDetalle.GetInt32(ordDetId),
+                IdVenta = readerDetalle.GetInt32(ordDetVenta),
+                IdProducto = readerDetalle.GetInt32(ordDetProducto),
+                IdLote = readerDetalle.GetInt32(ordDetLote),
+                Cantidad = readerDetalle.GetInt32(ordDetCantidad),
+                PrecioUnitario = readerDetalle.GetDecimal(ordDetPrecio)
+            });
+        }
+
+        return venta;
+    }
+
+    public async Task MarcarAnuladaAsync(int idVenta, string motivo, int idUsuarioAnulacion, CancellationToken cancellationToken = default)
+    {
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+
+        const string sql = @"
+            UPDATE VENTA
+            SET estado = 'ANULADA', motivoAnulacion = @motivo, idUsuarioAnulacion = @idUsuario, fechaAnulacion = NOW()
+            WHERE id = @idVenta;";
+
+        await using var cmd = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
+        cmd.Parameters.AddWithValue("@motivo", motivo);
+        cmd.Parameters.AddWithValue("@idUsuario", idUsuarioAnulacion);
+        cmd.Parameters.AddWithValue("@idVenta", idVenta);
+        await cmd.ExecuteNonQueryAsync(cancellationToken);
+    }
 }

@@ -1,10 +1,12 @@
 using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
+using Proyecto_Arquitectura_Micromercado.Application.Sales;
 using Proyecto_Arquitectura_Micromercado.Application.Stock;
 using Proyecto_Arquitectura_Micromercado.Application.Suppliers;
 using Proyecto_Arquitectura_Micromercado.Domain.Categories;
 using Proyecto_Arquitectura_Micromercado.Domain.Common;
 using Proyecto_Arquitectura_Micromercado.Domain.Products;
+using Proyecto_Arquitectura_Micromercado.Domain.Sales;
 using Proyecto_Arquitectura_Micromercado.Domain.Stock;
 using Proyecto_Arquitectura_Micromercado.Domain.Suppliers;
 
@@ -187,4 +189,64 @@ internal sealed class LoteRepositoryConErroresTraducidos(ILoteRepository interno
 
     public Task RestaurarAsync(int idLote, int cantidad, CancellationToken cancellationToken = default) =>
         ErroresDePersistencia.TraducirAsync(() => interno.RestaurarAsync(idLote, cantidad, cancellationToken));
+}
+
+internal sealed class VentaRepositoryConErroresTraducidos(IVentaRepository interno)
+    : IVentaRepository
+{
+    public Task<Venta?> GetByIdAsync(int idVenta, CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(() => interno.GetByIdAsync(idVenta, cancellationToken));
+
+    public Task<IReadOnlyList<Venta>> GetAllAsync(CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(() => interno.GetAllAsync(cancellationToken));
+
+    public Task<(int IdVenta, string NroComprobante, decimal Total)> RegistrarVentaConSpAsync(
+        NuevaVentaDto dto,
+        int idUsuario,
+        CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(() => interno.RegistrarVentaConSpAsync(dto, idUsuario, cancellationToken));
+
+    public Task<bool> AnularVentaConSpAsync(
+        int idVenta,
+        string motivo,
+        int idUsuarioAnulacion,
+        CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(
+            () => interno.AnularVentaConSpAsync(idVenta, motivo, idUsuarioAnulacion, cancellationToken));
+
+    public Task<decimal> GetVentasDelDiaAsync(CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(() => interno.GetVentasDelDiaAsync(cancellationToken));
+
+    public Task<int> InsertarCabeceraAsync(int idCliente, int idUsuario, CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(() => interno.InsertarCabeceraAsync(idCliente, idUsuario, cancellationToken));
+
+    public Task InsertarDetalleAsync(
+        int idVenta,
+        int idProducto,
+        int idLote,
+        int cantidad,
+        decimal precioUnitario,
+        CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(
+            () => interno.InsertarDetalleAsync(idVenta, idProducto, idLote, cantidad, precioUnitario, cancellationToken));
+
+    public Task CerrarVentaAsync(
+        int idVenta,
+        string nroComprobante,
+        decimal montoTotal,
+        decimal efectivoPagado,
+        CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(
+            () => interno.CerrarVentaAsync(idVenta, nroComprobante, montoTotal, efectivoPagado, cancellationToken));
+
+    public Task<Venta?> ObtenerParaAnularAsync(int idVenta, CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(() => interno.ObtenerParaAnularAsync(idVenta, cancellationToken));
+
+    public Task MarcarAnuladaAsync(
+        int idVenta,
+        string motivo,
+        int idUsuarioAnulacion,
+        CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(
+            () => interno.MarcarAnuladaAsync(idVenta, motivo, idUsuarioAnulacion, cancellationToken));
 }
