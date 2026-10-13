@@ -2,15 +2,13 @@ using Proyecto_Arquitectura_Micromercado.Domain.Products;
 
 namespace Proyecto_Arquitectura_Micromercado.Tests;
 
-// Estas reglas eran metodos privados del PageModel de Productos, asi que no se podian
-// probar sin levantar una pagina. Al mudarlas al dominio quedan cubiertas directamente.
 public class CambioDePrecioTests
 {
     [Theory]
-    [InlineData(10.0, 8.0, 10.0, 8.0, false)]   // nada cambio
-    [InlineData(10.0, 8.0, 12.0, 8.0, true)]    // cambio el precio de venta
-    [InlineData(10.0, 8.0, 10.0, 9.0, true)]    // cambio el precio de costo
-    [InlineData(10.0, 8.0, 12.0, 9.0, true)]    // cambiaron los dos
+    [InlineData(10.0, 8.0, 10.0, 8.0, false)]
+    [InlineData(10.0, 8.0, 12.0, 8.0, true)]
+    [InlineData(10.0, 8.0, 10.0, 9.0, true)]
+    [InlineData(10.0, 8.0, 12.0, 9.0, true)]
     public void Detecta_el_cambio_de_cualquiera_de_los_dos_precios(
         decimal ventaAnterior,
         decimal costoAnterior,
@@ -48,8 +46,8 @@ public class CambioDePrecioTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    [InlineData("ab")]                        // menos de 3 caracteres
-    [InlineData("<script>alert(1)</script>")] // etiquetas
+    [InlineData("ab")]
+    [InlineData("<script>alert(1)</script>")]
     [InlineData("comillas \" dobles")]
     [InlineData("comilla ' simple")]
     [InlineData("acento ` grave")]

@@ -4,12 +4,6 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.EnMemoria;
 
 namespace Proyecto_Arquitectura_Micromercado.Tests;
 
-// Prueba que la regla "si el precio cambia hay que justificarlo" la aplique el SERVICIO.
-//
-// Antes vivia en el PageModel de Productos, de modo que solo se cumplia si el cambio
-// entraba por esa pagina: el servicio no la aplicaba y cualquier otra entrada (una API, o
-// el VentaFacade de la Parte 3) guardaba el precio sin justificacion. Estas pruebas no
-// pasan por ninguna pagina, asi que si la regla volviera al PageModel, fallarian.
 public class ProductServiceEnMemoriaTests
 {
     private static readonly LookupOption[] Catalogo = [new(1, "Bolsa 1L")];
@@ -123,7 +117,6 @@ public class ProductServiceEnMemoriaTests
         Assert.Equal(10.0m, registro.PrecioVentaAnterior);
         Assert.Equal(12.0m, registro.PrecioVentaNuevo);
 
-        // El servicio normalizo el motivo antes de guardarlo.
         Assert.Equal("Subida del proveedor", registro.MotivoCambio);
     }
 
@@ -140,7 +133,6 @@ public class ProductServiceEnMemoriaTests
 
         Assert.Empty(await historial.GetPriceHistoryAsync());
 
-        // Sin cambio de precio el motivo no corresponde, aunque el usuario escriba algo.
         Assert.Null(sinCambioDePrecio.MotivoCambio);
     }
 
