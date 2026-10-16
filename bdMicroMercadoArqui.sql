@@ -733,6 +733,45 @@ BEGIN
         SET MESSAGE_TEXT = 'El detalle de una venta no se puede eliminar';
 END$$
 
+DROP PROCEDURE IF EXISTS `sp_arqueo_stock`$$
+CREATE PROCEDURE `sp_arqueo_stock`(IN p_diasAviso INT)
+READS SQL DATA
+BEGIN
+    DECLARE v_dias INT DEFAULT 30;
+
+    IF p_diasAviso IS NOT NULL AND p_diasAviso >= 0 THEN
+        SET v_dias = p_diasAviso;
+    END IF;
+
+    SELECT
+        p.id AS idProducto,
+        p.nombre AS producto,
+        p.stockActual,
+        COALESCE(SUM(l.cantidadDisponible), 0) AS sumaLotesActivos,
+        p.stockActual - COALESCE(SUM(l.cantidadDisponible), 0) AS diferencia
+    FROM `PRODUCTO` p
+    LEFT JOIN `LOTE` l ON l.idProducto = p.id AND l.estaActivo = 1
+    GROUP BY p.id, p.nombre, p.stockActual
+    HAVING p.stockActual <> COALESCE(SUM(l.cantidadDisponible), 0)
+    ORDER BY p.nombre;
+
+    SELECT
+        l.id AS idLote,
+        p.nombre AS producto,
+        l.codigoLote,
+        l.cantidadDisponible AS cantidadRestante,
+        l.fechaVencimiento,
+        DATEDIFF(l.fechaVencimiento, CURRENT_DATE()) AS diasParaVencer,
+        IF(l.fechaVencimiento < CURRENT_DATE(), 'VENCIDO', 'POR VENCER') AS situacion
+    FROM `LOTE` l
+    INNER JOIN `PRODUCTO` p ON p.id = l.idProducto
+    WHERE l.estaActivo = 1
+      AND l.cantidadDisponible > 0
+      AND l.fechaVencimiento IS NOT NULL
+      AND l.fechaVencimiento <= DATE_ADD(CURRENT_DATE(), INTERVAL v_dias DAY)
+    ORDER BY l.fechaVencimiento, p.nombre;
+END$$
+
 DELIMITER ;
 
 INSERT INTO `ROL` (`id`, `nombre`, `descripcion`) VALUES
