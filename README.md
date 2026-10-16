@@ -151,7 +151,7 @@ builder.Services.AddScoped<IProductService, ProductService>();
 
 ### Nota sobre el stock
 
-El stock no es una columna de `PRODUCTO`: se lleva por lote en `LOTE.cantidadDisponible`, con salida FEFO (primero en vencer, primero en salir). El stock de un producto es la suma de sus lotes vigentes y se consulta con la vista `vw_productos_con_stock`. Por eso la venta descuenta de `LOTE` y la anulación restaura en `LOTE`. Esta decisión fue aprobada por el magister.
+El stock actual de cada producto se guarda en `PRODUCTO.stockActual`, de modo que el catálogo y la búsqueda para ventas leen una sola tabla (más `EMPAQUE` para la presentación). Ese valor no se edita a mano: lo mantienen al día los triggers `trg_lote_ai`, `trg_lote_au` y `trg_lote_ad` de `LOTE`, dentro de la misma transacción de la venta o de la anulación, y equivale a la suma de `cantidadDisponible` de los lotes activos. La salida sigue siendo FEFO (primero en vencer, primero en salir) y se decide con `LOTE.cantidadDisponible`: la venta descuenta de `LOTE` y la anulación restaura en `LOTE`. Los lotes vencidos cuentan en `stockActual`, pero `AsignadorFefo` no los vende; el procedimiento de solo lectura `sp_arqueo_stock` compara `stockActual` con la suma real de los lotes y lista los lotes vencidos o por vencer.
 
 ## 🧾 Comprobante de venta
 
