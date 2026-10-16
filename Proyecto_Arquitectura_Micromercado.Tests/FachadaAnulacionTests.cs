@@ -124,4 +124,26 @@ public class FachadaAnulacionTests
 
         Assert.Equal(0, e.Unidad.Iniciadas);
     }
+
+    [Fact]
+    public async Task Si_restaurar_supera_la_cantidad_inicial_lanza_el_mensaje_claro_y_revierte()
+    {
+        var e = new Escenario();
+        e.Lotes.Agregar(1, new LoteDisponible(10, 5, new DateOnly(2026, 10, 20)), cantidadInicial: 70);
+        e.Lotes.Agregar(1, new LoteDisponible(11, 48, new DateOnly(2026, 11, 27)), cantidadInicial: 50);
+        var idVenta = await e.Ventas.InsertarCabeceraAsync(3, 7);
+        await e.Ventas.InsertarDetalleAsync(idVenta, 1, 10, 68, 6.5m);
+        await e.Ventas.InsertarDetalleAsync(idVenta, 1, 11, 2, 6.5m);
+
+        var ex = await Assert.ThrowsAsync<RestauracionExcedeCantidadInicialException>(
+            () => e.Anulacion.AnularVentaAsync(idVenta, "Prueba"));
+
+        Assert.Equal(
+            "No se puede anular la venta: restaurar el stock de un lote superaría su cantidad inicial.",
+            ex.Message);
+        Assert.Equal(5, await e.Disponible(10));
+        Assert.Equal(EstadoVenta.Completada, Assert.Single(e.Ventas.Cabeceras).Estado);
+        Assert.Equal(0, e.Unidad.Confirmadas);
+        Assert.Equal(1, e.Unidad.Revertidas);
+    }
 }

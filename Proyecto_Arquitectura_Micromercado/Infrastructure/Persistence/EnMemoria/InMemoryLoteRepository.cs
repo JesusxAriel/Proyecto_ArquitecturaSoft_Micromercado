@@ -5,20 +5,21 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.EnMemori
 
 public sealed class InMemoryLoteRepository : ILoteRepository
 {
-    private sealed class LoteAlmacenado(int idProducto, LoteDisponible lote)
+    private sealed class LoteAlmacenado(int idProducto, LoteDisponible lote, int? cantidadInicial)
     {
         public int IdProducto { get; } = idProducto;
         public int IdLote { get; } = lote.IdLote;
         public int CantidadDisponible { get; set; } = lote.CantidadDisponible;
+        public int? CantidadInicial { get; } = cantidadInicial;
         public DateOnly? FechaVencimiento { get; } = lote.FechaVencimiento;
     }
 
     private readonly List<LoteAlmacenado> lotes = [];
 
-    public void Agregar(int idProducto, LoteDisponible lote)
+    public void Agregar(int idProducto, LoteDisponible lote, int? cantidadInicial = null)
     {
         ArgumentNullException.ThrowIfNull(lote);
-        lotes.Add(new LoteAlmacenado(idProducto, lote));
+        lotes.Add(new LoteAlmacenado(idProducto, lote, cantidadInicial));
     }
 
     public Task<IReadOnlyList<LoteDisponible>> ObtenerVigentesParaDescuentoAsync(
@@ -51,10 +52,17 @@ public sealed class InMemoryLoteRepository : ILoteRepository
     {
         var lote = lotes.FirstOrDefault(l => l.IdLote == idLote);
 
-        if (lote is not null)
+        if (lote is null)
         {
-            lote.CantidadDisponible += cantidad;
+            return Task.CompletedTask;
         }
+
+        if (lote.CantidadInicial is int inicial && lote.CantidadDisponible + cantidad > inicial)
+        {
+            throw new RestauracionExcedeCantidadInicialException();
+        }
+
+        lote.CantidadDisponible += cantidad;
 
         return Task.CompletedTask;
     }

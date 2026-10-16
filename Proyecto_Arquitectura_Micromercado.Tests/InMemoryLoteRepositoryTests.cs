@@ -65,4 +65,29 @@ public class InMemoryLoteRepositoryTests
 
         Assert.Equal(10, Assert.Single(vigentes).IdLote);
     }
+
+    [Fact]
+    public async Task Restaurar_que_supera_la_cantidad_inicial_lanza_y_no_cambia_el_lote()
+    {
+        var repositorio = new InMemoryLoteRepository();
+        repositorio.Agregar(1, new LoteDisponible(10, 5, null), cantidadInicial: 6);
+
+        await Assert.ThrowsAsync<RestauracionExcedeCantidadInicialException>(
+            () => repositorio.RestaurarAsync(10, 2));
+
+        var vigentes = await repositorio.ObtenerVigentesParaDescuentoAsync(1);
+        Assert.Equal(5, Assert.Single(vigentes).CantidadDisponible);
+    }
+
+    [Fact]
+    public async Task Restaurar_hasta_la_cantidad_inicial_es_valido()
+    {
+        var repositorio = new InMemoryLoteRepository();
+        repositorio.Agregar(1, new LoteDisponible(10, 5, null), cantidadInicial: 7);
+
+        await repositorio.RestaurarAsync(10, 2);
+
+        var vigentes = await repositorio.ObtenerVigentesParaDescuentoAsync(1);
+        Assert.Equal(7, Assert.Single(vigentes).CantidadDisponible);
+    }
 }
