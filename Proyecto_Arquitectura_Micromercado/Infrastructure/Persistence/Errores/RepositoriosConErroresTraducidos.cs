@@ -177,6 +177,14 @@ internal sealed class LoteRepositoryConErroresTraducidos(ILoteRepository interno
 
     public Task RestaurarAsync(int idLote, int cantidad, CancellationToken cancellationToken = default) =>
         ErroresDePersistencia.TraducirAsync(() => interno.RestaurarAsync(idLote, cantidad, cancellationToken));
+
+    public Task<IReadOnlyList<LoteDisponible>> ObtenerVencidosConStockAsync(
+        DateOnly hoy,
+        CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(() => interno.ObtenerVencidosConStockAsync(hoy, cancellationToken));
+
+    public Task DesactivarAsync(int idLote, int idUsuario, CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(() => interno.DesactivarAsync(idLote, idUsuario, cancellationToken));
 }
 
 internal sealed class VentaRepositoryConErroresTraducidos(IVentaRepository interno)

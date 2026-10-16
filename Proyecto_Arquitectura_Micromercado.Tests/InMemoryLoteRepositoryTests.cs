@@ -90,4 +90,35 @@ public class InMemoryLoteRepositoryTests
         var vigentes = await repositorio.ObtenerVigentesParaDescuentoAsync(1);
         Assert.Equal(7, Assert.Single(vigentes).CantidadDisponible);
     }
+
+    [Fact]
+    public async Task ObtenerVencidosConStock_devuelve_solo_los_activos_vencidos_con_cantidad()
+    {
+        var hoy = new DateOnly(2026, 10, 15);
+        var repositorio = new InMemoryLoteRepository();
+        repositorio.Agregar(1, new LoteDisponible(10, 5, hoy.AddDays(-1)));
+        repositorio.Agregar(1, new LoteDisponible(11, 0, hoy.AddDays(-5)));
+        repositorio.Agregar(1, new LoteDisponible(12, 8, hoy));
+        repositorio.Agregar(1, new LoteDisponible(13, 8, hoy.AddDays(3)));
+        repositorio.Agregar(2, new LoteDisponible(14, 6, null));
+        repositorio.Agregar(2, new LoteDisponible(15, 4, hoy.AddDays(-30)));
+
+        var vencidos = await repositorio.ObtenerVencidosConStockAsync(hoy);
+
+        Assert.Equal([10, 15], vencidos.Select(l => l.IdLote).ToArray());
+    }
+
+    [Fact]
+    public async Task Desactivar_marca_el_lote_inactivo_registra_el_usuario_y_deja_de_ser_vigente()
+    {
+        var repositorio = new InMemoryLoteRepository();
+        repositorio.Agregar(1, new LoteDisponible(10, 5, new DateOnly(2026, 10, 1)));
+
+        await repositorio.DesactivarAsync(10, 4);
+
+        Assert.False(repositorio.EstaActivo(10));
+        Assert.Equal(4, repositorio.IdUsuarioActualizacionDe(10));
+        Assert.Empty(await repositorio.ObtenerVigentesParaDescuentoAsync(1));
+        Assert.Empty(await repositorio.ObtenerVencidosConStockAsync(new DateOnly(2026, 10, 15)));
+    }
 }

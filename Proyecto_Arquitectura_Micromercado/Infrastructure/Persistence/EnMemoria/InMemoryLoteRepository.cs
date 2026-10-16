@@ -11,6 +11,8 @@ public sealed class InMemoryLoteRepository : ILoteRepository
         public int IdLote { get; } = lote.IdLote;
         public int CantidadDisponible { get; set; } = lote.CantidadDisponible;
         public int? CantidadInicial { get; } = cantidadInicial;
+        public bool Activo { get; set; } = true;
+        public int? IdUsuarioActualizacion { get; set; }
         public DateOnly? FechaVencimiento { get; } = lote.FechaVencimiento;
     }
 
@@ -27,7 +29,7 @@ public sealed class InMemoryLoteRepository : ILoteRepository
         CancellationToken cancellationToken = default)
     {
         IReadOnlyList<LoteDisponible> resultado = lotes
-            .Where(l => l.IdProducto == idProducto && l.CantidadDisponible > 0)
+            .Where(l => l.IdProducto == idProducto && l.Activo && l.CantidadDisponible > 0)
             .Select(l => new LoteDisponible(l.IdLote, l.CantidadDisponible, l.FechaVencimiento))
             .ToList();
 
@@ -66,4 +68,34 @@ public sealed class InMemoryLoteRepository : ILoteRepository
 
         return Task.CompletedTask;
     }
+
+    public Task<IReadOnlyList<LoteDisponible>> ObtenerVencidosConStockAsync(
+        DateOnly hoy,
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<LoteDisponible> resultado = lotes
+            .Where(l => l.Activo && l.CantidadDisponible > 0 && l.FechaVencimiento is DateOnly vence && vence < hoy)
+            .OrderBy(l => l.IdLote)
+            .Select(l => new LoteDisponible(l.IdLote, l.CantidadDisponible, l.FechaVencimiento))
+            .ToList();
+
+        return Task.FromResult(resultado);
+    }
+
+    public Task DesactivarAsync(int idLote, int idUsuario, CancellationToken cancellationToken = default)
+    {
+        var lote = lotes.FirstOrDefault(l => l.IdLote == idLote && l.Activo);
+
+        if (lote is not null)
+        {
+            lote.Activo = false;
+            lote.IdUsuarioActualizacion = idUsuario;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public bool EstaActivo(int idLote) => lotes.Single(l => l.IdLote == idLote).Activo;
+
+    public int? IdUsuarioActualizacionDe(int idLote) => lotes.Single(l => l.IdLote == idLote).IdUsuarioActualizacion;
 }
