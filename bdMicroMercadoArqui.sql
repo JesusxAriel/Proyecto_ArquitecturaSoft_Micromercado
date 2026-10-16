@@ -318,21 +318,13 @@ SELECT
     p.idProveedor,
     pr.nombreEmpresa AS nombreProveedor,
     p.estaActivo,
-    CAST(COALESCE(SUM(l.cantidadDisponible), 0) AS SIGNED) AS stockCalculado,
-    (COALESCE(SUM(l.cantidadDisponible), 0) <= p.stockMinimo) AS bajoStockMinimo
+    p.stockActual AS stockCalculado,
+    (p.stockActual <= p.stockMinimo) AS bajoStockMinimo
 FROM `PRODUCTO` p
 INNER JOIN `EMPAQUE` e     ON p.idEmpaque = e.id
 INNER JOIN `CATEGORIAS` c   ON p.idCategoria = c.id
 INNER JOIN `PROVEEDOR` pr  ON p.idProveedor = pr.id
-LEFT JOIN `LOTE` l
-       ON p.id = l.idProducto
-      AND l.estaActivo = 1
-      AND (l.fechaVencimiento IS NULL OR l.fechaVencimiento >= CURRENT_DATE())
-WHERE p.estaActivo = 1
-GROUP BY
-    p.id, p.nombre, p.idEmpaque, e.nombre, p.precioVenta, p.precioCosto,
-    p.stockMinimo, p.idCategoria, c.nombre, p.idProveedor, pr.nombreEmpresa,
-    p.estaActivo;
+WHERE p.estaActivo = 1;
 
 CREATE OR REPLACE VIEW `vw_resumen_ventas` AS
 SELECT
