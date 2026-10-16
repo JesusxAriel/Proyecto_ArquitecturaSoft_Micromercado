@@ -16,7 +16,7 @@ public class StockActualMySqlTests
     private static readonly string? Conexion =
         Environment.GetEnvironmentVariable("MICROMERCADO_PRUEBAS_MYSQL");
 
-    private sealed record Pila(IFachadaVenta Venta, IFachadaAnulacion Anulacion);
+    private sealed record Pila(IFachadaVenta Venta, IFachadaAnulacion Anulacion, IFachadaActualizacionStockProducto Stock);
 
     private static Pila CrearPila()
     {
@@ -34,7 +34,8 @@ public class StockActualMySqlTests
 
         return new Pila(
             new FachadaVenta(unidad, ventas, productos, stock, usuario, TimeProvider.System),
-            new FachadaAnulacion(unidad, ventas, stock, usuario));
+            new FachadaAnulacion(unidad, ventas, stock, usuario),
+            stock);
     }
 
     private static async Task<T> Escalar<T>(string sql)
@@ -43,6 +44,14 @@ public class StockActualMySqlTests
         await conexion.OpenAsync();
         await using var comando = new MySqlCommand(sql, conexion);
         return (T)Convert.ChangeType(await comando.ExecuteScalarAsync() ?? 0, typeof(T));
+    }
+
+    private static async Task Ejecutar(string sql)
+    {
+        await using var conexion = new MySqlConnection(Conexion);
+        await conexion.OpenAsync();
+        await using var comando = new MySqlCommand(sql, conexion);
+        await comando.ExecuteNonQueryAsync();
     }
 
     private static Task<int> StockDe(int idProducto) =>
@@ -115,6 +124,40 @@ public class StockActualMySqlTests
         }
 
         Assert.Equal(stockInicial, await StockDe(1));
+        Assert.Equal(0, await ProductosDesincronizados());
+    }
+
+    [Fact]
+    public async Task Dar_de_baja_lotes_vencidos_deja_stockActual_igual_a_la_suma_de_lotes_activos()
+    {
+        if (string.IsNullOrWhiteSpace(Conexion)) return;
+
+        var pila = CrearPila();
+        var idLote = await Escalar<int>(
+            "SELECT id FROM LOTE WHERE estaActivo = 1 AND cantidadDisponible > 0 AND fechaVencimiento IS NOT NULL ORDER BY id LIMIT 1");
+        var idProducto = await Escalar<int>($"SELECT idProducto FROM LOTE WHERE id = {idLote}");
+        var cantidadDelLote = await Escalar<int>($"SELECT cantidadDisponible FROM LOTE WHERE id = {idLote}");
+        var fechaOriginal = await Escalar<string>($"SELECT DATE_FORMAT(fechaVencimiento, '%Y-%m-%d') FROM LOTE WHERE id = {idLote}");
+        var stockAntes = await StockDe(idProducto);
+
+        await Ejecutar($"UPDATE LOTE SET fechaVencimiento = DATE_SUB(CURDATE(), INTERVAL 2 DAY) WHERE id = {idLote}");
+        try
+        {
+            var resultado = await pila.Stock.DarDeBajaLotesVencidosAsync();
+
+            Assert.True(resultado.Lotes >= 1);
+            Assert.True(resultado.Unidades >= cantidadDelLote);
+            Assert.Equal(0, await Escalar<int>($"SELECT estaActivo FROM LOTE WHERE id = {idLote}"));
+            Assert.Equal(1, await Escalar<int>($"SELECT idUsuarioActualizacion FROM LOTE WHERE id = {idLote}"));
+            Assert.Equal(stockAntes - cantidadDelLote, await StockDe(idProducto));
+            Assert.Equal(0, await ProductosDesincronizados());
+        }
+        finally
+        {
+            await Ejecutar($"UPDATE LOTE SET estaActivo = 1, fechaVencimiento = '{fechaOriginal}' WHERE id = {idLote}");
+        }
+
+        Assert.Equal(stockAntes, await StockDe(idProducto));
         Assert.Equal(0, await ProductosDesincronizados());
     }
 }
