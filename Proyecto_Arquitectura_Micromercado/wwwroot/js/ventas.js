@@ -726,7 +726,9 @@
         boton.textContent = texto;
         boton.dataset.accion = accion;
         boton.dataset.idVenta = String(venta.id);
-        boton.setAttribute("aria-label", `${texto} de la venta ${venta.nroComprobante}`);
+        boton.setAttribute("aria-label", accion === "anular"
+            ? `Anular la venta ${venta.nroComprobante}`
+            : `Ver detalle de la venta ${venta.nroComprobante}`);
         return boton;
     }
 
