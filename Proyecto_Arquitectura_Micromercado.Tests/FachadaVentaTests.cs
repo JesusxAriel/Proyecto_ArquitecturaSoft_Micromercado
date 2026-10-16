@@ -20,7 +20,7 @@ public class FachadaVentaTests
         public Escenario()
         {
             var reloj = new RelojFijo(Ahora);
-            var stock = new FachadaActualizacionStockProducto(Lotes, reloj);
+            var stock = new FachadaActualizacionStockProducto(Lotes, reloj, new UnidadDeTrabajoEspia(), new UsuarioActualEnMemoria());
             var precios = new PrecioVigenteDoble(new Dictionary<int, decimal> { [1] = 10m, [2] = 5m });
             Fachada = new FachadaVenta(
                 Unidad, Ventas, precios, stock, new UsuarioActualEnMemoria(id: 7), reloj);

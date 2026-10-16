@@ -30,7 +30,7 @@ public class StockActualMySqlTests
         var ventas = new MySqlVentaRepository(unidad);
         var lotes = new MySqlLoteRepository(unidad);
         var productos = new MySqlProductRepository(unidad, new MySqlPriceHistoryRepository(unidad), usuario);
-        var stock = new FachadaActualizacionStockProducto(lotes, TimeProvider.System);
+        var stock = new FachadaActualizacionStockProducto(lotes, TimeProvider.System, unidad, usuario);
 
         return new Pila(
             new FachadaVenta(unidad, ventas, productos, stock, usuario, TimeProvider.System),
