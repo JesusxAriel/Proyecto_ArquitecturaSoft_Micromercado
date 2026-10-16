@@ -118,6 +118,7 @@ CREATE TABLE `PRODUCTO` (
   `precioVenta` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `precioCosto` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `stockMinimo` INT NOT NULL DEFAULT 10,
+  `stockActual` INT NOT NULL DEFAULT 0,
 
   `idCategoria` INT NOT NULL,
   `idProveedor` INT NOT NULL,
@@ -143,6 +144,7 @@ CREATE TABLE `PRODUCTO` (
   CONSTRAINT `CK_Producto_estaActivo` CHECK (`estaActivo` IN (0,1)),
   CONSTRAINT `CK_Producto_precios` CHECK (`precioVenta` >= 0 AND `precioCosto` >= 0),
   CONSTRAINT `CK_Producto_stockMinimo` CHECK (`stockMinimo` >= 0),
+  CONSTRAINT `CK_Producto_stockActual` CHECK (`stockActual` >= 0),
   CONSTRAINT `FK_Producto_Empaque` FOREIGN KEY (`idEmpaque`)
     REFERENCES `EMPAQUE` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `FK_Producto_Categoria` FOREIGN KEY (`idCategoria`)
@@ -604,6 +606,45 @@ BEGIN
     END IF;
 END$$
 
+CREATE TRIGGER `trg_lote_ai`
+AFTER INSERT ON `LOTE`
+FOR EACH ROW
+BEGIN
+    IF NEW.estaActivo = 1 AND NEW.cantidadDisponible <> 0 THEN
+        UPDATE `PRODUCTO`
+        SET `stockActual` = `stockActual` + NEW.cantidadDisponible,
+            `fechaActualizacion` = `fechaActualizacion`
+        WHERE `id` = NEW.idProducto;
+    END IF;
+END$$
+
+CREATE TRIGGER `trg_lote_au`
+AFTER UPDATE ON `LOTE`
+FOR EACH ROW
+BEGIN
+    DECLARE v_delta INT;
+    SET v_delta = IF(NEW.estaActivo = 1, NEW.cantidadDisponible, 0)
+                - IF(OLD.estaActivo = 1, OLD.cantidadDisponible, 0);
+    IF v_delta <> 0 THEN
+        UPDATE `PRODUCTO`
+        SET `stockActual` = `stockActual` + v_delta,
+            `fechaActualizacion` = `fechaActualizacion`
+        WHERE `id` = NEW.idProducto;
+    END IF;
+END$$
+
+CREATE TRIGGER `trg_lote_ad`
+AFTER DELETE ON `LOTE`
+FOR EACH ROW
+BEGIN
+    IF OLD.estaActivo = 1 AND OLD.cantidadDisponible <> 0 THEN
+        UPDATE `PRODUCTO`
+        SET `stockActual` = `stockActual` - OLD.cantidadDisponible,
+            `fechaActualizacion` = `fechaActualizacion`
+        WHERE `id` = OLD.idProducto;
+    END IF;
+END$$
+
 CREATE TRIGGER `trg_cliente_bu`
 BEFORE UPDATE ON `CLIENTE`
 FOR EACH ROW
@@ -786,6 +827,12 @@ INSERT INTO `LOTE` (`id`, `idProducto`, `codigoLote`, `cantidadInicial`, `cantid
 (20, 19, 'LOT-COL-A',   50,  50,  DATE_ADD(CURDATE(), INTERVAL 450 DAY), 1),
 (21, 20, 'LOT-TOS-A',   40,  40,  DATE_ADD(CURDATE(), INTERVAL 25 DAY),  1),
 (22, 21, 'LOT-ROY-A',   65,  65,  DATE_ADD(CURDATE(), INTERVAL 250 DAY), 1);
+
+UPDATE `PRODUCTO` p
+SET p.`stockActual` = (SELECT COALESCE(SUM(l.`cantidadDisponible`), 0)
+                       FROM `LOTE` l
+                       WHERE l.`idProducto` = p.`id` AND l.`estaActivo` = 1),
+    p.`fechaActualizacion` = p.`fechaActualizacion`;
 
 INSERT INTO `HISTORIAL_PRECIO`
 (`idProducto`, `precioVentaAnterior`, `precioVentaNuevo`, `precioCostoAnterior`, `precioCostoNuevo`, `motivoCambio`, `idUsuario`, `fechaCambio`) VALUES
