@@ -210,7 +210,7 @@ public sealed class MySqlProductRepository(
             FROM PRODUCTO
             WHERE id = @idProducto
               AND estaActivo = 1
-            FOR SHARE;
+            FOR UPDATE;
             """;
 
         await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
