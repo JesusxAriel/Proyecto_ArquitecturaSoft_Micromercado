@@ -863,7 +863,8 @@ UPDATE `PRODUCTO` p
 SET p.`stockActual` = (SELECT COALESCE(SUM(l.`cantidadDisponible`), 0)
                        FROM `LOTE` l
                        WHERE l.`idProducto` = p.`id` AND l.`estaActivo` = 1),
-    p.`fechaActualizacion` = p.`fechaActualizacion`;
+    p.`fechaActualizacion` = p.`fechaActualizacion`
+WHERE p.`id` > 0;
 
 INSERT INTO `HISTORIAL_PRECIO`
 (`idProducto`, `precioVentaAnterior`, `precioVentaNuevo`, `precioCostoAnterior`, `precioCostoNuevo`, `motivoCambio`, `idUsuario`, `fechaCambio`) VALUES
