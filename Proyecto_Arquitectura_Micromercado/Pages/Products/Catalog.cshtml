@@ -10,6 +10,24 @@
     <span class="badge bg-secondary">Solo lectura</span>
 </div>
 
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+@if (User.IsInRole(Proyecto_Arquitectura_Micromercado.Application.Security.Roles.Administrador))
+{
+    <form method="post" asp-page-handler="DarDeBajaLotesVencidos" class="mb-3"
+          onsubmit="return confirm('¿Desea dar de baja los lotes vencidos que aún tienen stock? Dejarán de contar en el stock de los productos.');">
+        <button type="submit" class="btn btn-outline-danger btn-sm">Dar de baja lotes vencidos</button>
+    </form>
+}
+
 <partial name="_SearchBox" model="@(new SearchBoxModel(
     "Buscar productos",
     "Buscar por nombre o presentación...",

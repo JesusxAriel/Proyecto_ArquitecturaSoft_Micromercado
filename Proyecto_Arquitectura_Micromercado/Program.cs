@@ -105,6 +105,7 @@ builder.Services.AddScoped<ILoteRepository>(sp =>
 
 builder.Services.AddScoped<IConPrecioVigente>(sp => sp.GetRequiredService<IProductRepository>());
 builder.Services.AddScoped<IFachadaActualizacionStockProducto, FachadaActualizacionStockProducto>();
+builder.Services.AddScoped<IBajaDeLotesService, BajaDeLotesService>();
 builder.Services.AddScoped<IFachadaVenta, FachadaVenta>();
 builder.Services.AddScoped<IFachadaAnulacion, FachadaAnulacion>();
 
