@@ -61,12 +61,13 @@ public sealed class MySqlLoteRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) : 
         const string sql = @"
             UPDATE LOTE
             SET cantidadDisponible = cantidadDisponible + @cantidad
-            WHERE id = @idLote;";
+            WHERE id = @idLote AND cantidadDisponible + @cantidad <= cantidadInicial;";
 
         await using var cmd = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         cmd.Parameters.AddWithValue("@cantidad", cantidad);
         cmd.Parameters.AddWithValue("@idLote", idLote);
 
-        await cmd.ExecuteNonQueryAsync(cancellationToken);
+        var filas = await cmd.ExecuteNonQueryAsync(cancellationToken);
+        if (filas == 0) throw new RestauracionExcedeCantidadInicialException();
     }
 }
