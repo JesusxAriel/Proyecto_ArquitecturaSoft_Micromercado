@@ -770,6 +770,26 @@ BEGIN
       AND l.fechaVencimiento IS NOT NULL
       AND l.fechaVencimiento <= DATE_ADD(CURRENT_DATE(), INTERVAL v_dias DAY)
     ORDER BY l.fechaVencimiento, p.nombre;
+
+    SELECT
+        l.id AS idLote,
+        p.nombre AS producto,
+        l.codigoLote,
+        l.cantidadInicial,
+        l.cantidadDisponible,
+        COALESCE(v.vendidoVigente, 0) AS vendidoVigente,
+        l.cantidadDisponible + COALESCE(v.vendidoVigente, 0) AS disponibleMasVendido,
+        l.cantidadInicial - (l.cantidadDisponible + COALESCE(v.vendidoVigente, 0)) AS diferencia
+    FROM `LOTE` l
+    INNER JOIN `PRODUCTO` p ON p.id = l.idProducto
+    LEFT JOIN (
+        SELECT d.idLote, SUM(d.cantidad) AS vendidoVigente
+        FROM `DETALLE_VENTA` d
+        INNER JOIN `VENTA` vt ON vt.id = d.idVenta AND vt.estado = 'COMPLETADA'
+        GROUP BY d.idLote
+    ) v ON v.idLote = l.id
+    WHERE l.cantidadInicial <> l.cantidadDisponible + COALESCE(v.vendidoVigente, 0)
+    ORDER BY p.nombre, l.id;
 END$$
 
 DELIMITER ;
