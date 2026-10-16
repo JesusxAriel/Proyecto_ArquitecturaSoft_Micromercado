@@ -46,10 +46,28 @@ public sealed class MySqlProductRepository(
             "nombre LIKE @search OR empaquePresentacion LIKE @search OR nombreCategoria LIKE @search OR nombreProveedor LIKE @search",
             cancellationToken);
 
-    public Task<PagedResult<ProductListItem>> GetPagedForSalesAsync(
-        int page, int pageSize, string? search, CancellationToken cancellationToken = default) =>
-        GetPagedCoreAsync(page, pageSize, search,
-            "nombre LIKE @search OR empaquePresentacion LIKE @search", cancellationToken);
+    public async Task<PagedResult<ProductListItem>> GetPagedForSalesAsync(
+        int page, int pageSize, string? search, CancellationToken cancellationToken = default)
+    {
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+
+        return await PagedSqlRunner.RunAsync(
+            alquiler.Conexion,
+            alquiler.Transaccion,
+            columns: """
+                p.id, p.nombre, p.idEmpaque, e.nombre AS empaquePresentacion,
+                p.precioVenta, p.stockMinimo, p.stockActual AS stockCalculado
+                """,
+            from: "PRODUCTO p INNER JOIN EMPAQUE e ON e.id = p.idEmpaque",
+            baseWhere: "p.estaActivo = 1",
+            searchCondition: "p.nombre LIKE @search OR e.nombre LIKE @search",
+            orderBy: "p.nombre, p.id",
+            search,
+            page,
+            pageSize,
+            MapSalesItem,
+            cancellationToken);
+    }
 
     private async Task<PagedResult<ProductListItem>> GetPagedCoreAsync(
         int page,
@@ -78,6 +96,17 @@ public sealed class MySqlProductRepository(
             MapListItem,
             cancellationToken);
     }
+
+    private static ProductListItem MapSalesItem(System.Data.Common.DbDataReader reader) => new()
+    {
+        Id = reader.GetInt32(reader.GetOrdinal("id")),
+        Nombre = reader.GetString(reader.GetOrdinal("nombre")),
+        IdEmpaque = reader.GetInt32(reader.GetOrdinal("idEmpaque")),
+        EmpaquePresentacion = reader.GetString(reader.GetOrdinal("empaquePresentacion")),
+        PrecioVenta = reader.GetDecimal(reader.GetOrdinal("precioVenta")),
+        StockMinimo = reader.GetInt32(reader.GetOrdinal("stockMinimo")),
+        StockCalculado = reader.GetInt32(reader.GetOrdinal("stockCalculado"))
+    };
 
     private static ProductListItem MapListItem(System.Data.Common.DbDataReader reader) => new()
     {
