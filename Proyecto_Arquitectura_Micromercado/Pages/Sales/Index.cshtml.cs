@@ -24,6 +24,7 @@ public sealed class IndexModel(
     private static readonly TimeSpan TiempoMaximoBusqueda = TimeSpan.FromSeconds(8);
     private static readonly TimeSpan TiempoMaximoConsulta = TimeSpan.FromSeconds(8);
     private static readonly TimeSpan TiempoMaximoEscritura = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan TiempoMaximoCreacionDeCliente = TimeSpan.FromSeconds(15);
 
     public SaleInputModel Input { get; } = new();
     public DateTime FechaActual { get; } = DateTime.Now;
@@ -70,7 +71,7 @@ public sealed class IndexModel(
             new { exito = false, mensaje = "No se pudo registrar la venta. Revise el stock disponible y el efectivo pagado, o intente nuevamente." });
     }
 
-    public async Task<JsonResult> OnPostCrearClienteAsync(
+    public async Task<IActionResult> OnPostCrearClienteAsync(
         [FromBody] ClienteCreacionDto? cliente, CancellationToken cancellationToken)
     {
         if (cliente is null || !ModelState.IsValid)
@@ -92,32 +93,32 @@ public sealed class IndexModel(
             };
         }
 
-        try
-        {
-            var id = await clienteCreacionService.CrearAsync(cliente, cancellationToken);
-            return new JsonResult(new
+        return await EjecutarSinCancelacionAsync(
+            cancellationToken,
+            TiempoMaximoCreacionDeCliente,
+            async limite =>
             {
-                exito = true,
-                id,
-                nitCi = cliente.NitCi.Trim(),
-                razonSocial = cliente.RazonSocial.Trim()
-            });
-        }
-        catch (Exception ex) when (ex is ClienteDuplicadoException or ValidationException)
-        {
-            return new JsonResult(new { exito = false, mensaje = ex.Message })
-            {
-                StatusCode = StatusCodes.Status400BadRequest
-            };
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "No se pudo registrar el cliente desde ventas.");
-            return new JsonResult(new { exito = false, mensaje = "No se pudo registrar el cliente. Intente nuevamente." })
-            {
-                StatusCode = StatusCodes.Status503ServiceUnavailable
-            };
-        }
+                try
+                {
+                    var id = await clienteCreacionService.CrearAsync(cliente, limite);
+                    return new JsonResult(new
+                    {
+                        exito = true,
+                        id,
+                        nitCi = cliente.NitCi.Trim(),
+                        razonSocial = cliente.RazonSocial.Trim()
+                    });
+                }
+                catch (Exception ex) when (ex is ClienteDuplicadoException or ValidationException)
+                {
+                    return new JsonResult(new { exito = false, mensaje = ex.Message })
+                    {
+                        StatusCode = StatusCodes.Status400BadRequest
+                    };
+                }
+            },
+            "el registro del cliente",
+            new { exito = false, mensaje = "No se pudo registrar el cliente. Intente nuevamente." });
     }
 
     public async Task<IActionResult> OnPostAnularVentaAsync(
