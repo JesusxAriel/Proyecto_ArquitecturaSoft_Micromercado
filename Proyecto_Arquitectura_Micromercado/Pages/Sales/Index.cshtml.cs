@@ -38,7 +38,7 @@ public sealed class IndexModel(
     {
         if (venta is null || !ModelState.IsValid || venta.IdCliente is null ||
             venta.EfectivoPagado is null || venta.Lineas is null ||
-            venta.Lineas.Any(linea => linea is null || linea.IdProducto is null || linea.Cantidad is null))
+            venta.Lineas.Any(linea => linea is null || linea.IdProducto is null || linea.Cantidad is null || linea.PrecioEsperado is null))
         {
             return new JsonResult(new { exito = false, mensaje = "Revise el cliente, el efectivo y las cantidades de la venta. Todos son obligatorios y deben ser válidos." })
             {
@@ -55,9 +55,23 @@ public sealed class IndexModel(
                 {
                     var resultado = await fachadaVenta.RegistrarVentaAsync(new NuevaVentaDto(
                         venta.IdCliente!.Value, venta.EfectivoPagado!.Value,
-                        venta.Lineas!.Select(linea => new LineaVentaDto(linea.IdProducto!.Value, linea.Cantidad!.Value)).ToArray()),
+                        venta.Lineas!.Select(linea => new LineaVentaDto(linea.IdProducto!.Value, linea.Cantidad!.Value, linea.PrecioEsperado!.Value)).ToArray()),
                         limite);
                     return new JsonResult(new { exito = true, idVenta = resultado.IdVenta, total = resultado.Total });
+                }
+                catch (PrecioCambiadoException ex)
+                {
+                    return new JsonResult(new
+                    {
+                        exito = false,
+                        mensaje = ex.Message,
+                        codigo = "precio-cambiado",
+                        idProducto = ex.IdProducto,
+                        precioVigente = ex.PrecioVigente
+                    })
+                    {
+                        StatusCode = StatusCodes.Status400BadRequest
+                    };
                 }
                 catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or ValidationException)
                 {
@@ -190,6 +204,9 @@ public sealed class IndexModel(
 
         [Required, Range(1, int.MaxValue)]
         public int? Cantidad { get; init; }
+
+        [Required, Range(typeof(decimal), "0", "79228162514264337593543950335")]
+        public decimal? PrecioEsperado { get; init; }
     }
 
     public Task<IActionResult> OnGetHistorialAsync(

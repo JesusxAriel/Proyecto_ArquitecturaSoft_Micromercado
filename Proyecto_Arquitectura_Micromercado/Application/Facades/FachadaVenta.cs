@@ -1,3 +1,4 @@
+using System.Globalization;
 using Proyecto_Arquitectura_Micromercado.Application.Common;
 using Proyecto_Arquitectura_Micromercado.Application.Customers;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
@@ -61,6 +62,11 @@ public sealed class FachadaVenta(
                 var precio = await precios.ObtenerPrecioVigenteAsync(linea.IdProducto, cancellationToken)
                     ?? throw new InvalidOperationException("Producto inexistente o inactivo.");
 
+                if (linea.PrecioEsperado is { } esperado && esperado != precio)
+                {
+                    throw await PrecioCambiadoAsync(linea.IdProducto, precio, cancellationToken);
+                }
+
                 var consumos = await DescontarAsync(linea, cancellationToken);
                 foreach (var consumo in consumos)
                 {
@@ -87,6 +93,21 @@ public sealed class FachadaVenta(
             await unidad.RevertirAsync(CancellationToken.None);
             throw;
         }
+    }
+
+    private async Task<PrecioCambiadoException> PrecioCambiadoAsync(
+        int idProducto,
+        decimal precioVigente,
+        CancellationToken cancellationToken)
+    {
+        var descripcion = await precios.ObtenerDescripcionAsync(idProducto, cancellationToken);
+        var producto = descripcion?.ToString() ?? $"el producto {idProducto}";
+        var importe = precioVigente.ToString("0.00", CultureInfo.GetCultureInfo("es-BO"));
+
+        return new PrecioCambiadoException(
+            idProducto,
+            precioVigente,
+            $"El precio de {producto} cambió a Bs {importe} desde que se agregó al detalle. Vuelva a agregarlo para continuar con el precio vigente.");
     }
 
     private async Task<IReadOnlyList<ConsumoDeLote>> DescontarAsync(

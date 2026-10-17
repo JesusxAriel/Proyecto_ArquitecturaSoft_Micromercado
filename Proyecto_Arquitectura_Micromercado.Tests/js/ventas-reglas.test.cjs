@@ -234,3 +234,11 @@ test("urlDeLogin lleva a /Login con la página actual como retorno y el aviso de
         reglas.urlDeLogin({ pathname: "/Sales", search: "" }),
         "/Login?ReturnUrl=%2FSales&SesionVencida=true");
 });
+
+test("quitarProductoDelDetalle elimina todas las filas del producto y devuelve cuántas quitó", () => {
+    const detalle = [{ idProducto: 1 }, { idProducto: 2 }, { idProducto: 1 }];
+    assert.equal(reglas.quitarProductoDelDetalle(detalle, 1), 2);
+    assert.deepEqual(detalle, [{ idProducto: 2 }]);
+    assert.equal(reglas.quitarProductoDelDetalle(detalle, 9), 0);
+    assert.equal(detalle.length, 1);
+});

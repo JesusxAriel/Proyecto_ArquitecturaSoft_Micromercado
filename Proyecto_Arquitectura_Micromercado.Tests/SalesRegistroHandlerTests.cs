@@ -22,7 +22,42 @@ public class SalesRegistroHandlerTests
         Assert.Equal(19.75m, json.GetProperty("total").GetDecimal());
         Assert.Equal(4, fachada.Recibido!.IdCliente);
         Assert.Equal(25m, fachada.Recibido.EfectivoPagado);
-        Assert.Equal(new LineaVentaDto(8, 2), Assert.Single(fachada.Recibido.Lineas));
+        Assert.Equal(new LineaVentaDto(8, 2, 9.5m), Assert.Single(fachada.Recibido.Lineas));
+    }
+
+    [Fact]
+    public async Task Un_cambio_de_precio_devuelve_400_con_el_codigo_el_producto_y_el_precio_vigente()
+    {
+        var fachada = new FachadaPrueba { Error = new PrecioCambiadoException(8, 7m, "El precio cambió.") };
+        var page = CrearPagina(fachada);
+
+        var resultado = Assert.IsType<JsonResult>(await page.OnPostRegistrarVentaAsync(Entrada(), default));
+        var json = JsonSerializer.SerializeToElement(resultado.Value);
+
+        Assert.Equal(400, resultado.StatusCode);
+        Assert.False(json.GetProperty("exito").GetBoolean());
+        Assert.Equal("precio-cambiado", json.GetProperty("codigo").GetString());
+        Assert.Equal(8, json.GetProperty("idProducto").GetInt32());
+        Assert.Equal(7m, json.GetProperty("precioVigente").GetDecimal());
+        Assert.Equal("El precio cambió.", json.GetProperty("mensaje").GetString());
+    }
+
+    [Fact]
+    public async Task Una_linea_sin_precio_esperado_devuelve_400_y_no_invoca_la_fachada()
+    {
+        var fachada = new FachadaPrueba();
+        var page = CrearPagina(fachada);
+        var entrada = new IndexModel.RegistrarVentaInput
+        {
+            IdCliente = 4,
+            EfectivoPagado = 25m,
+            Lineas = [new() { IdProducto = 8, Cantidad = 2 }]
+        };
+
+        var resultado = Assert.IsType<JsonResult>(await page.OnPostRegistrarVentaAsync(entrada, default));
+
+        Assert.Equal(400, resultado.StatusCode);
+        Assert.Null(fachada.Recibido);
     }
 
     [Fact]
@@ -165,7 +200,7 @@ public class SalesRegistroHandlerTests
     {
         IdCliente = 4,
         EfectivoPagado = 25m,
-        Lineas = [new() { IdProducto = 8, Cantidad = 2 }]
+        Lineas = [new() { IdProducto = 8, Cantidad = 2, PrecioEsperado = 9.5m }]
     };
 
     private sealed class FachadaPrueba : IFachadaVenta

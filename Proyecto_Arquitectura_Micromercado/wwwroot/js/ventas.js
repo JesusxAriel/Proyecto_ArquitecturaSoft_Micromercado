@@ -514,7 +514,7 @@
         const payload = {
             idCliente: cliente,
             efectivoPagado: efectivo,
-            lineas: detalleTemporal.map(item => ({ idProducto: item.idProducto, cantidad: item.cantidad }))
+            lineas: detalleTemporal.map(item => ({ idProducto: item.idProducto, cantidad: item.cantidad, precioEsperado: item.precioUnitario }))
         };
         registrandoVenta = true;
         confirmarVenta.disabled = true;
@@ -540,6 +540,11 @@
                 body: JSON.stringify(payload)
             }, () => ventanaComprobante?.close());
             const resultado = await respuesta.json().catch(() => null);
+            if (resultado?.codigo === "precio-cambiado") {
+                VentasReglas.quitarProductoDelDetalle(detalleTemporal, resultado.idProducto);
+                renderizarDetalle();
+                actualizarConfirmacionVenta();
+            }
             if (!respuesta.ok || !resultado?.exito) {
                 throw new Error(resultado?.mensaje || (respuesta.status === 400
                     ? "No se pudo validar la solicitud. Revise los datos o recargue la página si su sesión expiró."

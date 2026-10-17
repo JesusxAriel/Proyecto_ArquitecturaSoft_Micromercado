@@ -185,6 +185,36 @@ public class FachadaVentaTests
     }
 
     [Fact]
+    public async Task Si_el_precio_vigente_difiere_del_esperado_rechaza_con_el_producto_y_el_precio_nuevo_y_revierte()
+    {
+        var e = new Escenario();
+        e.Lotes.Agregar(1, new LoteDisponible(10, 20, null));
+
+        var ex = await Assert.ThrowsAsync<PrecioCambiadoException>(
+            () => e.Fachada.RegistrarVentaAsync(Venta(500m, new LineaVentaDto(1, 2, 9.50m))));
+
+        Assert.Equal(1, ex.IdProducto);
+        Assert.Equal(10m, ex.PrecioVigente);
+        Assert.Equal(
+            "El precio de Leche Entera PIL (Bolsa 1L) cambió a Bs 10,00 desde que se agregó al detalle. Vuelva a agregarlo para continuar con el precio vigente.",
+            ex.Message);
+        Assert.Equal(0, e.Unidad.Confirmadas);
+        Assert.Equal(1, e.Unidad.Revertidas);
+        Assert.Equal(20, await e.Disponible(1, 10));
+    }
+
+    [Fact]
+    public async Task Si_el_precio_esperado_coincide_la_venta_se_registra()
+    {
+        var e = new Escenario();
+        e.Lotes.Agregar(1, new LoteDisponible(10, 20, null));
+
+        var resultado = await e.Fachada.RegistrarVentaAsync(Venta(500m, new LineaVentaDto(1, 2, 10m)));
+
+        Assert.Equal(20m, resultado.Total);
+    }
+
+    [Fact]
     public async Task Efectivo_menor_al_total_lanza_y_revierte()
     {
         var e = new Escenario();

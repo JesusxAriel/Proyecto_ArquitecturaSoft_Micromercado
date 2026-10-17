@@ -140,6 +140,17 @@
         return { item };
     }
 
+    function quitarProductoDelDetalle(detalle, idProducto) {
+        let quitadas = 0;
+        for (let indice = detalle.length - 1; indice >= 0; indice--) {
+            if (detalle[indice].idProducto === idProducto) {
+                detalle.splice(indice, 1);
+                quitadas++;
+            }
+        }
+        return quitadas;
+    }
+
     function puedeConfirmarAnulacion(estado) {
         return Boolean(estado.resumenCargado)
             && !estado.anulando
@@ -198,7 +209,8 @@
         validarCantidadContraStock,
         describirLotes,
         agregarAlDetalle,
-        modificarCantidad
+        modificarCantidad,
+        quitarProductoDelDetalle
     };
 
     if (typeof module !== "undefined" && module.exports) {
