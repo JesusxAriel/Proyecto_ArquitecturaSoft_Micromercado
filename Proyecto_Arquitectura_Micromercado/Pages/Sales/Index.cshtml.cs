@@ -279,13 +279,18 @@ public sealed class IndexModel(
         Response.Headers.CacheControl = "no-store";
         if (cancellationToken.IsCancellationRequested)
         {
-            return new JsonResult(Array.Empty<object>());
+            return new EmptyResult();
         }
 
         using var limite = new CancellationTokenSource(TiempoMaximoBusqueda);
         try
         {
             var clientes = await clienteConsultaService.BuscarAsync(termino, limite.Token);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new EmptyResult();
+            }
+
             return new JsonResult(clientes.Select(cliente => new
             {
                 id = cliente.Id,
@@ -295,7 +300,7 @@ public sealed class IndexModel(
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            return new JsonResult(Array.Empty<object>());
+            return new EmptyResult();
         }
         catch (Exception ex)
         {
@@ -312,13 +317,18 @@ public sealed class IndexModel(
         Response.Headers.CacheControl = "no-store";
         if (cancellationToken.IsCancellationRequested)
         {
-            return new JsonResult(RespuestaDeProductos([], false, null));
+            return new EmptyResult();
         }
 
         using var limite = new CancellationTokenSource(TiempoMaximoBusqueda);
         try
         {
             var resultado = await productService.BuscarParaVentaAsync(termino, limite.Token);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new EmptyResult();
+            }
+
             return new JsonResult(RespuestaDeProductos(
                 resultado.Productos.Select(producto => new
                 {
@@ -333,7 +343,7 @@ public sealed class IndexModel(
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            return new JsonResult(RespuestaDeProductos([], false, null));
+            return new EmptyResult();
         }
         catch (Exception ex)
         {

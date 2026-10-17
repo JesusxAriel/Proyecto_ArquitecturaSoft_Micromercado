@@ -51,11 +51,9 @@ public class SalesBusquedaHandlerTests
         var registro = new RegistroEspia();
         var pagina = CrearPagina(productos: productos, registro: registro);
 
-        var resultado = Assert.IsType<JsonResult>(await pagina.OnGetBuscarProductosAsync("galle", Cancelado()));
-        var json = JsonSerializer.SerializeToElement(resultado.Value);
+        var resultado = await pagina.OnGetBuscarProductosAsync("galle", Cancelado());
 
-        Assert.Null(resultado.StatusCode);
-        Assert.Empty(json.GetProperty("productos").EnumerateArray());
+        Assert.IsType<EmptyResult>(resultado);
         Assert.Equal(0, productos.Llamadas);
         Assert.Empty(registro.Entradas);
     }
@@ -72,11 +70,9 @@ public class SalesBusquedaHandlerTests
         var registro = new RegistroEspia();
         var pagina = CrearPagina(productos: productos, registro: registro);
 
-        var resultado = Assert.IsType<JsonResult>(await pagina.OnGetBuscarProductosAsync("galle", origen.Token));
-        var json = JsonSerializer.SerializeToElement(resultado.Value);
+        var resultado = await pagina.OnGetBuscarProductosAsync("galle", origen.Token);
 
-        Assert.Null(resultado.StatusCode);
-        Assert.Empty(json.GetProperty("productos").EnumerateArray());
+        Assert.IsType<EmptyResult>(resultado);
         Assert.Empty(registro.Entradas);
     }
 
@@ -164,10 +160,9 @@ public class SalesBusquedaHandlerTests
         var registro = new RegistroEspia();
         var pagina = CrearPagina(clientes: clientes, registro: registro);
 
-        var resultado = Assert.IsType<JsonResult>(await pagina.OnGetBuscarClientesAsync("ana", Cancelado()));
+        var resultado = await pagina.OnGetBuscarClientesAsync("ana", Cancelado());
 
-        Assert.Null(resultado.StatusCode);
-        Assert.Empty(JsonSerializer.SerializeToElement(resultado.Value).EnumerateArray());
+        Assert.IsType<EmptyResult>(resultado);
         Assert.Equal(0, clientes.Llamadas);
         Assert.Empty(registro.Entradas);
     }
@@ -180,9 +175,9 @@ public class SalesBusquedaHandlerTests
         var registro = new RegistroEspia();
         var pagina = CrearPagina(clientes: clientes, registro: registro);
 
-        var resultado = Assert.IsType<JsonResult>(await pagina.OnGetBuscarClientesAsync("ana", origen.Token));
+        var resultado = await pagina.OnGetBuscarClientesAsync("ana", origen.Token);
 
-        Assert.Null(resultado.StatusCode);
+        Assert.IsType<EmptyResult>(resultado);
         Assert.Empty(registro.Entradas);
     }
 
@@ -199,6 +194,38 @@ public class SalesBusquedaHandlerTests
         Assert.Equal(503, resultado.StatusCode);
         Assert.Equal("No se pudo buscar clientes. Intente nuevamente.", json.GetProperty("mensaje").GetString());
         Assert.Equal([LogLevel.Warning], registro.Niveles);
+    }
+
+    [Fact]
+    public async Task Si_la_peticion_se_cancela_mientras_responde_el_servicio_no_se_serializa_nada()
+    {
+        var origen = new CancellationTokenSource();
+        var productos = new ProductosPrueba
+        {
+            Antes = () => origen.Cancel(),
+            Resultado = new ResultadoBusquedaParaVenta([new ProductoParaVenta(1, "Galletas", "Paquete", 1m, 1)], false)
+        };
+        var pagina = CrearPagina(productos: productos);
+
+        var resultado = await pagina.OnGetBuscarProductosAsync("galle", origen.Token);
+
+        Assert.IsType<EmptyResult>(resultado);
+    }
+
+    [Fact]
+    public async Task Si_la_peticion_se_cancela_mientras_responde_la_busqueda_de_clientes_no_se_serializa_nada()
+    {
+        var origen = new CancellationTokenSource();
+        var clientes = new ClientesPrueba
+        {
+            Antes = () => origen.Cancel(),
+            Resultado = [new ClienteConsultaDto(5, "123", "Ana Pérez")]
+        };
+        var pagina = CrearPagina(clientes: clientes);
+
+        var resultado = await pagina.OnGetBuscarClientesAsync("ana", origen.Token);
+
+        Assert.IsType<EmptyResult>(resultado);
     }
 
     private static IndexModel CrearPagina(
