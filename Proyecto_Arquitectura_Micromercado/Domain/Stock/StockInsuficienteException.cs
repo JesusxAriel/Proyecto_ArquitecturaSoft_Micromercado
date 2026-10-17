@@ -11,4 +11,9 @@ public class StockInsuficienteException : InvalidOperationException
         : base(message)
     {
     }
+
+    public StockInsuficienteException(string message, Exception innerException)
+        : base(message, innerException)
+    {
+    }
 }

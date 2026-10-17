@@ -34,6 +34,14 @@ internal sealed class PrecioVigenteDoble(IDictionary<int, decimal> precios) : IC
 {
     public Task<decimal?> ObtenerPrecioVigenteAsync(int idProducto, CancellationToken cancellationToken = default) =>
         Task.FromResult<decimal?>(precios.TryGetValue(idProducto, out var precio) ? precio : null);
+
+    public Task<DescripcionDeProducto?> ObtenerDescripcionAsync(int idProducto, CancellationToken cancellationToken = default) =>
+        Task.FromResult<DescripcionDeProducto?>(idProducto switch
+        {
+            1 => new DescripcionDeProducto("Leche Entera PIL", "Bolsa 1L"),
+            2 => new DescripcionDeProducto("Yogurt Frutado PIL", "Frasco 1kg"),
+            _ => null
+        });
 }
 
 internal sealed class CabeceraRegistrada

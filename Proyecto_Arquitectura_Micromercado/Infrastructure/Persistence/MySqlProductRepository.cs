@@ -220,6 +220,26 @@ public sealed class MySqlProductRepository(
         return resultado is null || resultado == DBNull.Value ? null : Convert.ToDecimal(resultado);
     }
 
+    public async Task<DescripcionDeProducto?> ObtenerDescripcionAsync(
+        int idProducto,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT p.nombre, e.nombre AS empaquePresentacion
+            FROM PRODUCTO p
+            INNER JOIN EMPAQUE e ON e.id = p.idEmpaque
+            WHERE p.id = @idProducto;
+            """;
+
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
+        command.Parameters.AddWithValue("@idProducto", idProducto);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        return await reader.ReadAsync(cancellationToken)
+            ? new DescripcionDeProducto(reader.GetString(reader.GetOrdinal("nombre")), reader.GetString(reader.GetOrdinal("empaquePresentacion")))
+            : null;
+    }
+
     public async Task<ResultadoBusquedaParaVenta> BuscarParaVentaAsync(
         string termino,
         int limite,

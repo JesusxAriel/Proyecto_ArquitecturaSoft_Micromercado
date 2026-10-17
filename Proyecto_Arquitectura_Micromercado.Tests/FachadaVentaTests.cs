@@ -156,6 +156,21 @@ public class FachadaVentaTests
     }
 
     [Fact]
+    public async Task El_stock_insuficiente_en_un_producto_nombra_el_producto_y_su_presentacion_y_revierte_todo()
+    {
+        var e = new Escenario();
+        e.Lotes.Agregar(1, new LoteDisponible(10, 20, null));
+        e.Lotes.Agregar(2, new LoteDisponible(20, 1, null));
+
+        var ex = await Assert.ThrowsAsync<StockInsuficienteException>(
+            () => e.Fachada.RegistrarVentaAsync(Venta(500m, new LineaVentaDto(1, 2), new LineaVentaDto(2, 5))));
+
+        Assert.Equal("Stock insuficiente para Yogurt Frutado PIL (Frasco 1kg).", ex.Message);
+        Assert.Equal(0, e.Unidad.Confirmadas);
+        Assert.Equal(1, e.Unidad.Revertidas);
+    }
+
+    [Fact]
     public async Task Efectivo_menor_al_total_lanza_y_revierte()
     {
         var e = new Escenario();
