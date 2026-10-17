@@ -47,7 +47,77 @@
         return (lotes ?? []).map((lote) => `${lote.codigoLote} (${lote.cantidad})`).join(", ");
     }
 
-    const api = { validarCliente, unidadesEnDetalle, validarCantidadContraStock, describirLotes };
+    function redondear(valor) {
+        return Math.round((valor + Number.EPSILON) * 100) / 100;
+    }
+
+    function agregarAlDetalle(detalle, producto, unidades) {
+        const stockDisponible = Number(producto.stockDisponible);
+        const errorStock = validarCantidadContraStock(
+            producto.nombre,
+            stockDisponible,
+            unidadesEnDetalle(detalle, producto.id),
+            unidades);
+        if (errorStock) {
+            return { error: errorStock, campo: "cantidad" };
+        }
+
+        const precioUnitario = Number(producto.precioVenta);
+        const existente = detalle.find((item) => item.idProducto === producto.id);
+        const total = (existente?.cantidad ?? 0) + unidades;
+        const subtotal = redondear(precioUnitario * total);
+        if (!Number.isFinite(precioUnitario) || !Number.isFinite(subtotal)) {
+            return { error: "El precio del producto no es válido. Seleccione el producto nuevamente.", campo: "producto" };
+        }
+
+        if (existente) {
+            existente.cantidad = total;
+            existente.subtotal = subtotal;
+            existente.stockDisponible = stockDisponible;
+            return { item: existente, fusionado: true, total };
+        }
+
+        const item = {
+            idProducto: producto.id,
+            nombre: producto.nombre,
+            presentacion: producto.presentacion,
+            precioUnitario,
+            stockDisponible,
+            cantidad: unidades,
+            subtotal
+        };
+        detalle.push(item);
+        return { item, fusionado: false, total };
+    }
+
+    function modificarCantidad(detalle, item, unidades) {
+        const errorStock = validarCantidadContraStock(
+            item.nombre,
+            item.stockDisponible,
+            unidadesEnDetalle(detalle, item.idProducto, item),
+            unidades);
+        if (errorStock) {
+            return { error: errorStock };
+        }
+
+        const subtotal = redondear(item.precioUnitario * unidades);
+        if (!Number.isFinite(subtotal)) {
+            return { error: "El subtotal no es válido. Ingrese otra cantidad." };
+        }
+
+        item.cantidad = unidades;
+        item.subtotal = subtotal;
+        return { item };
+    }
+
+    const api = {
+        validarCliente,
+        unidadesEnDetalle,
+        validarCantidadContraStock,
+        describirLotes,
+        agregarAlDetalle,
+        modificarCantidad
+    };
 
     if (typeof module !== "undefined" && module.exports) {
         module.exports = api;

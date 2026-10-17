@@ -259,6 +259,7 @@
     const productoEdicion = document.getElementById("editarCantidadProducto");
     const cantidadEdicion = document.getElementById("editarCantidadInput");
     const errorEdicion = document.getElementById("editarCantidadError");
+    const stockEdicion = document.getElementById("editarCantidadStock");
     const modalCantidad = new bootstrap.Modal(modalEdicion);
     let itemEnEdicion = null;
     let productoSeleccionado = null;
@@ -290,6 +291,9 @@
     function abrirEdicion(item) {
         itemEnEdicion = item;
         productoEdicion.textContent = item.nombre;
+        stockEdicion.textContent = Number.isFinite(item.stockDisponible)
+            ? `Stock disponible: ${item.stockDisponible}`
+            : "";
         cantidadEdicion.value = String(item.cantidad);
         mostrarErrorEdicion();
         modalCantidad.show();
@@ -306,16 +310,14 @@
             return;
         }
 
-        const subtotal = Math.round((itemEnEdicion.precioUnitario * unidades + Number.EPSILON) * 100) / 100;
-        if (!Number.isFinite(subtotal)) {
-            mostrarErrorEdicion("El subtotal no es válido. Ingrese otra cantidad.");
+        const resultado = VentasReglas.modificarCantidad(detalleTemporal, itemEnEdicion, unidades);
+        if (resultado.error) {
+            mostrarErrorEdicion(resultado.error);
             cantidadEdicion.focus();
             return;
         }
 
         mostrarErrorEdicion();
-        itemEnEdicion.cantidad = unidades;
-        itemEnEdicion.subtotal = subtotal;
         renderizarDetalle();
         mostrarEstadoDetalle(`${itemEnEdicion.nombre}: cantidad actualizada.`);
         modalCantidad.hide();
@@ -445,7 +447,9 @@
     function mostrarEstadoConfirmacion(mensaje, tipo = "info") {
         estadoConfirmacion.textContent = mensaje;
         estadoConfirmacion.className = `alert alert-${tipo} mb-0`;
+        estadoConfirmacion.setAttribute("role", tipo === "danger" ? "alert" : "status");
         estadoConfirmacion.hidden = false;
+        estadoConfirmacion.scrollIntoView({ block: "nearest" });
     }
 
     modalConfirmacion.addEventListener("hide.bs.modal", (event) => {
@@ -632,30 +636,17 @@
             return;
         }
 
-        if (detalleTemporal.some((item) => item.idProducto === productoSeleccionado.id)) {
-            mostrarEstadoDetalle("El producto ya está en el detalle. No se agregó otra fila.", true);
+        const resultado = VentasReglas.agregarAlDetalle(detalleTemporal, productoSeleccionado, unidades);
+        if (resultado.error) {
+            mostrarEstadoDetalle(resultado.error, true);
+            if (resultado.campo === "cantidad") cantidad.focus();
             return;
         }
-
-        const precioUnitario = Number(productoSeleccionado.precioVenta);
-        const subtotal = Math.round((precioUnitario * unidades + Number.EPSILON) * 100) / 100;
-        if (!Number.isFinite(precioUnitario) || !Number.isFinite(subtotal)) {
-            mostrarEstadoDetalle("El precio del producto no es válido. Seleccione el producto nuevamente.", true);
-            return;
-        }
-
-        const item = {
-            idProducto: productoSeleccionado.id,
-            nombre: productoSeleccionado.nombre,
-            presentacion: productoSeleccionado.presentacion,
-            precioUnitario,
-            cantidad: unidades,
-            subtotal
-        };
-        detalleTemporal.push(item);
 
         renderizarDetalle();
-        mostrarEstadoDetalle(`${item.nombre} agregado al detalle temporal.`);
+        mostrarEstadoDetalle(resultado.fusionado
+            ? `${resultado.item.nombre}: se sumaron ${unidades} unidad(es) a la fila existente (${resultado.total} en total).`
+            : `${resultado.item.nombre} agregado al detalle temporal.`);
     });
 
     quitar.addEventListener("click", () => {

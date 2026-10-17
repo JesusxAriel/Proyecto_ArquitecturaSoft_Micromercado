@@ -54,3 +54,61 @@ test("describirLotes lista cada lote con su cantidad", () => {
     assert.equal(reglas.describirLotes([]), "");
     assert.equal(reglas.describirLotes(undefined), "");
 });
+
+const leche = { id: 1, nombre: "Leche", presentacion: "Bolsa", precioVenta: 6.5, stockDisponible: 10 };
+
+test("agregarAlDetalle crea una fila con el stock del producto", () => {
+    const detalle = [];
+    const resultado = reglas.agregarAlDetalle(detalle, leche, 4);
+    assert.equal(resultado.fusionado, false);
+    assert.equal(detalle.length, 1);
+    assert.deepEqual(detalle[0], {
+        idProducto: 1, nombre: "Leche", presentacion: "Bolsa", precioUnitario: 6.5,
+        stockDisponible: 10, cantidad: 4, subtotal: 26
+    });
+});
+
+test("agregarAlDetalle junta el mismo producto en una sola fila y suma las cantidades", () => {
+    const detalle = [];
+    reglas.agregarAlDetalle(detalle, leche, 4);
+    const resultado = reglas.agregarAlDetalle(detalle, leche, 5);
+    assert.equal(resultado.fusionado, true);
+    assert.equal(resultado.total, 9);
+    assert.equal(detalle.length, 1);
+    assert.equal(detalle[0].cantidad, 9);
+    assert.equal(detalle[0].subtotal, 58.5);
+});
+
+test("agregarAlDetalle rechaza la suma que supera el stock y no cambia el detalle", () => {
+    const detalle = [];
+    reglas.agregarAlDetalle(detalle, leche, 4);
+    const resultado = reglas.agregarAlDetalle(detalle, leche, 7);
+    assert.equal(resultado.error, "La cantidad total de Leche en el detalle (11) supera el stock disponible (10).");
+    assert.equal(resultado.campo, "cantidad");
+    assert.equal(detalle[0].cantidad, 4);
+});
+
+test("agregarAlDetalle rechaza un precio que no es un número", () => {
+    const detalle = [];
+    const resultado = reglas.agregarAlDetalle(detalle, { ...leche, precioVenta: "x" }, 1);
+    assert.equal(resultado.campo, "producto");
+    assert.equal(detalle.length, 0);
+});
+
+test("modificarCantidad acepta hasta el stock y recalcula el subtotal", () => {
+    const detalle = [];
+    reglas.agregarAlDetalle(detalle, leche, 4);
+    const resultado = reglas.modificarCantidad(detalle, detalle[0], 10);
+    assert.equal(resultado.error, undefined);
+    assert.equal(detalle[0].cantidad, 10);
+    assert.equal(detalle[0].subtotal, 65);
+});
+
+test("modificarCantidad rechaza una cantidad mayor al stock y conserva la anterior", () => {
+    const detalle = [];
+    reglas.agregarAlDetalle(detalle, leche, 4);
+    const resultado = reglas.modificarCantidad(detalle, detalle[0], 11);
+    assert.equal(resultado.error, "La cantidad total de Leche en el detalle (11) supera el stock disponible (10).");
+    assert.equal(detalle[0].cantidad, 4);
+    assert.equal(detalle[0].subtotal, 26);
+});
