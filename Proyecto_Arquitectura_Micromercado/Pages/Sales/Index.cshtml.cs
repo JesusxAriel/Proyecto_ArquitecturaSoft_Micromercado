@@ -22,6 +22,8 @@ public sealed class IndexModel(
     ILogger<IndexModel> logger) : PageModel
 {
     private static readonly TimeSpan TiempoMaximoBusqueda = TimeSpan.FromSeconds(8);
+    private static readonly TimeSpan TiempoMaximoConsulta = TimeSpan.FromSeconds(8);
+    private static readonly TimeSpan TiempoMaximoEscritura = TimeSpan.FromSeconds(30);
 
     public SaleInputModel Input { get; } = new();
     public DateTime FechaActual { get; } = DateTime.Now;
@@ -189,34 +191,32 @@ public sealed class IndexModel(
         public int? Cantidad { get; init; }
     }
 
-    public async Task<IActionResult> OnGetHistorialAsync(
+    public Task<IActionResult> OnGetHistorialAsync(
         bool incluirAnuladas, CancellationToken cancellationToken)
     {
         Response.Headers.CacheControl = "no-store";
 
-        try
-        {
-            var ventas = await ventaConsultaService.ListarAsync(incluirAnuladas, cancellationToken);
-            return new JsonResult(new
+        return EjecutarSinCancelacionAsync(
+            cancellationToken,
+            TiempoMaximoConsulta,
+            async limite =>
             {
-                ventas = ventas.Select(venta => new
+                var ventas = await ventaConsultaService.ListarAsync(incluirAnuladas, limite);
+                return new JsonResult(new
                 {
-                    id = venta.Id,
-                    nroComprobante = venta.NroComprobante,
-                    fechaHora = venta.FechaHora,
-                    nombreCliente = venta.NombreCliente,
-                    estado = venta.Estado,
-                    total = venta.Total
-                })
-            });
-        }
-        catch (ErrorDePersistenciaException)
-        {
-            return new JsonResult(new { mensaje = "No se pudo cargar el historial de ventas. Intente nuevamente." })
-            {
-                StatusCode = StatusCodes.Status503ServiceUnavailable
-            };
-        }
+                    ventas = ventas.Select(venta => new
+                    {
+                        id = venta.Id,
+                        nroComprobante = venta.NroComprobante,
+                        fechaHora = venta.FechaHora,
+                        nombreCliente = venta.NombreCliente,
+                        estado = venta.Estado,
+                        total = venta.Total
+                    })
+                });
+            },
+            "el historial de ventas",
+            new { mensaje = "No se pudo cargar el historial de ventas. Intente nuevamente." });
     }
 
     public async Task<IActionResult> OnGetDetalleAsync(
@@ -352,6 +352,55 @@ public sealed class IndexModel(
                 "productos",
                 RespuestaDeProductos([], false, "No se pudo buscar productos. Intente nuevamente."));
         }
+    }
+
+    private async Task<IActionResult> EjecutarSinCancelacionAsync(
+        CancellationToken peticion,
+        TimeSpan tiempoMaximo,
+        Func<CancellationToken, Task<IActionResult>> operacion,
+        string descripcion,
+        object cuerpoDeFallo)
+    {
+        if (peticion.IsCancellationRequested)
+        {
+            return new EmptyResult();
+        }
+
+        using var limite = new CancellationTokenSource(tiempoMaximo);
+        try
+        {
+            var resultado = await operacion(limite.Token);
+            return peticion.IsCancellationRequested ? new EmptyResult() : resultado;
+        }
+        catch (OperationCanceledException) when (peticion.IsCancellationRequested)
+        {
+            return new EmptyResult();
+        }
+        catch (Exception ex)
+        {
+            return FalloDeOperacion(ex, descripcion, cuerpoDeFallo);
+        }
+    }
+
+    private JsonResult FalloDeOperacion(Exception ex, string descripcion, object cuerpo)
+    {
+        if (ex is OperationCanceledException)
+        {
+            logger.LogWarning("La operación sobre {Descripcion} superó el tiempo máximo.", descripcion);
+        }
+        else if (ex is ErrorDePersistenciaException)
+        {
+            logger.LogWarning(ex, "No se pudo completar la operación sobre {Descripcion}.", descripcion);
+        }
+        else
+        {
+            logger.LogError(ex, "Error inesperado en la operación sobre {Descripcion}.", descripcion);
+        }
+
+        return new JsonResult(cuerpo)
+        {
+            StatusCode = StatusCodes.Status503ServiceUnavailable
+        };
     }
 
     private static object RespuestaDeProductos(IReadOnlyCollection<object> productos, bool hayMas, string? mensaje) =>

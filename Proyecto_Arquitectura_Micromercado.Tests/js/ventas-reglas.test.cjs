@@ -169,3 +169,44 @@ test("conReintento no reintenta una cancelación", async () => {
     );
     assert.equal(llamadas, 1);
 });
+
+test("el ejecutor secuencial nunca solapa operaciones y junta las solicitudes mientras una corre", async () => {
+    let simultaneas = 0;
+    let maximo = 0;
+    let ejecuciones = 0;
+    const solicitar = reglas.crearEjecutorSecuencial(async () => {
+        simultaneas++;
+        maximo = Math.max(maximo, simultaneas);
+        ejecuciones++;
+        await new Promise((resolver) => setTimeout(resolver, 5));
+        simultaneas--;
+    });
+
+    await Promise.all(Array.from({ length: 50 }, () => solicitar()));
+
+    assert.equal(maximo, 1);
+    assert.equal(ejecuciones, 2);
+});
+
+test("el ejecutor secuencial permite una nueva ejecución cuando la anterior terminó", async () => {
+    let ejecuciones = 0;
+    const solicitar = reglas.crearEjecutorSecuencial(async () => { ejecuciones++; });
+
+    await solicitar();
+    await solicitar();
+
+    assert.equal(ejecuciones, 2);
+});
+
+test("el ejecutor secuencial se recupera si una operación falla", async () => {
+    let ejecuciones = 0;
+    const solicitar = reglas.crearEjecutorSecuencial(async () => {
+        ejecuciones++;
+        if (ejecuciones === 1) throw new Error("falló");
+    });
+
+    await assert.rejects(solicitar(), { message: "falló" });
+    await solicitar();
+
+    assert.equal(ejecuciones, 2);
+});

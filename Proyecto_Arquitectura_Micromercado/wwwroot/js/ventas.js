@@ -825,8 +825,6 @@
     const aviso = document.getElementById("avisoHistorial");
     const antiforgery = document.querySelector('input[name="__RequestVerificationToken"]');
     const ventasPorId = new Map();
-    let consulta;
-    let version = 0;
     let consultaDetalle;
     let versionDetalle = 0;
     let ventaEnAnulacion = null;
@@ -928,11 +926,7 @@
         });
     }
 
-    async function cargarHistorial() {
-        consulta?.abort();
-        const actual = ++version;
-        const controlador = new AbortController();
-        consulta = controlador;
+    async function consultarHistorial() {
         cuerpo.setAttribute("aria-busy", "true");
         actualizar.disabled = true;
         estado.textContent = "Cargando historial…";
@@ -941,31 +935,28 @@
             const url = new URL(seccion.dataset.historialUrl, window.location.href);
             url.searchParams.set("incluirAnuladas", String(mostrarAnuladas.checked));
             const respuesta = await fetch(url, {
-                signal: controlador.signal,
                 headers: { Accept: "application/json" },
                 cache: "no-store"
             });
             if (!respuesta.ok) throw new Error("No se pudo cargar el historial de ventas.");
             const datos = await respuesta.json();
-            if (actual !== version) return;
 
             renderizar(datos.ventas);
             estado.textContent = datos.ventas.length
                 ? `${datos.ventas.length} venta(s) en el historial.`
                 : "No hay ventas para mostrar.";
-        } catch (error) {
-            if (actual !== version || error.name === "AbortError") return;
+        } catch {
             cuerpo.replaceChildren(crearFilaMensaje(
                 "No se pudo cargar el historial de ventas. Intente nuevamente.",
                 "bi-exclamation-triangle"));
             estado.textContent = "No se pudo cargar el historial de ventas.";
         } finally {
-            if (actual === version) {
-                cuerpo.setAttribute("aria-busy", "false");
-                actualizar.disabled = false;
-            }
+            cuerpo.setAttribute("aria-busy", "false");
+            actualizar.disabled = false;
         }
     }
+
+    const cargarHistorial = VentasReglas.crearEjecutorSecuencial(consultarHistorial);
 
     function crearFilaDetalle(mensaje) {
         const fila = document.createElement("tr");

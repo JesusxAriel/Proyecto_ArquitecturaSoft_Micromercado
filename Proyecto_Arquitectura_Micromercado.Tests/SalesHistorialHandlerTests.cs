@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using Proyecto_Arquitectura_Micromercado.Application.Common;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
 using Proyecto_Arquitectura_Micromercado.Pages.Sales;
@@ -87,8 +87,99 @@ public class SalesHistorialHandlerTests
         Assert.Equal(503, resultado.StatusCode);
     }
 
-    private static IndexModel CrearPagina(ConsultaPrueba servicio) =>
-        new(null!, null!, null!, servicio, null!, null!, NullLogger<IndexModel>.Instance)
+    private static CancellationToken Cancelado()
+    {
+        var origen = new CancellationTokenSource();
+        origen.Cancel();
+        return origen.Token;
+    }
+
+    [Fact]
+    public async Task Con_la_peticion_ya_cancelada_el_historial_no_consulta_y_no_devuelve_nada()
+    {
+        var servicio = new ConsultaPrueba();
+        var registro = new RegistroEspia();
+        var page = CrearPagina(servicio, registro);
+
+        var resultado = await page.OnGetHistorialAsync(false, Cancelado());
+
+        Assert.IsType<EmptyResult>(resultado);
+        Assert.Equal(0, servicio.Llamadas);
+        Assert.Empty(registro.Entradas);
+    }
+
+    [Fact]
+    public async Task Si_la_peticion_se_cancela_durante_el_historial_no_hay_500_ni_logs()
+    {
+        var origen = new CancellationTokenSource();
+        var servicio = new ConsultaPrueba { Antes = () => origen.Cancel(), Error = new TaskCanceledException() };
+        var registro = new RegistroEspia();
+        var page = CrearPagina(servicio, registro);
+
+        var resultado = await page.OnGetHistorialAsync(false, origen.Token);
+
+        Assert.IsType<EmptyResult>(resultado);
+        Assert.Empty(registro.Entradas);
+    }
+
+    [Fact]
+    public async Task Si_la_peticion_se_cancela_mientras_responde_el_servicio_el_historial_no_se_serializa()
+    {
+        var origen = new CancellationTokenSource();
+        var servicio = new ConsultaPrueba { Antes = () => origen.Cancel() };
+        var page = CrearPagina(servicio);
+
+        var resultado = await page.OnGetHistorialAsync(false, origen.Token);
+
+        Assert.IsType<EmptyResult>(resultado);
+    }
+
+    [Fact]
+    public async Task El_token_de_la_peticion_no_llega_a_la_consulta_del_historial()
+    {
+        var origen = new CancellationTokenSource();
+        var servicio = new ConsultaPrueba();
+        var page = CrearPagina(servicio);
+
+        await page.OnGetHistorialAsync(false, origen.Token);
+        origen.Cancel();
+
+        Assert.NotNull(servicio.TokenRecibido);
+        Assert.NotEqual(origen.Token, servicio.TokenRecibido);
+        Assert.False(servicio.TokenRecibido!.Value.IsCancellationRequested);
+    }
+
+    [Fact]
+    public async Task El_vencimiento_del_tiempo_en_el_historial_devuelve_503_y_un_aviso()
+    {
+        var servicio = new ConsultaPrueba { Error = new TaskCanceledException() };
+        var registro = new RegistroEspia();
+        var page = CrearPagina(servicio, registro);
+
+        var resultado = Assert.IsType<JsonResult>(await page.OnGetHistorialAsync(false, default));
+        var json = JsonSerializer.SerializeToElement(resultado.Value);
+
+        Assert.Equal(503, resultado.StatusCode);
+        Assert.Equal("No se pudo cargar el historial de ventas. Intente nuevamente.", json.GetProperty("mensaje").GetString());
+        Assert.Equal([LogLevel.Warning], registro.Niveles);
+    }
+
+    [Fact]
+    public async Task Una_excepcion_inesperada_en_el_historial_devuelve_503_y_se_registra_como_error()
+    {
+        var servicio = new ConsultaPrueba { Error = new InvalidOperationException("Información interna") };
+        var registro = new RegistroEspia();
+        var page = CrearPagina(servicio, registro);
+
+        var resultado = Assert.IsType<JsonResult>(await page.OnGetHistorialAsync(false, default));
+
+        Assert.Equal(503, resultado.StatusCode);
+        Assert.DoesNotContain("Información interna", JsonSerializer.Serialize(resultado.Value));
+        Assert.Equal([LogLevel.Error], registro.Niveles);
+    }
+
+    private static IndexModel CrearPagina(ConsultaPrueba servicio, RegistroEspia? registro = null) =>
+        new(null!, null!, null!, servicio, null!, null!, registro ?? new RegistroEspia())
         {
             PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
         };
@@ -96,7 +187,10 @@ public class SalesHistorialHandlerTests
     private sealed class ConsultaPrueba : IVentaConsultaService
     {
         public bool? IncluirAnuladasRecibido { get; private set; }
+        public CancellationToken? TokenRecibido { get; private set; }
+        public int Llamadas { get; private set; }
         public Exception? Error { get; init; }
+        public Action? Antes { get; init; }
 
         public Task<decimal> ObtenerVentasDelDiaAsync(CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
@@ -105,6 +199,9 @@ public class SalesHistorialHandlerTests
             bool incluirAnuladas, CancellationToken cancellationToken = default)
         {
             IncluirAnuladasRecibido = incluirAnuladas;
+            TokenRecibido = cancellationToken;
+            Llamadas++;
+            Antes?.Invoke();
             if (Error is not null) return Task.FromException<IReadOnlyList<VentaResumenDto>>(Error);
 
             IReadOnlyList<VentaResumenDto> ventas =

@@ -133,7 +133,30 @@
         }
     }
 
+    function crearEjecutorSecuencial(operacion) {
+        let ejecutando = false;
+        let pendiente = false;
+
+        return async function solicitar() {
+            if (ejecutando) {
+                pendiente = true;
+                return;
+            }
+
+            ejecutando = true;
+            try {
+                do {
+                    pendiente = false;
+                    await operacion();
+                } while (pendiente);
+            } finally {
+                ejecutando = false;
+            }
+        };
+    }
+
     const api = {
+        crearEjecutorSecuencial,
         MENSAJE_BUSQUEDA_CORTA,
         terminoDeBusquedaValido,
         conReintento,
