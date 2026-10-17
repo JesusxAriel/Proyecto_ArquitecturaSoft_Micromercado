@@ -828,7 +828,6 @@
     let versionDetalle = 0;
     let ventaEnAnulacion = null;
     let resumenAnulacionCargado = false;
-    let consultaAnulacion;
     let versionAnulacion = 0;
     let anulando = false;
 
@@ -1106,10 +1105,7 @@
         const venta = ventasPorId.get(idVenta);
         if (!venta || !puedeAnular) return;
 
-        consultaAnulacion?.abort();
         const actual = ++versionAnulacion;
-        const controlador = new AbortController();
-        consultaAnulacion = controlador;
         ventaEnAnulacion = venta;
         resumenAnulacionCargado = false;
         aviso.hidden = true;
@@ -1125,7 +1121,6 @@
             const url = new URL(seccion.dataset.detalleUrl, window.location.href);
             url.searchParams.set("idVenta", String(idVenta));
             const respuesta = await fetch(url, {
-                signal: controlador.signal,
                 headers: { Accept: "application/json" },
                 cache: "no-store"
             });
@@ -1141,7 +1136,7 @@
             mostrarResumenAnulacion(datos);
             resumenAnulacionCargado = true;
         } catch (error) {
-            if (actual !== versionAnulacion || error.name === "AbortError") return;
+            if (actual !== versionAnulacion) return;
             anulacionErrorDetalle.textContent = error instanceof TypeError
                 ? "No se pudo conectar con el servidor. Intente nuevamente."
                 : error.message;
@@ -1207,7 +1202,6 @@
         if (anulando) event.preventDefault();
     });
     modalAnulacion.addEventListener("hidden.bs.modal", () => {
-        consultaAnulacion?.abort();
         versionAnulacion++;
         ventaEnAnulacion = null;
         resumenAnulacionCargado = false;

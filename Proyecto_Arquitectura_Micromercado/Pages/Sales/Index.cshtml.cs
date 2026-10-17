@@ -120,7 +120,7 @@ public sealed class IndexModel(
         }
     }
 
-    public async Task<JsonResult> OnPostAnularVentaAsync(
+    public async Task<IActionResult> OnPostAnularVentaAsync(
         [FromBody] AnularVentaInput? entrada, CancellationToken cancellationToken)
     {
         if (!User.IsInRole(Roles.Administrador))
@@ -139,26 +139,26 @@ public sealed class IndexModel(
             };
         }
 
-        try
-        {
-            await fachadaAnulacion.AnularVentaAsync(entrada.IdVenta.Value, entrada.Motivo, cancellationToken);
-            return new JsonResult(new { exito = true });
-        }
-        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or ValidationException)
-        {
-            return new JsonResult(new { exito = false, mensaje = ex.Message })
+        return await EjecutarSinCancelacionAsync(
+            cancellationToken,
+            TiempoMaximoEscritura,
+            async limite =>
             {
-                StatusCode = StatusCodes.Status400BadRequest
-            };
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "No se pudo anular la venta.");
-            return new JsonResult(new { exito = false, mensaje = "No se pudo anular la venta. Intente nuevamente." })
-            {
-                StatusCode = StatusCodes.Status503ServiceUnavailable
-            };
-        }
+                try
+                {
+                    await fachadaAnulacion.AnularVentaAsync(entrada.IdVenta.Value, entrada.Motivo, limite);
+                    return new JsonResult(new { exito = true });
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or ValidationException)
+                {
+                    return new JsonResult(new { exito = false, mensaje = ex.Message })
+                    {
+                        StatusCode = StatusCodes.Status400BadRequest
+                    };
+                }
+            },
+            "la anulación de la venta",
+            new { exito = false, mensaje = "No se pudo anular la venta. Intente nuevamente." });
     }
 
     public sealed class RegistrarVentaInput
