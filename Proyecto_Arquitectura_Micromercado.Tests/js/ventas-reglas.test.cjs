@@ -295,3 +295,129 @@ test("actualizarProductoEnResultados no toca nada si el producto no está visibl
     assert.equal(reglas.actualizarProductoEnResultados(undefined, 1, 7), false);
     assert.deepEqual(productos[0], { id: 1, precioVenta: 6.5, stockDisponible: 10 });
 });
+
+test("agregarConUnClic crea la fila con cantidad 1 y sin aviso si queda stock", () => {
+    const detalle = [];
+    const resultado = reglas.agregarConUnClic(detalle, leche);
+
+    assert.equal(resultado.error, undefined);
+    assert.equal(resultado.fusionado, false);
+    assert.equal(resultado.tope, false);
+    assert.equal(resultado.aviso, null);
+    assert.equal(detalle.length, 1);
+    assert.equal(detalle[0].cantidad, 1);
+    assert.equal(detalle[0].subtotal, 6.5);
+});
+
+test("agregarConUnClic suma 1 al repetir el producto sin duplicar la fila", () => {
+    const detalle = [];
+    reglas.agregarConUnClic(detalle, leche);
+    const resultado = reglas.agregarConUnClic(detalle, leche);
+
+    assert.equal(resultado.fusionado, true);
+    assert.equal(detalle.length, 1);
+    assert.equal(detalle[0].cantidad, 2);
+    assert.equal(detalle[0].subtotal, 13);
+});
+
+test("agregarConUnClic avisa al alcanzar el tope de stock y luego no pasa de él", () => {
+    const detalle = [];
+    const poco = { ...leche, stockDisponible: 2 };
+
+    assert.equal(reglas.agregarConUnClic(detalle, poco).tope, false);
+    const alcanzado = reglas.agregarConUnClic(detalle, poco);
+    assert.equal(alcanzado.tope, true);
+    assert.equal(alcanzado.aviso, "Leche: alcanzó el stock disponible (2).");
+    assert.equal(detalle[0].cantidad, 2);
+
+    const excedido = reglas.agregarConUnClic(detalle, poco);
+    assert.equal(excedido.sinCambios, true);
+    assert.equal(excedido.aviso, "Ya agregó todo el stock disponible de Leche (2).");
+    assert.equal(detalle[0].cantidad, 2);
+    assert.equal(detalle[0].subtotal, 13);
+});
+
+test("agregarConUnClic rechaza un producto sin stock y no toca el detalle", () => {
+    const detalle = [];
+    const resultado = reglas.agregarConUnClic(detalle, { ...leche, stockDisponible: 0 });
+
+    assert.equal(resultado.error, "Leche no tiene stock disponible.");
+    assert.equal(detalle.length, 0);
+});
+
+test("agregarConUnClic no limita cuando el stock no se conoce", () => {
+    const detalle = [];
+    const sinDato = { ...leche, stockDisponible: undefined };
+
+    reglas.agregarConUnClic(detalle, sinDato);
+    const resultado = reglas.agregarConUnClic(detalle, sinDato);
+
+    assert.equal(resultado.tope, false);
+    assert.equal(detalle[0].cantidad, 2);
+});
+
+test("cambiarCantidad acepta un entero positivo dentro del stock y recalcula el subtotal", () => {
+    const detalle = [];
+    reglas.agregarConUnClic(detalle, leche);
+
+    const resultado = reglas.cambiarCantidad(detalle, detalle[0], "7");
+
+    assert.equal(resultado.error, undefined);
+    assert.equal(detalle[0].cantidad, 7);
+    assert.equal(detalle[0].subtotal, 45.5);
+});
+
+test("cambiarCantidad rechaza vacío, cero, negativos y decimales con el mensaje de cantidad", () => {
+    const detalle = [];
+    reglas.agregarConUnClic(detalle, leche);
+
+    for (const valor of ["", "0", "-2", "1.5", "abc", undefined]) {
+        assert.equal(reglas.cambiarCantidad(detalle, detalle[0], valor).error, "Ingrese una cantidad entera mayor a cero.", String(valor));
+    }
+    assert.equal(detalle[0].cantidad, 1);
+});
+
+test("cambiarCantidad rechaza superar el stock y conserva la cantidad anterior", () => {
+    const detalle = [];
+    reglas.agregarConUnClic(detalle, leche);
+
+    const resultado = reglas.cambiarCantidad(detalle, detalle[0], "11");
+
+    assert.equal(resultado.error, "La cantidad total de Leche en el detalle (11) supera el stock disponible (10).");
+    assert.equal(detalle[0].cantidad, 1);
+});
+
+test("ajustarCantidad suma o resta uno y respeta el mínimo y el tope", () => {
+    const detalle = [];
+    reglas.agregarConUnClic(detalle, { ...leche, stockDisponible: 2 });
+    const item = detalle[0];
+
+    assert.equal(reglas.puedeDisminuir(item), false);
+    assert.equal(reglas.puedeAumentar(item), true);
+    assert.equal(reglas.ajustarCantidad(detalle, item, 1).error, undefined);
+    assert.equal(item.cantidad, 2);
+    assert.equal(reglas.puedeAumentar(item), false);
+    assert.equal(reglas.puedeDisminuir(item), true);
+    assert.ok(reglas.ajustarCantidad(detalle, item, 1).error);
+    assert.equal(item.cantidad, 2);
+    assert.equal(reglas.ajustarCantidad(detalle, item, -1).error, undefined);
+    assert.equal(item.cantidad, 1);
+    assert.ok(reglas.ajustarCantidad(detalle, item, -1).error);
+    assert.equal(item.cantidad, 1);
+});
+
+test("resumirDetalle calcula productos, unidades y total en centavos", () => {
+    const detalle = [];
+    reglas.agregarConUnClic(detalle, leche);
+    reglas.agregarConUnClic(detalle, leche);
+    reglas.agregarConUnClic(detalle, { id: 2, nombre: "Yogurt", presentacion: "1kg", precioVenta: 12.1, stockDisponible: 5 });
+
+    assert.deepEqual(reglas.resumirDetalle(detalle), { productos: 2, unidades: 3, totalCentavos: 2510 });
+    assert.deepEqual(reglas.resumirDetalle([]), { productos: 0, unidades: 0, totalCentavos: 0 });
+});
+
+test("saldoDeEfectivo distingue cambio, falta y pago exacto", () => {
+    assert.deepEqual(reglas.saldoDeEfectivo(2510, 30), { tipo: "cambio", centavos: 490 });
+    assert.deepEqual(reglas.saldoDeEfectivo(2510, 20), { tipo: "falta", centavos: 510 });
+    assert.deepEqual(reglas.saldoDeEfectivo(2510, 25.1), { tipo: "cambio", centavos: 0 });
+});

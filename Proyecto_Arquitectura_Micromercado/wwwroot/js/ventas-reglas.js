@@ -154,6 +154,74 @@
         return { item };
     }
 
+    const MENSAJE_CANTIDAD = "Ingrese una cantidad entera mayor a cero.";
+
+    function agregarConUnClic(detalle, producto) {
+        const stock = Number(producto.stockDisponible);
+        const stockConocido = Number.isFinite(stock);
+
+        if (stockConocido && stock <= 0) {
+            return { error: `${producto.nombre} no tiene stock disponible.`, campo: "producto" };
+        }
+
+        const existente = detalle.find((item) => item.idProducto === producto.id);
+        if (existente && stockConocido && existente.cantidad + 1 > stock) {
+            return {
+                item: existente,
+                sinCambios: true,
+                tope: true,
+                aviso: `Ya agregó todo el stock disponible de ${producto.nombre} (${stock}).`
+            };
+        }
+
+        const resultado = agregarAlDetalle(detalle, producto, 1);
+        if (resultado.error) {
+            return resultado;
+        }
+
+        resultado.tope = stockConocido && resultado.total >= stock;
+        resultado.aviso = resultado.tope ? `${producto.nombre}: alcanzó el stock disponible (${stock}).` : null;
+        return resultado;
+    }
+
+    function cambiarCantidad(detalle, item, valor) {
+        const texto = String(valor ?? "").trim();
+        const unidades = Number(texto);
+        if (texto === "" || !Number.isSafeInteger(unidades) || unidades <= 0) {
+            return { error: MENSAJE_CANTIDAD };
+        }
+
+        return modificarCantidad(detalle, item, unidades);
+    }
+
+    function ajustarCantidad(detalle, item, diferencia) {
+        return cambiarCantidad(detalle, item, item.cantidad + diferencia);
+    }
+
+    function puedeAumentar(item) {
+        const stock = Number(item.stockDisponible);
+        return !Number.isFinite(stock) || item.cantidad < stock;
+    }
+
+    function puedeDisminuir(item) {
+        return item.cantidad > 1;
+    }
+
+    function resumirDetalle(detalle) {
+        return {
+            productos: detalle.length,
+            unidades: detalle.reduce((total, item) => total + item.cantidad, 0),
+            totalCentavos: detalle.reduce((total, item) => total + Math.round(item.subtotal * 100), 0)
+        };
+    }
+
+    function saldoDeEfectivo(totalCentavos, efectivo) {
+        const diferencia = Math.round(efectivo * 100) - totalCentavos;
+        return diferencia >= 0
+            ? { tipo: "cambio", centavos: diferencia }
+            : { tipo: "falta", centavos: -diferencia };
+    }
+
     function quitarProductoDelDetalle(detalle, idProducto) {
         let quitadas = 0;
         for (let indice = detalle.length - 1; indice >= 0; indice--) {
@@ -240,6 +308,14 @@
         agregarAlDetalle,
         modificarCantidad,
         quitarProductoDelDetalle,
+        MENSAJE_CANTIDAD,
+        agregarConUnClic,
+        cambiarCantidad,
+        ajustarCantidad,
+        puedeAumentar,
+        puedeDisminuir,
+        resumirDetalle,
+        saldoDeEfectivo,
         actualizarProductoEnResultados
     };
 
