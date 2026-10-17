@@ -8,30 +8,47 @@
     const idCliente = document.getElementById("Input_IdCliente");
     const resultados = document.getElementById("resultadosClientes");
     const estado = document.getElementById("estadoBusquedaClientes");
-    const seleccionado = document.getElementById("clienteSeleccionado");
-    const quitar = document.getElementById("quitarCliente");
+    const bloqueBusqueda = document.getElementById("clienteBusqueda");
+    const tarjeta = document.getElementById("clienteTarjeta");
+    const nombreCliente = document.getElementById("clienteNombre");
+    const documentoCliente = document.getElementById("clienteDocumento");
+    const cambiar = document.getElementById("cambiarCliente");
     let temporizador;
     let version = 0;
 
-    function actualizarSeleccionCliente() {
-        resultados.querySelectorAll("button[data-cliente-id]").forEach((boton) => {
-            const activo = boton.dataset.clienteId === idCliente.value;
-            boton.textContent = activo ? "Seleccionado" : "Seleccionar";
-            boton.setAttribute("aria-pressed", String(activo));
-            boton.className = `btn btn-${activo ? "primary" : "outline-primary"} btn-sm mt-2`;
-        });
+    function seleccionarCliente(cliente) {
+        idCliente.value = String(cliente.id);
+        nombreCliente.textContent = cliente.razonSocial;
+        documentoCliente.textContent = `CI/NIT: ${cliente.nitCi}`;
+        bloqueBusqueda.hidden = true;
+        tarjeta.hidden = false;
+        resultados.replaceChildren();
+        estado.textContent = "";
+        idCliente.dispatchEvent(new Event("change"));
     }
 
-    quitar.addEventListener("click", () => {
+    function reiniciarCliente(enfocar) {
+        clearTimeout(temporizador);
+        version++;
         idCliente.value = "";
-        seleccionado.textContent = "Ningún cliente seleccionado.";
-        quitar.hidden = true;
-        actualizarSeleccionCliente();
+        nombreCliente.textContent = "";
+        documentoCliente.textContent = "";
+        tarjeta.hidden = true;
+        bloqueBusqueda.hidden = false;
+        entrada.value = "";
+        resultados.replaceChildren();
+        estado.textContent = "";
         idCliente.dispatchEvent(new Event("change"));
-    });
+        if (enfocar) entrada.focus();
+    }
+
+    cambiar.addEventListener("click", () => reiniciarCliente(true));
+    document.addEventListener("venta:reiniciar", () => reiniciarCliente(true));
 
     entrada.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") event.preventDefault();
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        resultados.querySelector("button[data-cliente-id]")?.click();
     });
 
     entrada.addEventListener("input", () => {
@@ -68,31 +85,22 @@
             resultados.replaceChildren();
             clientes.forEach((cliente) => {
                 const fila = document.createElement("li");
-                fila.className = "list-group-item";
-                const nombre = document.createElement("div");
-                nombre.className = "fw-semibold text-break";
-                nombre.textContent = cliente.razonSocial;
-                const documento = document.createElement("div");
-                documento.className = "small text-muted text-break";
-                documento.textContent = `CI/NIT: ${cliente.nitCi}`;
                 const boton = document.createElement("button");
                 boton.type = "button";
-                boton.className = "btn btn-outline-primary btn-sm mt-2";
+                boton.className = "resultado-cliente";
                 boton.dataset.clienteId = String(cliente.id);
-                boton.textContent = "Seleccionar";
                 boton.setAttribute("aria-label", `Seleccionar ${cliente.razonSocial}, CI/NIT ${cliente.nitCi}`);
-                boton.setAttribute("aria-pressed", String(String(cliente.id) === idCliente.value));
-                boton.addEventListener("click", () => {
-                    idCliente.value = String(cliente.id);
-                    seleccionado.textContent = `Cliente seleccionado: ${cliente.razonSocial} — CI/NIT: ${cliente.nitCi}`;
-                    quitar.hidden = false;
-                    actualizarSeleccionCliente();
-                    idCliente.dispatchEvent(new Event("change"));
-                });
-                fila.append(nombre, documento, boton);
+                const nombre = document.createElement("span");
+                nombre.className = "resultado-principal text-break";
+                nombre.textContent = cliente.razonSocial;
+                const documento = document.createElement("span");
+                documento.className = "resultado-secundario text-break";
+                documento.textContent = `CI/NIT: ${cliente.nitCi}`;
+                boton.append(nombre, documento);
+                boton.addEventListener("click", () => seleccionarCliente(cliente));
+                fila.append(boton);
                 resultados.append(fila);
             });
-            actualizarSeleccionCliente();
             estado.textContent = clientes.length
                 ? `${clientes.length} cliente(s) encontrado(s).`
                 : "No se encontraron clientes activos con ese CI/NIT o razón social.";
@@ -135,15 +143,6 @@
             mostrarErrorCampo(campoNitCi, errorNitCi, "");
             mostrarErrorCampo(campoRazonSocial, errorRazonSocial, "");
             mostrarErrorGeneral("");
-        }
-
-        function seleccionarClienteCreado(cliente) {
-            idCliente.value = String(cliente.id);
-            seleccionado.textContent = `Cliente seleccionado: ${cliente.razonSocial} — CI/NIT: ${cliente.nitCi}`;
-            quitar.hidden = false;
-            idCliente.dispatchEvent(new Event("change"));
-            entrada.value = cliente.nitCi;
-            entrada.dispatchEvent(new Event("input"));
         }
 
         formularioCliente.addEventListener("submit", async (event) => {
@@ -189,7 +188,7 @@
 
                 guardandoCliente = false;
                 modalClienteBootstrap.hide();
-                seleccionarClienteCreado(resultado);
+                seleccionarCliente(resultado);
             } catch (error) {
                 mostrarErrorGeneral(error instanceof TypeError
                     ? "No se pudo conectar con el servidor. El cliente no fue registrado."
@@ -215,557 +214,321 @@
     const buscador = document.getElementById("buscadorProductos");
     if (!buscador) return;
 
+    const MARCADOR_SIN_CLIENTE = "Seleccione un cliente primero";
+    const MARCADOR_CON_CLIENTE = "Buscar producto por nombre o presentación";
+    const precio = new Intl.NumberFormat("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
     const entrada = document.getElementById("Input_BusquedaProducto");
-    const idProducto = document.getElementById("Input_IdProducto");
     const resultados = document.getElementById("resultadosProductos");
     const estado = document.getElementById("estadoBusquedaProductos");
-    const seleccionado = document.getElementById("productoSeleccionado");
-    const quitar = document.getElementById("quitarProducto");
-    const precio = new Intl.NumberFormat("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const cantidad = document.getElementById("Input_Cantidad");
-    const agregar = document.getElementById("agregarAlDetalle");
+    const avisoDetalle = document.getElementById("avisoDetalle");
     const tablaDetalle = document.getElementById("detalleTemporal");
-    const estadoDetalle = document.getElementById("estadoDetalle");
-    const detalleTemporal = [];
-    const ayudaAgregar = document.getElementById("ayudaAgregarAlDetalle");
-    const clienteDelDetalle = document.getElementById("clienteDelDetalle");
-    const productosDistintos = document.getElementById("productosDistintos");
     const unidadesTotales = document.getElementById("unidadesTotales");
     const totalGeneral = document.getElementById("totalGeneral");
     const idCliente = document.getElementById("Input_IdCliente");
-    const clienteSeleccionado = document.getElementById("clienteSeleccionado");
-    const registrarVenta = document.getElementById("registrarVenta");
-    const confirmarVenta = document.getElementById("confirmarVenta");
     const efectivoPagado = document.getElementById("efectivoPagado");
+    const saldoEfectivo = document.getElementById("saldoEfectivo");
+    const estadoVenta = document.getElementById("estadoVenta");
+    const confirmarVenta = document.getElementById("confirmarVenta");
     const antiforgery = document.querySelector('input[name="__RequestVerificationToken"]');
-    let registrandoVenta = false;
-    let ventaRegistrada = false;
-    const modalConfirmacion = document.getElementById("confirmarVentaModal");
-    const botonesCancelar = modalConfirmacion.querySelectorAll('[data-bs-dismiss="modal"]');
-    const confirmacionCliente = document.getElementById("confirmacionCliente");
-    const confirmacionProductos = document.getElementById("confirmacionProductosDistintos");
-    const confirmacionUnidades = document.getElementById("confirmacionUnidadesTotales");
-    const confirmacionTotal = document.getElementById("confirmacionTotalGeneral");
-    const confirmacionDetalle = document.getElementById("confirmacionDetalle");
-    const confirmacionEfectivo = document.getElementById("confirmacionEfectivo");
-    const confirmacionSaldo = document.getElementById("confirmacionSaldo");
-    const estadoConfirmacion = document.getElementById("estadoConfirmacionVenta");
-    const confirmacionModal = bootstrap.Modal.getOrCreateInstance(modalConfirmacion, {
-        backdrop: "static",
-        keyboard: false
-    });
-    const modalEdicion = document.getElementById("editarCantidadModal");
-    const formularioEdicion = document.getElementById("editarCantidadForm");
-    const productoEdicion = document.getElementById("editarCantidadProducto");
-    const cantidadEdicion = document.getElementById("editarCantidadInput");
-    const errorEdicion = document.getElementById("editarCantidadError");
-    const stockEdicion = document.getElementById("editarCantidadStock");
-    const modalCantidad = new bootstrap.Modal(modalEdicion);
-    let itemEnEdicion = null;
-    let productoSeleccionado = null;
+
+    const detalleTemporal = [];
+    const filas = new Map();
+    let listadoVisible = { productos: [], hayMas: false };
     let temporizador;
     let version = 0;
+    let registrandoVenta = false;
 
-    function actualizarSeleccion() {
-        resultados.querySelectorAll("button[data-producto-id]").forEach((boton) => {
-            const activo = boton.dataset.productoId === idProducto.value;
-            boton.textContent = activo ? "Seleccionado" : "Seleccionar";
-            boton.setAttribute("aria-pressed", String(activo));
-            boton.className = `btn btn-${activo ? "primary" : "outline-primary"} btn-sm mt-2`;
-        });
+    function hayCliente() {
+        return idCliente.value.trim() !== "";
     }
 
-    function mostrarEstadoDetalle(mensaje, esError = false) {
-        estadoDetalle.textContent = mensaje;
-        estadoDetalle.className = `small mt-3 mb-0 text-${esError ? "danger" : "success"}`;
+    function mostrarAviso(mensaje, advertencia = false) {
+        avisoDetalle.textContent = mensaje;
+        avisoDetalle.className = `small mt-2 mb-0 ${advertencia ? "text-warning-emphasis" : "text-body-secondary"}`;
     }
 
-    function mostrarErrorEdicion(mensaje = "") {
-        errorEdicion.textContent = mensaje;
-        errorEdicion.hidden = !mensaje;
-        cantidadEdicion.classList.toggle("is-invalid", Boolean(mensaje));
-        cantidadEdicion.setAttribute("aria-invalid", String(Boolean(mensaje)));
+    function mostrarEstadoVenta(mensaje, tipo = "info") {
+        estadoVenta.textContent = mensaje;
+        estadoVenta.className = `alert alert-${tipo} py-2 px-3 small mb-3`;
+        estadoVenta.setAttribute("role", tipo === "danger" ? "alert" : "status");
+        estadoVenta.hidden = !mensaje;
     }
 
-    function abrirEdicion(item) {
-        itemEnEdicion = item;
-        productoEdicion.textContent = item.nombre;
-        stockEdicion.textContent = Number.isFinite(item.stockDisponible)
-            ? `Stock disponible: ${item.stockDisponible}`
-            : "";
-        cantidadEdicion.value = String(item.cantidad);
-        mostrarErrorEdicion();
-        modalCantidad.show();
+    function ventaLista() {
+        return hayCliente() && detalleTemporal.length > 0;
     }
 
-    function guardarCambiosCantidad(event) {
-        event.preventDefault();
-        if (!itemEnEdicion) return;
+    function actualizarBotonConfirmar() {
+        confirmarVenta.disabled = registrandoVenta || !ventaLista();
+    }
 
-        const unidades = cantidadEdicion.valueAsNumber;
-        if (!Number.isSafeInteger(unidades) || unidades <= 0 || !cantidadEdicion.validity.valid) {
-            mostrarErrorEdicion("Ingrese una cantidad entera mayor a cero.");
-            cantidadEdicion.focus();
+    function actualizarSaldo() {
+        const texto = efectivoPagado.value.trim();
+        saldoEfectivo.className = "small mb-0";
+        if (texto === "") {
+            saldoEfectivo.textContent = "";
             return;
         }
 
-        const resultado = VentasReglas.modificarCantidad(detalleTemporal, itemEnEdicion, unidades);
-        if (resultado.error) {
-            mostrarErrorEdicion(resultado.error);
-            cantidadEdicion.focus();
+        const error = VentasReglas.validarEfectivo(texto);
+        if (error) {
+            saldoEfectivo.textContent = error;
+            saldoEfectivo.classList.add("text-danger");
             return;
         }
 
-        mostrarErrorEdicion();
-        renderizarDetalle();
-        mostrarEstadoDetalle(`${itemEnEdicion.nombre}: cantidad actualizada.`);
-        modalCantidad.hide();
-    }
-
-    formularioEdicion.addEventListener("submit", guardarCambiosCantidad);
-    modalEdicion.addEventListener("shown.bs.modal", () => cantidadEdicion.focus());
-    modalEdicion.addEventListener("hidden.bs.modal", () => {
-        itemEnEdicion = null;
-        mostrarErrorEdicion();
-    });
-
-    function actualizarResumenVenta() {
-        const unidades = detalleTemporal.reduce((total, item) => total + item.cantidad, 0);
-        const totalCentavos = detalleTemporal.reduce((total, item) => total + Math.round(item.subtotal * 100), 0);
-
-        productosDistintos.textContent = String(detalleTemporal.length);
-        unidadesTotales.textContent = String(unidades);
-        totalGeneral.textContent = (totalCentavos / 100).toFixed(2);
-        actualizarConfirmacionVenta();
-    }
-
-    function ventaListaParaConfirmar() {
-        return idCliente.value.trim() !== "" && detalleTemporal.length > 0;
-    }
-
-    function actualizarDesgloseConfirmacion() {
-        confirmacionDetalle.replaceChildren();
-
-        if (detalleTemporal.length === 0) {
-            const fila = document.createElement("tr");
-            const celda = document.createElement("td");
-            celda.colSpan = 4;
-            celda.className = "text-center text-muted py-3";
-            celda.textContent = "Sin productos.";
-            fila.append(celda);
-            confirmacionDetalle.append(fila);
+        const { totalCentavos } = VentasReglas.resumirDetalle(detalleTemporal);
+        const saldo = VentasReglas.saldoDeEfectivo(totalCentavos, Number(texto));
+        if (saldo.tipo === "cambio") {
+            saldoEfectivo.textContent = `Cambio: Bs ${precio.format(saldo.centavos / 100)}`;
+            saldoEfectivo.classList.add("text-success");
         } else {
-            detalleTemporal.forEach((item) => {
-                const fila = document.createElement("tr");
-                const producto = document.createElement("td");
-                producto.className = "text-break";
-                producto.textContent = `${item.nombre} — ${item.presentacion}`;
-
-                const precioUnitario = document.createElement("td");
-                precioUnitario.className = "text-end text-nowrap";
-                precioUnitario.textContent = precio.format(item.precioUnitario);
-
-                const unidades = document.createElement("td");
-                unidades.className = "text-center";
-                unidades.textContent = String(item.cantidad);
-
-                const subtotal = document.createElement("td");
-                subtotal.className = "text-end text-nowrap";
-                subtotal.textContent = precio.format(item.subtotal);
-
-                fila.append(producto, precioUnitario, unidades, subtotal);
-                confirmacionDetalle.append(fila);
-            });
-        }
-
-        const efectivo = efectivoPagado.valueAsNumber;
-        const errorEfectivo = efectivoPagado.value.trim() ? VentasReglas.validarEfectivo(efectivoPagado.value) : null;
-        if (!efectivoPagado.value.trim() || errorEfectivo || !Number.isFinite(efectivo) || !efectivoPagado.validity.valid) {
-            confirmacionEfectivo.textContent = "Pendiente";
-            confirmacionSaldo.textContent = errorEfectivo ?? "Ingrese un efectivo válido para calcular el cambio o faltante.";
-            confirmacionSaldo.className = "small text-muted mb-0";
-            return;
-        }
-
-        confirmacionEfectivo.textContent = precio.format(efectivo);
-        const totalCentavos = detalleTemporal.reduce(
-            (total, item) => total + Math.round(item.subtotal * 100), 0);
-        const diferenciaCentavos = Math.round(efectivo * 100) - totalCentavos;
-
-        if (diferenciaCentavos >= 0) {
-            confirmacionSaldo.textContent = `Cambio estimado: Bs ${precio.format(diferenciaCentavos / 100)}`;
-            confirmacionSaldo.className = "small text-success mb-0";
-        } else {
-            confirmacionSaldo.textContent = `Falta: Bs ${precio.format(Math.abs(diferenciaCentavos) / 100)}`;
-            confirmacionSaldo.className = "small text-danger mb-0";
+            saldoEfectivo.textContent = `Falta: Bs ${precio.format(saldo.centavos / 100)}`;
+            saldoEfectivo.classList.add("text-danger");
         }
     }
 
-    function actualizarConfirmacionVenta() {
-        const lista = ventaListaParaConfirmar();
-        registrarVenta.disabled = !lista;
-        confirmarVenta.disabled = registrandoVenta || (!ventaRegistrada && !lista);
-        confirmacionCliente.textContent = clienteSeleccionado.textContent;
-        confirmacionProductos.textContent = productosDistintos.textContent;
-        confirmacionUnidades.textContent = unidadesTotales.textContent;
-        confirmacionTotal.textContent = totalGeneral.textContent;
-        actualizarDesgloseConfirmacion();
+    function actualizarResumen() {
+        const resumen = VentasReglas.resumirDetalle(detalleTemporal);
+        unidadesTotales.textContent = String(resumen.unidades);
+        totalGeneral.textContent = precio.format(resumen.totalCentavos / 100);
+        actualizarSaldo();
+        actualizarBotonConfirmar();
     }
 
-    efectivoPagado.addEventListener("input", actualizarDesgloseConfirmacion);
-    function actualizarClienteVenta() {
-        const tieneCliente = idCliente.value.trim() !== "";
-        agregar.disabled = !tieneCliente;
+    function habilitarBusqueda() {
+        const conCliente = hayCliente();
+        entrada.disabled = !conCliente;
+        entrada.placeholder = conCliente ? MARCADOR_CON_CLIENTE : MARCADOR_SIN_CLIENTE;
+        if (conCliente) return;
 
-        if (!tieneCliente) {
-            clienteDelDetalle.textContent = "Cliente de esta venta: Ningún cliente seleccionado.";
-            ayudaAgregar.textContent = "Seleccione un cliente para habilitar esta acción.";
-            ayudaAgregar.className = "small text-muted mt-2 mb-0";
-            return;
-        }
+        limpiarBusqueda();
+    }
 
-        const datosCliente = clienteSeleccionado.textContent.replace(/^Cliente seleccionado:\s*/, "");
-        clienteDelDetalle.textContent = `Cliente de esta venta: ${datosCliente}`;
-        ayudaAgregar.textContent = "Cliente seleccionado. Ya puede agregar productos al detalle.";
-        ayudaAgregar.className = "small text-success mt-2 mb-0";
+    function limpiarBusqueda() {
+        clearTimeout(temporizador);
+        version++;
+        entrada.value = "";
+        resultados.replaceChildren();
+        resultados.setAttribute("aria-busy", "false");
+        estado.textContent = "";
+        listadoVisible = { productos: [], hayMas: false };
     }
 
     idCliente.addEventListener("change", () => {
-        actualizarClienteVenta();
-        actualizarConfirmacionVenta();
+        mostrarEstadoVenta("");
+        habilitarBusqueda();
+        actualizarBotonConfirmar();
+        if (hayCliente()) entrada.focus();
     });
-    registrarVenta.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        if (registrandoVenta || ventaRegistrada) return;
-        actualizarResumenVenta();
-        if (!ventaListaParaConfirmar()) return;
-        estadoConfirmacion.textContent = "";
-        estadoConfirmacion.hidden = true;
-        confirmacionModal.show();
-    });
-    function mostrarEstadoConfirmacion(mensaje, tipo = "info") {
-        estadoConfirmacion.textContent = mensaje;
-        estadoConfirmacion.className = `alert alert-${tipo} mb-0`;
-        estadoConfirmacion.setAttribute("role", tipo === "danger" ? "alert" : "status");
-        estadoConfirmacion.hidden = false;
-        estadoConfirmacion.scrollIntoView({ block: "nearest" });
+
+    efectivoPagado.addEventListener("input", actualizarSaldo);
+
+    function mostrarErrorFila(referencias, mensaje) {
+        referencias.error.textContent = mensaje;
+        referencias.error.hidden = !mensaje;
+        referencias.entrada.classList.toggle("is-invalid", Boolean(mensaje));
+        referencias.entrada.setAttribute("aria-invalid", String(Boolean(mensaje)));
     }
 
-    modalConfirmacion.addEventListener("hide.bs.modal", (event) => {
-        if (registrandoVenta) event.preventDefault();
-    });
+    function actualizarFila(item) {
+        const referencias = filas.get(item);
+        if (!referencias) return;
 
-    modalConfirmacion.addEventListener("hidden.bs.modal", () => {
-        if (!ventaRegistrada) return;
-        ventaRegistrada = false;
-        detalleTemporal.length = 0;
-        document.getElementById("quitarCliente").click();
-        const busquedaCliente = document.getElementById("Input_IdentificacionCliente");
-        busquedaCliente.value = "";
-        busquedaCliente.dispatchEvent(new Event("input"));
-        quitar.click();
-        entrada.value = "";
-        entrada.dispatchEvent(new Event("input"));
-        cantidad.value = "1";
-        efectivoPagado.value = "";
-        renderizarDetalle();
-        estadoConfirmacion.textContent = "";
-        estadoConfirmacion.hidden = true;
-        confirmarVenta.textContent = "Confirmar venta";
-        botonesCancelar.forEach(boton => { boton.hidden = false; });
-    });
+        referencias.entrada.value = String(item.cantidad);
+        referencias.subtotal.textContent = precio.format(item.subtotal);
+        referencias.menos.disabled = !VentasReglas.puedeDisminuir(item);
+        referencias.mas.disabled = !VentasReglas.puedeAumentar(item);
+        mostrarErrorFila(referencias, "");
+    }
 
-    confirmarVenta.addEventListener("click", async (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        if (registrandoVenta) return;
-        if (ventaRegistrada) {
-            confirmacionModal.hide();
-            return;
-        }
-        const cliente = Number(idCliente.value);
-        if (!Number.isInteger(cliente) || cliente <= 0 || cliente > 2147483647) {
-            mostrarEstadoConfirmacion("Seleccione un cliente para registrar la venta.", "danger");
-            return;
-        }
-        if (detalleTemporal.length === 0 || detalleTemporal.some(item =>
-            !Number.isInteger(item.idProducto) || item.idProducto <= 0 || item.idProducto > 2147483647 ||
-            !Number.isInteger(item.cantidad) || item.cantidad <= 0 || item.cantidad > 2147483647)) {
-            mostrarEstadoConfirmacion("Agregue al menos un producto y revise que las cantidades sean enteras mayores a cero.", "danger");
-            return;
-        }
-        const efectivo = efectivoPagado.valueAsNumber;
-        const errorEfectivo = VentasReglas.validarEfectivo(efectivoPagado.value);
-        if (errorEfectivo || !Number.isFinite(efectivo) || !efectivoPagado.validity.valid) {
-            mostrarEstadoConfirmacion(errorEfectivo ?? "Ingrese un efectivo pagado válido.", "danger");
-            return;
+    function aplicarCambio(item, resultado) {
+        const referencias = filas.get(item);
+        if (resultado.error) {
+            mostrarErrorFila(referencias, resultado.error);
+            return false;
         }
 
-        const payload = {
-            idCliente: cliente,
-            efectivoPagado: efectivo,
-            lineas: detalleTemporal.map(item => ({ idProducto: item.idProducto, cantidad: item.cantidad, precioEsperado: item.precioUnitario }))
-        };
-        registrandoVenta = true;
-        confirmarVenta.disabled = true;
-        confirmarVenta.textContent = "Registrando venta…";
-        const ventanaComprobante = window.open("", "_blank");
-        mostrarEstadoConfirmacion("Registrando venta…");
-        const inicioRegistro = performance.now();
-        async function esperarTiempoMinimoRegistro() {
-            const tiempoRestante = 800 - (performance.now() - inicioRegistro);
-            if (tiempoRestante > 0) {
-                await new Promise(resolve => setTimeout(resolve, tiempoRestante));
-            }
-        }
-        try {
-            const respuesta = await VentasReglas.fetchConSesion(confirmarVenta.dataset.registroUrl, {
-                method: "POST",
-                credentials: "same-origin",
-                headers: {
-                    "Content-Type": "application/json",
-                    Accept: "application/json",
-                    RequestVerificationToken: antiforgery.value
-                },
-                body: JSON.stringify(payload)
-            }, () => ventanaComprobante?.close());
-            const resultado = await respuesta.json().catch(() => null);
-            if (resultado?.codigo === "precio-cambiado") {
-                VentasReglas.quitarProductoDelDetalle(detalleTemporal, resultado.idProducto);
-                renderizarDetalle();
-                quitar.click();
-                actualizarConfirmacionVenta();
-                VentasReglas.actualizarProductoEnResultados(
-                    listadoVisible.productos, resultado.idProducto, resultado.precioActual, resultado.stockDisponible);
-                pintarResultados(listadoVisible);
-                const terminoVigente = entrada.value.trim();
-                if (VentasReglas.terminoDeBusquedaValido(terminoVigente)) buscar(terminoVigente, ++version);
-            }
-            if (!respuesta.ok || !resultado?.exito) {
-                throw new Error(resultado?.mensaje || (respuesta.status === 400
-                    ? "No se pudo validar la solicitud. Revise los datos o recargue la página si su sesión expiró."
-                    : "No se pudo registrar la venta. Revise su sesión e intente nuevamente."));
-            }
+        actualizarFila(item);
+        actualizarResumen();
+        mostrarEstadoVenta("");
+        return true;
+    }
 
-            let mensajeExito = "Venta registrada correctamente.";
-            if (resultado.idVenta != null) {
-                mensajeExito += ` N.º ${resultado.idVenta}.`;
-                if (ventanaComprobante) {
-                    ventanaComprobante.location.href = confirmarVenta.dataset.comprobanteBase + resultado.idVenta;
-                } else {
-                    mensajeExito += " Habilite las ventanas emergentes para ver el comprobante.";
-                }
-            } else {
-                ventanaComprobante?.close();
-            }
-            if (resultado.total != null && Number.isFinite(Number(resultado.total))) {
-                mensajeExito += ` Total definitivo: Bs ${precio.format(Number(resultado.total))}.`;
-            }
-            await esperarTiempoMinimoRegistro();
-            mostrarEstadoConfirmacion(mensajeExito, "success");
-            ventaRegistrada = true;
-            document.dispatchEvent(new CustomEvent("venta:registrada"));
-            botonesCancelar.forEach(boton => { boton.hidden = true; });
-        } catch (error) {
-            ventanaComprobante?.close();
-            await esperarTiempoMinimoRegistro();
-            mostrarEstadoConfirmacion(error instanceof TypeError
-                ? "No se pudo conectar con el servidor. La venta temporal se conserva."
-                : error.message, "danger");
-        } finally {
-            registrandoVenta = false;
-            confirmarVenta.textContent = ventaRegistrada ? "Cerrar" : "Confirmar venta";
-            registrarVenta.disabled = !ventaListaParaConfirmar();
-            confirmarVenta.disabled = !ventaRegistrada && !ventaListaParaConfirmar();
-        }
-    });
+    function crearFila(item) {
+        const fila = document.createElement("tr");
 
-    actualizarClienteVenta();
-    actualizarResumenVenta();
+        const celdaProducto = document.createElement("td");
+        celdaProducto.className = "text-break";
+        const nombre = document.createElement("div");
+        nombre.className = "fw-semibold";
+        nombre.textContent = item.nombre;
+        const presentacion = document.createElement("div");
+        presentacion.className = "small text-body-secondary";
+        presentacion.textContent = item.presentacion;
+        celdaProducto.append(nombre, presentacion);
+
+        const celdaPrecio = document.createElement("td");
+        celdaPrecio.className = "text-end text-nowrap";
+        celdaPrecio.textContent = precio.format(item.precioUnitario);
+
+        const celdaCantidad = document.createElement("td");
+        const control = document.createElement("div");
+        control.className = "input-group input-group-sm control-cantidad";
+        const menos = document.createElement("button");
+        menos.type = "button";
+        menos.className = "btn btn-outline-secondary";
+        menos.setAttribute("aria-label", `Disminuir la cantidad de ${item.nombre}`);
+        menos.innerHTML = '<i class="bi bi-dash-lg" aria-hidden="true"></i>';
+        const cantidad = document.createElement("input");
+        cantidad.type = "number";
+        cantidad.min = "1";
+        cantidad.step = "1";
+        cantidad.inputMode = "numeric";
+        cantidad.className = "form-control text-center";
+        cantidad.setAttribute("aria-label", `Cantidad de ${item.nombre}`);
+        const mas = document.createElement("button");
+        mas.type = "button";
+        mas.className = "btn btn-outline-secondary";
+        mas.setAttribute("aria-label", `Aumentar la cantidad de ${item.nombre}`);
+        mas.innerHTML = '<i class="bi bi-plus-lg" aria-hidden="true"></i>';
+        control.append(menos, cantidad, mas);
+        const error = document.createElement("div");
+        error.className = "text-danger small mt-1";
+        error.setAttribute("role", "alert");
+        error.hidden = true;
+        celdaCantidad.append(control, error);
+
+        const celdaSubtotal = document.createElement("td");
+        celdaSubtotal.className = "text-end text-nowrap fw-semibold";
+
+        const celdaQuitar = document.createElement("td");
+        celdaQuitar.className = "text-end";
+        const quitar = document.createElement("button");
+        quitar.type = "button";
+        quitar.className = "btn btn-outline-danger btn-sm";
+        quitar.setAttribute("aria-label", `Quitar ${item.nombre} del detalle`);
+        quitar.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
+        celdaQuitar.append(quitar);
+
+        fila.append(celdaProducto, celdaPrecio, celdaCantidad, celdaSubtotal, celdaQuitar);
+        filas.set(item, { entrada: cantidad, menos, mas, error, subtotal: celdaSubtotal });
+        actualizarFila(item);
+
+        menos.addEventListener("click", () => aplicarCambio(item, VentasReglas.ajustarCantidad(detalleTemporal, item, -1)));
+        mas.addEventListener("click", () => aplicarCambio(item, VentasReglas.ajustarCantidad(detalleTemporal, item, 1)));
+        cantidad.addEventListener("input", () => {
+            if (cantidad.value.trim() === "") {
+                mostrarErrorFila(filas.get(item), "");
+                return;
+            }
+            aplicarCambio(item, VentasReglas.cambiarCantidad(detalleTemporal, item, cantidad.value));
+        });
+        cantidad.addEventListener("change", () => {
+            const resultado = VentasReglas.cambiarCantidad(detalleTemporal, item, cantidad.value);
+            if (resultado.error) {
+                actualizarFila(item);
+                mostrarErrorFila(filas.get(item), resultado.error);
+                return;
+            }
+            aplicarCambio(item, resultado);
+        });
+        cantidad.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                entrada.focus();
+            }
+        });
+        quitar.addEventListener("click", () => {
+            const indice = detalleTemporal.indexOf(item);
+            if (indice < 0) return;
+            detalleTemporal.splice(indice, 1);
+            renderizarDetalle();
+            mostrarAviso(`${item.nombre} se quitó del detalle.`);
+            (tablaDetalle.querySelector("button[aria-label^='Quitar']") ?? entrada).focus();
+        });
+
+        return fila;
+    }
 
     function renderizarDetalle() {
-        actualizarResumenVenta();
         tablaDetalle.replaceChildren();
+        filas.clear();
         if (detalleTemporal.length === 0) {
             const fila = document.createElement("tr");
             const celda = document.createElement("td");
-            celda.colSpan = 6;
-            celda.className = "text-center text-muted py-4";
-            celda.textContent = "Todavía no hay productos en el detalle.";
+            celda.colSpan = 5;
+            celda.className = "text-center text-body-secondary py-4";
+            celda.textContent = "Aún no hay productos";
             fila.append(celda);
             tablaDetalle.append(fila);
-            return;
+        } else {
+            detalleTemporal.forEach((item) => tablaDetalle.append(crearFila(item)));
         }
-
-        detalleTemporal.forEach((item, indice) => {
-            const fila = document.createElement("tr");
-            [
-                [item.nombre, "text-break"],
-                [item.presentacion, "text-break"],
-                [precio.format(item.precioUnitario), "text-end"],
-                [String(item.cantidad), "text-center"],
-                [precio.format(item.subtotal), "text-end"]
-            ].forEach(([valor, clase]) => {
-                const celda = document.createElement("td");
-                celda.textContent = valor;
-                celda.className = clase;
-                fila.append(celda);
-            });
-
-            const acciones = document.createElement("td");
-            const editar = document.createElement("button");
-            editar.type = "button";
-            editar.className = "btn btn-outline-primary btn-sm me-2";
-            editar.textContent = "Editar";
-            editar.addEventListener("click", () => abrirEdicion(item));
-
-            const eliminar = document.createElement("button");
-            eliminar.type = "button";
-            eliminar.className = "btn btn-outline-danger btn-sm";
-            eliminar.textContent = "Eliminar";
-            eliminar.addEventListener("click", () => {
-                detalleTemporal.splice(indice, 1);
-                renderizarDetalle();
-                mostrarEstadoDetalle(`${item.nombre} eliminado del detalle temporal.`);
-            });
-            acciones.append(editar, eliminar);
-            fila.append(acciones);
-            tablaDetalle.append(fila);
-        });
+        actualizarResumen();
     }
 
-    agregar.addEventListener("click", () => {
-        if (!productoSeleccionado) {
-            mostrarEstadoDetalle("Seleccione un producto antes de agregarlo al detalle.", true);
-            return;
-        }
-
-        const unidades = cantidad.valueAsNumber;
-        if (!Number.isSafeInteger(unidades) || unidades <= 0 || !cantidad.validity.valid) {
-            mostrarEstadoDetalle("Ingrese una cantidad entera mayor a cero.", true);
-            cantidad.focus();
-            return;
-        }
-
-        const resultado = VentasReglas.agregarAlDetalle(detalleTemporal, productoSeleccionado, unidades);
+    function agregarProducto(producto) {
+        const resultado = VentasReglas.agregarConUnClic(detalleTemporal, producto);
         if (resultado.error) {
-            mostrarEstadoDetalle(resultado.error, true);
-            if (resultado.campo === "cantidad") cantidad.focus();
+            mostrarAviso(resultado.error, true);
+            entrada.focus();
             return;
         }
 
-        renderizarDetalle();
-        mostrarEstadoDetalle(resultado.fusionado
-            ? `${resultado.item.nombre}: se sumaron ${unidades} unidad(es) a la fila existente (${resultado.total} en total).`
-            : `${resultado.item.nombre} agregado al detalle temporal.`);
-    });
-
-    quitar.addEventListener("click", () => {
-        idProducto.value = "";
-        productoSeleccionado = null;
-        mostrarEstadoDetalle("");
-        seleccionado.textContent = "Ningún producto seleccionado.";
-        quitar.hidden = true;
-        actualizarSeleccion();
-    });
-
-    entrada.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") event.preventDefault();
-    });
-
-    entrada.addEventListener("input", () => {
-        clearTimeout(temporizador);
-        const actual = ++version;
-        const termino = entrada.value.trim();
-        resultados.replaceChildren();
-        resultados.setAttribute("aria-busy", "false");
-        if (!VentasReglas.terminoDeBusquedaValido(termino)) {
-            estado.textContent = termino ? VentasReglas.MENSAJE_BUSQUEDA_CORTA : "";
+        mostrarEstadoVenta("");
+        if (resultado.sinCambios) {
+            mostrarAviso(resultado.aviso, true);
+            entrada.focus();
             return;
         }
 
-        estado.textContent = "Buscando productos…";
-        temporizador = setTimeout(() => buscar(termino, actual), 300);
-    });
-
-    function resumenProducto(producto) {
-        return `${producto.presentacion} — Precio de venta: Bs ${precio.format(producto.precioVenta)} — Stock disponible (informativo): ${producto.stockDisponible}`;
-    }
-
-    async function consultarProducto(referencia) {
-        const url = new URL(buscador.dataset.busquedaUrl, window.location.href);
-        url.searchParams.set("termino", referencia.nombre);
-        const respuesta = await VentasReglas.fetchConSesion(url, { headers: { Accept: "application/json" }, cache: "no-store" });
-        if (!respuesta.ok) return null;
-        const listado = await respuesta.json();
-        return listado.productos.find((candidato) => candidato.id === referencia.id) ?? null;
-    }
-
-    async function refrescarStocks() {
-        const termino = entrada.value.trim();
-        if (VentasReglas.terminoDeBusquedaValido(termino)) buscar(termino, ++version);
-
-        const referencias = new Map();
-        if (productoSeleccionado) referencias.set(productoSeleccionado.id, productoSeleccionado);
-        detalleTemporal.forEach((item) => {
-            if (!referencias.has(item.idProducto)) {
-                referencias.set(item.idProducto, { id: item.idProducto, nombre: item.nombre });
-            }
-        });
-
-        for (const [id, referencia] of referencias) {
-            try {
-                const actualizado = await consultarProducto(referencia);
-                if (!actualizado) continue;
-
-                if (productoSeleccionado?.id === id) {
-                    productoSeleccionado.stockDisponible = actualizado.stockDisponible;
-                    seleccionado.textContent = `Producto seleccionado: ${productoSeleccionado.nombre} — ${resumenProducto(productoSeleccionado)}`;
-                }
-                detalleTemporal
-                    .filter((item) => item.idProducto === id)
-                    .forEach((item) => { item.stockDisponible = Number(actualizado.stockDisponible); });
-            } catch {
-                continue;
-            }
+        if (resultado.fusionado) {
+            actualizarFila(resultado.item);
+            actualizarResumen();
+        } else {
+            renderizarDetalle();
         }
+
+        mostrarAviso(resultado.aviso ?? `Se agregó ${resultado.item.nombre} (${resultado.total}).`, Boolean(resultado.tope));
+        limpiarBusqueda();
+        entrada.focus();
     }
-
-    document.addEventListener("venta:anulada", refrescarStocks);
-    document.addEventListener("venta:registrada", refrescarStocks);
-
-    let listadoVisible = { productos: [], hayMas: false };
 
     function pintarResultados(listado) {
         listadoVisible = listado;
         resultados.replaceChildren();
         listado.productos.forEach((producto) => {
+            const sinStock = Number(producto.stockDisponible) <= 0;
             const fila = document.createElement("li");
-            fila.className = "list-group-item";
-            const nombre = document.createElement("div");
-            nombre.className = "fw-semibold text-break";
-            nombre.textContent = producto.nombre;
-            const datos = document.createElement("div");
-            datos.className = "small text-muted text-break";
-            const resumen = resumenProducto(producto);
-            datos.textContent = resumen;
             const boton = document.createElement("button");
             boton.type = "button";
+            boton.className = "resultado-producto";
             boton.dataset.productoId = String(producto.id);
-            boton.setAttribute("aria-label", `Seleccionar ${producto.nombre}, ${producto.presentacion}`);
-            boton.addEventListener("click", () => {
-                idProducto.value = String(producto.id);
-                productoSeleccionado = producto;
-                mostrarEstadoDetalle("");
-                seleccionado.textContent = `Producto seleccionado: ${producto.nombre} — ${resumen}`;
-                quitar.hidden = false;
-                actualizarSeleccion();
-            });
-            fila.append(nombre, datos, boton);
+            boton.disabled = sinStock;
+            boton.setAttribute("aria-label", sinStock
+                ? `${producto.nombre}, ${producto.presentacion}, sin stock`
+                : `Agregar ${producto.nombre}, ${producto.presentacion}, Bs ${precio.format(producto.precioVenta)}, stock ${producto.stockDisponible}`);
+
+            const nombre = document.createElement("span");
+            nombre.className = "resultado-principal text-break";
+            nombre.textContent = producto.nombre;
+            const presentacion = document.createElement("span");
+            presentacion.className = "resultado-secundario text-break";
+            presentacion.textContent = producto.presentacion;
+            const valor = document.createElement("span");
+            valor.className = "resultado-precio";
+            valor.textContent = `Bs ${precio.format(producto.precioVenta)}`;
+            const stock = document.createElement("span");
+            stock.className = sinStock ? "badge text-bg-secondary" : "badge text-bg-light border";
+            stock.textContent = sinStock ? "Sin stock" : `Stock ${producto.stockDisponible}`;
+            boton.append(nombre, presentacion, valor, stock);
+
+            boton.addEventListener("click", () => agregarProducto(producto));
+            fila.append(boton);
             resultados.append(fila);
         });
-        actualizarSeleccion();
         estado.textContent = listado.productos.length
             ? listado.hayMas
                 ? `Mostrando los primeros ${listado.productos.length} productos. Afine la búsqueda para ver otras coincidencias.`
@@ -798,6 +561,163 @@
             if (actual === version) resultados.setAttribute("aria-busy", "false");
         }
     }
+
+    entrada.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        const primero = listadoVisible.productos.find((producto) => Number(producto.stockDisponible) > 0);
+        if (primero) agregarProducto(primero);
+    });
+
+    entrada.addEventListener("input", () => {
+        clearTimeout(temporizador);
+        const actual = ++version;
+        const termino = entrada.value.trim();
+        resultados.replaceChildren();
+        resultados.setAttribute("aria-busy", "false");
+        listadoVisible = { productos: [], hayMas: false };
+        if (!VentasReglas.terminoDeBusquedaValido(termino)) {
+            estado.textContent = termino ? VentasReglas.MENSAJE_BUSQUEDA_CORTA : "";
+            return;
+        }
+
+        estado.textContent = "Buscando productos…";
+        temporizador = setTimeout(() => buscar(termino, actual), 300);
+    });
+
+    async function consultarProducto(referencia) {
+        const url = new URL(buscador.dataset.busquedaUrl, window.location.href);
+        url.searchParams.set("termino", referencia.nombre);
+        const respuesta = await VentasReglas.fetchConSesion(url, { headers: { Accept: "application/json" }, cache: "no-store" });
+        if (!respuesta.ok) return null;
+        const listado = await respuesta.json();
+        return listado.productos.find((candidato) => candidato.id === referencia.id) ?? null;
+    }
+
+    async function refrescarStocks() {
+        const termino = entrada.value.trim();
+        if (VentasReglas.terminoDeBusquedaValido(termino)) buscar(termino, ++version);
+
+        for (const item of [...detalleTemporal]) {
+            try {
+                const actualizado = await consultarProducto({ id: item.idProducto, nombre: item.nombre });
+                if (!actualizado) continue;
+
+                item.stockDisponible = Number(actualizado.stockDisponible);
+                actualizarFila(item);
+            } catch {
+                continue;
+            }
+        }
+    }
+
+    document.addEventListener("venta:anulada", refrescarStocks);
+
+    function reiniciarVenta() {
+        detalleTemporal.length = 0;
+        efectivoPagado.value = "";
+        limpiarBusqueda();
+        renderizarDetalle();
+        mostrarAviso("");
+        document.dispatchEvent(new CustomEvent("venta:reiniciar"));
+    }
+
+    function atenderPrecioCambiado(resultado) {
+        VentasReglas.quitarProductoDelDetalle(detalleTemporal, resultado.idProducto);
+        renderizarDetalle();
+        VentasReglas.actualizarProductoEnResultados(
+            listadoVisible.productos, resultado.idProducto, resultado.precioActual, resultado.stockDisponible);
+        const terminoVigente = entrada.value.trim();
+        if (VentasReglas.terminoDeBusquedaValido(terminoVigente)) {
+            pintarResultados(listadoVisible);
+            buscar(terminoVigente, ++version);
+        }
+    }
+
+    confirmarVenta.addEventListener("click", async (event) => {
+        event.preventDefault();
+        if (registrandoVenta) return;
+
+        const cliente = Number(idCliente.value);
+        if (!Number.isInteger(cliente) || cliente <= 0 || cliente > 2147483647) {
+            mostrarEstadoVenta("Seleccione un cliente para registrar la venta.", "danger");
+            return;
+        }
+        if (detalleTemporal.length === 0 || detalleTemporal.some(item =>
+            !Number.isInteger(item.idProducto) || item.idProducto <= 0 || item.idProducto > 2147483647 ||
+            !Number.isInteger(item.cantidad) || item.cantidad <= 0 || item.cantidad > 2147483647)) {
+            mostrarEstadoVenta("Agregue al menos un producto y revise que las cantidades sean enteras mayores a cero.", "danger");
+            return;
+        }
+        const errorEfectivo = VentasReglas.validarEfectivo(efectivoPagado.value);
+        if (errorEfectivo) {
+            mostrarEstadoVenta(errorEfectivo, "danger");
+            efectivoPagado.focus();
+            return;
+        }
+
+        const payload = {
+            idCliente: cliente,
+            efectivoPagado: Number(efectivoPagado.value),
+            lineas: detalleTemporal.map(item => ({ idProducto: item.idProducto, cantidad: item.cantidad, precioEsperado: item.precioUnitario }))
+        };
+        registrandoVenta = true;
+        confirmarVenta.disabled = true;
+        confirmarVenta.textContent = "Registrando venta…";
+        mostrarEstadoVenta("Registrando venta…");
+        const ventanaComprobante = window.open("", "_blank");
+        try {
+            const respuesta = await VentasReglas.fetchConSesion(confirmarVenta.dataset.registroUrl, {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                    RequestVerificationToken: antiforgery.value
+                },
+                body: JSON.stringify(payload)
+            }, () => ventanaComprobante?.close());
+            const resultado = await respuesta.json().catch(() => null);
+            if (resultado?.codigo === "precio-cambiado") {
+                atenderPrecioCambiado(resultado);
+            }
+            if (!respuesta.ok || !resultado?.exito) {
+                throw new Error(resultado?.mensaje || (respuesta.status === 400
+                    ? "No se pudo validar la solicitud. Revise los datos o recargue la página si su sesión expiró."
+                    : "No se pudo registrar la venta. Revise su sesión e intente nuevamente."));
+            }
+
+            let mensajeExito = "Venta registrada correctamente.";
+            if (resultado.idVenta != null) {
+                mensajeExito += ` N.º ${resultado.idVenta}.`;
+                if (ventanaComprobante) {
+                    ventanaComprobante.location.href = confirmarVenta.dataset.comprobanteBase + resultado.idVenta;
+                } else {
+                    mensajeExito += " Habilite las ventanas emergentes para ver el comprobante.";
+                }
+            } else {
+                ventanaComprobante?.close();
+            }
+            if (resultado.total != null && Number.isFinite(Number(resultado.total))) {
+                mensajeExito += ` Total: Bs ${precio.format(Number(resultado.total))}.`;
+            }
+            reiniciarVenta();
+            mostrarEstadoVenta(mensajeExito, "success");
+            document.dispatchEvent(new CustomEvent("venta:registrada"));
+        } catch (error) {
+            ventanaComprobante?.close();
+            mostrarEstadoVenta(error instanceof TypeError
+                ? "No se pudo conectar con el servidor. La venta se conserva."
+                : error.message, "danger");
+        } finally {
+            registrandoVenta = false;
+            confirmarVenta.textContent = "Confirmar venta";
+            actualizarBotonConfirmar();
+        }
+    });
+
+    habilitarBusqueda();
+    renderizarDetalle();
 })();
 
 (() => {
