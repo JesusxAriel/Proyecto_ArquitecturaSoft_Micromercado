@@ -48,6 +48,10 @@ public class SalesHistorialHandlerTests
         var linea = Assert.Single(json.GetProperty("lineas").EnumerateArray());
         Assert.Equal(4, linea.GetProperty("cantidad").GetInt32());
         Assert.Equal("Leche", linea.GetProperty("descripcion").GetString());
+        var lotes = linea.GetProperty("lotes").EnumerateArray().ToArray();
+        Assert.Equal(2, lotes.Length);
+        Assert.Equal("LOT-A", lotes[0].GetProperty("codigoLote").GetString());
+        Assert.Equal(3, lotes[0].GetProperty("cantidad").GetInt32());
     }
 
     [Fact]
@@ -117,7 +121,7 @@ public class SalesHistorialHandlerTests
             return Task.FromResult<VentaDetalleDto?>(new VentaDetalleDto(
                 7, "V-20260615-0007", Fecha, "123", "Cliente Uno", "Cajero Uno", "COMPLETADA",
                 40m, 50m, 10m, null, null, null,
-                [new LineaDetalleVentaDto(4, "Leche", 10m, 40m)]));
+                [new LineaDetalleVentaDto(4, "Leche", 10m, 40m, [new LoteConsumidoDto("LOT-A", 3), new LoteConsumidoDto("LOT-B", 1)])]));
         }
     }
 }

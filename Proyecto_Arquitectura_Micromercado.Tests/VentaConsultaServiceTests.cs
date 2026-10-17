@@ -36,8 +36,8 @@ public class VentaConsultaServiceTests
         var servicio = Crear(new ConsultaRepositoryDoble
         {
             Detalle = Venta(
-                new FilaDetalleVenta(1, "Leche", 3, 10m, 30m),
-                new FilaDetalleVenta(1, "Leche", 2, 10m, 20m))
+                new FilaDetalleVenta(1, "Leche", 3, 10m, 30m, "LOT-A"),
+                new FilaDetalleVenta(1, "Leche", 2, 10m, 20m, "LOT-B"))
         });
 
         var detalle = await servicio.ObtenerDetalleAsync(5);
@@ -46,6 +46,25 @@ public class VentaConsultaServiceTests
         Assert.Equal(5, linea.Cantidad);
         Assert.Equal(50m, linea.Subtotal);
         Assert.Equal("Leche", linea.Descripcion);
+        Assert.Equal(
+            [new LoteConsumidoDto("LOT-A", 3), new LoteConsumidoDto("LOT-B", 2)],
+            linea.Lotes);
+    }
+
+    [Fact]
+    public async Task Las_filas_del_mismo_lote_se_suman_dentro_de_la_linea()
+    {
+        var servicio = Crear(new ConsultaRepositoryDoble
+        {
+            Detalle = Venta(
+                new FilaDetalleVenta(1, "Leche", 3, 10m, 30m, "LOT-A"),
+                new FilaDetalleVenta(1, "Leche", 4, 10m, 40m, "LOT-A"))
+        });
+
+        var detalle = await servicio.ObtenerDetalleAsync(5);
+
+        var linea = Assert.Single(detalle!.Lineas);
+        Assert.Equal([new LoteConsumidoDto("LOT-A", 7)], linea.Lotes);
     }
 
     [Fact]
@@ -54,8 +73,8 @@ public class VentaConsultaServiceTests
         var servicio = Crear(new ConsultaRepositoryDoble
         {
             Detalle = Venta(
-                new FilaDetalleVenta(1, "Leche", 3, 10m, 30m),
-                new FilaDetalleVenta(2, "Pan", 2, 5m, 10m))
+                new FilaDetalleVenta(1, "Leche", 3, 10m, 30m, "LOT-A"),
+                new FilaDetalleVenta(2, "Pan", 2, 5m, 10m, "LOT-P"))
         });
 
         var detalle = await servicio.ObtenerDetalleAsync(5);

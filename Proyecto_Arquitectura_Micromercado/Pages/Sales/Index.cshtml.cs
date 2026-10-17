@@ -253,7 +253,12 @@ public sealed class IndexModel(
                     cantidad = linea.Cantidad,
                     descripcion = linea.Descripcion,
                     precioUnitario = linea.PrecioUnitario,
-                    subtotal = linea.Subtotal
+                    subtotal = linea.Subtotal,
+                    lotes = linea.Lotes.Select(lote => new
+                    {
+                        codigoLote = lote.CodigoLote,
+                        cantidad = lote.Cantidad
+                    })
                 })
             });
         }

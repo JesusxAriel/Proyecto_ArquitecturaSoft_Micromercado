@@ -8,11 +8,16 @@ public sealed record VentaResumenDto(
     string Estado,
     decimal Total);
 
+public sealed record LoteConsumidoDto(
+    string CodigoLote,
+    int Cantidad);
+
 public sealed record LineaDetalleVentaDto(
     int Cantidad,
     string Descripcion,
     decimal PrecioUnitario,
-    decimal Subtotal);
+    decimal Subtotal,
+    IReadOnlyList<LoteConsumidoDto> Lotes);
 
 public sealed record VentaDetalleDto(
     int Id,
