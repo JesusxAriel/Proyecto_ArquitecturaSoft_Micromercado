@@ -534,6 +534,7 @@
             if (resultado?.codigo === "precio-cambiado") {
                 VentasReglas.quitarProductoDelDetalle(detalleTemporal, resultado.idProducto);
                 renderizarDetalle();
+                quitar.click();
                 actualizarConfirmacionVenta();
             }
             if (!respuesta.ok || !resultado?.exito) {
