@@ -404,6 +404,9 @@ La entidad `Domain/Suppliers/Supplier` no lleva ningún atributo de validación.
 ## ⚠️ Limitaciones conocidas
 
 - **Validación por atributos en Domain (Product y Category).** `Supplier` ya usa un modelo de formulario (`SupplierFormModel`) y su entidad de Domain no tiene DataAnnotations. `Product` y `Category` mantienen sus validaciones por atributos en `Domain`, y las Pages las enlazan directamente. Están pendientes de aplicar el mismo patrón; hasta entonces, la prueba de arquitectura que prohíbe DataAnnotations en Domain se limita a `Domain/Suppliers`.
+- **Sin idempotencia al registrar ventas.** Si el mismo envío llegara dos veces (por ejemplo, un reintento de red), se registrarían dos ventas; la pantalla solo evita el doble clic sobre Confirmar.
+- **Números de comprobante no correlativos.** Si una venta falla después de crear su cabecera, la transacción se revierte y el contador de identificadores deja un hueco en la secuencia de `V-aaaammdd-NNNN`.
+- **Anulación sobre un lote ya dado de baja.** Anular una venta cuyo lote vencido ya se dio de baja devuelve las unidades a ese lote inactivo, por lo que el stock mostrado no aumenta.
 
 ## 📚 Documentación adicional
 
