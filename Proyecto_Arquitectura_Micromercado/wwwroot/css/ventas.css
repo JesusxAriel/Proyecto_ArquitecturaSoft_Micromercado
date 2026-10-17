@@ -1,0 +1,115 @@
+.sale-heading {
+    border-bottom: 1px solid #d8e0e8;
+    padding-bottom: 1rem;
+}
+
+.sale-kicker {
+    color: #64748b;
+    font-size: .75rem;
+    font-weight: 700;
+    margin-bottom: .25rem;
+    text-transform: uppercase;
+}
+
+.sale-date {
+    border-left: 3px solid #f59e0b;
+    padding-left: .85rem;
+}
+
+.sale-date span,
+.sale-date time {
+    display: block;
+}
+
+.sale-date span {
+    color: #64748b;
+    font-size: .8rem;
+}
+
+.sale-date time {
+    color: #1e293b;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.sale-panel {
+    border: 1px solid #d8e0e8;
+    border-radius: 6px;
+    box-shadow: none !important;
+}
+
+.sale-panel .card-body {
+    padding: 1.25rem;
+}
+
+.sale-panel h2 {
+    color: #1e293b;
+}
+
+.sale-lines thead th {
+    background: #f1f5f9;
+    color: #334155;
+    font-size: .8rem;
+    white-space: nowrap;
+}
+
+.sale-summary {
+    background: #f8fafc;
+    border: 1px solid #d8e0e8;
+    border-radius: 6px;
+}
+
+.sale-summary-total {
+    color: #1e293b;
+    font-size: 1.2rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.sale-primary-action {
+    min-width: 10rem;
+}
+
+#resultadosClientes > .list-group-item,
+#resultadosProductos > .list-group-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: .75rem;
+    padding: .5rem .75rem;
+}
+
+#resultadosClientes > .list-group-item > div,
+#resultadosProductos > .list-group-item > div {
+    grid-column: 1;
+    min-width: 0;
+    line-height: 1.35;
+}
+
+#resultadosClientes > .list-group-item > button,
+#resultadosProductos > .list-group-item > button {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    margin-top: 0 !important;
+}
+
+#resultadosProductos {
+    max-height: 23rem;
+    overflow-y: auto;
+}
+
+#estadoBusquedaClientes:empty,
+#estadoBusquedaProductos:empty,
+#estadoDetalle:empty {
+    margin: 0 !important;
+}
+
+@media (max-width: 575.98px) {
+    .sale-panel .card-body {
+        padding: 1rem;
+    }
+
+    .sale-date {
+        width: 100%;
+    }
+}
