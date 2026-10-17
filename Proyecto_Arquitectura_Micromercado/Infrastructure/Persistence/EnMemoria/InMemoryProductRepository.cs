@@ -160,6 +160,25 @@ public sealed class InMemoryProductRepository(
         CancellationToken cancellationToken = default) =>
         Task.FromResult(Activos().Any(p => p.IdProveedor == idProveedor));
 
+    public Task<ResultadoBusquedaParaVenta> BuscarParaVentaAsync(
+        string termino,
+        int limite,
+        CancellationToken cancellationToken = default)
+    {
+        var coincidencias = Ordenados(Activos())
+            .Where(p => TextoEnMemoria.Contiene(p.Nombre, termino)
+                || TextoEnMemoria.Contiene(p.EmpaquePresentacion, termino))
+            .Take(limite + 1)
+            .ToList();
+
+        var productos = coincidencias
+            .Take(limite)
+            .Select(p => new ProductoParaVenta(p.Id, p.Nombre, p.EmpaquePresentacion, p.PrecioVenta, p.StockCalculado))
+            .ToList();
+
+        return Task.FromResult(new ResultadoBusquedaParaVenta(productos, coincidencias.Count > limite));
+    }
+
     public Task<decimal?> ObtenerPrecioVigenteAsync(
         int idProducto,
         CancellationToken cancellationToken = default) =>

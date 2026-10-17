@@ -220,6 +220,41 @@ public sealed class MySqlProductRepository(
         return resultado is null || resultado == DBNull.Value ? null : Convert.ToDecimal(resultado);
     }
 
+    public async Task<ResultadoBusquedaParaVenta> BuscarParaVentaAsync(
+        string termino,
+        int limite,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT p.id, p.nombre, e.nombre AS empaquePresentacion, p.precioVenta, p.stockActual
+            FROM PRODUCTO p
+            INNER JOIN EMPAQUE e ON e.id = p.idEmpaque
+            WHERE p.estaActivo = 1 AND (p.nombre LIKE @patron OR e.nombre LIKE @patron)
+            ORDER BY p.nombre, p.id
+            LIMIT @limite;
+            """;
+
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
+        command.Parameters.AddWithValue("@patron", SqlLike.ContainsPattern(termino));
+        command.Parameters.AddWithValue("@limite", limite + 1);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+        var productos = new List<ProductoParaVenta>();
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            productos.Add(new ProductoParaVenta(
+                reader.GetInt32(reader.GetOrdinal("id")),
+                reader.GetString(reader.GetOrdinal("nombre")),
+                reader.GetString(reader.GetOrdinal("empaquePresentacion")),
+                reader.GetDecimal(reader.GetOrdinal("precioVenta")),
+                reader.GetInt32(reader.GetOrdinal("stockActual"))));
+        }
+
+        var hayMas = productos.Count > limite;
+        return new ResultadoBusquedaParaVenta(hayMas ? productos.Take(limite).ToList() : productos, hayMas);
+    }
+
     public Task<IReadOnlyList<LookupOption>> GetPackagingsAsync(CancellationToken cancellationToken = default) =>
         GetLookupAsync("SELECT id, nombre FROM EMPAQUE WHERE estaActivo = 1 ORDER BY nombre;", cancellationToken);
 

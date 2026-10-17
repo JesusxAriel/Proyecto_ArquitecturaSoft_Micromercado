@@ -123,6 +123,12 @@ internal sealed class ProductRepositoryConErroresTraducidos(IProductRepository i
         ErroresDePersistencia.TraducirAsync(
             () => interno.ExistenProductosActivosDelProveedorAsync(idProveedor, cancellationToken));
 
+    public Task<ResultadoBusquedaParaVenta> BuscarParaVentaAsync(
+        string termino,
+        int limite,
+        CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(() => interno.BuscarParaVentaAsync(termino, limite, cancellationToken));
+
     public Task<decimal?> ObtenerPrecioVigenteAsync(
         int idProducto,
         CancellationToken cancellationToken = default) =>

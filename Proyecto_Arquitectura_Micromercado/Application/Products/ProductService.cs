@@ -8,6 +8,8 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Products;
 public sealed class ProductService(IProductRepository repository, IPriceHistoryRepository priceHistoryRepository) : IProductService
 {
     private const decimal MaxPrice = 99_999_999.99m;
+    private const int LongitudMinimaBusquedaParaVenta = 2;
+    private const int LimiteBusquedaParaVenta = 10;
 
     public Task<IReadOnlyList<ProductListItem>> GetAllAsync(CancellationToken cancellationToken = default) =>
         repository.GetAllAsync(cancellationToken);
@@ -34,6 +36,18 @@ public sealed class ProductService(IProductRepository repository, IPriceHistoryR
         return PagedQuery.ExecuteAsync(page, pageSize,
             (currentPage, currentSize) =>
                 repository.GetPagedForSalesAsync(currentPage, currentSize, search, cancellationToken));
+    }
+
+    public Task<ResultadoBusquedaParaVenta> BuscarParaVentaAsync(
+        string? termino, CancellationToken cancellationToken = default)
+    {
+        var normalizado = PagedQuery.NormalizeSearch(termino);
+        if (normalizado is null || normalizado.Length < LongitudMinimaBusquedaParaVenta)
+        {
+            return Task.FromResult(ResultadoBusquedaParaVenta.Vacio);
+        }
+
+        return repository.BuscarParaVentaAsync(normalizado, LimiteBusquedaParaVenta, cancellationToken);
     }
 
     public Task<Product?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
