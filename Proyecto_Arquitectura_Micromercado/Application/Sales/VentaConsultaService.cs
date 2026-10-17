@@ -55,6 +55,10 @@ public sealed class VentaConsultaService(
                 grupo.Sum(fila => fila.Cantidad),
                 grupo.First().Descripcion,
                 grupo.Key.PrecioUnitario,
-                grupo.Sum(fila => fila.Subtotal)))
+                grupo.Sum(fila => fila.Subtotal),
+                grupo
+                    .GroupBy(fila => fila.CodigoLote)
+                    .Select(lote => new LoteConsumidoDto(lote.Key, lote.Sum(fila => fila.Cantidad)))
+                    .ToList()))
             .ToList();
 }

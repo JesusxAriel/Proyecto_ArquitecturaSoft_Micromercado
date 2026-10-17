@@ -1,8 +1,11 @@
+using System.Globalization;
 using Proyecto_Arquitectura_Micromercado.Application.Common;
+using Proyecto_Arquitectura_Micromercado.Application.Customers;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
 using Proyecto_Arquitectura_Micromercado.Application.Security;
 using Proyecto_Arquitectura_Micromercado.Domain.Sales;
+using Proyecto_Arquitectura_Micromercado.Domain.Stock;
 
 namespace Proyecto_Arquitectura_Micromercado.Application.Facades;
 
@@ -12,14 +15,41 @@ public sealed class FachadaVenta(
     IConPrecioVigente precios,
     IFachadaActualizacionStockProducto stock,
     IUsuarioActual usuarioActual,
-    TimeProvider reloj) : IFachadaVenta
+    TimeProvider reloj,
+    IDetectorDeInterbloqueo interbloqueos,
+    IClienteConsultaRepository clientes) : IFachadaVenta
 {
+    private const int IntentosMaximos = 2;
+
     public async Task<ResultadoVentaDto> RegistrarVentaAsync(
         NuevaVentaDto dto,
         CancellationToken cancellationToken = default)
     {
         Validar(dto);
 
+        if (!await clientes.ExisteActivoAsync(dto.IdCliente, cancellationToken))
+        {
+            throw new InvalidOperationException("Cliente inexistente o inactivo.");
+        }
+
+        var ordenado = dto with { Lineas = [.. dto.Lineas.OrderBy(linea => linea.IdProducto)] };
+
+        for (var intento = 1; ; intento++)
+        {
+            try
+            {
+                return await RegistrarEnUnaTransaccionAsync(ordenado, cancellationToken);
+            }
+            catch (Exception ex) when (intento < IntentosMaximos && interbloqueos.EsInterbloqueo(ex))
+            {
+            }
+        }
+    }
+
+    private async Task<ResultadoVentaDto> RegistrarEnUnaTransaccionAsync(
+        NuevaVentaDto dto,
+        CancellationToken cancellationToken)
+    {
         await unidad.IniciarAsync(cancellationToken);
         try
         {
@@ -32,7 +62,12 @@ public sealed class FachadaVenta(
                 var precio = await precios.ObtenerPrecioVigenteAsync(linea.IdProducto, cancellationToken)
                     ?? throw new InvalidOperationException("Producto inexistente o inactivo.");
 
-                var consumos = await stock.DescontarAsync(linea.IdProducto, linea.Cantidad, cancellationToken);
+                if (linea.PrecioEsperado is { } esperado && esperado != precio)
+                {
+                    throw await PrecioCambiadoAsync(linea.IdProducto, precio, cancellationToken);
+                }
+
+                var consumos = await DescontarAsync(linea, cancellationToken);
                 foreach (var consumo in consumos)
                 {
                     await ventaRepository.InsertarDetalleAsync(
@@ -60,6 +95,37 @@ public sealed class FachadaVenta(
         }
     }
 
+    private async Task<PrecioCambiadoException> PrecioCambiadoAsync(
+        int idProducto,
+        decimal precioVigente,
+        CancellationToken cancellationToken)
+    {
+        var descripcion = await precios.ObtenerDescripcionAsync(idProducto, cancellationToken);
+        var producto = descripcion?.ToString() ?? $"el producto {idProducto}";
+        var importe = precioVigente.ToString("0.00", CultureInfo.GetCultureInfo("es-BO"));
+
+        return new PrecioCambiadoException(
+            idProducto,
+            precioVigente,
+            $"El precio de {producto} cambió a Bs {importe} desde que se agregó al detalle. Vuelva a agregarlo para continuar con el precio vigente.");
+    }
+
+    private async Task<IReadOnlyList<ConsumoDeLote>> DescontarAsync(
+        LineaVentaDto linea,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await stock.DescontarAsync(linea.IdProducto, linea.Cantidad, cancellationToken);
+        }
+        catch (StockInsuficienteException original)
+        {
+            var descripcion = await precios.ObtenerDescripcionAsync(linea.IdProducto, cancellationToken);
+            if (descripcion is null) throw;
+            throw new StockInsuficienteException($"Stock insuficiente para {descripcion}.", original);
+        }
+    }
+
     private static void Validar(NuevaVentaDto dto)
     {
         ArgumentNullException.ThrowIfNull(dto);
@@ -82,6 +148,16 @@ public sealed class FachadaVenta(
         if (dto.EfectivoPagado < 0)
         {
             throw new InvalidOperationException("El efectivo pagado no puede ser negativo.");
+        }
+
+        if (dto.EfectivoPagado > Venta.EfectivoMaximo)
+        {
+            throw new InvalidOperationException("El efectivo pagado no puede superar Bs 1.000.000,00.");
+        }
+
+        if (decimal.Round(dto.EfectivoPagado, 2) != dto.EfectivoPagado)
+        {
+            throw new InvalidOperationException("El efectivo pagado admite hasta dos decimales.");
         }
     }
 }

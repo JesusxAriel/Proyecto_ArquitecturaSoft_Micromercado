@@ -18,8 +18,14 @@ public sealed class IndexModel(
     IFachadaVenta fachadaVenta,
     IVentaConsultaService ventaConsultaService,
     IFachadaAnulacion fachadaAnulacion,
+    IClienteCreacionService clienteCreacionService,
     ILogger<IndexModel> logger) : PageModel
 {
+    private static readonly TimeSpan TiempoMaximoBusqueda = TimeSpan.FromSeconds(8);
+    private static readonly TimeSpan TiempoMaximoConsulta = TimeSpan.FromSeconds(8);
+    private static readonly TimeSpan TiempoMaximoEscritura = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan TiempoMaximoCreacionDeCliente = TimeSpan.FromSeconds(15);
+
     public SaleInputModel Input { get; } = new();
     public DateTime FechaActual { get; } = DateTime.Now;
 
@@ -27,12 +33,12 @@ public sealed class IndexModel(
     {
     }
 
-    public async Task<JsonResult> OnPostRegistrarVentaAsync(
+    public async Task<IActionResult> OnPostRegistrarVentaAsync(
         [FromBody] RegistrarVentaInput? venta, CancellationToken cancellationToken)
     {
         if (venta is null || !ModelState.IsValid || venta.IdCliente is null ||
             venta.EfectivoPagado is null || venta.Lineas is null ||
-            venta.Lineas.Any(linea => linea is null || linea.IdProducto is null || linea.Cantidad is null))
+            venta.Lineas.Any(linea => linea is null || linea.IdProducto is null || linea.Cantidad is null || linea.PrecioEsperado is null))
         {
             return new JsonResult(new { exito = false, mensaje = "Revise el cliente, el efectivo y las cantidades de la venta. Todos son obligatorios y deben ser válidos." })
             {
@@ -40,32 +46,96 @@ public sealed class IndexModel(
             };
         }
 
-        try
+        return await EjecutarSinCancelacionAsync(
+            cancellationToken,
+            TiempoMaximoEscritura,
+            async limite =>
+            {
+                try
+                {
+                    var resultado = await fachadaVenta.RegistrarVentaAsync(new NuevaVentaDto(
+                        venta.IdCliente!.Value, venta.EfectivoPagado!.Value,
+                        venta.Lineas!.Select(linea => new LineaVentaDto(linea.IdProducto!.Value, linea.Cantidad!.Value, linea.PrecioEsperado!.Value)).ToArray()),
+                        limite);
+                    return new JsonResult(new { exito = true, idVenta = resultado.IdVenta, total = resultado.Total });
+                }
+                catch (PrecioCambiadoException ex)
+                {
+                    return new JsonResult(new
+                    {
+                        exito = false,
+                        mensaje = ex.Message,
+                        codigo = "precio-cambiado",
+                        idProducto = ex.IdProducto,
+                        precioActual = ex.PrecioVigente
+                    })
+                    {
+                        StatusCode = StatusCodes.Status400BadRequest
+                    };
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or ValidationException)
+                {
+                    return new JsonResult(new { exito = false, mensaje = ex.Message })
+                    {
+                        StatusCode = StatusCodes.Status400BadRequest
+                    };
+                }
+            },
+            "el registro de la venta",
+            new { exito = false, mensaje = "No se pudo registrar la venta. Revise el stock disponible y el efectivo pagado, o intente nuevamente." });
+    }
+
+    public async Task<IActionResult> OnPostCrearClienteAsync(
+        [FromBody] ClienteCreacionDto? cliente, CancellationToken cancellationToken)
+    {
+        if (cliente is null || !ModelState.IsValid)
         {
-            var resultado = await fachadaVenta.RegistrarVentaAsync(new NuevaVentaDto(
-                venta.IdCliente!.Value, venta.EfectivoPagado!.Value,
-                venta.Lineas!.Select(linea => new LineaVentaDto(linea.IdProducto!.Value, linea.Cantidad!.Value)).ToArray()),
-                cancellationToken);
-            return new JsonResult(new { exito = true, idVenta = resultado.IdVenta, total = resultado.Total });
-        }
-        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or ValidationException)
-        {
-            return new JsonResult(new { exito = false, mensaje = ex.Message })
+            var mensajes = ModelState.Values
+                .SelectMany(estado => estado.Errors)
+                .Select(error => error.ErrorMessage)
+                .Where(mensaje => !string.IsNullOrWhiteSpace(mensaje))
+                .Distinct();
+            var texto = string.Join(" ", mensajes);
+
+            return new JsonResult(new
+            {
+                exito = false,
+                mensaje = string.IsNullOrWhiteSpace(texto) ? "Ingrese el CI/NIT y la razón social." : texto
+            })
             {
                 StatusCode = StatusCodes.Status400BadRequest
             };
         }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "No se pudo registrar la venta.");
-            return new JsonResult(new { exito = false, mensaje = "No se pudo registrar la venta. Revise el stock disponible y el efectivo pagado, o intente nuevamente." })
+
+        return await EjecutarSinCancelacionAsync(
+            cancellationToken,
+            TiempoMaximoCreacionDeCliente,
+            async limite =>
             {
-                StatusCode = StatusCodes.Status503ServiceUnavailable
-            };
-        }
+                try
+                {
+                    var id = await clienteCreacionService.CrearAsync(cliente, limite);
+                    return new JsonResult(new
+                    {
+                        exito = true,
+                        id,
+                        nitCi = cliente.NitCi.Trim(),
+                        razonSocial = cliente.RazonSocial.Trim()
+                    });
+                }
+                catch (Exception ex) when (ex is ClienteDuplicadoException or ValidationException)
+                {
+                    return new JsonResult(new { exito = false, mensaje = ex.Message })
+                    {
+                        StatusCode = StatusCodes.Status400BadRequest
+                    };
+                }
+            },
+            "el registro del cliente",
+            new { exito = false, mensaje = "No se pudo registrar el cliente. Intente nuevamente." });
     }
 
-    public async Task<JsonResult> OnPostAnularVentaAsync(
+    public async Task<IActionResult> OnPostAnularVentaAsync(
         [FromBody] AnularVentaInput? entrada, CancellationToken cancellationToken)
     {
         if (!User.IsInRole(Roles.Administrador))
@@ -84,26 +154,26 @@ public sealed class IndexModel(
             };
         }
 
-        try
-        {
-            await fachadaAnulacion.AnularVentaAsync(entrada.IdVenta.Value, entrada.Motivo, cancellationToken);
-            return new JsonResult(new { exito = true });
-        }
-        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or ValidationException)
-        {
-            return new JsonResult(new { exito = false, mensaje = ex.Message })
+        return await EjecutarSinCancelacionAsync(
+            cancellationToken,
+            TiempoMaximoEscritura,
+            async limite =>
             {
-                StatusCode = StatusCodes.Status400BadRequest
-            };
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "No se pudo anular la venta.");
-            return new JsonResult(new { exito = false, mensaje = "No se pudo anular la venta. Intente nuevamente." })
-            {
-                StatusCode = StatusCodes.Status503ServiceUnavailable
-            };
-        }
+                try
+                {
+                    await fachadaAnulacion.AnularVentaAsync(entrada.IdVenta.Value, entrada.Motivo, limite);
+                    return new JsonResult(new { exito = true });
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or ValidationException)
+                {
+                    return new JsonResult(new { exito = false, mensaje = ex.Message })
+                    {
+                        StatusCode = StatusCodes.Status400BadRequest
+                    };
+                }
+            },
+            "la anulación de la venta",
+            new { exito = false, mensaje = "No se pudo anular la venta. Intente nuevamente." });
     }
 
     public sealed class RegistrarVentaInput
@@ -134,130 +204,242 @@ public sealed class IndexModel(
 
         [Required, Range(1, int.MaxValue)]
         public int? Cantidad { get; init; }
+
+        [Required, Range(typeof(decimal), "0", "79228162514264337593543950335")]
+        public decimal? PrecioEsperado { get; init; }
     }
 
-    public async Task<IActionResult> OnGetHistorialAsync(
+    public Task<IActionResult> OnGetHistorialAsync(
         bool incluirAnuladas, CancellationToken cancellationToken)
     {
         Response.Headers.CacheControl = "no-store";
 
-        try
-        {
-            var ventas = await ventaConsultaService.ListarAsync(incluirAnuladas, cancellationToken);
-            return new JsonResult(new
+        return EjecutarSinCancelacionAsync(
+            cancellationToken,
+            TiempoMaximoConsulta,
+            async limite =>
             {
-                ventas = ventas.Select(venta => new
+                var ventas = await ventaConsultaService.ListarAsync(incluirAnuladas, limite);
+                return new JsonResult(new
                 {
-                    id = venta.Id,
-                    nroComprobante = venta.NroComprobante,
-                    fechaHora = venta.FechaHora,
-                    nombreCliente = venta.NombreCliente,
-                    estado = venta.Estado,
-                    total = venta.Total
-                })
-            });
-        }
-        catch (ErrorDePersistenciaException)
-        {
-            return new JsonResult(new { mensaje = "No se pudo cargar el historial de ventas. Intente nuevamente." })
-            {
-                StatusCode = StatusCodes.Status503ServiceUnavailable
-            };
-        }
+                    ventas = ventas.Select(venta => new
+                    {
+                        id = venta.Id,
+                        nroComprobante = venta.NroComprobante,
+                        fechaHora = venta.FechaHora,
+                        nombreCliente = venta.NombreCliente,
+                        estado = venta.Estado,
+                        total = venta.Total
+                    })
+                });
+            },
+            "el historial de ventas",
+            new { mensaje = "No se pudo cargar el historial de ventas. Intente nuevamente." });
     }
 
-    public async Task<IActionResult> OnGetDetalleAsync(
+    public Task<IActionResult> OnGetDetalleAsync(
         int idVenta, CancellationToken cancellationToken)
     {
         Response.Headers.CacheControl = "no-store";
 
-        try
-        {
-            var venta = await ventaConsultaService.ObtenerDetalleAsync(idVenta, cancellationToken);
-            if (venta is null)
+        return EjecutarSinCancelacionAsync(
+            cancellationToken,
+            TiempoMaximoConsulta,
+            async limite =>
             {
-                return new JsonResult(new { mensaje = "La venta solicitada no existe." })
+                var venta = await ventaConsultaService.ObtenerDetalleAsync(idVenta, limite);
+                if (venta is null)
                 {
-                    StatusCode = StatusCodes.Status404NotFound
-                };
-            }
+                    return new JsonResult(new { mensaje = "La venta solicitada no existe." })
+                    {
+                        StatusCode = StatusCodes.Status404NotFound
+                    };
+                }
 
-            return new JsonResult(new
-            {
-                id = venta.Id,
-                nroComprobante = venta.NroComprobante,
-                fechaHora = venta.FechaHora,
-                nitCiCliente = venta.NitCiCliente,
-                razonSocialCliente = venta.RazonSocialCliente,
-                usuarioCajero = venta.UsuarioCajero,
-                estado = venta.Estado,
-                total = venta.Total,
-                efectivoPagado = venta.EfectivoPagado,
-                cambio = venta.Cambio,
-                motivoAnulacion = venta.MotivoAnulacion,
-                fechaAnulacion = venta.FechaAnulacion,
-                usuarioAnulacion = venta.UsuarioAnulacion,
-                lineas = venta.Lineas.Select(linea => new
+                return new JsonResult(new
                 {
-                    cantidad = linea.Cantidad,
-                    descripcion = linea.Descripcion,
-                    precioUnitario = linea.PrecioUnitario,
-                    subtotal = linea.Subtotal
-                })
-            });
-        }
-        catch (ErrorDePersistenciaException)
-        {
-            return new JsonResult(new { mensaje = "No se pudo cargar el detalle de la venta. Intente nuevamente." })
-            {
-                StatusCode = StatusCodes.Status503ServiceUnavailable
-            };
-        }
+                    id = venta.Id,
+                    nroComprobante = venta.NroComprobante,
+                    fechaHora = venta.FechaHora,
+                    nitCiCliente = venta.NitCiCliente,
+                    razonSocialCliente = venta.RazonSocialCliente,
+                    usuarioCajero = venta.UsuarioCajero,
+                    estado = venta.Estado,
+                    total = venta.Total,
+                    efectivoPagado = venta.EfectivoPagado,
+                    cambio = venta.Cambio,
+                    motivoAnulacion = venta.MotivoAnulacion,
+                    fechaAnulacion = venta.FechaAnulacion,
+                    usuarioAnulacion = venta.UsuarioAnulacion,
+                    lineas = venta.Lineas.Select(linea => new
+                    {
+                        cantidad = linea.Cantidad,
+                        descripcion = linea.Descripcion,
+                        precioUnitario = linea.PrecioUnitario,
+                        subtotal = linea.Subtotal,
+                        lotes = linea.Lotes.Select(lote => new
+                        {
+                            codigoLote = lote.CodigoLote,
+                            cantidad = lote.Cantidad
+                        })
+                    })
+                });
+            },
+            "el detalle de la venta",
+            new { mensaje = "No se pudo cargar el detalle de la venta. Intente nuevamente." });
     }
 
-    public async Task<JsonResult> OnGetBuscarClientesAsync(
+    public async Task<IActionResult> OnGetBuscarClientesAsync(
         string? termino, CancellationToken cancellationToken)
     {
-        var clientes = await clienteConsultaService.BuscarAsync(termino, cancellationToken);
-        return new JsonResult(clientes.Select(cliente => new
+        Response.Headers.CacheControl = "no-store";
+        if (cancellationToken.IsCancellationRequested)
         {
-            id = cliente.Id,
-            nitCi = cliente.NitCi,
-            razonSocial = cliente.RazonSocial
-        }));
+            return new EmptyResult();
+        }
+
+        using var limite = new CancellationTokenSource(TiempoMaximoBusqueda);
+        try
+        {
+            var clientes = await clienteConsultaService.BuscarAsync(termino, limite.Token);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new EmptyResult();
+            }
+
+            return new JsonResult(clientes.Select(cliente => new
+            {
+                id = cliente.Id,
+                nitCi = cliente.NitCi,
+                razonSocial = cliente.RazonSocial
+            }));
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return new EmptyResult();
+        }
+        catch (Exception ex)
+        {
+            return FalloDeBusqueda(
+                ex,
+                "clientes",
+                new { mensaje = "No se pudo buscar clientes. Intente nuevamente." });
+        }
     }
 
     public async Task<IActionResult> OnGetBuscarProductosAsync(
         string? termino, CancellationToken cancellationToken)
     {
         Response.Headers.CacheControl = "no-store";
-        if (string.IsNullOrWhiteSpace(termino))
+        if (cancellationToken.IsCancellationRequested)
         {
-            return new JsonResult(new { productos = Array.Empty<object>(), total = 0 });
+            return new EmptyResult();
         }
 
+        using var limite = new CancellationTokenSource(TiempoMaximoBusqueda);
         try
         {
-            var listado = await productService.GetPagedForSalesAsync(1, 10, termino, cancellationToken);
-            return new JsonResult(new
+            var resultado = await productService.BuscarParaVentaAsync(termino, limite.Token);
+            if (cancellationToken.IsCancellationRequested)
             {
-                productos = listado.Items.Select(producto => new
+                return new EmptyResult();
+            }
+
+            return new JsonResult(RespuestaDeProductos(
+                resultado.Productos.Select(producto => new
                 {
                     id = producto.Id,
                     nombre = producto.Nombre,
-                    presentacion = producto.EmpaquePresentacion,
+                    presentacion = producto.Presentacion,
                     precioVenta = producto.PrecioVenta,
-                    stockDisponible = producto.StockCalculado
-                }),
-                total = listado.TotalCount
-            });
+                    stockDisponible = producto.StockDisponible
+                }).ToArray(),
+                resultado.HayMas,
+                null));
         }
-        catch (ErrorDePersistenciaException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            return new JsonResult(new { mensaje = "No se pudo buscar productos. Intente nuevamente." })
-            {
-                StatusCode = StatusCodes.Status503ServiceUnavailable
-            };
+            return new EmptyResult();
         }
+        catch (Exception ex)
+        {
+            return FalloDeBusqueda(
+                ex,
+                "productos",
+                RespuestaDeProductos([], false, "No se pudo buscar productos. Intente nuevamente."));
+        }
+    }
+
+    private async Task<IActionResult> EjecutarSinCancelacionAsync(
+        CancellationToken peticion,
+        TimeSpan tiempoMaximo,
+        Func<CancellationToken, Task<IActionResult>> operacion,
+        string descripcion,
+        object cuerpoDeFallo)
+    {
+        if (peticion.IsCancellationRequested)
+        {
+            return new EmptyResult();
+        }
+
+        using var limite = new CancellationTokenSource(tiempoMaximo);
+        try
+        {
+            var resultado = await operacion(limite.Token);
+            return peticion.IsCancellationRequested ? new EmptyResult() : resultado;
+        }
+        catch (OperationCanceledException) when (peticion.IsCancellationRequested)
+        {
+            return new EmptyResult();
+        }
+        catch (Exception ex)
+        {
+            return FalloDeOperacion(ex, descripcion, cuerpoDeFallo);
+        }
+    }
+
+    private JsonResult FalloDeOperacion(Exception ex, string descripcion, object cuerpo)
+    {
+        if (ex is OperationCanceledException)
+        {
+            logger.LogWarning("La operación sobre {Descripcion} superó el tiempo máximo.", descripcion);
+        }
+        else if (ex is ErrorDePersistenciaException)
+        {
+            logger.LogWarning(ex, "No se pudo completar la operación sobre {Descripcion}.", descripcion);
+        }
+        else
+        {
+            logger.LogError(ex, "Error inesperado en la operación sobre {Descripcion}.", descripcion);
+        }
+
+        return new JsonResult(cuerpo)
+        {
+            StatusCode = StatusCodes.Status503ServiceUnavailable
+        };
+    }
+
+    private static object RespuestaDeProductos(IReadOnlyCollection<object> productos, bool hayMas, string? mensaje) =>
+        new { productos, total = productos.Count, hayMas, mensaje };
+
+    private JsonResult FalloDeBusqueda(Exception ex, string descripcion, object cuerpo)
+    {
+        if (ex is OperationCanceledException)
+        {
+            logger.LogWarning("La búsqueda de {Descripcion} superó el tiempo máximo.", descripcion);
+        }
+        else if (ex is ErrorDePersistenciaException)
+        {
+            logger.LogWarning(ex, "No se pudo buscar {Descripcion}.", descripcion);
+        }
+        else
+        {
+            logger.LogError(ex, "Error inesperado al buscar {Descripcion}.", descripcion);
+        }
+
+        return new JsonResult(cuerpo)
+        {
+            StatusCode = StatusCodes.Status503ServiceUnavailable
+        };
     }
 }

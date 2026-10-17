@@ -65,4 +65,60 @@ public class InMemoryLoteRepositoryTests
 
         Assert.Equal(10, Assert.Single(vigentes).IdLote);
     }
+
+    [Fact]
+    public async Task Restaurar_que_supera_la_cantidad_inicial_lanza_y_no_cambia_el_lote()
+    {
+        var repositorio = new InMemoryLoteRepository();
+        repositorio.Agregar(1, new LoteDisponible(10, 5, null), cantidadInicial: 6);
+
+        await Assert.ThrowsAsync<RestauracionExcedeCantidadInicialException>(
+            () => repositorio.RestaurarAsync(10, 2));
+
+        var vigentes = await repositorio.ObtenerVigentesParaDescuentoAsync(1);
+        Assert.Equal(5, Assert.Single(vigentes).CantidadDisponible);
+    }
+
+    [Fact]
+    public async Task Restaurar_hasta_la_cantidad_inicial_es_valido()
+    {
+        var repositorio = new InMemoryLoteRepository();
+        repositorio.Agregar(1, new LoteDisponible(10, 5, null), cantidadInicial: 7);
+
+        await repositorio.RestaurarAsync(10, 2);
+
+        var vigentes = await repositorio.ObtenerVigentesParaDescuentoAsync(1);
+        Assert.Equal(7, Assert.Single(vigentes).CantidadDisponible);
+    }
+
+    [Fact]
+    public async Task ObtenerVencidosConStock_devuelve_solo_los_activos_vencidos_con_cantidad()
+    {
+        var hoy = new DateOnly(2026, 10, 15);
+        var repositorio = new InMemoryLoteRepository();
+        repositorio.Agregar(1, new LoteDisponible(10, 5, hoy.AddDays(-1)));
+        repositorio.Agregar(1, new LoteDisponible(11, 0, hoy.AddDays(-5)));
+        repositorio.Agregar(1, new LoteDisponible(12, 8, hoy));
+        repositorio.Agregar(1, new LoteDisponible(13, 8, hoy.AddDays(3)));
+        repositorio.Agregar(2, new LoteDisponible(14, 6, null));
+        repositorio.Agregar(2, new LoteDisponible(15, 4, hoy.AddDays(-30)));
+
+        var vencidos = await repositorio.ObtenerVencidosConStockAsync(hoy);
+
+        Assert.Equal([10, 15], vencidos.Select(l => l.IdLote).ToArray());
+    }
+
+    [Fact]
+    public async Task Desactivar_marca_el_lote_inactivo_registra_el_usuario_y_deja_de_ser_vigente()
+    {
+        var repositorio = new InMemoryLoteRepository();
+        repositorio.Agregar(1, new LoteDisponible(10, 5, new DateOnly(2026, 10, 1)));
+
+        await repositorio.DesactivarAsync(10, 4);
+
+        Assert.False(repositorio.EstaActivo(10));
+        Assert.Equal(4, repositorio.IdUsuarioActualizacionDe(10));
+        Assert.Empty(await repositorio.ObtenerVigentesParaDescuentoAsync(1));
+        Assert.Empty(await repositorio.ObtenerVencidosConStockAsync(new DateOnly(2026, 10, 15)));
+    }
 }

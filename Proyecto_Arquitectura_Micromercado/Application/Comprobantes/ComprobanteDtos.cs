@@ -21,6 +21,7 @@ public sealed record VentaParaComprobante(
     string RazonSocialCliente,
     string Estado,
     decimal MontoTotal,
+    string UsuarioCajero,
     IReadOnlyList<DetalleDeVenta> Detalle);
 
 public sealed record LineaComprobanteDto(

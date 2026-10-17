@@ -13,6 +13,11 @@
                 <p class="text-muted mb-0">Ingrese para continuar</p>
             </div>
 
+            @if (Model.SesionVencida && Model.MensajeDeError is null)
+            {
+                <div class="alert alert-warning" role="alert">Su sesión venció. Inicie sesión nuevamente para continuar.</div>
+            }
+
             @if (Model.MensajeDeError is not null)
             {
                 <div class="alert alert-danger" role="alert">@Model.MensajeDeError</div>

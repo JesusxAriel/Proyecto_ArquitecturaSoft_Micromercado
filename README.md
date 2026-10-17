@@ -151,17 +151,19 @@ builder.Services.AddScoped<IProductService, ProductService>();
 
 ### Nota sobre el stock
 
-El stock no es una columna de `PRODUCTO`: se lleva por lote en `LOTE.cantidadDisponible`, con salida FEFO (primero en vencer, primero en salir). El stock de un producto es la suma de sus lotes vigentes y se consulta con la vista `vw_productos_con_stock`. Por eso la venta descuenta de `LOTE` y la anulación restaura en `LOTE`. Esta decisión fue aprobada por el magister.
+El stock actual de cada producto se guarda en `PRODUCTO.stockActual`, de modo que el catálogo y la búsqueda para ventas leen una sola tabla (más `EMPAQUE` para la presentación). Ese valor no se edita a mano: lo mantienen al día los triggers `trg_lote_ai`, `trg_lote_au` y `trg_lote_ad` de `LOTE`, dentro de la misma transacción de la venta o de la anulación, y equivale a la suma de `cantidadDisponible` de los lotes activos. La salida sigue siendo FEFO (primero en vencer, primero en salir) y se decide con `LOTE.cantidadDisponible`: la venta descuenta de `LOTE` y la anulación restaura en `LOTE`. Los lotes vencidos cuentan en `stockActual`, pero `AsignadorFefo` no los vende; el procedimiento de solo lectura `sp_arqueo_stock` compara `stockActual` con la suma real de los lotes, lista los lotes vencidos o por vencer y los lotes cuyas cantidades no cuadran con las ventas vigentes. Para que el stock del catálogo refleje solo lo vendible, el Administrador puede usar el botón **Dar de baja lotes vencidos** del catálogo: en una sola transacción pone `estaActivo = 0` en los lotes vencidos con stock y registra su usuario en `idUsuarioActualizacion`, y los triggers restan esas unidades de `stockActual`.
+
+La misma baja se ejecuta de forma automática: el servicio en segundo plano `BajaAutomaticaDeLotesVencidos` la lanza al arrancar la aplicación y luego cada 6 horas, en su propio alcance de servicios y con su propia unidad de trabajo, sin depender de ningún usuario HTTP. Como no hay una persona detrás de esa ejecución, `idUsuarioActualizacion` queda en `NULL` (la columna lo admite y evita inventar un usuario ficticio); la baja manual del catálogo sigue registrando al Administrador. Desfase máximo: un lote que vence a las 00:00 sigue contando en `stockActual` hasta la siguiente ejecución, es decir, hasta 6 horas como máximo; durante ese lapso `AsignadorFefo` ya no lo vende, así que solo se ve de más el stock mostrado, nunca se vende un lote vencido. Si la aplicación está apagada, el desfase dura hasta que vuelva a arrancar.
 
 ## 🧾 Comprobante de venta
 
-El comprobante de una venta está disponible en `/Comprobante/{idVenta}` para los roles Administrador y Cajero. Es un documento HTML imprimible, sin el menú del sitio, con el logo y los colores del proyecto. Muestra el comprobante y la fecha de la venta, el CI/NIT y la razón social del cliente, el detalle, el total (también en letras) y, al pie, la fecha y hora de generación con el usuario que genera el reporte, que no es necesariamente quien registró la venta. Si la venta está anulada, lo indica de forma visible; si no existe, muestra un mensaje claro.
+El comprobante de una venta está disponible en `/Comprobante/{idVenta}` para los roles Administrador y Cajero. Es un documento HTML imprimible, sin el menú del sitio, con el logo y los colores del proyecto. Muestra el comprobante y la fecha de la venta, el CI/NIT y la razón social del cliente, el detalle, el total (también en letras) y, al pie, la fecha y hora de la venta (`VENTA.fechaVenta`) con el nombre de usuario del cajero que la registró (`VENTA.idUsuario` unido a `USUARIO.username`), de modo que el pie es el mismo sin importar quién ni cuándo abra el comprobante. Si la venta está anulada, lo indica de forma visible; si no existe, muestra un mensaje claro.
 
 ### Piezas y puertos
 
 | Pieza | Capa | Rol |
 |---|---|---|
-| `IComprobanteService` / `ComprobanteService` | Application | Arma el `ComprobanteDto` con la fecha y hora actuales (`TimeProvider`) y el usuario actual (`IUsuarioActual`). |
+| `IComprobanteService` / `ComprobanteService` | Application | Arma el `ComprobanteDto` con los datos que devuelve el repositorio: la fecha de la venta y el usuario cajero se usan como fecha y usuario del pie. No depende de la hora ni del usuario del momento en que se abre. |
 | `IComprobanteRepository` | Application (puerto de salida) | Lectura de la venta y su detalle. Es un puerto nuevo y de solo lectura: no altera ningún repositorio existente. |
 | `IGeneradorComprobante` | Application (puerto de salida) | Convierte un `ComprobanteDto` en un documento. |
 | `MySqlComprobanteRepository` / `InMemoryComprobanteRepository` | Infrastructure | Adaptadores del puerto de lectura, con SQL parametrizado. |
@@ -402,6 +404,9 @@ La entidad `Domain/Suppliers/Supplier` no lleva ningún atributo de validación.
 ## ⚠️ Limitaciones conocidas
 
 - **Validación por atributos en Domain (Product y Category).** `Supplier` ya usa un modelo de formulario (`SupplierFormModel`) y su entidad de Domain no tiene DataAnnotations. `Product` y `Category` mantienen sus validaciones por atributos en `Domain`, y las Pages las enlazan directamente. Están pendientes de aplicar el mismo patrón; hasta entonces, la prueba de arquitectura que prohíbe DataAnnotations en Domain se limita a `Domain/Suppliers`.
+- **Sin idempotencia al registrar ventas.** Si el mismo envío llegara dos veces (por ejemplo, un reintento de red), se registrarían dos ventas; la pantalla solo evita el doble clic sobre Confirmar.
+- **Números de comprobante no correlativos.** Si una venta falla después de crear su cabecera, la transacción se revierte y el contador de identificadores deja un hueco en la secuencia de `V-aaaammdd-NNNN`.
+- **Anulación sobre un lote ya dado de baja.** Anular una venta cuyo lote vencido ya se dio de baja devuelve las unidades a ese lote inactivo, por lo que el stock mostrado no aumenta.
 
 ## 📚 Documentación adicional
 

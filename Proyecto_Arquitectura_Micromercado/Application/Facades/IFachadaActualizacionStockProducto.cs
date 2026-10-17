@@ -12,4 +12,10 @@ public interface IFachadaActualizacionStockProducto
     Task RestaurarAsync(
         IEnumerable<ConsumoDeLote> consumos,
         CancellationToken cancellationToken = default);
+
+    Task<ResultadoBajaDeLotes> DarDeBajaLotesVencidosAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<ResultadoBajaDeLotes> DarDeBajaLotesVencidosDelSistemaAsync(
+        CancellationToken cancellationToken = default);
 }

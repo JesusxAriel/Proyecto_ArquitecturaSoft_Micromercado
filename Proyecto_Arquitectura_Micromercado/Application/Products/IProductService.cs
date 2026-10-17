@@ -14,6 +14,10 @@ public interface IProductService :
     Task<PagedResult<ProductListItem>> GetPagedForSalesAsync(
         int page, int pageSize, string? search, CancellationToken cancellationToken = default);
 
+    Task<ResultadoBusquedaParaVenta> BuscarParaVentaAsync(
+        string? termino,
+        CancellationToken cancellationToken = default);
+
     Task<bool> IsDuplicateAsync(
         string nombre,
         int idEmpaque,

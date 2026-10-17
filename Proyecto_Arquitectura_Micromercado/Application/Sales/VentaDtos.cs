@@ -7,7 +7,8 @@ public sealed record NuevaVentaDto(
 
 public sealed record LineaVentaDto(
     int IdProducto,
-    int Cantidad);
+    int Cantidad,
+    decimal? PrecioEsperado = null);
 
 public sealed record ResultadoVentaDto(
     int IdVenta,

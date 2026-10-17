@@ -11,7 +11,6 @@
     const seleccionado = document.getElementById("clienteSeleccionado");
     const quitar = document.getElementById("quitarCliente");
     let temporizador;
-    let consulta;
     let version = 0;
 
     function actualizarSeleccionCliente() {
@@ -37,32 +36,33 @@
 
     entrada.addEventListener("input", () => {
         clearTimeout(temporizador);
-        consulta?.abort();
         const actual = ++version;
         const termino = entrada.value.trim();
         resultados.replaceChildren();
         resultados.setAttribute("aria-busy", "false");
-        estado.textContent = termino ? "Buscando clientes…" : "";
-        if (!termino) return;
+        if (!VentasReglas.terminoDeBusquedaValido(termino)) {
+            estado.textContent = termino ? VentasReglas.MENSAJE_BUSQUEDA_CORTA : "";
+            return;
+        }
 
+        estado.textContent = "Buscando clientes…";
         temporizador = setTimeout(() => buscar(termino, actual), 300);
     });
 
     async function buscar(termino, actual) {
-        const controlador = new AbortController();
-        consulta = controlador;
         resultados.setAttribute("aria-busy", "true");
 
         try {
             const url = new URL(buscador.dataset.busquedaUrl, window.location.href);
             url.searchParams.set("termino", termino);
-            const respuesta = await fetch(url, {
-                signal: controlador.signal,
-                headers: { Accept: "application/json" },
-                cache: "no-store"
+            const clientes = await VentasReglas.conReintento(async () => {
+                const respuesta = await VentasReglas.fetchConSesion(url, {
+                    headers: { Accept: "application/json" },
+                    cache: "no-store"
+                });
+                if (!respuesta.ok) throw new Error("No se pudo consultar clientes.");
+                return respuesta.json();
             });
-            if (!respuesta.ok) throw new Error("No se pudo consultar clientes.");
-            const clientes = await respuesta.json();
             if (actual !== version) return;
 
             resultados.replaceChildren();
@@ -97,12 +97,115 @@
                 ? `${clientes.length} cliente(s) encontrado(s).`
                 : "No se encontraron clientes activos con ese CI/NIT o razón social.";
         } catch (error) {
-            if (actual !== version || error.name === "AbortError") return;
+            if (actual !== version) return;
             resultados.replaceChildren();
             estado.textContent = "No se pudo buscar clientes. Intente nuevamente.";
         } finally {
             if (actual === version) resultados.setAttribute("aria-busy", "false");
         }
+    }
+
+    const modalCliente = document.getElementById("crearClienteModal");
+    if (modalCliente) {
+        const formularioCliente = document.getElementById("crearClienteForm");
+        const campoNitCi = document.getElementById("crearClienteNitCi");
+        const campoRazonSocial = document.getElementById("crearClienteRazonSocial");
+        const errorNitCi = document.getElementById("crearClienteNitCiError");
+        const errorRazonSocial = document.getElementById("crearClienteRazonSocialError");
+        const errorGeneral = document.getElementById("crearClienteError");
+        const guardarCliente = document.getElementById("crearClienteGuardar");
+        const antiforgeryCliente = document.querySelector('input[name="__RequestVerificationToken"]');
+        const modalClienteBootstrap = bootstrap.Modal.getOrCreateInstance(modalCliente);
+        let guardandoCliente = false;
+
+        function mostrarErrorCampo(campo, contenedor, mensaje) {
+            contenedor.textContent = mensaje ?? "";
+            contenedor.hidden = !mensaje;
+            campo.classList.toggle("is-invalid", Boolean(mensaje));
+            campo.setAttribute("aria-invalid", String(Boolean(mensaje)));
+        }
+
+        function mostrarErrorGeneral(mensaje) {
+            errorGeneral.textContent = mensaje ?? "";
+            errorGeneral.hidden = !mensaje;
+        }
+
+        function limpiarFormularioCliente() {
+            formularioCliente.reset();
+            mostrarErrorCampo(campoNitCi, errorNitCi, "");
+            mostrarErrorCampo(campoRazonSocial, errorRazonSocial, "");
+            mostrarErrorGeneral("");
+        }
+
+        function seleccionarClienteCreado(cliente) {
+            idCliente.value = String(cliente.id);
+            seleccionado.textContent = `Cliente seleccionado: ${cliente.razonSocial} — CI/NIT: ${cliente.nitCi}`;
+            quitar.hidden = false;
+            idCliente.dispatchEvent(new Event("change"));
+            entrada.value = cliente.nitCi;
+            entrada.dispatchEvent(new Event("input"));
+        }
+
+        formularioCliente.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            if (guardandoCliente) return;
+
+            mostrarErrorGeneral("");
+            const errores = VentasReglas.validarCliente(campoNitCi.value, campoRazonSocial.value);
+            mostrarErrorCampo(campoNitCi, errorNitCi, errores.nitCi);
+            mostrarErrorCampo(campoRazonSocial, errorRazonSocial, errores.razonSocial);
+            if (errores.nitCi) {
+                campoNitCi.focus();
+                return;
+            }
+            if (errores.razonSocial) {
+                campoRazonSocial.focus();
+                return;
+            }
+
+            guardandoCliente = true;
+            guardarCliente.disabled = true;
+            guardarCliente.textContent = "Guardando…";
+            try {
+                const respuesta = await VentasReglas.fetchConSesion(formularioCliente.dataset.crearUrl, {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                        RequestVerificationToken: antiforgeryCliente.value
+                    },
+                    body: JSON.stringify({
+                        nitCi: campoNitCi.value.trim(),
+                        razonSocial: campoRazonSocial.value.trim()
+                    })
+                });
+                const resultado = await respuesta.json().catch(() => null);
+                if (!respuesta.ok || !resultado?.exito) {
+                    throw new Error(resultado?.mensaje || (respuesta.status === 400
+                        ? "No se pudo validar la solicitud. Revise los datos o recargue la página si su sesión expiró."
+                        : "No se pudo registrar el cliente. Intente nuevamente."));
+                }
+
+                guardandoCliente = false;
+                modalClienteBootstrap.hide();
+                seleccionarClienteCreado(resultado);
+            } catch (error) {
+                mostrarErrorGeneral(error instanceof TypeError
+                    ? "No se pudo conectar con el servidor. El cliente no fue registrado."
+                    : error.message);
+            } finally {
+                guardandoCliente = false;
+                guardarCliente.disabled = false;
+                guardarCliente.textContent = "Guardar cliente";
+            }
+        });
+
+        modalCliente.addEventListener("shown.bs.modal", () => campoNitCi.focus());
+        modalCliente.addEventListener("hide.bs.modal", (event) => {
+            if (guardandoCliente) event.preventDefault();
+        });
+        modalCliente.addEventListener("hidden.bs.modal", limpiarFormularioCliente);
     }
 })();
 
@@ -156,11 +259,11 @@
     const productoEdicion = document.getElementById("editarCantidadProducto");
     const cantidadEdicion = document.getElementById("editarCantidadInput");
     const errorEdicion = document.getElementById("editarCantidadError");
+    const stockEdicion = document.getElementById("editarCantidadStock");
     const modalCantidad = new bootstrap.Modal(modalEdicion);
     let itemEnEdicion = null;
     let productoSeleccionado = null;
     let temporizador;
-    let consulta;
     let version = 0;
 
     function actualizarSeleccion() {
@@ -187,6 +290,9 @@
     function abrirEdicion(item) {
         itemEnEdicion = item;
         productoEdicion.textContent = item.nombre;
+        stockEdicion.textContent = Number.isFinite(item.stockDisponible)
+            ? `Stock disponible: ${item.stockDisponible}`
+            : "";
         cantidadEdicion.value = String(item.cantidad);
         mostrarErrorEdicion();
         modalCantidad.show();
@@ -198,21 +304,19 @@
 
         const unidades = cantidadEdicion.valueAsNumber;
         if (!Number.isSafeInteger(unidades) || unidades <= 0 || !cantidadEdicion.validity.valid) {
-            mostrarErrorEdicion("Ingrese una cantidad entera superior a 0.");
+            mostrarErrorEdicion("Ingrese una cantidad entera mayor a cero.");
             cantidadEdicion.focus();
             return;
         }
 
-        const subtotal = Math.round((itemEnEdicion.precioUnitario * unidades + Number.EPSILON) * 100) / 100;
-        if (!Number.isFinite(subtotal)) {
-            mostrarErrorEdicion("El subtotal no es válido. Ingrese otra cantidad.");
+        const resultado = VentasReglas.modificarCantidad(detalleTemporal, itemEnEdicion, unidades);
+        if (resultado.error) {
+            mostrarErrorEdicion(resultado.error);
             cantidadEdicion.focus();
             return;
         }
 
         mostrarErrorEdicion();
-        itemEnEdicion.cantidad = unidades;
-        itemEnEdicion.subtotal = subtotal;
         renderizarDetalle();
         mostrarEstadoDetalle(`${itemEnEdicion.nombre}: cantidad actualizada.`);
         modalCantidad.hide();
@@ -275,9 +379,10 @@
         }
 
         const efectivo = efectivoPagado.valueAsNumber;
-        if (!efectivoPagado.value.trim() || !Number.isFinite(efectivo) || !efectivoPagado.validity.valid) {
+        const errorEfectivo = efectivoPagado.value.trim() ? VentasReglas.validarEfectivo(efectivoPagado.value) : null;
+        if (!efectivoPagado.value.trim() || errorEfectivo || !Number.isFinite(efectivo) || !efectivoPagado.validity.valid) {
             confirmacionEfectivo.textContent = "Pendiente";
-            confirmacionSaldo.textContent = "Ingrese un efectivo válido para calcular el cambio o faltante.";
+            confirmacionSaldo.textContent = errorEfectivo ?? "Ingrese un efectivo válido para calcular el cambio o faltante.";
             confirmacionSaldo.className = "small text-muted mb-0";
             return;
         }
@@ -342,7 +447,9 @@
     function mostrarEstadoConfirmacion(mensaje, tipo = "info") {
         estadoConfirmacion.textContent = mensaje;
         estadoConfirmacion.className = `alert alert-${tipo} mb-0`;
+        estadoConfirmacion.setAttribute("role", tipo === "danger" ? "alert" : "status");
         estadoConfirmacion.hidden = false;
+        estadoConfirmacion.scrollIntoView({ block: "nearest" });
     }
 
     modalConfirmacion.addEventListener("hide.bs.modal", (event) => {
@@ -389,21 +496,22 @@
             return;
         }
         const efectivo = efectivoPagado.valueAsNumber;
-        if (!Number.isFinite(efectivo) || efectivo < 0 || !efectivoPagado.validity.valid) {
-            mostrarEstadoConfirmacion("Ingrese un efectivo pagado válido, mayor o igual a cero y con hasta dos decimales.", "danger");
+        const errorEfectivo = VentasReglas.validarEfectivo(efectivoPagado.value);
+        if (errorEfectivo || !Number.isFinite(efectivo) || !efectivoPagado.validity.valid) {
+            mostrarEstadoConfirmacion(errorEfectivo ?? "Ingrese un efectivo pagado válido.", "danger");
             return;
         }
 
         const payload = {
             idCliente: cliente,
             efectivoPagado: efectivo,
-            lineas: detalleTemporal.map(item => ({ idProducto: item.idProducto, cantidad: item.cantidad }))
+            lineas: detalleTemporal.map(item => ({ idProducto: item.idProducto, cantidad: item.cantidad, precioEsperado: item.precioUnitario }))
         };
         registrandoVenta = true;
         confirmarVenta.disabled = true;
-        confirmarVenta.textContent = "Registrando venta...";
+        confirmarVenta.textContent = "Registrando venta…";
         const ventanaComprobante = window.open("", "_blank");
-        mostrarEstadoConfirmacion("Registrando venta...");
+        mostrarEstadoConfirmacion("Registrando venta…");
         const inicioRegistro = performance.now();
         async function esperarTiempoMinimoRegistro() {
             const tiempoRestante = 800 - (performance.now() - inicioRegistro);
@@ -412,7 +520,7 @@
             }
         }
         try {
-            const respuesta = await fetch(confirmarVenta.dataset.registroUrl, {
+            const respuesta = await VentasReglas.fetchConSesion(confirmarVenta.dataset.registroUrl, {
                 method: "POST",
                 credentials: "same-origin",
                 headers: {
@@ -421,8 +529,19 @@
                     RequestVerificationToken: antiforgery.value
                 },
                 body: JSON.stringify(payload)
-            });
+            }, () => ventanaComprobante?.close());
             const resultado = await respuesta.json().catch(() => null);
+            if (resultado?.codigo === "precio-cambiado") {
+                VentasReglas.quitarProductoDelDetalle(detalleTemporal, resultado.idProducto);
+                renderizarDetalle();
+                quitar.click();
+                actualizarConfirmacionVenta();
+                VentasReglas.actualizarProductoEnResultados(
+                    listadoVisible.productos, resultado.idProducto, resultado.precioActual, resultado.stockDisponible);
+                pintarResultados(listadoVisible);
+                const terminoVigente = entrada.value.trim();
+                if (VentasReglas.terminoDeBusquedaValido(terminoVigente)) buscar(terminoVigente, ++version);
+            }
             if (!respuesta.ok || !resultado?.exito) {
                 throw new Error(resultado?.mensaje || (respuesta.status === 400
                     ? "No se pudo validar la solicitud. Revise los datos o recargue la página si su sesión expiró."
@@ -529,30 +648,17 @@
             return;
         }
 
-        if (detalleTemporal.some((item) => item.idProducto === productoSeleccionado.id)) {
-            mostrarEstadoDetalle("El producto ya está en el detalle. No se agregó otra fila.", true);
+        const resultado = VentasReglas.agregarAlDetalle(detalleTemporal, productoSeleccionado, unidades);
+        if (resultado.error) {
+            mostrarEstadoDetalle(resultado.error, true);
+            if (resultado.campo === "cantidad") cantidad.focus();
             return;
         }
-
-        const precioUnitario = Number(productoSeleccionado.precioVenta);
-        const subtotal = Math.round((precioUnitario * unidades + Number.EPSILON) * 100) / 100;
-        if (!Number.isFinite(precioUnitario) || !Number.isFinite(subtotal)) {
-            mostrarEstadoDetalle("El precio del producto no es válido. Seleccione el producto nuevamente.", true);
-            return;
-        }
-
-        const item = {
-            idProducto: productoSeleccionado.id,
-            nombre: productoSeleccionado.nombre,
-            presentacion: productoSeleccionado.presentacion,
-            precioUnitario,
-            cantidad: unidades,
-            subtotal
-        };
-        detalleTemporal.push(item);
 
         renderizarDetalle();
-        mostrarEstadoDetalle(`${item.nombre} agregado al detalle temporal.`);
+        mostrarEstadoDetalle(resultado.fusionado
+            ? `${resultado.item.nombre}: se sumaron ${unidades} unidad(es) a la fila existente (${resultado.total} en total).`
+            : `${resultado.item.nombre} agregado al detalle temporal.`);
     });
 
     quitar.addEventListener("click", () => {
@@ -570,68 +676,122 @@
 
     entrada.addEventListener("input", () => {
         clearTimeout(temporizador);
-        consulta?.abort();
         const actual = ++version;
         const termino = entrada.value.trim();
         resultados.replaceChildren();
         resultados.setAttribute("aria-busy", "false");
-        estado.textContent = termino ? "Buscando productos…" : "";
-        if (!termino) return;
+        if (!VentasReglas.terminoDeBusquedaValido(termino)) {
+            estado.textContent = termino ? VentasReglas.MENSAJE_BUSQUEDA_CORTA : "";
+            return;
+        }
 
+        estado.textContent = "Buscando productos…";
         temporizador = setTimeout(() => buscar(termino, actual), 300);
     });
 
+    function resumenProducto(producto) {
+        return `${producto.presentacion} — Precio de venta: Bs ${precio.format(producto.precioVenta)} — Stock disponible (informativo): ${producto.stockDisponible}`;
+    }
+
+    async function consultarProducto(referencia) {
+        const url = new URL(buscador.dataset.busquedaUrl, window.location.href);
+        url.searchParams.set("termino", referencia.nombre);
+        const respuesta = await VentasReglas.fetchConSesion(url, { headers: { Accept: "application/json" }, cache: "no-store" });
+        if (!respuesta.ok) return null;
+        const listado = await respuesta.json();
+        return listado.productos.find((candidato) => candidato.id === referencia.id) ?? null;
+    }
+
+    async function refrescarStocks() {
+        const termino = entrada.value.trim();
+        if (VentasReglas.terminoDeBusquedaValido(termino)) buscar(termino, ++version);
+
+        const referencias = new Map();
+        if (productoSeleccionado) referencias.set(productoSeleccionado.id, productoSeleccionado);
+        detalleTemporal.forEach((item) => {
+            if (!referencias.has(item.idProducto)) {
+                referencias.set(item.idProducto, { id: item.idProducto, nombre: item.nombre });
+            }
+        });
+
+        for (const [id, referencia] of referencias) {
+            try {
+                const actualizado = await consultarProducto(referencia);
+                if (!actualizado) continue;
+
+                if (productoSeleccionado?.id === id) {
+                    productoSeleccionado.stockDisponible = actualizado.stockDisponible;
+                    seleccionado.textContent = `Producto seleccionado: ${productoSeleccionado.nombre} — ${resumenProducto(productoSeleccionado)}`;
+                }
+                detalleTemporal
+                    .filter((item) => item.idProducto === id)
+                    .forEach((item) => { item.stockDisponible = Number(actualizado.stockDisponible); });
+            } catch {
+                continue;
+            }
+        }
+    }
+
+    document.addEventListener("venta:anulada", refrescarStocks);
+    document.addEventListener("venta:registrada", refrescarStocks);
+
+    let listadoVisible = { productos: [], hayMas: false };
+
+    function pintarResultados(listado) {
+        listadoVisible = listado;
+        resultados.replaceChildren();
+        listado.productos.forEach((producto) => {
+            const fila = document.createElement("li");
+            fila.className = "list-group-item";
+            const nombre = document.createElement("div");
+            nombre.className = "fw-semibold text-break";
+            nombre.textContent = producto.nombre;
+            const datos = document.createElement("div");
+            datos.className = "small text-muted text-break";
+            const resumen = resumenProducto(producto);
+            datos.textContent = resumen;
+            const boton = document.createElement("button");
+            boton.type = "button";
+            boton.dataset.productoId = String(producto.id);
+            boton.setAttribute("aria-label", `Seleccionar ${producto.nombre}, ${producto.presentacion}`);
+            boton.addEventListener("click", () => {
+                idProducto.value = String(producto.id);
+                productoSeleccionado = producto;
+                mostrarEstadoDetalle("");
+                seleccionado.textContent = `Producto seleccionado: ${producto.nombre} — ${resumen}`;
+                quitar.hidden = false;
+                actualizarSeleccion();
+            });
+            fila.append(nombre, datos, boton);
+            resultados.append(fila);
+        });
+        actualizarSeleccion();
+        estado.textContent = listado.productos.length
+            ? listado.hayMas
+                ? `Mostrando los primeros ${listado.productos.length} productos. Afine la búsqueda para ver otras coincidencias.`
+                : `${listado.productos.length} producto(s) encontrado(s).`
+            : "No se encontraron productos con ese término.";
+    }
+
     async function buscar(termino, actual) {
-        const controlador = new AbortController();
-        consulta = controlador;
         resultados.setAttribute("aria-busy", "true");
 
         try {
             const url = new URL(buscador.dataset.busquedaUrl, window.location.href);
             url.searchParams.set("termino", termino);
-            const respuesta = await fetch(url, {
-                signal: controlador.signal,
-                headers: { Accept: "application/json" },
-                cache: "no-store"
+            const listado = await VentasReglas.conReintento(async () => {
+                const respuesta = await VentasReglas.fetchConSesion(url, {
+                    headers: { Accept: "application/json" },
+                    cache: "no-store"
+                });
+                if (!respuesta.ok) throw new Error("No se pudo consultar productos.");
+                return respuesta.json();
             });
-            if (!respuesta.ok) throw new Error("No se pudo consultar productos.");
-            const listado = await respuesta.json();
             if (actual !== version) return;
 
-            resultados.replaceChildren();
-            listado.productos.forEach((producto) => {
-                const fila = document.createElement("li");
-                fila.className = "list-group-item";
-                const nombre = document.createElement("div");
-                nombre.className = "fw-semibold text-break";
-                nombre.textContent = producto.nombre;
-                const datos = document.createElement("div");
-                datos.className = "small text-muted text-break";
-                const resumen = `${producto.presentacion} — Precio de venta: Bs ${precio.format(producto.precioVenta)} — Stock disponible (informativo): ${producto.stockDisponible}`;
-                datos.textContent = resumen;
-                const boton = document.createElement("button");
-                boton.type = "button";
-                boton.dataset.productoId = String(producto.id);
-                boton.setAttribute("aria-label", `Seleccionar ${producto.nombre}, ${producto.presentacion}`);
-                boton.addEventListener("click", () => {
-                    idProducto.value = String(producto.id);
-                    productoSeleccionado = producto;
-                    mostrarEstadoDetalle("");
-                    seleccionado.textContent = `Producto seleccionado: ${producto.nombre} — ${resumen}`;
-                    quitar.hidden = false;
-                    actualizarSeleccion();
-                });
-                fila.append(nombre, datos, boton);
-                resultados.append(fila);
-            });
-            actualizarSeleccion();
-            estado.textContent = listado.productos.length
-                ? listado.total > listado.productos.length
-                    ? `Mostrando ${listado.productos.length} de ${listado.total} productos. Afine la búsqueda para ver otras coincidencias.`
-                    : `${listado.productos.length} producto(s) encontrado(s).`
-                : "No se encontraron productos con ese término.";
+            pintarResultados(listado);
         } catch (error) {
-            if (actual !== version || error.name === "AbortError") return;
+            if (actual !== version) return;
             resultados.replaceChildren();
             estado.textContent = "No se pudo buscar productos. Intente nuevamente.";
         } finally {
@@ -669,7 +829,15 @@
     const detalleFechaAnulacion = document.getElementById("detalleVentaFechaAnulacion");
     const detalleModal = bootstrap.Modal.getOrCreateInstance(modalDetalle);
     const modalAnulacion = document.getElementById("anularVentaModal");
-    const anulacionMensaje = document.getElementById("anularVentaMensaje");
+    const anulacionCarga = document.getElementById("anularVentaCarga");
+    const anulacionErrorDetalle = document.getElementById("anularVentaErrorDetalle");
+    const anulacionResumen = document.getElementById("anularVentaResumen");
+    const anulacionComprobante = document.getElementById("anularVentaComprobante");
+    const anulacionFecha = document.getElementById("anularVentaFecha");
+    const anulacionCliente = document.getElementById("anularVentaCliente");
+    const anulacionUsuario = document.getElementById("anularVentaUsuario");
+    const anulacionProductos = document.getElementById("anularVentaProductos");
+    const anulacionTotal = document.getElementById("anularVentaTotal");
     const anulacionMotivo = document.getElementById("anularVentaMotivo");
     const anulacionError = document.getElementById("anularVentaError");
     const confirmarAnulacion = document.getElementById("confirmarAnulacionVenta");
@@ -677,11 +845,10 @@
     const aviso = document.getElementById("avisoHistorial");
     const antiforgery = document.querySelector('input[name="__RequestVerificationToken"]');
     const ventasPorId = new Map();
-    let consulta;
-    let version = 0;
-    let consultaDetalle;
     let versionDetalle = 0;
     let ventaEnAnulacion = null;
+    let resumenAnulacionCargado = false;
+    let versionAnulacion = 0;
     let anulando = false;
 
     function dosDigitos(numero) {
@@ -726,7 +893,9 @@
         boton.textContent = texto;
         boton.dataset.accion = accion;
         boton.dataset.idVenta = String(venta.id);
-        boton.setAttribute("aria-label", `${texto} de la venta ${venta.nroComprobante}`);
+        boton.setAttribute("aria-label", accion === "anular"
+            ? `Anular la venta ${venta.nroComprobante}`
+            : `Ver detalle de la venta ${venta.nroComprobante}`);
         return boton;
     }
 
@@ -775,11 +944,7 @@
         });
     }
 
-    async function cargarHistorial() {
-        consulta?.abort();
-        const actual = ++version;
-        const controlador = new AbortController();
-        consulta = controlador;
+    async function consultarHistorial() {
         cuerpo.setAttribute("aria-busy", "true");
         actualizar.disabled = true;
         estado.textContent = "Cargando historial…";
@@ -787,41 +952,58 @@
         try {
             const url = new URL(seccion.dataset.historialUrl, window.location.href);
             url.searchParams.set("incluirAnuladas", String(mostrarAnuladas.checked));
-            const respuesta = await fetch(url, {
-                signal: controlador.signal,
+            const respuesta = await VentasReglas.fetchConSesion(url, {
                 headers: { Accept: "application/json" },
                 cache: "no-store"
             });
             if (!respuesta.ok) throw new Error("No se pudo cargar el historial de ventas.");
             const datos = await respuesta.json();
-            if (actual !== version) return;
 
             renderizar(datos.ventas);
             estado.textContent = datos.ventas.length
                 ? `${datos.ventas.length} venta(s) en el historial.`
                 : "No hay ventas para mostrar.";
-        } catch (error) {
-            if (actual !== version || error.name === "AbortError") return;
+        } catch {
             cuerpo.replaceChildren(crearFilaMensaje(
                 "No se pudo cargar el historial de ventas. Intente nuevamente.",
                 "bi-exclamation-triangle"));
             estado.textContent = "No se pudo cargar el historial de ventas.";
         } finally {
-            if (actual === version) {
-                cuerpo.setAttribute("aria-busy", "false");
-                actualizar.disabled = false;
-            }
+            cuerpo.setAttribute("aria-busy", "false");
+            actualizar.disabled = false;
         }
     }
+
+    const cargarHistorial = VentasReglas.crearEjecutorSecuencial(consultarHistorial);
 
     function crearFilaDetalle(mensaje) {
         const fila = document.createElement("tr");
         const celda = document.createElement("td");
-        celda.colSpan = 4;
+        celda.colSpan = 5;
         celda.className = "text-center text-muted py-4";
         celda.textContent = mensaje;
         fila.append(celda);
         return fila;
+    }
+
+    function llenarLineas(cuerpoTabla, lineas) {
+        cuerpoTabla.replaceChildren();
+        lineas.forEach((linea) => {
+            const fila = document.createElement("tr");
+            [
+                [String(linea.cantidad), "text-center"],
+                [linea.descripcion, "text-break"],
+                [VentasReglas.describirLotes(linea.lotes), "text-break"],
+                [precio.format(linea.precioUnitario), "text-end text-nowrap"],
+                [precio.format(linea.subtotal), "text-end text-nowrap"]
+            ].forEach(([valor, clase]) => {
+                const celda = document.createElement("td");
+                celda.className = clase;
+                celda.textContent = valor;
+                fila.append(celda);
+            });
+            cuerpoTabla.append(fila);
+        });
     }
 
     function limpiarDetalle() {
@@ -861,22 +1043,7 @@
         detalleEfectivo.textContent = precio.format(detalle.efectivoPagado);
         detalleCambio.textContent = precio.format(detalle.cambio);
 
-        detalleProductos.replaceChildren();
-        detalle.lineas.forEach((linea) => {
-            const fila = document.createElement("tr");
-            [
-                [String(linea.cantidad), "text-center"],
-                [linea.descripcion, "text-break"],
-                [precio.format(linea.precioUnitario), "text-end text-nowrap"],
-                [precio.format(linea.subtotal), "text-end text-nowrap"]
-            ].forEach(([valor, clase]) => {
-                const celda = document.createElement("td");
-                celda.className = clase;
-                celda.textContent = valor;
-                fila.append(celda);
-            });
-            detalleProductos.append(fila);
-        });
+        llenarLineas(detalleProductos, detalle.lineas);
 
         detalleAnulacion.hidden = !anulada;
         if (anulada) {
@@ -887,18 +1054,14 @@
     }
 
     async function abrirDetalle(idVenta) {
-        consultaDetalle?.abort();
         const actual = ++versionDetalle;
-        const controlador = new AbortController();
-        consultaDetalle = controlador;
         limpiarDetalle();
         detalleModal.show();
 
         try {
             const url = new URL(seccion.dataset.detalleUrl, window.location.href);
             url.searchParams.set("idVenta", String(idVenta));
-            const respuesta = await fetch(url, {
-                signal: controlador.signal,
+            const respuesta = await VentasReglas.fetchConSesion(url, {
                 headers: { Accept: "application/json" },
                 cache: "no-store"
             });
@@ -910,7 +1073,7 @@
 
             mostrarDetalle(datos);
         } catch (error) {
-            if (actual !== versionDetalle || error.name === "AbortError") return;
+            if (actual !== versionDetalle) return;
             mostrarErrorDetalle(error instanceof TypeError
                 ? "No se pudo conectar con el servidor. Intente nuevamente."
                 : error.message);
@@ -918,7 +1081,6 @@
     }
 
     modalDetalle.addEventListener("hidden.bs.modal", () => {
-        consultaDetalle?.abort();
         versionDetalle++;
     });
 
@@ -942,20 +1104,69 @@
     }
 
     function actualizarBotonAnulacion() {
-        confirmarAnulacion.disabled = anulando || anulacionMotivo.value.trim() === "";
+        confirmarAnulacion.disabled = !VentasReglas.puedeConfirmarAnulacion({
+            resumenCargado: resumenAnulacionCargado,
+            anulando,
+            motivo: anulacionMotivo.value
+        });
     }
 
-    function abrirAnulacion(idVenta) {
+    function mostrarResumenAnulacion(datos) {
+        anulacionComprobante.textContent = datos.nroComprobante;
+        anulacionFecha.textContent = formatearFecha(datos.fechaHora, true);
+        anulacionCliente.textContent = `${datos.razonSocialCliente} (CI/NIT: ${datos.nitCiCliente})`;
+        anulacionUsuario.textContent = datos.usuarioCajero;
+        llenarLineas(anulacionProductos, datos.lineas);
+        anulacionTotal.textContent = precio.format(datos.total);
+        anulacionResumen.hidden = false;
+    }
+
+    async function abrirAnulacion(idVenta) {
         const venta = ventasPorId.get(idVenta);
         if (!venta || !puedeAnular) return;
 
+        const actual = ++versionAnulacion;
         ventaEnAnulacion = venta;
+        resumenAnulacionCargado = false;
         aviso.hidden = true;
-        anulacionMensaje.textContent = `¿Está seguro de que desea anular la venta ${venta.nroComprobante} por un total de Bs ${precio.format(venta.total)}?`;
         anulacionMotivo.value = "";
         mostrarErrorAnulacion("");
+        anulacionCarga.hidden = false;
+        anulacionErrorDetalle.hidden = true;
+        anulacionResumen.hidden = true;
         actualizarBotonAnulacion();
         anulacionModal.show();
+
+        try {
+            const url = new URL(seccion.dataset.detalleUrl, window.location.href);
+            url.searchParams.set("idVenta", String(idVenta));
+            const respuesta = await VentasReglas.fetchConSesion(url, {
+                headers: { Accept: "application/json" },
+                cache: "no-store"
+            });
+            const datos = await respuesta.json().catch(() => null);
+            if (actual !== versionAnulacion) return;
+            if (!respuesta.ok) {
+                throw new Error(datos?.mensaje || "No se pudieron cargar los datos de la venta. Intente nuevamente.");
+            }
+            if (datos.estado !== "COMPLETADA") {
+                throw new Error("La venta ya fue anulada.");
+            }
+
+            mostrarResumenAnulacion(datos);
+            resumenAnulacionCargado = true;
+        } catch (error) {
+            if (actual !== versionAnulacion) return;
+            anulacionErrorDetalle.textContent = error instanceof TypeError
+                ? "No se pudo conectar con el servidor. Intente nuevamente."
+                : error.message;
+            anulacionErrorDetalle.hidden = false;
+        } finally {
+            if (actual === versionAnulacion) {
+                anulacionCarga.hidden = true;
+                actualizarBotonAnulacion();
+            }
+        }
     }
 
     async function anularVenta() {
@@ -971,7 +1182,7 @@
         actualizarBotonAnulacion();
 
         try {
-            const respuesta = await fetch(seccion.dataset.anularUrl, {
+            const respuesta = await VentasReglas.fetchConSesion(seccion.dataset.anularUrl, {
                 method: "POST",
                 credentials: "same-origin",
                 headers: {
@@ -992,6 +1203,7 @@
             anulacionModal.hide();
             mostrarAviso(`La venta ${venta.nroComprobante} fue anulada correctamente.`);
             cargarHistorial();
+            document.dispatchEvent(new CustomEvent("venta:anulada"));
         } catch (error) {
             mostrarErrorAnulacion(error instanceof TypeError
                 ? "No se pudo conectar con el servidor. La venta no fue anulada."
@@ -1010,7 +1222,11 @@
         if (anulando) event.preventDefault();
     });
     modalAnulacion.addEventListener("hidden.bs.modal", () => {
+        versionAnulacion++;
         ventaEnAnulacion = null;
+        resumenAnulacionCargado = false;
+        anulacionResumen.hidden = true;
+        anulacionErrorDetalle.hidden = true;
         anulacionMotivo.value = "";
         mostrarErrorAnulacion("");
         actualizarBotonAnulacion();

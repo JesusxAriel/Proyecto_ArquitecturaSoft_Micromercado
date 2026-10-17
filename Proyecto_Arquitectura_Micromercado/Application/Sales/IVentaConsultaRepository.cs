@@ -17,7 +17,8 @@ public sealed record FilaDetalleVenta(
     string Descripcion,
     int Cantidad,
     decimal PrecioUnitario,
-    decimal Subtotal);
+    decimal Subtotal,
+    string CodigoLote);
 
 public sealed record VentaDetalleConFilasDto(
     int Id,

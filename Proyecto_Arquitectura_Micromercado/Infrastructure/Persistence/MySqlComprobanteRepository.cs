@@ -12,9 +12,10 @@ public sealed class MySqlComprobanteRepository(MySqlUnidadDeTrabajo unidadDeTrab
     {
         const string cabeceraSql = """
             SELECT v.id, v.nroComprobante, v.fechaVenta, v.estado, v.montoTotal,
-                   c.nitCi, c.razonSocial
+                   c.nitCi, c.razonSocial, u.username AS usuarioCajero
             FROM VENTA v
             INNER JOIN CLIENTE c ON c.id = v.idCliente
+            INNER JOIN USUARIO u ON u.id = v.idUsuario
             WHERE v.id = @idVenta;
             """;
         const string detalleSql = """
@@ -30,7 +31,7 @@ public sealed class MySqlComprobanteRepository(MySqlUnidadDeTrabajo unidadDeTrab
             await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
             int id;
-            string nroComprobante, estado, nitCi, razonSocial;
+            string nroComprobante, estado, nitCi, razonSocial, usuarioCajero;
             DateTime fechaVenta;
             decimal montoTotal;
 
@@ -51,6 +52,7 @@ public sealed class MySqlComprobanteRepository(MySqlUnidadDeTrabajo unidadDeTrab
                 montoTotal = reader.GetDecimal(reader.GetOrdinal("montoTotal"));
                 nitCi = reader.GetString(reader.GetOrdinal("nitCi"));
                 razonSocial = reader.GetString(reader.GetOrdinal("razonSocial"));
+                usuarioCajero = reader.GetString(reader.GetOrdinal("usuarioCajero"));
             }
 
             var detalle = new List<DetalleDeVenta>();
@@ -79,6 +81,7 @@ public sealed class MySqlComprobanteRepository(MySqlUnidadDeTrabajo unidadDeTrab
                 razonSocial,
                 estado,
                 montoTotal,
+                usuarioCajero,
                 detalle);
         });
     }

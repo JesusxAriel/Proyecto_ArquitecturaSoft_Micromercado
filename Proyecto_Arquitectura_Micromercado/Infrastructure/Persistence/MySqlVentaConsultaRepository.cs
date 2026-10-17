@@ -64,9 +64,10 @@ public sealed class MySqlVentaConsultaRepository(MySqlUnidadDeTrabajo unidadDeTr
             WHERE v.id = @idVenta;
             """;
         const string detalleSql = """
-            SELECT dv.idProducto, p.nombre, dv.cantidad, dv.precioUnitario, dv.subtotal
+            SELECT dv.idProducto, p.nombre, dv.cantidad, dv.precioUnitario, dv.subtotal, l.codigoLote
             FROM DETALLE_VENTA dv
             INNER JOIN PRODUCTO p ON p.id = dv.idProducto
+            INNER JOIN LOTE l ON l.id = dv.idLote
             WHERE dv.idVenta = @idVenta
             ORDER BY dv.id;
             """;
@@ -125,7 +126,8 @@ public sealed class MySqlVentaConsultaRepository(MySqlUnidadDeTrabajo unidadDeTr
                         reader.GetString(reader.GetOrdinal("nombre")),
                         reader.GetInt32(reader.GetOrdinal("cantidad")),
                         reader.GetDecimal(reader.GetOrdinal("precioUnitario")),
-                        reader.GetDecimal(reader.GetOrdinal("subtotal"))));
+                        reader.GetDecimal(reader.GetOrdinal("subtotal")),
+                        reader.GetString(reader.GetOrdinal("codigoLote"))));
                 }
             }
 

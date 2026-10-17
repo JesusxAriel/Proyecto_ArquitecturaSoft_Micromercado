@@ -145,11 +145,11 @@
                     <div class="input-group">
                         <input asp-for="Input.IdentificacionCliente" class="form-control"
                                placeholder="CI/NIT o razón social" autocomplete="off" aria-describedby="clienteHelp" />
-                        <a asp-page="/Customers/Create" target="_blank" rel="noopener"
-                           class="btn btn-outline-primary" title="Registrar cliente en otra pestaña"
-                           aria-label="Registrar cliente en otra pestaña">
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
+                                data-bs-target="#crearClienteModal" title="Registrar cliente nuevo"
+                                aria-label="Registrar cliente nuevo">
                             <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                        </a>
+                        </button>
                     </div>
                     <div id="clienteHelp" class="form-text">Seleccione un resultado para asociarlo a la venta.</div>
                 </div>
@@ -236,7 +236,7 @@
                         </div>
                         <div class="col-12 col-md-5">
                             <label for="efectivoPagado" class="form-label">Efectivo pagado (Bs)</label>
-                            <input id="efectivoPagado" class="form-control" type="number" min="0" step="0.01" required />
+                            <input id="efectivoPagado" class="form-control" type="number" min="0" max="1000000" step="0.01" required />
                         </div>
                     </div>
                 </section>
@@ -327,13 +327,14 @@
                             <tr>
                                 <th scope="col" class="text-center">Cantidad</th>
                                 <th scope="col">Producto</th>
+                                <th scope="col">Lote</th>
                                 <th scope="col" class="text-end text-nowrap">Precio unitario (Bs)</th>
                                 <th scope="col" class="text-end text-nowrap">Subtotal (Bs)</th>
                             </tr>
                         </thead>
                         <tbody id="detalleVentaProductos">
                             <tr>
-                                <td colspan="4" class="text-center text-muted py-4">No hay productos cargados en esta vista.</td>
+                                <td colspan="5" class="text-center text-muted py-4">No hay productos cargados en esta vista.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -372,30 +373,98 @@
 </div>
 
 <div class="modal fade" id="anularVentaModal" tabindex="-1" aria-labelledby="anularVentaTitulo" aria-describedby="anularVentaMensaje" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
-                <h2 id="anularVentaTitulo" class="modal-title fs-5">Confirmar anulación</h2>
+                <h2 id="anularVentaTitulo" class="modal-title fs-5">Anular venta</h2>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
-                <p id="anularVentaMensaje">¿Está seguro de que desea anular la venta seleccionada?</p>
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>
-                    La anulación cambiará el estado de la venta a <strong>ANULADA</strong> y devolverá las unidades vendidas al inventario.
-                </div>
-                <div class="mb-3">
-                    <label for="anularVentaMotivo" class="form-label">Motivo de la anulación</label>
-                    <textarea id="anularVentaMotivo" class="form-control" rows="3" maxlength="255" required aria-describedby="anularVentaHelp"></textarea>
-                    <p id="anularVentaHelp" class="form-text mb-0">Obligatorio. Máximo 255 caracteres.</p>
-                </div>
-                <div id="anularVentaError" class="alert alert-danger mb-0" role="alert" hidden></div>
+                <p id="anularVentaMensaje" class="small text-muted">Paso 1: revise los datos de la venta. Paso 2: indique el motivo y confirme la anulación.</p>
+                <div id="anularVentaCarga" class="alert alert-secondary" role="status">Cargando los datos de la venta…</div>
+                <div id="anularVentaErrorDetalle" class="alert alert-danger" role="alert" hidden></div>
+                <section id="anularVentaResumen" aria-labelledby="anularVentaResumenTitulo" hidden>
+                    <h3 id="anularVentaResumenTitulo" class="h6 mb-3">Datos de la venta (solo lectura)</h3>
+                    <dl class="row g-2 mb-3">
+                        <dt class="col-sm-4">Nro. comprobante</dt>
+                        <dd id="anularVentaComprobante" class="col-sm-8 text-break"></dd>
+                        <dt class="col-sm-4">Fecha y hora</dt>
+                        <dd id="anularVentaFecha" class="col-sm-8"></dd>
+                        <dt class="col-sm-4">Cliente</dt>
+                        <dd id="anularVentaCliente" class="col-sm-8 text-break"></dd>
+                        <dt class="col-sm-4">Usuario (cajero)</dt>
+                        <dd id="anularVentaUsuario" class="col-sm-8 text-break"></dd>
+                    </dl>
+                    <div class="table-responsive rounded-3 border">
+                        <table class="table table-sm align-middle mb-0" aria-labelledby="anularVentaResumenTitulo">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col" class="text-center">Cantidad</th>
+                                    <th scope="col">Producto</th>
+                                    <th scope="col">Lote</th>
+                                    <th scope="col" class="text-end text-nowrap">Precio unitario (Bs)</th>
+                                    <th scope="col" class="text-end text-nowrap">Subtotal (Bs)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="anularVentaProductos"></tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex flex-wrap justify-content-between gap-2 bg-light border rounded p-3 mt-3">
+                        <span class="fw-semibold">Total (Bs)</span>
+                        <span id="anularVentaTotal" class="fw-semibold"></span>
+                    </div>
+                </section>
+                <hr />
+                <section aria-labelledby="anularVentaAccionesTitulo">
+                    <h3 id="anularVentaAccionesTitulo" class="h6 mb-3">Anulación</h3>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>
+                        La anulación cambiará el estado de la venta a <strong>ANULADA</strong> y devolverá las unidades vendidas al inventario, lote por lote.
+                    </div>
+                    <div class="mb-3">
+                        <label for="anularVentaMotivo" class="form-label">Motivo de la anulación</label>
+                        <textarea id="anularVentaMotivo" class="form-control" rows="3" maxlength="255" required aria-describedby="anularVentaHelp"></textarea>
+                        <p id="anularVentaHelp" class="form-text mb-0">Obligatorio. Máximo 255 caracteres.</p>
+                    </div>
+                    <div id="anularVentaError" class="alert alert-danger mb-0" role="alert" hidden></div>
+                </section>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <button id="confirmarAnulacionVenta" type="button" class="btn btn-danger" disabled>Confirmar anulación</button>
             </div>
         </div>
+    </div>
+</div>
+
+<div class="modal fade" id="crearClienteModal" tabindex="-1" aria-labelledby="crearClienteTitulo" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form id="crearClienteForm" class="modal-content" novalidate
+              data-crear-url="@Url.Page("/Sales/Index", "CrearCliente")">
+            <div class="modal-header">
+                <h2 id="crearClienteTitulo" class="modal-title fs-5">Registrar cliente</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="crearClienteError" class="alert alert-danger" role="alert" hidden></div>
+                <div class="mb-3">
+                    <label for="crearClienteNitCi" class="form-label">CI/NIT</label>
+                    <input id="crearClienteNitCi" class="form-control" maxlength="30" required autocomplete="off"
+                           aria-describedby="crearClienteNitCiError" />
+                    <div id="crearClienteNitCiError" class="invalid-feedback" role="alert" hidden></div>
+                </div>
+                <div class="mb-3">
+                    <label for="crearClienteRazonSocial" class="form-label">Razón social</label>
+                    <input id="crearClienteRazonSocial" class="form-control" maxlength="150" required autocomplete="off"
+                           aria-describedby="crearClienteRazonSocialError" />
+                    <div id="crearClienteRazonSocialError" class="invalid-feedback" role="alert" hidden></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button id="crearClienteGuardar" type="submit" class="btn btn-primary">Guardar cliente</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -408,10 +477,11 @@
             </div>
             <div class="modal-body">
                 <p class="mb-3">Producto: <strong id="editarCantidadProducto" class="text-break"></strong></p>
+                <p id="editarCantidadStock" class="small text-muted mb-2"></p>
                 <label for="editarCantidadInput" class="form-label">Cantidad</label>
                 <input id="editarCantidadInput" class="form-control" type="number" min="1" step="1" required
                        aria-describedby="editarCantidadError" aria-invalid="false" />
-                <div id="editarCantidadError" class="invalid-feedback" role="alert" hidden>Ingrese una cantidad entera superior a 0.</div>
+                <div id="editarCantidadError" class="invalid-feedback" role="alert" hidden>Ingrese una cantidad entera mayor a cero.</div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -470,5 +540,6 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/ventas-reglas.js" asp-append-version="true"></script>
     <script src="~/js/ventas.js" asp-append-version="true"></script>
 }

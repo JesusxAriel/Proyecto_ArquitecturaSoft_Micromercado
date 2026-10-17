@@ -123,10 +123,21 @@ internal sealed class ProductRepositoryConErroresTraducidos(IProductRepository i
         ErroresDePersistencia.TraducirAsync(
             () => interno.ExistenProductosActivosDelProveedorAsync(idProveedor, cancellationToken));
 
+    public Task<ResultadoBusquedaParaVenta> BuscarParaVentaAsync(
+        string termino,
+        int limite,
+        CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(() => interno.BuscarParaVentaAsync(termino, limite, cancellationToken));
+
     public Task<decimal?> ObtenerPrecioVigenteAsync(
         int idProducto,
         CancellationToken cancellationToken = default) =>
         ErroresDePersistencia.TraducirAsync(() => interno.ObtenerPrecioVigenteAsync(idProducto, cancellationToken));
+
+    public Task<DescripcionDeProducto?> ObtenerDescripcionAsync(
+        int idProducto,
+        CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(() => interno.ObtenerDescripcionAsync(idProducto, cancellationToken));
 
     public Task<IReadOnlyList<LookupOption>> GetPackagingsAsync(CancellationToken cancellationToken = default) =>
         ErroresDePersistencia.TraducirAsync(() => interno.GetPackagingsAsync(cancellationToken));
@@ -177,6 +188,14 @@ internal sealed class LoteRepositoryConErroresTraducidos(ILoteRepository interno
 
     public Task RestaurarAsync(int idLote, int cantidad, CancellationToken cancellationToken = default) =>
         ErroresDePersistencia.TraducirAsync(() => interno.RestaurarAsync(idLote, cantidad, cancellationToken));
+
+    public Task<IReadOnlyList<LoteDisponible>> ObtenerVencidosConStockAsync(
+        DateOnly hoy,
+        CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(() => interno.ObtenerVencidosConStockAsync(hoy, cancellationToken));
+
+    public Task DesactivarAsync(int idLote, int? idUsuario, CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(() => interno.DesactivarAsync(idLote, idUsuario, cancellationToken));
 }
 
 internal sealed class VentaRepositoryConErroresTraducidos(IVentaRepository interno)

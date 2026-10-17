@@ -7,14 +7,7 @@ namespace Proyecto_Arquitectura_Micromercado.Tests;
 
 public class ComprobanteTests
 {
-    private sealed class RelojFijo(DateTime momento) : TimeProvider
-    {
-        public override DateTimeOffset GetUtcNow() => new(momento, TimeSpan.Zero);
-
-        public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
-    }
-
-    private static readonly DateTime MomentoDeGeneracion = new(2030, 6, 23, 10, 15, 45);
+    private static readonly DateTime MomentoDeLaVenta = new(2030, 6, 23, 9, 58, 0);
 
     private static VentaParaComprobante Venta(
         string estado = EstadoDeVenta.Completada,
@@ -22,16 +15,15 @@ public class ComprobanteTests
         new(
             IdVenta: 7,
             NroComprobante: "V-20300623-0007",
-            FechaVenta: new DateTime(2030, 6, 23, 9, 58, 0),
+            FechaVenta: MomentoDeLaVenta,
             NitCiCliente: "4545451226",
             RazonSocialCliente: "JUAN PEREZ VARGAS",
             Estado: estado,
             MontoTotal: detalle.Sum(fila => fila.Subtotal),
+            UsuarioCajero: "cajero1",
             Detalle: detalle);
 
-    private static ComprobanteService Servicio(
-        VentaParaComprobante? venta,
-        string usuario = "cajero1")
+    private static ComprobanteService Servicio(VentaParaComprobante? venta)
     {
         var repositorio = new InMemoryComprobanteRepository();
 
@@ -40,17 +32,14 @@ public class ComprobanteTests
             repositorio.Agregar(venta);
         }
 
-        return new ComprobanteService(
-            repositorio,
-            new UsuarioActualEnMemoria(id: 2, nombreUsuario: usuario, rol: "Cajero"),
-            new RelojFijo(MomentoDeGeneracion));
+        return new ComprobanteService(repositorio);
     }
 
     private static DetalleDeVenta Fila(int idProducto, string nombre, int cantidad, decimal precio) =>
         new(idProducto, nombre, cantidad, precio, cantidad * precio);
 
     [Fact]
-    public async Task Arma_el_comprobante_con_los_datos_de_la_venta_la_hora_actual_y_el_usuario_actual()
+    public async Task Arma_el_comprobante_con_los_datos_de_la_venta_su_fecha_y_el_cajero_que_la_registro()
     {
         var venta = Venta(
             detalle:
@@ -59,7 +48,7 @@ public class ComprobanteTests
                 Fila(10, "Salsa de Tomate Kris 400g", 2, 8.00m)
             ]);
 
-        var comprobante = await Servicio(venta, usuario: "cajero1").ObtenerAsync(7);
+        var comprobante = await Servicio(venta).ObtenerAsync(7);
 
         Assert.NotNull(comprobante);
         Assert.Equal("V-20300623-0007", comprobante.NroComprobante);
@@ -68,20 +57,33 @@ public class ComprobanteTests
         Assert.Equal(new DateTime(2030, 6, 23, 9, 58, 0), comprobante.FechaVenta);
         Assert.Equal(20.50m, comprobante.Total);
         Assert.Equal("Son Veinte 50/100 Bolivianos", comprobante.TotalEnLetras);
-        Assert.Equal(MomentoDeGeneracion, comprobante.FechaGeneracion);
+        Assert.Equal(MomentoDeLaVenta, comprobante.FechaGeneracion);
         Assert.Equal("cajero1", comprobante.UsuarioGenerador);
         Assert.False(comprobante.EstaAnulada);
     }
 
     [Fact]
-    public async Task El_usuario_del_comprobante_es_quien_lo_genera_no_quien_registro_la_venta()
+    public async Task El_pie_muestra_el_cajero_y_la_fecha_de_la_venta_sin_depender_de_quien_abre_el_comprobante()
+    {
+        var venta = Venta(detalle: [Fila(14, "Galletas Moka Arcor 110g", 1, 4.50m)]) with { UsuarioCajero = "maria" };
+
+        var html = await HtmlDe(venta);
+
+        Assert.Contains("23/06/2030 - 09:58:00-maria", html);
+    }
+
+    [Fact]
+    public async Task Abrir_el_comprobante_varias_veces_devuelve_siempre_el_mismo_pie()
     {
         var venta = Venta(detalle: [Fila(14, "Galletas Moka Arcor 110g", 1, 4.50m)]);
+        var servicio = Servicio(venta);
+        var generador = new GeneradorComprobanteHtml();
 
-        var comprobante = await Servicio(venta, usuario: "admin").ObtenerAsync(7);
+        var primera = generador.GenerarHtml((await servicio.ObtenerAsync(7))!);
+        var segunda = generador.GenerarHtml((await servicio.ObtenerAsync(7))!);
 
-        Assert.NotNull(comprobante);
-        Assert.Equal("admin", comprobante.UsuarioGenerador);
+        Assert.Equal(primera, segunda);
+        Assert.Contains("23/06/2030 - 09:58:00-cajero1", segunda);
     }
 
     [Fact]
@@ -156,16 +158,16 @@ public class ComprobanteTests
         Assert.True(comprobante.EstaAnulada);
     }
 
-    private static async Task<string> HtmlDe(VentaParaComprobante venta, string usuario = "cajero1")
+    private static async Task<string> HtmlDe(VentaParaComprobante venta)
     {
-        var comprobante = await Servicio(venta, usuario).ObtenerAsync(7);
+        var comprobante = await Servicio(venta).ObtenerAsync(7);
         Assert.NotNull(comprobante);
 
         return new GeneradorComprobanteHtml().GenerarHtml(comprobante);
     }
 
     [Fact]
-    public async Task El_html_incluye_el_total_el_usuario_y_la_fecha_y_hora_de_generacion()
+    public async Task El_html_incluye_el_total_el_cajero_y_la_fecha_y_hora_de_la_venta()
     {
         var html = await HtmlDe(
             Venta(detalle:
@@ -173,15 +175,14 @@ public class ComprobanteTests
                 Fila(14, "Galletas Moka Arcor 110g", 1, 4.50m),
                 Fila(10, "Salsa de Tomate Kris 400g", 2, 8.00m),
                 Fila(20, "Tostadas Trigo PIL 200g", 1, 7.50m)
-            ]),
-            usuario: "cajero1");
+            ]));
 
         Assert.Contains("COMPROBANTE DE VENTA", html);
         Assert.Contains("28,00", html);
         Assert.Contains("Son Veintiocho 00/100 Bolivianos", html);
         Assert.Contains("cajero1", html);
         Assert.Contains("23/06/2030", html);
-        Assert.Contains("10:15:45", html);
+        Assert.Contains("09:58:00", html);
         Assert.Contains("JUAN PEREZ VARGAS", html);
         Assert.Contains("4545451226", html);
         Assert.Contains("Galletas Moka Arcor 110g", html);
@@ -202,10 +203,11 @@ public class ComprobanteTests
     {
         var venta = Venta(detalle: [Fila(1, "<b>Leche</b>", 1, 6.50m)]) with
         {
-            RazonSocialCliente = "<script>alert('x')</script>"
+            RazonSocialCliente = "<script>alert('x')</script>",
+            UsuarioCajero = "<i>admin</i>"
         };
 
-        var html = await HtmlDe(venta, usuario: "<i>admin</i>");
+        var html = await HtmlDe(venta);
 
         Assert.DoesNotContain("<script>alert", html);
         Assert.DoesNotContain("<b>Leche</b>", html);

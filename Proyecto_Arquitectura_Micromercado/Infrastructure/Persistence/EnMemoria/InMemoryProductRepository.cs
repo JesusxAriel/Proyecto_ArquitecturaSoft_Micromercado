@@ -160,10 +160,39 @@ public sealed class InMemoryProductRepository(
         CancellationToken cancellationToken = default) =>
         Task.FromResult(Activos().Any(p => p.IdProveedor == idProveedor));
 
+    public Task<ResultadoBusquedaParaVenta> BuscarParaVentaAsync(
+        string termino,
+        int limite,
+        CancellationToken cancellationToken = default)
+    {
+        var coincidencias = Ordenados(Activos())
+            .Where(p => TextoEnMemoria.Contiene(p.Nombre, termino)
+                || TextoEnMemoria.Contiene(p.EmpaquePresentacion, termino))
+            .Take(limite + 1)
+            .ToList();
+
+        var productos = coincidencias
+            .Take(limite)
+            .Select(p => new ProductoParaVenta(p.Id, p.Nombre, p.EmpaquePresentacion, p.PrecioVenta, p.StockCalculado))
+            .ToList();
+
+        return Task.FromResult(new ResultadoBusquedaParaVenta(productos, coincidencias.Count > limite));
+    }
+
     public Task<decimal?> ObtenerPrecioVigenteAsync(
         int idProducto,
         CancellationToken cancellationToken = default) =>
         Task.FromResult<decimal?>(Activos().FirstOrDefault(p => p.Id == idProducto)?.PrecioVenta);
+
+    public Task<DescripcionDeProducto?> ObtenerDescripcionAsync(
+        int idProducto,
+        CancellationToken cancellationToken = default)
+    {
+        var producto = productos.FirstOrDefault(p => p.Id == idProducto);
+        return Task.FromResult(producto is null
+            ? null
+            : new DescripcionDeProducto(producto.Nombre, NombreDeCatalogo(catalogoEmpaques, producto.IdEmpaque)));
+    }
 
     public Task<IReadOnlyList<LookupOption>> GetPackagingsAsync(CancellationToken cancellationToken = default) =>
         Catalogo(catalogoEmpaques);

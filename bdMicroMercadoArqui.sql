@@ -118,6 +118,7 @@ CREATE TABLE `PRODUCTO` (
   `precioVenta` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `precioCosto` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `stockMinimo` INT NOT NULL DEFAULT 10,
+  `stockActual` INT NOT NULL DEFAULT 0,
 
   `idCategoria` INT NOT NULL,
   `idProveedor` INT NOT NULL,
@@ -143,6 +144,7 @@ CREATE TABLE `PRODUCTO` (
   CONSTRAINT `CK_Producto_estaActivo` CHECK (`estaActivo` IN (0,1)),
   CONSTRAINT `CK_Producto_precios` CHECK (`precioVenta` >= 0 AND `precioCosto` >= 0),
   CONSTRAINT `CK_Producto_stockMinimo` CHECK (`stockMinimo` >= 0),
+  CONSTRAINT `CK_Producto_stockActual` CHECK (`stockActual` >= 0),
   CONSTRAINT `FK_Producto_Empaque` FOREIGN KEY (`idEmpaque`)
     REFERENCES `EMPAQUE` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `FK_Producto_Categoria` FOREIGN KEY (`idCategoria`)
@@ -316,21 +318,13 @@ SELECT
     p.idProveedor,
     pr.nombreEmpresa AS nombreProveedor,
     p.estaActivo,
-    CAST(COALESCE(SUM(l.cantidadDisponible), 0) AS SIGNED) AS stockCalculado,
-    (COALESCE(SUM(l.cantidadDisponible), 0) <= p.stockMinimo) AS bajoStockMinimo
+    p.stockActual AS stockCalculado,
+    (p.stockActual <= p.stockMinimo) AS bajoStockMinimo
 FROM `PRODUCTO` p
 INNER JOIN `EMPAQUE` e     ON p.idEmpaque = e.id
 INNER JOIN `CATEGORIAS` c   ON p.idCategoria = c.id
 INNER JOIN `PROVEEDOR` pr  ON p.idProveedor = pr.id
-LEFT JOIN `LOTE` l
-       ON p.id = l.idProducto
-      AND l.estaActivo = 1
-      AND (l.fechaVencimiento IS NULL OR l.fechaVencimiento >= CURRENT_DATE())
-WHERE p.estaActivo = 1
-GROUP BY
-    p.id, p.nombre, p.idEmpaque, e.nombre, p.precioVenta, p.precioCosto,
-    p.stockMinimo, p.idCategoria, c.nombre, p.idProveedor, pr.nombreEmpresa,
-    p.estaActivo;
+WHERE p.estaActivo = 1;
 
 CREATE OR REPLACE VIEW `vw_resumen_ventas` AS
 SELECT
@@ -604,6 +598,45 @@ BEGIN
     END IF;
 END$$
 
+CREATE TRIGGER `trg_lote_ai`
+AFTER INSERT ON `LOTE`
+FOR EACH ROW
+BEGIN
+    IF NEW.estaActivo = 1 AND NEW.cantidadDisponible <> 0 THEN
+        UPDATE `PRODUCTO`
+        SET `stockActual` = `stockActual` + NEW.cantidadDisponible,
+            `fechaActualizacion` = `fechaActualizacion`
+        WHERE `id` = NEW.idProducto;
+    END IF;
+END$$
+
+CREATE TRIGGER `trg_lote_au`
+AFTER UPDATE ON `LOTE`
+FOR EACH ROW
+BEGIN
+    DECLARE v_delta INT;
+    SET v_delta = IF(NEW.estaActivo = 1, NEW.cantidadDisponible, 0)
+                - IF(OLD.estaActivo = 1, OLD.cantidadDisponible, 0);
+    IF v_delta <> 0 THEN
+        UPDATE `PRODUCTO`
+        SET `stockActual` = `stockActual` + v_delta,
+            `fechaActualizacion` = `fechaActualizacion`
+        WHERE `id` = NEW.idProducto;
+    END IF;
+END$$
+
+CREATE TRIGGER `trg_lote_ad`
+AFTER DELETE ON `LOTE`
+FOR EACH ROW
+BEGIN
+    IF OLD.estaActivo = 1 AND OLD.cantidadDisponible <> 0 THEN
+        UPDATE `PRODUCTO`
+        SET `stockActual` = `stockActual` - OLD.cantidadDisponible,
+            `fechaActualizacion` = `fechaActualizacion`
+        WHERE `id` = OLD.idProducto;
+    END IF;
+END$$
+
 CREATE TRIGGER `trg_cliente_bu`
 BEFORE UPDATE ON `CLIENTE`
 FOR EACH ROW
@@ -700,6 +733,65 @@ BEGIN
         SET MESSAGE_TEXT = 'El detalle de una venta no se puede eliminar';
 END$$
 
+DROP PROCEDURE IF EXISTS `sp_arqueo_stock`$$
+CREATE PROCEDURE `sp_arqueo_stock`(IN p_diasAviso INT)
+READS SQL DATA
+BEGIN
+    DECLARE v_dias INT DEFAULT 30;
+
+    IF p_diasAviso IS NOT NULL AND p_diasAviso >= 0 THEN
+        SET v_dias = p_diasAviso;
+    END IF;
+
+    SELECT
+        p.id AS idProducto,
+        p.nombre AS producto,
+        p.stockActual,
+        COALESCE(SUM(l.cantidadDisponible), 0) AS sumaLotesActivos,
+        p.stockActual - COALESCE(SUM(l.cantidadDisponible), 0) AS diferencia
+    FROM `PRODUCTO` p
+    LEFT JOIN `LOTE` l ON l.idProducto = p.id AND l.estaActivo = 1
+    GROUP BY p.id, p.nombre, p.stockActual
+    HAVING p.stockActual <> COALESCE(SUM(l.cantidadDisponible), 0)
+    ORDER BY p.nombre;
+
+    SELECT
+        l.id AS idLote,
+        p.nombre AS producto,
+        l.codigoLote,
+        l.cantidadDisponible AS cantidadRestante,
+        l.fechaVencimiento,
+        DATEDIFF(l.fechaVencimiento, CURRENT_DATE()) AS diasParaVencer,
+        IF(l.fechaVencimiento < CURRENT_DATE(), 'VENCIDO', 'POR VENCER') AS situacion
+    FROM `LOTE` l
+    INNER JOIN `PRODUCTO` p ON p.id = l.idProducto
+    WHERE l.estaActivo = 1
+      AND l.cantidadDisponible > 0
+      AND l.fechaVencimiento IS NOT NULL
+      AND l.fechaVencimiento <= DATE_ADD(CURRENT_DATE(), INTERVAL v_dias DAY)
+    ORDER BY l.fechaVencimiento, p.nombre;
+
+    SELECT
+        l.id AS idLote,
+        p.nombre AS producto,
+        l.codigoLote,
+        l.cantidadInicial,
+        l.cantidadDisponible,
+        COALESCE(v.vendidoVigente, 0) AS vendidoVigente,
+        l.cantidadDisponible + COALESCE(v.vendidoVigente, 0) AS disponibleMasVendido,
+        l.cantidadInicial - (l.cantidadDisponible + COALESCE(v.vendidoVigente, 0)) AS diferencia
+    FROM `LOTE` l
+    INNER JOIN `PRODUCTO` p ON p.id = l.idProducto
+    LEFT JOIN (
+        SELECT d.idLote, SUM(d.cantidad) AS vendidoVigente
+        FROM `DETALLE_VENTA` d
+        INNER JOIN `VENTA` vt ON vt.id = d.idVenta AND vt.estado = 'COMPLETADA'
+        GROUP BY d.idLote
+    ) v ON v.idLote = l.id
+    WHERE l.cantidadInicial <> l.cantidadDisponible + COALESCE(v.vendidoVigente, 0)
+    ORDER BY p.nombre, l.id;
+END$$
+
 DELIMITER ;
 
 INSERT INTO `ROL` (`id`, `nombre`, `descripcion`) VALUES
@@ -786,6 +878,13 @@ INSERT INTO `LOTE` (`id`, `idProducto`, `codigoLote`, `cantidadInicial`, `cantid
 (20, 19, 'LOT-COL-A',   50,  50,  DATE_ADD(CURDATE(), INTERVAL 450 DAY), 1),
 (21, 20, 'LOT-TOS-A',   40,  40,  DATE_ADD(CURDATE(), INTERVAL 25 DAY),  1),
 (22, 21, 'LOT-ROY-A',   65,  65,  DATE_ADD(CURDATE(), INTERVAL 250 DAY), 1);
+
+UPDATE `PRODUCTO` p
+SET p.`stockActual` = (SELECT COALESCE(SUM(l.`cantidadDisponible`), 0)
+                       FROM `LOTE` l
+                       WHERE l.`idProducto` = p.`id` AND l.`estaActivo` = 1),
+    p.`fechaActualizacion` = p.`fechaActualizacion`
+WHERE p.`id` > 0;
 
 INSERT INTO `HISTORIAL_PRECIO`
 (`idProducto`, `precioVentaAnterior`, `precioVentaNuevo`, `precioCostoAnterior`, `precioCostoNuevo`, `motivoCambio`, `idUsuario`, `fechaCambio`) VALUES

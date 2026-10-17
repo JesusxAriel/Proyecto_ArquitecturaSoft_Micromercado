@@ -21,6 +21,9 @@ public sealed class LoginModel(IAutenticacionService autenticacion) : PageModel
     [BindProperty(SupportsGet = true)]
     public string? ReturnUrl { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public bool SesionVencida { get; set; }
+
     public string? MensajeDeError { get; private set; }
 
     public IActionResult OnGet() =>
