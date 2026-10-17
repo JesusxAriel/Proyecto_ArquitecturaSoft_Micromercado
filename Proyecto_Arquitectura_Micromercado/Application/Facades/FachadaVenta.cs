@@ -12,14 +12,35 @@ public sealed class FachadaVenta(
     IConPrecioVigente precios,
     IFachadaActualizacionStockProducto stock,
     IUsuarioActual usuarioActual,
-    TimeProvider reloj) : IFachadaVenta
+    TimeProvider reloj,
+    IDetectorDeInterbloqueo interbloqueos) : IFachadaVenta
 {
+    private const int IntentosMaximos = 2;
+
     public async Task<ResultadoVentaDto> RegistrarVentaAsync(
         NuevaVentaDto dto,
         CancellationToken cancellationToken = default)
     {
         Validar(dto);
 
+        var ordenado = dto with { Lineas = [.. dto.Lineas.OrderBy(linea => linea.IdProducto)] };
+
+        for (var intento = 1; ; intento++)
+        {
+            try
+            {
+                return await RegistrarEnUnaTransaccionAsync(ordenado, cancellationToken);
+            }
+            catch (Exception ex) when (intento < IntentosMaximos && interbloqueos.EsInterbloqueo(ex))
+            {
+            }
+        }
+    }
+
+    private async Task<ResultadoVentaDto> RegistrarEnUnaTransaccionAsync(
+        NuevaVentaDto dto,
+        CancellationToken cancellationToken)
+    {
         await unidad.IniciarAsync(cancellationToken);
         try
         {

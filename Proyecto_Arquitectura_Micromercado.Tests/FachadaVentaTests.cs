@@ -15,6 +15,7 @@ public class FachadaVentaTests
         public UnidadDeTrabajoEspia Unidad { get; } = new();
         public VentaRepositoryEnMemoria Ventas { get; } = new();
         public InMemoryLoteRepository Lotes { get; } = new();
+        public DetectorDeInterbloqueoDoble Interbloqueos { get; } = new();
         public FachadaVenta Fachada { get; }
 
         public Escenario()
@@ -23,7 +24,7 @@ public class FachadaVentaTests
             var stock = new FachadaActualizacionStockProducto(Lotes, reloj, new UnidadDeTrabajoEspia(), new UsuarioActualEnMemoria());
             var precios = new PrecioVigenteDoble(new Dictionary<int, decimal> { [1] = 10m, [2] = 5m });
             Fachada = new FachadaVenta(
-                Unidad, Ventas, precios, stock, new UsuarioActualEnMemoria(id: 7), reloj);
+                Unidad, Ventas, precios, stock, new UsuarioActualEnMemoria(id: 7), reloj, Interbloqueos);
         }
 
         public async Task<int> Disponible(int idProducto, int idLote)
@@ -31,6 +32,68 @@ public class FachadaVentaTests
             var vigentes = await Lotes.ObtenerVigentesParaDescuentoAsync(idProducto);
             return vigentes.FirstOrDefault(l => l.IdLote == idLote)?.CantidadDisponible ?? 0;
         }
+    }
+
+    [Fact]
+    public async Task Las_lineas_se_procesan_ordenadas_por_producto_sin_importar_el_orden_recibido()
+    {
+        var e = new Escenario();
+        e.Lotes.Agregar(1, new LoteDisponible(10, 20, null));
+        e.Lotes.Agregar(2, new LoteDisponible(20, 20, null));
+
+        await e.Fachada.RegistrarVentaAsync(
+            Venta(100m, new LineaVentaDto(2, 1), new LineaVentaDto(1, 1)));
+
+        var detalles = Assert.Single(e.Ventas.Cabeceras).Detalles;
+        Assert.Equal([1, 2], detalles.Select(d => d.IdProducto));
+    }
+
+    [Fact]
+    public async Task Un_interbloqueo_reintenta_la_venta_completa_una_vez_sin_duplicar_nada()
+    {
+        var e = new Escenario();
+        e.Lotes.Agregar(1, new LoteDisponible(10, 20, null));
+        e.Ventas.FallosPendientes.Enqueue(new InterbloqueoSimulado());
+        e.Interbloqueos.Reconocer<InterbloqueoSimulado>();
+
+        var resultado = await e.Fachada.RegistrarVentaAsync(Venta(100m, new LineaVentaDto(1, 4)));
+
+        Assert.Equal(2, e.Unidad.Iniciadas);
+        Assert.Equal(1, e.Unidad.Revertidas);
+        Assert.Equal(1, e.Unidad.Confirmadas);
+        var cabecera = Assert.Single(e.Ventas.Cabeceras, c => c.NroComprobante is not null);
+        Assert.Equal(resultado.IdVenta, cabecera.Id);
+        Assert.Equal(4, Assert.Single(cabecera.Detalles).Cantidad);
+    }
+
+    [Fact]
+    public async Task Un_segundo_interbloqueo_seguido_se_propaga_tras_un_solo_reintento()
+    {
+        var e = new Escenario();
+        e.Lotes.Agregar(1, new LoteDisponible(10, 20, null));
+        e.Ventas.FallosPendientes.Enqueue(new InterbloqueoSimulado());
+        e.Ventas.FallosPendientes.Enqueue(new InterbloqueoSimulado());
+        e.Interbloqueos.Reconocer<InterbloqueoSimulado>();
+
+        await Assert.ThrowsAsync<InterbloqueoSimulado>(
+            () => e.Fachada.RegistrarVentaAsync(Venta(100m, new LineaVentaDto(1, 4))));
+
+        Assert.Equal(2, e.Unidad.Iniciadas);
+        Assert.Equal(2, e.Unidad.Revertidas);
+        Assert.Equal(0, e.Unidad.Confirmadas);
+    }
+
+    [Fact]
+    public async Task Un_error_que_no_es_interbloqueo_no_se_reintenta()
+    {
+        var e = new Escenario();
+        e.Lotes.Agregar(1, new LoteDisponible(10, 20, null));
+        e.Ventas.FallosPendientes.Enqueue(new InterbloqueoSimulado());
+
+        await Assert.ThrowsAsync<InterbloqueoSimulado>(
+            () => e.Fachada.RegistrarVentaAsync(Venta(100m, new LineaVentaDto(1, 4))));
+
+        Assert.Equal(1, e.Unidad.Iniciadas);
     }
 
     private static NuevaVentaDto Venta(decimal efectivo, params LineaVentaDto[] lineas) =>

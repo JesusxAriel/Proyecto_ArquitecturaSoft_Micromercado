@@ -25,7 +25,7 @@ public class FachadaAnulacionTests
             var stock = new FachadaActualizacionStockProducto(Lotes, reloj, new UnidadDeTrabajoEspia(), new UsuarioActualEnMemoria());
             var precios = new PrecioVigenteDoble(new Dictionary<int, decimal> { [1] = 10m });
             Venta = new FachadaVenta(
-                new UnidadDeTrabajoEspia(), Ventas, precios, stock, new UsuarioActualEnMemoria(id: 7), reloj);
+                new UnidadDeTrabajoEspia(), Ventas, precios, stock, new UsuarioActualEnMemoria(id: 7), reloj, new DetectorDeInterbloqueoDoble());
             Anulacion = new FachadaAnulacion(Unidad, Ventas, stock, new UsuarioActualEnMemoria(id: 9));
         }
 

@@ -33,7 +33,7 @@ public class StockActualMySqlTests
         var stock = new FachadaActualizacionStockProducto(lotes, TimeProvider.System, unidad, usuario);
 
         return new Pila(
-            new FachadaVenta(unidad, ventas, productos, stock, usuario, TimeProvider.System),
+            new FachadaVenta(unidad, ventas, productos, stock, usuario, TimeProvider.System, new DetectorDeInterbloqueoMySql()),
             new FachadaAnulacion(unidad, ventas, stock, usuario),
             stock);
     }

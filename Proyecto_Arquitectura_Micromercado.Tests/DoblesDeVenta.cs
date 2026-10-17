@@ -56,8 +56,12 @@ internal sealed class VentaRepositoryEnMemoria : IVentaRepository
 
     public List<CabeceraRegistrada> Cabeceras { get; } = [];
 
+    public Queue<Exception> FallosPendientes { get; } = new();
+
     public Task<int> InsertarCabeceraAsync(int idCliente, int idUsuario, CancellationToken cancellationToken = default)
     {
+        if (FallosPendientes.TryDequeue(out var fallo)) throw fallo;
+
         var cabecera = new CabeceraRegistrada { Id = ++ultimoId, IdCliente = idCliente, IdUsuario = idUsuario };
         Cabeceras.Add(cabecera);
         return Task.FromResult(cabecera.Id);
@@ -118,4 +122,15 @@ internal sealed class VentaRepositoryEnMemoria : IVentaRepository
 
     public Task<decimal> GetVentasDelDiaAsync(CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
+}
+
+internal sealed class InterbloqueoSimulado : Exception;
+
+internal sealed class DetectorDeInterbloqueoDoble : IDetectorDeInterbloqueo
+{
+    private readonly List<Type> reconocidos = [];
+
+    public void Reconocer<TExcepcion>() where TExcepcion : Exception => reconocidos.Add(typeof(TExcepcion));
+
+    public bool EsInterbloqueo(Exception excepcion) => reconocidos.Contains(excepcion.GetType());
 }
