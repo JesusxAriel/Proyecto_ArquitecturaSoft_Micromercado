@@ -116,7 +116,27 @@
             && String(estado.motivo ?? "").trim() !== "";
     }
 
+    const LONGITUD_MINIMA_BUSQUEDA = 2;
+    const MENSAJE_BUSQUEDA_CORTA = "Escriba al menos 2 caracteres para buscar.";
+
+    function terminoDeBusquedaValido(termino) {
+        return String(termino ?? "").trim().length >= LONGITUD_MINIMA_BUSQUEDA;
+    }
+
+    async function conReintento(operacion, esperaMs = 400, pausar = (ms) => new Promise((resolver) => setTimeout(resolver, ms))) {
+        try {
+            return await operacion();
+        } catch (error) {
+            if (error?.name === "AbortError") throw error;
+            await pausar(esperaMs);
+            return operacion();
+        }
+    }
+
     const api = {
+        MENSAJE_BUSQUEDA_CORTA,
+        terminoDeBusquedaValido,
+        conReintento,
         puedeConfirmarAnulacion,
         validarCliente,
         unidadesEnDetalle,

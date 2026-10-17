@@ -120,3 +120,52 @@ test("la anulación solo se confirma con los datos cargados, un motivo con texto
     assert.equal(reglas.puedeConfirmarAnulacion({ resumenCargado: true, anulando: false, motivo: "   " }), false);
     assert.equal(reglas.puedeConfirmarAnulacion({ resumenCargado: true, anulando: false, motivo: undefined }), false);
 });
+
+test("la búsqueda exige al menos dos caracteres sin contar espacios laterales", () => {
+    assert.equal(reglas.terminoDeBusquedaValido(""), false);
+    assert.equal(reglas.terminoDeBusquedaValido(" g "), false);
+    assert.equal(reglas.terminoDeBusquedaValido(undefined), false);
+    assert.equal(reglas.terminoDeBusquedaValido("ga"), true);
+    assert.equal(reglas.terminoDeBusquedaValido("  ga  "), true);
+    assert.equal(reglas.terminoDeBusquedaValido("gallet;slkf'l;alsjf"), true);
+    assert.equal(reglas.MENSAJE_BUSQUEDA_CORTA, "Escriba al menos 2 caracteres para buscar.");
+});
+
+test("conReintento no repite una operación que funciona", async () => {
+    let llamadas = 0;
+    const resultado = await reglas.conReintento(async () => { llamadas++; return "ok"; }, 0, async () => {});
+    assert.equal(resultado, "ok");
+    assert.equal(llamadas, 1);
+});
+
+test("conReintento repite una sola vez tras un fallo y devuelve el segundo resultado", async () => {
+    let llamadas = 0;
+    const pausas = [];
+    const resultado = await reglas.conReintento(async () => {
+        llamadas++;
+        if (llamadas === 1) throw new Error("falló");
+        return "segundo";
+    }, 250, async (ms) => { pausas.push(ms); });
+    assert.equal(resultado, "segundo");
+    assert.equal(llamadas, 2);
+    assert.deepEqual(pausas, [250]);
+});
+
+test("conReintento no hace un tercer intento y propaga el último error", async () => {
+    let llamadas = 0;
+    await assert.rejects(
+        reglas.conReintento(async () => { llamadas++; throw new Error(`falló ${llamadas}`); }, 0, async () => {}),
+        { message: "falló 2" }
+    );
+    assert.equal(llamadas, 2);
+});
+
+test("conReintento no reintenta una cancelación", async () => {
+    let llamadas = 0;
+    const cancelacion = Object.assign(new Error("cancelada"), { name: "AbortError" });
+    await assert.rejects(
+        reglas.conReintento(async () => { llamadas++; throw cancelacion; }, 0, async () => {}),
+        { name: "AbortError" }
+    );
+    assert.equal(llamadas, 1);
+});

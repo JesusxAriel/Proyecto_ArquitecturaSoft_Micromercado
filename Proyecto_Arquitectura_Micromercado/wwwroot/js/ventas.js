@@ -11,7 +11,6 @@
     const seleccionado = document.getElementById("clienteSeleccionado");
     const quitar = document.getElementById("quitarCliente");
     let temporizador;
-    let consulta;
     let version = 0;
 
     function actualizarSeleccionCliente() {
@@ -37,32 +36,33 @@
 
     entrada.addEventListener("input", () => {
         clearTimeout(temporizador);
-        consulta?.abort();
         const actual = ++version;
         const termino = entrada.value.trim();
         resultados.replaceChildren();
         resultados.setAttribute("aria-busy", "false");
-        estado.textContent = termino ? "Buscando clientes…" : "";
-        if (!termino) return;
+        if (!VentasReglas.terminoDeBusquedaValido(termino)) {
+            estado.textContent = termino ? VentasReglas.MENSAJE_BUSQUEDA_CORTA : "";
+            return;
+        }
 
+        estado.textContent = "Buscando clientes…";
         temporizador = setTimeout(() => buscar(termino, actual), 300);
     });
 
     async function buscar(termino, actual) {
-        const controlador = new AbortController();
-        consulta = controlador;
         resultados.setAttribute("aria-busy", "true");
 
         try {
             const url = new URL(buscador.dataset.busquedaUrl, window.location.href);
             url.searchParams.set("termino", termino);
-            const respuesta = await fetch(url, {
-                signal: controlador.signal,
-                headers: { Accept: "application/json" },
-                cache: "no-store"
+            const clientes = await VentasReglas.conReintento(async () => {
+                const respuesta = await fetch(url, {
+                    headers: { Accept: "application/json" },
+                    cache: "no-store"
+                });
+                if (!respuesta.ok) throw new Error("No se pudo consultar clientes.");
+                return respuesta.json();
             });
-            if (!respuesta.ok) throw new Error("No se pudo consultar clientes.");
-            const clientes = await respuesta.json();
             if (actual !== version) return;
 
             resultados.replaceChildren();
@@ -97,7 +97,7 @@
                 ? `${clientes.length} cliente(s) encontrado(s).`
                 : "No se encontraron clientes activos con ese CI/NIT o razón social.";
         } catch (error) {
-            if (actual !== version || error.name === "AbortError") return;
+            if (actual !== version) return;
             resultados.replaceChildren();
             estado.textContent = "No se pudo buscar clientes. Intente nuevamente.";
         } finally {
@@ -264,7 +264,6 @@
     let itemEnEdicion = null;
     let productoSeleccionado = null;
     let temporizador;
-    let consulta;
     let version = 0;
 
     function actualizarSeleccion() {
@@ -664,14 +663,16 @@
 
     entrada.addEventListener("input", () => {
         clearTimeout(temporizador);
-        consulta?.abort();
         const actual = ++version;
         const termino = entrada.value.trim();
         resultados.replaceChildren();
         resultados.setAttribute("aria-busy", "false");
-        estado.textContent = termino ? "Buscando productos…" : "";
-        if (!termino) return;
+        if (!VentasReglas.terminoDeBusquedaValido(termino)) {
+            estado.textContent = termino ? VentasReglas.MENSAJE_BUSQUEDA_CORTA : "";
+            return;
+        }
 
+        estado.textContent = "Buscando productos…";
         temporizador = setTimeout(() => buscar(termino, actual), 300);
     });
 
@@ -690,7 +691,7 @@
 
     async function refrescarStocks() {
         const termino = entrada.value.trim();
-        if (termino) buscar(termino, ++version);
+        if (VentasReglas.terminoDeBusquedaValido(termino)) buscar(termino, ++version);
 
         const referencias = new Map();
         if (productoSeleccionado) referencias.set(productoSeleccionado.id, productoSeleccionado);
@@ -722,20 +723,19 @@
     document.addEventListener("venta:registrada", refrescarStocks);
 
     async function buscar(termino, actual) {
-        const controlador = new AbortController();
-        consulta = controlador;
         resultados.setAttribute("aria-busy", "true");
 
         try {
             const url = new URL(buscador.dataset.busquedaUrl, window.location.href);
             url.searchParams.set("termino", termino);
-            const respuesta = await fetch(url, {
-                signal: controlador.signal,
-                headers: { Accept: "application/json" },
-                cache: "no-store"
+            const listado = await VentasReglas.conReintento(async () => {
+                const respuesta = await fetch(url, {
+                    headers: { Accept: "application/json" },
+                    cache: "no-store"
+                });
+                if (!respuesta.ok) throw new Error("No se pudo consultar productos.");
+                return respuesta.json();
             });
-            if (!respuesta.ok) throw new Error("No se pudo consultar productos.");
-            const listado = await respuesta.json();
             if (actual !== version) return;
 
             resultados.replaceChildren();
@@ -766,12 +766,12 @@
             });
             actualizarSeleccion();
             estado.textContent = listado.productos.length
-                ? listado.total > listado.productos.length
-                    ? `Mostrando ${listado.productos.length} de ${listado.total} productos. Afine la búsqueda para ver otras coincidencias.`
+                ? listado.hayMas
+                    ? `Mostrando los primeros ${listado.productos.length} productos. Afine la búsqueda para ver otras coincidencias.`
                     : `${listado.productos.length} producto(s) encontrado(s).`
                 : "No se encontraron productos con ese término.";
         } catch (error) {
-            if (actual !== version || error.name === "AbortError") return;
+            if (actual !== version) return;
             resultados.replaceChildren();
             estado.textContent = "No se pudo buscar productos. Intente nuevamente.";
         } finally {
