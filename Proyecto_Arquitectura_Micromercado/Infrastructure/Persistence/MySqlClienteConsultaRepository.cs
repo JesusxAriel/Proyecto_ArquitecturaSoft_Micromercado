@@ -27,6 +27,26 @@ public sealed class MySqlClienteConsultaRepository(
         });
     }
 
+    public Task<bool> ExisteActivoAsync(int idCliente, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT EXISTS (
+                SELECT 1
+                FROM CLIENTE
+                WHERE estaActivo = 1 AND id = @idCliente
+            );
+            """;
+
+        return ErroresDePersistencia.TraducirAsync(async () =>
+        {
+            await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+            await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
+            command.Parameters.AddWithValue("@idCliente", idCliente);
+            var resultado = await command.ExecuteScalarAsync(cancellationToken);
+            return Convert.ToInt32(resultado) != 0;
+        });
+    }
+
     public Task<IReadOnlyList<ClienteConsultaDto>> BuscarAsync(
         string? termino,
         CancellationToken cancellationToken = default)

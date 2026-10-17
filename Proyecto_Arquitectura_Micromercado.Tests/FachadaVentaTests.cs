@@ -24,7 +24,7 @@ public class FachadaVentaTests
             var stock = new FachadaActualizacionStockProducto(Lotes, reloj, new UnidadDeTrabajoEspia(), new UsuarioActualEnMemoria());
             var precios = new PrecioVigenteDoble(new Dictionary<int, decimal> { [1] = 10m, [2] = 5m });
             Fachada = new FachadaVenta(
-                Unidad, Ventas, precios, stock, new UsuarioActualEnMemoria(id: 7), reloj, Interbloqueos);
+                Unidad, Ventas, precios, stock, new UsuarioActualEnMemoria(id: 7), reloj, Interbloqueos, new ClientesDoble(3));
         }
 
         public async Task<int> Disponible(int idProducto, int idLote)
@@ -168,6 +168,20 @@ public class FachadaVentaTests
         Assert.Equal("Stock insuficiente para Yogurt Frutado PIL (Frasco 1kg).", ex.Message);
         Assert.Equal(0, e.Unidad.Confirmadas);
         Assert.Equal(1, e.Unidad.Revertidas);
+    }
+
+    [Fact]
+    public async Task Un_cliente_inexistente_o_inactivo_lanza_el_mensaje_claro_sin_iniciar_transaccion()
+    {
+        var e = new Escenario();
+        e.Lotes.Agregar(1, new LoteDisponible(10, 20, null));
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => e.Fachada.RegistrarVentaAsync(new NuevaVentaDto(99, 100m, [new LineaVentaDto(1, 1)])));
+
+        Assert.Equal("Cliente inexistente o inactivo.", ex.Message);
+        Assert.Equal(0, e.Unidad.Iniciadas);
+        Assert.Empty(e.Ventas.Cabeceras);
     }
 
     [Fact]

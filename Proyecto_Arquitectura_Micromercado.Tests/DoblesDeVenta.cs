@@ -1,4 +1,5 @@
 using Proyecto_Arquitectura_Micromercado.Application.Common;
+using Proyecto_Arquitectura_Micromercado.Application.Customers;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
 using Proyecto_Arquitectura_Micromercado.Domain.Sales;
@@ -141,4 +142,16 @@ internal sealed class DetectorDeInterbloqueoDoble : IDetectorDeInterbloqueo
     public void Reconocer<TExcepcion>() where TExcepcion : Exception => reconocidos.Add(typeof(TExcepcion));
 
     public bool EsInterbloqueo(Exception excepcion) => reconocidos.Contains(excepcion.GetType());
+}
+
+internal sealed class ClientesDoble(params int[] activos) : IClienteConsultaRepository
+{
+    public Task<bool> ExisteNitCiAsync(string nitCi, CancellationToken cancellationToken = default) =>
+        throw new NotSupportedException();
+
+    public Task<bool> ExisteActivoAsync(int idCliente, CancellationToken cancellationToken = default) =>
+        Task.FromResult(activos.Contains(idCliente));
+
+    public Task<IReadOnlyList<ClienteConsultaDto>> BuscarAsync(string? termino, CancellationToken cancellationToken = default) =>
+        throw new NotSupportedException();
 }

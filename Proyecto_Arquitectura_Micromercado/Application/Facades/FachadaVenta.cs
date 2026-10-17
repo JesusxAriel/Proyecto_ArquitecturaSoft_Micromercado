@@ -1,4 +1,5 @@
 using Proyecto_Arquitectura_Micromercado.Application.Common;
+using Proyecto_Arquitectura_Micromercado.Application.Customers;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
 using Proyecto_Arquitectura_Micromercado.Application.Security;
@@ -14,7 +15,8 @@ public sealed class FachadaVenta(
     IFachadaActualizacionStockProducto stock,
     IUsuarioActual usuarioActual,
     TimeProvider reloj,
-    IDetectorDeInterbloqueo interbloqueos) : IFachadaVenta
+    IDetectorDeInterbloqueo interbloqueos,
+    IClienteConsultaRepository clientes) : IFachadaVenta
 {
     private const int IntentosMaximos = 2;
 
@@ -23,6 +25,11 @@ public sealed class FachadaVenta(
         CancellationToken cancellationToken = default)
     {
         Validar(dto);
+
+        if (!await clientes.ExisteActivoAsync(dto.IdCliente, cancellationToken))
+        {
+            throw new InvalidOperationException("Cliente inexistente o inactivo.");
+        }
 
         var ordenado = dto with { Lineas = [.. dto.Lineas.OrderBy(linea => linea.IdProducto)] };
 
