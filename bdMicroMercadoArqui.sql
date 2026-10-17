@@ -21,15 +21,29 @@ CREATE TABLE `USUARIO` (
   `username` VARCHAR(50) NOT NULL,
   `passwordHash` VARCHAR(255) NOT NULL,
   `nombreCompleto` VARCHAR(150) NOT NULL,
+  -- Se conservan los nombres originales para compatibilidad con autenticacion y cuentas previas.
+  `nombre` VARCHAR(150) DEFAULT NULL,
+  `apellido` VARCHAR(150) DEFAULT NULL,
   `correo` VARCHAR(150) DEFAULT NULL,
   `idRol` INT NOT NULL,
   `estaActivo` TINYINT(1) NOT NULL DEFAULT 1,
+  `estado` ENUM('PENDIENTE', 'ACTIVO', 'INACTIVO') NOT NULL DEFAULT 'ACTIVO',
+  `debeCambiarPassword` TINYINT(1) NOT NULL DEFAULT 0,
+  `idUsuarioCreacion` INT DEFAULT NULL,
   `fechaCreacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `fechaActualizacion` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UQ_Usuario_username` (`username`),
+  UNIQUE KEY `UQ_Usuario_correo` (`correo`),
+  KEY `FK_Usuario_Creador` (`idUsuarioCreacion`),
   KEY `FK_Usuario_Rol` (`idRol`),
+  CONSTRAINT `CK_Usuario_debeCambiarPassword` CHECK (`debeCambiarPassword` IN (0,1)),
+  CONSTRAINT `CK_Usuario_estado` CHECK (
+    (`estado` = 'ACTIVO' AND `estaActivo` = 1) OR
+    (`estado` IN ('PENDIENTE', 'INACTIVO') AND `estaActivo` = 0)),
   CONSTRAINT `CK_Usuario_estaActivo` CHECK (`estaActivo` IN (0,1)),
+  CONSTRAINT `FK_Usuario_Creador` FOREIGN KEY (`idUsuarioCreacion`)
+    REFERENCES `USUARIO` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `FK_Usuario_Rol` FOREIGN KEY (`idRol`)
     REFERENCES `ROL` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
