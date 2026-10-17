@@ -1,0 +1,112 @@
+@page
+@model Proyecto_Arquitectura_Micromercado.Pages.Users.IndexModel
+@{
+    ViewData["Title"] = "Usuarios";
+}
+
+<h1 class="page-heading mb-4">Administración de usuarios</h1>
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <div class="alert alert-success shadow-sm" role="status">
+        @Model.StatusMessage
+        @if (!string.IsNullOrWhiteSpace(Model.UsernameGenerado))
+        {
+            <span>Username generado: <strong>@Model.UsernameGenerado</strong>.</span>
+        }
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger shadow-sm" role="alert">@Model.ErrorMessage</div>
+}
+
+<section class="card shadow-sm mb-4" aria-labelledby="crearUsuarioTitulo">
+    <div class="card-body">
+        <h2 class="h5 card-title mb-3" id="crearUsuarioTitulo">Crear usuario</h2>
+        <form method="post" asp-page-handler="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="NuevoUsuario.Nombre" class="form-label"></label>
+                    <input asp-for="NuevoUsuario.Nombre" class="form-control" autocomplete="given-name" required />
+                    <span asp-validation-for="NuevoUsuario.Nombre" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="NuevoUsuario.Apellido" class="form-label"></label>
+                    <input asp-for="NuevoUsuario.Apellido" class="form-control" autocomplete="family-name" required />
+                    <span asp-validation-for="NuevoUsuario.Apellido" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="NuevoUsuario.Correo" class="form-label"></label>
+                    <input asp-for="NuevoUsuario.Correo" type="email" class="form-control" autocomplete="email" required />
+                    <span asp-validation-for="NuevoUsuario.Correo" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="NuevoUsuario.IdRol" class="form-label"></label>
+                    <select asp-for="NuevoUsuario.IdRol" class="form-select" required>
+                        <option value="">Seleccione un rol</option>
+                        @foreach (var rol in Model.RolesActivos)
+                        {
+                            <option value="@rol.Id">@rol.Nombre</option>
+                        }
+                    </select>
+                    <span asp-validation-for="NuevoUsuario.IdRol" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <p class="text-muted small">El username se genera automáticamente al crear el usuario.</p>
+                    @if (Model.RolesActivos.Count > 0)
+                    {
+                        <button type="submit" class="btn btn-warning fw-semibold">Crear usuario</button>
+                    }
+                    else
+                    {
+                        <p class="text-danger mb-0">No hay roles activos disponibles para crear usuarios.</p>
+                    }
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+<section aria-labelledby="listadoUsuariosTitulo">
+    <h2 class="h5 mb-3" id="listadoUsuariosTitulo">Listado de usuarios</h2>
+    <div class="table-responsive shadow-sm rounded-3">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="sticky-table-header">
+                <tr>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Apellido</th>
+                    <th scope="col">Correo</th>
+                    <th scope="col">Username</th>
+                    <th scope="col">Rol</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col">Fecha de creación</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var usuario in Model.Usuarios)
+                {
+                    <tr>
+                        <td>@usuario.Nombre</td>
+                        <td>@usuario.Apellido</td>
+                        <td>@usuario.Correo</td>
+                        <td>@usuario.Username</td>
+                        <td>@usuario.Rol</td>
+                        <td>@usuario.Estado</td>
+                        <td>@usuario.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (Model.Usuarios.Count == 0 && Model.ErrorMessage is null)
+    {
+        <div class="alert alert-info mt-3">No hay usuarios registrados.</div>
+    }
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

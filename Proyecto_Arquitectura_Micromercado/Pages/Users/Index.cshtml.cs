@@ -1,0 +1,116 @@
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Proyecto_Arquitectura_Micromercado.Application.Security;
+using Proyecto_Arquitectura_Micromercado.Application.Users;
+
+namespace Proyecto_Arquitectura_Micromercado.Pages.Users;
+
+[Authorize(Roles = Roles.Administrador)]
+public class IndexModel(IUsuarioAdministracionService servicio) : PageModel
+{
+    public IReadOnlyList<UsuarioListadoDto> Usuarios { get; private set; } = [];
+    public IReadOnlyList<RolActivoDto> RolesActivos { get; private set; } = [];
+
+    [BindProperty]
+    public UsuarioFormulario NuevoUsuario { get; set; } = new();
+
+    [TempData]
+    public string? StatusMessage { get; set; }
+
+    [TempData]
+    public int? UsuarioCreadoId { get; set; }
+
+    public string? UsernameGenerado { get; private set; }
+    public string? ErrorMessage { get; private set; }
+
+    public async Task OnGetAsync(CancellationToken cancellationToken)
+    {
+        await CargarDatosAsync(cancellationToken);
+        if (UsuarioCreadoId is int id)
+            UsernameGenerado = Usuarios.FirstOrDefault(usuario => usuario.Id == id)?.Username;
+    }
+
+    public async Task<IActionResult> OnPostCreateAsync(CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+        {
+            await CargarDatosAsync(cancellationToken);
+            return Page();
+        }
+
+        try
+        {
+            UsuarioCreadoId = await servicio.CrearAsync(new UsuarioCreacionDto(
+                NuevoUsuario.Nombre, NuevoUsuario.Apellido, NuevoUsuario.Correo,
+                NuevoUsuario.IdRol!.Value), cancellationToken);
+        }
+        catch (CorreoUsuarioDuplicadoException)
+        {
+            ModelState.AddModelError("NuevoUsuario.Correo", "El correo ya está registrado. Ingrese otro correo.");
+        }
+        catch (ArgumentException)
+        {
+            ModelState.AddModelError(string.Empty,
+                "No se pudo crear el usuario. Revise el nombre, apellido y correo, y seleccione un rol activo.");
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException and not UnauthorizedAccessException)
+        {
+            ModelState.AddModelError(string.Empty, "No se pudo crear el usuario. Intente nuevamente.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            await CargarDatosAsync(cancellationToken);
+            return Page();
+        }
+
+        StatusMessage = "Usuario creado correctamente.";
+        return RedirectToPage();
+    }
+
+    private async Task CargarDatosAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            Usuarios = await servicio.ListarAsync(cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException and not UnauthorizedAccessException)
+        {
+            ErrorMessage = "No se pudo cargar el listado de usuarios. Recargue la página para intentar nuevamente.";
+        }
+
+        try
+        {
+            RolesActivos = await servicio.ListarRolesActivosAsync(cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException and not UnauthorizedAccessException)
+        {
+            ErrorMessage = string.Join(" ", new[] { ErrorMessage,
+                "No se pudieron cargar los roles activos. Recargue la página para intentar nuevamente." }
+                .Where(mensaje => mensaje is not null));
+        }
+    }
+
+    public sealed class UsuarioFormulario
+    {
+        [Required(ErrorMessage = "El nombre es obligatorio.")]
+        [Display(Name = "Nombre")]
+        public string Nombre { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "El apellido es obligatorio.")]
+        [Display(Name = "Apellido")]
+        public string Apellido { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "El correo es obligatorio.")]
+        [EmailAddress(ErrorMessage = "Ingrese un correo válido.")]
+        [Display(Name = "Correo")]
+        public string Correo { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Seleccione un rol.")]
+        [Range(1, int.MaxValue, ErrorMessage = "Seleccione un rol válido.")]
+        [Display(Name = "Rol")]
+        public int? IdRol { get; set; }
+    }
+}
