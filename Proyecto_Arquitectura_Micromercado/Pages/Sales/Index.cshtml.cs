@@ -32,7 +32,7 @@ public sealed class IndexModel(
     {
     }
 
-    public async Task<JsonResult> OnPostRegistrarVentaAsync(
+    public async Task<IActionResult> OnPostRegistrarVentaAsync(
         [FromBody] RegistrarVentaInput? venta, CancellationToken cancellationToken)
     {
         if (venta is null || !ModelState.IsValid || venta.IdCliente is null ||
@@ -45,29 +45,29 @@ public sealed class IndexModel(
             };
         }
 
-        try
-        {
-            var resultado = await fachadaVenta.RegistrarVentaAsync(new NuevaVentaDto(
-                venta.IdCliente!.Value, venta.EfectivoPagado!.Value,
-                venta.Lineas!.Select(linea => new LineaVentaDto(linea.IdProducto!.Value, linea.Cantidad!.Value)).ToArray()),
-                cancellationToken);
-            return new JsonResult(new { exito = true, idVenta = resultado.IdVenta, total = resultado.Total });
-        }
-        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or ValidationException)
-        {
-            return new JsonResult(new { exito = false, mensaje = ex.Message })
+        return await EjecutarSinCancelacionAsync(
+            cancellationToken,
+            TiempoMaximoEscritura,
+            async limite =>
             {
-                StatusCode = StatusCodes.Status400BadRequest
-            };
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "No se pudo registrar la venta.");
-            return new JsonResult(new { exito = false, mensaje = "No se pudo registrar la venta. Revise el stock disponible y el efectivo pagado, o intente nuevamente." })
-            {
-                StatusCode = StatusCodes.Status503ServiceUnavailable
-            };
-        }
+                try
+                {
+                    var resultado = await fachadaVenta.RegistrarVentaAsync(new NuevaVentaDto(
+                        venta.IdCliente!.Value, venta.EfectivoPagado!.Value,
+                        venta.Lineas!.Select(linea => new LineaVentaDto(linea.IdProducto!.Value, linea.Cantidad!.Value)).ToArray()),
+                        limite);
+                    return new JsonResult(new { exito = true, idVenta = resultado.IdVenta, total = resultado.Total });
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or ValidationException)
+                {
+                    return new JsonResult(new { exito = false, mensaje = ex.Message })
+                    {
+                        StatusCode = StatusCodes.Status400BadRequest
+                    };
+                }
+            },
+            "el registro de la venta",
+            new { exito = false, mensaje = "No se pudo registrar la venta. Revise el stock disponible y el efectivo pagado, o intente nuevamente." });
     }
 
     public async Task<JsonResult> OnPostCrearClienteAsync(
