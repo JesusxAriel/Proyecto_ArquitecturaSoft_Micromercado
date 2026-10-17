@@ -110,7 +110,14 @@
         return { item };
     }
 
+    function puedeConfirmarAnulacion(estado) {
+        return Boolean(estado.resumenCargado)
+            && !estado.anulando
+            && String(estado.motivo ?? "").trim() !== "";
+    }
+
     const api = {
+        puedeConfirmarAnulacion,
         validarCliente,
         unidadesEnDetalle,
         validarCantidadContraStock,

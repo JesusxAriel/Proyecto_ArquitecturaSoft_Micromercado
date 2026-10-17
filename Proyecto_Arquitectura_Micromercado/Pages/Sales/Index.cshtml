@@ -327,13 +327,14 @@
                             <tr>
                                 <th scope="col" class="text-center">Cantidad</th>
                                 <th scope="col">Producto</th>
+                                <th scope="col">Lote</th>
                                 <th scope="col" class="text-end text-nowrap">Precio unitario (Bs)</th>
                                 <th scope="col" class="text-end text-nowrap">Subtotal (Bs)</th>
                             </tr>
                         </thead>
                         <tbody id="detalleVentaProductos">
                             <tr>
-                                <td colspan="4" class="text-center text-muted py-4">No hay productos cargados en esta vista.</td>
+                                <td colspan="5" class="text-center text-muted py-4">No hay productos cargados en esta vista.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -372,24 +373,61 @@
 </div>
 
 <div class="modal fade" id="anularVentaModal" tabindex="-1" aria-labelledby="anularVentaTitulo" aria-describedby="anularVentaMensaje" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
-                <h2 id="anularVentaTitulo" class="modal-title fs-5">Confirmar anulación</h2>
+                <h2 id="anularVentaTitulo" class="modal-title fs-5">Anular venta</h2>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
-                <p id="anularVentaMensaje">¿Está seguro de que desea anular la venta seleccionada?</p>
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>
-                    La anulación cambiará el estado de la venta a <strong>ANULADA</strong> y devolverá las unidades vendidas al inventario.
-                </div>
-                <div class="mb-3">
-                    <label for="anularVentaMotivo" class="form-label">Motivo de la anulación</label>
-                    <textarea id="anularVentaMotivo" class="form-control" rows="3" maxlength="255" required aria-describedby="anularVentaHelp"></textarea>
-                    <p id="anularVentaHelp" class="form-text mb-0">Obligatorio. Máximo 255 caracteres.</p>
-                </div>
-                <div id="anularVentaError" class="alert alert-danger mb-0" role="alert" hidden></div>
+                <p id="anularVentaMensaje" class="small text-muted">Paso 1: revise los datos de la venta. Paso 2: indique el motivo y confirme la anulación.</p>
+                <div id="anularVentaCarga" class="alert alert-secondary" role="status">Cargando los datos de la venta…</div>
+                <div id="anularVentaErrorDetalle" class="alert alert-danger" role="alert" hidden></div>
+                <section id="anularVentaResumen" aria-labelledby="anularVentaResumenTitulo" hidden>
+                    <h3 id="anularVentaResumenTitulo" class="h6 mb-3">Datos de la venta (solo lectura)</h3>
+                    <dl class="row g-2 mb-3">
+                        <dt class="col-sm-4">Nro. comprobante</dt>
+                        <dd id="anularVentaComprobante" class="col-sm-8 text-break"></dd>
+                        <dt class="col-sm-4">Fecha y hora</dt>
+                        <dd id="anularVentaFecha" class="col-sm-8"></dd>
+                        <dt class="col-sm-4">Cliente</dt>
+                        <dd id="anularVentaCliente" class="col-sm-8 text-break"></dd>
+                        <dt class="col-sm-4">Usuario (cajero)</dt>
+                        <dd id="anularVentaUsuario" class="col-sm-8 text-break"></dd>
+                    </dl>
+                    <div class="table-responsive rounded-3 border">
+                        <table class="table table-sm align-middle mb-0" aria-labelledby="anularVentaResumenTitulo">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col" class="text-center">Cantidad</th>
+                                    <th scope="col">Producto</th>
+                                    <th scope="col">Lote</th>
+                                    <th scope="col" class="text-end text-nowrap">Precio unitario (Bs)</th>
+                                    <th scope="col" class="text-end text-nowrap">Subtotal (Bs)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="anularVentaProductos"></tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex flex-wrap justify-content-between gap-2 bg-light border rounded p-3 mt-3">
+                        <span class="fw-semibold">Total (Bs)</span>
+                        <span id="anularVentaTotal" class="fw-semibold"></span>
+                    </div>
+                </section>
+                <hr />
+                <section aria-labelledby="anularVentaAccionesTitulo">
+                    <h3 id="anularVentaAccionesTitulo" class="h6 mb-3">Anulación</h3>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>
+                        La anulación cambiará el estado de la venta a <strong>ANULADA</strong> y devolverá las unidades vendidas al inventario, lote por lote.
+                    </div>
+                    <div class="mb-3">
+                        <label for="anularVentaMotivo" class="form-label">Motivo de la anulación</label>
+                        <textarea id="anularVentaMotivo" class="form-control" rows="3" maxlength="255" required aria-describedby="anularVentaHelp"></textarea>
+                        <p id="anularVentaHelp" class="form-text mb-0">Obligatorio. Máximo 255 caracteres.</p>
+                    </div>
+                    <div id="anularVentaError" class="alert alert-danger mb-0" role="alert" hidden></div>
+                </section>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>

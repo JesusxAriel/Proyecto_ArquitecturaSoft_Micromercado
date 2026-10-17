@@ -112,3 +112,11 @@ test("modificarCantidad rechaza una cantidad mayor al stock y conserva la anteri
     assert.equal(detalle[0].cantidad, 4);
     assert.equal(detalle[0].subtotal, 26);
 });
+
+test("la anulación solo se confirma con los datos cargados, un motivo con texto y sin otro envío en curso", () => {
+    assert.equal(reglas.puedeConfirmarAnulacion({ resumenCargado: true, anulando: false, motivo: "Error de digitación" }), true);
+    assert.equal(reglas.puedeConfirmarAnulacion({ resumenCargado: false, anulando: false, motivo: "Error de digitación" }), false);
+    assert.equal(reglas.puedeConfirmarAnulacion({ resumenCargado: true, anulando: true, motivo: "Error de digitación" }), false);
+    assert.equal(reglas.puedeConfirmarAnulacion({ resumenCargado: true, anulando: false, motivo: "   " }), false);
+    assert.equal(reglas.puedeConfirmarAnulacion({ resumenCargado: true, anulando: false, motivo: undefined }), false);
+});
