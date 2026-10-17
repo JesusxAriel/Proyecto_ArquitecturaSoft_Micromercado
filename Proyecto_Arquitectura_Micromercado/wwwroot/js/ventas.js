@@ -4,15 +4,6 @@
     const buscador = document.getElementById("buscadorClientes");
     if (!buscador) return;
 
-    async function fetchConSesion(url, opciones, alExpirar) {
-        const respuesta = await fetchConSesion(url, opciones);
-        if (respuesta.status !== 401) return respuesta;
-
-        alExpirar?.();
-        window.location.assign(VentasReglas.urlDeLogin(window.location));
-        return new Promise(() => { });
-    }
-
     const entrada = document.getElementById("Input_IdentificacionCliente");
     const idCliente = document.getElementById("Input_IdCliente");
     const resultados = document.getElementById("resultadosClientes");
@@ -65,7 +56,7 @@
             const url = new URL(buscador.dataset.busquedaUrl, window.location.href);
             url.searchParams.set("termino", termino);
             const clientes = await VentasReglas.conReintento(async () => {
-                const respuesta = await fetchConSesion(url, {
+                const respuesta = await VentasReglas.fetchConSesion(url, {
                     headers: { Accept: "application/json" },
                     cache: "no-store"
                 });
@@ -176,7 +167,7 @@
             guardarCliente.disabled = true;
             guardarCliente.textContent = "Guardando…";
             try {
-                const respuesta = await fetchConSesion(formularioCliente.dataset.crearUrl, {
+                const respuesta = await VentasReglas.fetchConSesion(formularioCliente.dataset.crearUrl, {
                     method: "POST",
                     credentials: "same-origin",
                     headers: {
@@ -529,7 +520,7 @@
             }
         }
         try {
-            const respuesta = await fetchConSesion(confirmarVenta.dataset.registroUrl, {
+            const respuesta = await VentasReglas.fetchConSesion(confirmarVenta.dataset.registroUrl, {
                 method: "POST",
                 credentials: "same-origin",
                 headers: {
@@ -699,7 +690,7 @@
     async function consultarProducto(referencia) {
         const url = new URL(buscador.dataset.busquedaUrl, window.location.href);
         url.searchParams.set("termino", referencia.nombre);
-        const respuesta = await fetchConSesion(url, { headers: { Accept: "application/json" }, cache: "no-store" });
+        const respuesta = await VentasReglas.fetchConSesion(url, { headers: { Accept: "application/json" }, cache: "no-store" });
         if (!respuesta.ok) return null;
         const listado = await respuesta.json();
         return listado.productos.find((candidato) => candidato.id === referencia.id) ?? null;
@@ -745,7 +736,7 @@
             const url = new URL(buscador.dataset.busquedaUrl, window.location.href);
             url.searchParams.set("termino", termino);
             const listado = await VentasReglas.conReintento(async () => {
-                const respuesta = await fetchConSesion(url, {
+                const respuesta = await VentasReglas.fetchConSesion(url, {
                     headers: { Accept: "application/json" },
                     cache: "no-store"
                 });
@@ -948,7 +939,7 @@
         try {
             const url = new URL(seccion.dataset.historialUrl, window.location.href);
             url.searchParams.set("incluirAnuladas", String(mostrarAnuladas.checked));
-            const respuesta = await fetchConSesion(url, {
+            const respuesta = await VentasReglas.fetchConSesion(url, {
                 headers: { Accept: "application/json" },
                 cache: "no-store"
             });
@@ -1057,7 +1048,7 @@
         try {
             const url = new URL(seccion.dataset.detalleUrl, window.location.href);
             url.searchParams.set("idVenta", String(idVenta));
-            const respuesta = await fetchConSesion(url, {
+            const respuesta = await VentasReglas.fetchConSesion(url, {
                 headers: { Accept: "application/json" },
                 cache: "no-store"
             });
@@ -1136,7 +1127,7 @@
         try {
             const url = new URL(seccion.dataset.detalleUrl, window.location.href);
             url.searchParams.set("idVenta", String(idVenta));
-            const respuesta = await fetchConSesion(url, {
+            const respuesta = await VentasReglas.fetchConSesion(url, {
                 headers: { Accept: "application/json" },
                 cache: "no-store"
             });
@@ -1178,7 +1169,7 @@
         actualizarBotonAnulacion();
 
         try {
-            const respuesta = await fetchConSesion(seccion.dataset.anularUrl, {
+            const respuesta = await VentasReglas.fetchConSesion(seccion.dataset.anularUrl, {
                 method: "POST",
                 credentials: "same-origin",
                 headers: {

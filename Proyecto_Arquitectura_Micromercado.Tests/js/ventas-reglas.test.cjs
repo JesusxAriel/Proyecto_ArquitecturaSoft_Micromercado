@@ -242,3 +242,27 @@ test("quitarProductoDelDetalle elimina todas las filas del producto y devuelve c
     assert.equal(reglas.quitarProductoDelDetalle(detalle, 9), 0);
     assert.equal(detalle.length, 1);
 });
+
+test("fetchConSesion devuelve la respuesta cuando la sesión sigue vigente", async () => {
+    const respuesta = { status: 200 };
+    let redirigido = false;
+    const ubicacion = { pathname: "/Sales", search: "", assign: () => { redirigido = true; } };
+
+    const resultado = await reglas.fetchConSesion("/x", {}, () => assert.fail("no debe avisar"), async () => respuesta, ubicacion);
+
+    assert.equal(resultado, respuesta);
+    assert.equal(redirigido, false);
+});
+
+test("fetchConSesion ante un 401 avisa, redirige al login con el aviso y no devuelve la respuesta", async () => {
+    let avisado = false;
+    let destino = null;
+    const ubicacion = { pathname: "/Sales", search: "", assign: (url) => { destino = url; } };
+
+    const pendiente = reglas.fetchConSesion("/x", {}, () => { avisado = true; }, async () => ({ status: 401 }), ubicacion);
+    const resultado = await Promise.race([pendiente.then(() => "resuelta"), new Promise((resolver) => setTimeout(() => resolver("pendiente"), 50))]);
+
+    assert.equal(resultado, "pendiente");
+    assert.equal(avisado, true);
+    assert.equal(destino, "/Login?ReturnUrl=%2FSales&SesionVencida=true");
+});

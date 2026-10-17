@@ -54,6 +54,20 @@
         return `/Login?ReturnUrl=${encodeURIComponent(retorno)}&SesionVencida=true`;
     }
 
+    async function fetchConSesion(
+        url,
+        opciones,
+        alExpirar,
+        solicitar = (...argumentos) => raiz.fetch(...argumentos),
+        ubicacion = raiz.location) {
+        const respuesta = await solicitar(url, opciones);
+        if (respuesta.status !== 401) return respuesta;
+
+        alExpirar?.();
+        ubicacion.assign(urlDeLogin(ubicacion));
+        return new Promise(() => { });
+    }
+
     function unidadesEnDetalle(detalle, idProducto, itemExcluido) {
         return detalle
             .filter((item) => item.idProducto === idProducto && item !== itemExcluido)
@@ -205,6 +219,7 @@
         validarCliente,
         validarEfectivo,
         urlDeLogin,
+        fetchConSesion,
         unidadesEnDetalle,
         validarCantidadContraStock,
         describirLotes,
