@@ -49,6 +49,11 @@
         return null;
     }
 
+    function urlDeLogin(ubicacion) {
+        const retorno = `${ubicacion?.pathname ?? "/"}${ubicacion?.search ?? ""}`;
+        return `/Login?ReturnUrl=${encodeURIComponent(retorno)}&SesionVencida=true`;
+    }
+
     function unidadesEnDetalle(detalle, idProducto, itemExcluido) {
         return detalle
             .filter((item) => item.idProducto === idProducto && item !== itemExcluido)
@@ -188,6 +193,7 @@
         puedeConfirmarAnulacion,
         validarCliente,
         validarEfectivo,
+        urlDeLogin,
         unidadesEnDetalle,
         validarCantidadContraStock,
         describirLotes,

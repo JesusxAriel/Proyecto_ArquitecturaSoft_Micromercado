@@ -225,3 +225,12 @@ test("validarEfectivo rechaza vacío, negativo, tres decimales y más del máxim
     assert.equal(reglas.validarEfectivo("1000000.01"), "El efectivo pagado no puede superar Bs 1.000.000,00.");
     assert.equal(reglas.validarEfectivo("1e12"), "El efectivo pagado no puede superar Bs 1.000.000,00.");
 });
+
+test("urlDeLogin lleva a /Login con la página actual como retorno y el aviso de sesión vencida", () => {
+    assert.equal(
+        reglas.urlDeLogin({ pathname: "/Sales", search: "?x=1" }),
+        "/Login?ReturnUrl=%2FSales%3Fx%3D1&SesionVencida=true");
+    assert.equal(
+        reglas.urlDeLogin({ pathname: "/Sales", search: "" }),
+        "/Login?ReturnUrl=%2FSales&SesionVencida=true");
+});
