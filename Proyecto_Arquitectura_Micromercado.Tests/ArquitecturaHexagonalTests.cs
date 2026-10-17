@@ -11,6 +11,20 @@ public class ArquitecturaHexagonalTests
     private const string NsPaginas = Raiz + ".Pages";
 
     [Fact]
+    public void Administracion_de_usuarios_tiene_puerto_propio_y_no_amplia_autenticacion()
+    {
+        var autenticacion = typeof(Proyecto_Arquitectura_Micromercado.Application.Security.IUsuarioRepository);
+        var administracion = typeof(Proyecto_Arquitectura_Micromercado.Application.Users.IUsuarioAdministracionRepository);
+        var servicio = typeof(Proyecto_Arquitectura_Micromercado.Application.Users.UsuarioAdministracionService);
+        Assert.Equal("ObtenerCredencialesAsync", Assert.Single(autenticacion.GetMethods()).Name);
+        Assert.False(autenticacion.IsAssignableFrom(administracion));
+        Assert.Contains(servicio.GetConstructors().Single().GetParameters(), p => p.ParameterType == administracion);
+        Assert.DoesNotContain(servicio.GetConstructors().Single().GetParameters(), p => p.ParameterType == autenticacion);
+        // También cubre cualquier futura Pages/Users, sin depender de que exista hoy.
+        Pages_no_depende_de_repositorios();
+    }
+
+    [Fact]
     public void Domain_no_depende_de_ninguna_otra_capa()
     {
         AssertSinDependenciasHacia(
