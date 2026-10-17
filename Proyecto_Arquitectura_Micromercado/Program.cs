@@ -9,6 +9,7 @@ using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Application.Stock;
 using Proyecto_Arquitectura_Micromercado.Application.Security;
+using Proyecto_Arquitectura_Micromercado.Application.Users;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Background;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Factories;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Comprobantes;
@@ -58,6 +59,8 @@ builder.Services.AddScoped<IUsuarioActual, UsuarioActualDesdeClaims>();
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IUsuarioRepository, MySqlUsuarioRepository>();
 builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
+builder.Services.AddScoped<IUsuarioAdministracionRepository, MySqlUsuarioAdministracionRepository>();
+builder.Services.AddScoped<IUsuarioAdministracionService, UsuarioAdministracionService>();
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IComprobanteRepository, MySqlComprobanteRepository>();
