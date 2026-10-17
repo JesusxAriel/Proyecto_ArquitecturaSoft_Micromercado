@@ -15,6 +15,6 @@ public sealed class SaleInputModel
     public int? IdProducto { get; set; }
 
     [Display(Name = "Cantidad")]
-    [Range(1, int.MaxValue, ErrorMessage = "Ingrese una cantidad mayor a cero.")]
+    [Range(1, int.MaxValue, ErrorMessage = "Ingrese una cantidad entera mayor a cero.")]
     public int Cantidad { get; set; } = 1;
 }

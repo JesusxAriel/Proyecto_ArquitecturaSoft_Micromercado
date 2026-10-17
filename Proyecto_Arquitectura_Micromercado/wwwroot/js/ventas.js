@@ -313,7 +313,7 @@
 
         const unidades = cantidadEdicion.valueAsNumber;
         if (!Number.isSafeInteger(unidades) || unidades <= 0 || !cantidadEdicion.validity.valid) {
-            mostrarErrorEdicion("Ingrese una cantidad entera superior a 0.");
+            mostrarErrorEdicion("Ingrese una cantidad entera mayor a cero.");
             cantidadEdicion.focus();
             return;
         }
@@ -518,9 +518,9 @@
         };
         registrandoVenta = true;
         confirmarVenta.disabled = true;
-        confirmarVenta.textContent = "Registrando venta...";
+        confirmarVenta.textContent = "Registrando venta…";
         const ventanaComprobante = window.open("", "_blank");
-        mostrarEstadoConfirmacion("Registrando venta...");
+        mostrarEstadoConfirmacion("Registrando venta…");
         const inicioRegistro = performance.now();
         async function esperarTiempoMinimoRegistro() {
             const tiempoRestante = 800 - (performance.now() - inicioRegistro);
