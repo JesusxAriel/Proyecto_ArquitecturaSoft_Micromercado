@@ -128,5 +128,15 @@ public sealed class FachadaVenta(
         {
             throw new InvalidOperationException("El efectivo pagado no puede ser negativo.");
         }
+
+        if (dto.EfectivoPagado > Venta.EfectivoMaximo)
+        {
+            throw new InvalidOperationException("El efectivo pagado no puede superar Bs 1.000.000,00.");
+        }
+
+        if (decimal.Round(dto.EfectivoPagado, 2) != dto.EfectivoPagado)
+        {
+            throw new InvalidOperationException("El efectivo pagado admite hasta dos decimales.");
+        }
     }
 }

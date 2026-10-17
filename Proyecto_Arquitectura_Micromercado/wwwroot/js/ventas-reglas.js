@@ -24,6 +24,31 @@
         return errores;
     }
 
+    const EFECTIVO_MAXIMO = 1000000;
+
+    function validarEfectivo(valor) {
+        const texto = String(valor ?? "").trim();
+        const efectivo = Number(texto);
+
+        if (texto === "" || !Number.isFinite(efectivo)) {
+            return "Ingrese un efectivo pagado válido.";
+        }
+
+        if (efectivo < 0) {
+            return "El efectivo pagado no puede ser negativo.";
+        }
+
+        if (efectivo > EFECTIVO_MAXIMO) {
+            return "El efectivo pagado no puede superar Bs 1.000.000,00.";
+        }
+
+        if (Math.abs(efectivo * 100 - Math.round(efectivo * 100)) > 1e-6) {
+            return "El efectivo pagado admite hasta dos decimales.";
+        }
+
+        return null;
+    }
+
     function unidadesEnDetalle(detalle, idProducto, itemExcluido) {
         return detalle
             .filter((item) => item.idProducto === idProducto && item !== itemExcluido)
@@ -162,6 +187,7 @@
         conReintento,
         puedeConfirmarAnulacion,
         validarCliente,
+        validarEfectivo,
         unidadesEnDetalle,
         validarCantidadContraStock,
         describirLotes,

@@ -379,9 +379,10 @@
         }
 
         const efectivo = efectivoPagado.valueAsNumber;
-        if (!efectivoPagado.value.trim() || !Number.isFinite(efectivo) || !efectivoPagado.validity.valid) {
+        const errorEfectivo = efectivoPagado.value.trim() ? VentasReglas.validarEfectivo(efectivoPagado.value) : null;
+        if (!efectivoPagado.value.trim() || errorEfectivo || !Number.isFinite(efectivo) || !efectivoPagado.validity.valid) {
             confirmacionEfectivo.textContent = "Pendiente";
-            confirmacionSaldo.textContent = "Ingrese un efectivo válido para calcular el cambio o faltante.";
+            confirmacionSaldo.textContent = errorEfectivo ?? "Ingrese un efectivo válido para calcular el cambio o faltante.";
             confirmacionSaldo.className = "small text-muted mb-0";
             return;
         }
@@ -495,8 +496,9 @@
             return;
         }
         const efectivo = efectivoPagado.valueAsNumber;
-        if (!Number.isFinite(efectivo) || efectivo < 0 || !efectivoPagado.validity.valid) {
-            mostrarEstadoConfirmacion("Ingrese un efectivo pagado válido, mayor o igual a cero y con hasta dos decimales.", "danger");
+        const errorEfectivo = VentasReglas.validarEfectivo(efectivoPagado.value);
+        if (errorEfectivo || !Number.isFinite(efectivo) || !efectivoPagado.validity.valid) {
+            mostrarEstadoConfirmacion(errorEfectivo ?? "Ingrese un efectivo pagado válido.", "danger");
             return;
         }
 

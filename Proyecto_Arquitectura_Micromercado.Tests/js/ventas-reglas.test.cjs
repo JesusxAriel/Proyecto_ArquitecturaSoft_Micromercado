@@ -210,3 +210,18 @@ test("el ejecutor secuencial se recupera si una operación falla", async () => {
 
     assert.equal(ejecuciones, 2);
 });
+
+test("validarEfectivo acepta importes con hasta dos decimales dentro del máximo", () => {
+    for (const valor of ["0", "10", "10.5", "10.05", "0.07", "1000000", "999999.99", " 25.00 "]) {
+        assert.equal(reglas.validarEfectivo(valor), null, valor);
+    }
+});
+
+test("validarEfectivo rechaza vacío, negativo, tres decimales y más del máximo con mensajes claros", () => {
+    assert.equal(reglas.validarEfectivo(""), "Ingrese un efectivo pagado válido.");
+    assert.equal(reglas.validarEfectivo("abc"), "Ingrese un efectivo pagado válido.");
+    assert.equal(reglas.validarEfectivo("-1"), "El efectivo pagado no puede ser negativo.");
+    assert.equal(reglas.validarEfectivo("10.005"), "El efectivo pagado admite hasta dos decimales.");
+    assert.equal(reglas.validarEfectivo("1000000.01"), "El efectivo pagado no puede superar Bs 1.000.000,00.");
+    assert.equal(reglas.validarEfectivo("1e12"), "El efectivo pagado no puede superar Bs 1.000.000,00.");
+});

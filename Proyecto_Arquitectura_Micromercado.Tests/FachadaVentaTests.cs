@@ -258,6 +258,33 @@ public class FachadaVentaTests
         Assert.Equal(0, e.Unidad.Iniciadas);
     }
 
+    [Theory]
+    [InlineData("1000000.01", "El efectivo pagado no puede superar Bs 1.000.000,00.")]
+    [InlineData("1000000000000", "El efectivo pagado no puede superar Bs 1.000.000,00.")]
+    [InlineData("10.005", "El efectivo pagado admite hasta dos decimales.")]
+    public async Task Un_efectivo_fuera_de_rango_o_con_tres_decimales_lanza_sin_iniciar_transaccion(string efectivo, string mensaje)
+    {
+        var e = new Escenario();
+        e.Lotes.Agregar(1, new LoteDisponible(10, 20, null));
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => e.Fachada.RegistrarVentaAsync(Venta(decimal.Parse(efectivo, System.Globalization.CultureInfo.InvariantCulture), new LineaVentaDto(1, 1))));
+
+        Assert.Equal(mensaje, ex.Message);
+        Assert.Equal(0, e.Unidad.Iniciadas);
+    }
+
+    [Fact]
+    public async Task El_efectivo_maximo_con_dos_decimales_se_acepta()
+    {
+        var e = new Escenario();
+        e.Lotes.Agregar(1, new LoteDisponible(10, 20, null));
+
+        var resultado = await e.Fachada.RegistrarVentaAsync(Venta(1000000m, new LineaVentaDto(1, 1)));
+
+        Assert.Equal(10m, resultado.Total);
+    }
+
     [Fact]
     public async Task Efectivo_negativo_lanza_sin_iniciar_transaccion()
     {
