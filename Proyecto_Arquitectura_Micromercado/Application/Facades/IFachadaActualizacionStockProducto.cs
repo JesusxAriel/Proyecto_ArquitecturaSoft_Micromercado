@@ -15,4 +15,7 @@ public interface IFachadaActualizacionStockProducto
 
     Task<ResultadoBajaDeLotes> DarDeBajaLotesVencidosAsync(
         CancellationToken cancellationToken = default);
+
+    Task<ResultadoBajaDeLotes> DarDeBajaLotesVencidosDelSistemaAsync(
+        CancellationToken cancellationToken = default);
 }

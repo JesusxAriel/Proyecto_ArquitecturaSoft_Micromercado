@@ -38,8 +38,17 @@ public sealed class FachadaActualizacionStockProducto(
         }
     }
 
-    public async Task<ResultadoBajaDeLotes> DarDeBajaLotesVencidosAsync(
-        CancellationToken cancellationToken = default)
+    public Task<ResultadoBajaDeLotes> DarDeBajaLotesVencidosAsync(
+        CancellationToken cancellationToken = default) =>
+        DarDeBajaAsync(usuarioActual.Id, cancellationToken);
+
+    public Task<ResultadoBajaDeLotes> DarDeBajaLotesVencidosDelSistemaAsync(
+        CancellationToken cancellationToken = default) =>
+        DarDeBajaAsync(null, cancellationToken);
+
+    private async Task<ResultadoBajaDeLotes> DarDeBajaAsync(
+        int? idUsuario,
+        CancellationToken cancellationToken)
     {
         await unidad.IniciarAsync(cancellationToken);
         try
@@ -49,7 +58,7 @@ public sealed class FachadaActualizacionStockProducto(
 
             foreach (var lote in vencidos)
             {
-                await loteRepository.DesactivarAsync(lote.IdLote, usuarioActual.Id, cancellationToken);
+                await loteRepository.DesactivarAsync(lote.IdLote, idUsuario, cancellationToken);
             }
 
             await unidad.ConfirmarAsync(cancellationToken);

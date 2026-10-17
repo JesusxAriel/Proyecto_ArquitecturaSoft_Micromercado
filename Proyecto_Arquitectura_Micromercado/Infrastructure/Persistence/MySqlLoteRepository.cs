@@ -103,7 +103,7 @@ public sealed class MySqlLoteRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) : 
         return lotes;
     }
 
-    public async Task DesactivarAsync(int idLote, int idUsuario, CancellationToken cancellationToken = default)
+    public async Task DesactivarAsync(int idLote, int? idUsuario, CancellationToken cancellationToken = default)
     {
         await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
@@ -113,7 +113,7 @@ public sealed class MySqlLoteRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) : 
             WHERE id = @idLote AND estaActivo = 1;";
 
         await using var cmd = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
-        cmd.Parameters.AddWithValue("@idUsuario", idUsuario);
+        cmd.Parameters.AddWithValue("@idUsuario", (object?)idUsuario ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@idLote", idLote);
 
         await cmd.ExecuteNonQueryAsync(cancellationToken);

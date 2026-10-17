@@ -44,7 +44,7 @@ public class FachadaActualizacionStockProductoTests
             return Task.FromResult(lotes);
         }
 
-        public Task DesactivarAsync(int idLote, int idUsuario, CancellationToken cancellationToken = default) =>
+        public Task DesactivarAsync(int idLote, int? idUsuario, CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException("Fallo al desactivar.");
     }
 
@@ -116,6 +116,23 @@ public class FachadaActualizacionStockProductoTests
         Assert.Equal(1, unidad.Iniciadas);
         Assert.Equal(1, unidad.Confirmadas);
         Assert.Equal(0, unidad.Revertidas);
+    }
+
+    [Fact]
+    public async Task La_baja_del_sistema_desactiva_los_vencidos_sin_usuario_y_en_su_propia_unidad()
+    {
+        var (fachada, lotes, unidad) = CrearConUnidad();
+        lotes.Agregar(1, new LoteDisponible(10, 5, new DateOnly(2026, 6, 14)));
+        lotes.Agregar(1, new LoteDisponible(12, 8, new DateOnly(2026, 6, 15)));
+
+        var resultado = await fachada.DarDeBajaLotesVencidosDelSistemaAsync();
+
+        Assert.Equal(new ResultadoBajaDeLotes(1, 5), resultado);
+        Assert.False(lotes.EstaActivo(10));
+        Assert.True(lotes.EstaActivo(12));
+        Assert.Null(lotes.IdUsuarioActualizacionDe(10));
+        Assert.Equal(1, unidad.Iniciadas);
+        Assert.Equal(1, unidad.Confirmadas);
     }
 
     [Fact]

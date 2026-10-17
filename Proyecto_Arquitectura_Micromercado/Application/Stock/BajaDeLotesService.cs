@@ -7,4 +7,7 @@ public sealed class BajaDeLotesService(IFachadaActualizacionStockProducto fachad
 {
     public Task<ResultadoBajaDeLotes> DarDeBajaVencidosAsync(CancellationToken cancellationToken = default) =>
         fachada.DarDeBajaLotesVencidosAsync(cancellationToken);
+
+    public Task<ResultadoBajaDeLotes> DarDeBajaVencidosDelSistemaAsync(CancellationToken cancellationToken = default) =>
+        fachada.DarDeBajaLotesVencidosDelSistemaAsync(cancellationToken);
 }

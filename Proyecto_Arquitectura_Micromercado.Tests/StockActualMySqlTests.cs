@@ -1,9 +1,13 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using MySql.Data.MySqlClient;
 using Proyecto_Arquitectura_Micromercado.Application.Facades;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
+using Proyecto_Arquitectura_Micromercado.Application.Stock;
 using Proyecto_Arquitectura_Micromercado.Domain.Stock;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Background;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
@@ -155,6 +159,45 @@ public class StockActualMySqlTests
         finally
         {
             await Ejecutar($"UPDATE LOTE SET estaActivo = 1, fechaVencimiento = '{fechaOriginal}' WHERE id = {idLote}");
+        }
+
+        Assert.Equal(stockAntes, await StockDe(idProducto));
+        Assert.Equal(0, await ProductosDesincronizados());
+    }
+
+    [Fact]
+    public async Task La_baja_automatica_deja_stockActual_igual_a_la_suma_de_los_lotes_activos()
+    {
+        if (string.IsNullOrWhiteSpace(Conexion)) return;
+
+        var pila = CrearPila();
+        var idLote = await Escalar<int>(
+            "SELECT id FROM LOTE WHERE estaActivo = 1 AND cantidadDisponible > 0 AND fechaVencimiento IS NOT NULL ORDER BY id LIMIT 1");
+        var idProducto = await Escalar<int>($"SELECT idProducto FROM LOTE WHERE id = {idLote}");
+        var cantidadDelLote = await Escalar<int>($"SELECT cantidadDisponible FROM LOTE WHERE id = {idLote}");
+        var fechaOriginal = await Escalar<string>($"SELECT DATE_FORMAT(fechaVencimiento, '%Y-%m-%d') FROM LOTE WHERE id = {idLote}");
+        var usuarioOriginal = await Escalar<string>($"SELECT COALESCE(CAST(idUsuarioActualizacion AS CHAR), 'NULL') FROM LOTE WHERE id = {idLote}");
+        var stockAntes = await StockDe(idProducto);
+        var proveedor = new ServiceCollection()
+            .AddScoped<IBajaDeLotesService>(_ => new BajaDeLotesService(pila.Stock))
+            .BuildServiceProvider();
+        var tarea = new BajaAutomaticaDeLotesVencidos(
+            proveedor.GetRequiredService<IServiceScopeFactory>(),
+            NullLogger<BajaAutomaticaDeLotesVencidos>.Instance);
+
+        await Ejecutar($"UPDATE LOTE SET fechaVencimiento = DATE_SUB(CURDATE(), INTERVAL 2 DAY) WHERE id = {idLote}");
+        try
+        {
+            await tarea.EjecutarUnaVezAsync(CancellationToken.None);
+
+            Assert.Equal(0, await Escalar<int>($"SELECT estaActivo FROM LOTE WHERE id = {idLote}"));
+            Assert.Equal(1, await Escalar<int>($"SELECT idUsuarioActualizacion IS NULL FROM LOTE WHERE id = {idLote}"));
+            Assert.Equal(stockAntes - cantidadDelLote, await StockDe(idProducto));
+            Assert.Equal(0, await ProductosDesincronizados());
+        }
+        finally
+        {
+            await Ejecutar($"UPDATE LOTE SET estaActivo = 1, fechaVencimiento = '{fechaOriginal}', idUsuarioActualizacion = {usuarioOriginal} WHERE id = {idLote}");
         }
 
         Assert.Equal(stockAntes, await StockDe(idProducto));

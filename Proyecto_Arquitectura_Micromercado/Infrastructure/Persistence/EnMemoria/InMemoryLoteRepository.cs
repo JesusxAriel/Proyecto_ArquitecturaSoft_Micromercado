@@ -82,7 +82,7 @@ public sealed class InMemoryLoteRepository : ILoteRepository
         return Task.FromResult(resultado);
     }
 
-    public Task DesactivarAsync(int idLote, int idUsuario, CancellationToken cancellationToken = default)
+    public Task DesactivarAsync(int idLote, int? idUsuario, CancellationToken cancellationToken = default)
     {
         var lote = lotes.FirstOrDefault(l => l.IdLote == idLote && l.Activo);
 

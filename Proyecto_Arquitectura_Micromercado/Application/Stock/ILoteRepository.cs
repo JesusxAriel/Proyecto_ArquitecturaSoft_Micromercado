@@ -12,5 +12,5 @@ public interface ILoteRepository
 
     Task<IReadOnlyList<LoteDisponible>> ObtenerVencidosConStockAsync(DateOnly hoy, CancellationToken cancellationToken = default);
 
-    Task DesactivarAsync(int idLote, int idUsuario, CancellationToken cancellationToken = default);
+    Task DesactivarAsync(int idLote, int? idUsuario, CancellationToken cancellationToken = default);
 }

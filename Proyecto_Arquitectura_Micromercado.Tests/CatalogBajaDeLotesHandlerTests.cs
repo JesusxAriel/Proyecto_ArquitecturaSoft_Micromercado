@@ -94,5 +94,8 @@ public class CatalogBajaDeLotesHandlerTests
                 ? Task.FromResult(Resultado)
                 : Task.FromException<ResultadoBajaDeLotes>(Error);
         }
+
+        public Task<ResultadoBajaDeLotes> DarDeBajaVencidosDelSistemaAsync(CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
     }
 }

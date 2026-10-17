@@ -9,6 +9,7 @@ using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Application.Stock;
 using Proyecto_Arquitectura_Micromercado.Application.Security;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Background;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Factories;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Comprobantes;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
@@ -106,6 +107,7 @@ builder.Services.AddScoped<ILoteRepository>(sp =>
 builder.Services.AddScoped<IConPrecioVigente>(sp => sp.GetRequiredService<IProductRepository>());
 builder.Services.AddScoped<IFachadaActualizacionStockProducto, FachadaActualizacionStockProducto>();
 builder.Services.AddScoped<IBajaDeLotesService, BajaDeLotesService>();
+builder.Services.AddHostedService<BajaAutomaticaDeLotesVencidos>();
 builder.Services.AddSingleton<IDetectorDeInterbloqueo, DetectorDeInterbloqueoMySql>();
 builder.Services.AddScoped<IFachadaVenta, FachadaVenta>();
 builder.Services.AddScoped<IFachadaAnulacion, FachadaAnulacion>();
