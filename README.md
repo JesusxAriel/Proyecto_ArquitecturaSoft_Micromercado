@@ -157,13 +157,13 @@ La misma baja se ejecuta de forma automática: el servicio en segundo plano `Baj
 
 ## 🧾 Comprobante de venta
 
-El comprobante de una venta está disponible en `/Comprobante/{idVenta}` para los roles Administrador y Cajero. Es un documento HTML imprimible, sin el menú del sitio, con el logo y los colores del proyecto. Muestra el comprobante y la fecha de la venta, el CI/NIT y la razón social del cliente, el detalle, el total (también en letras) y, al pie, la fecha y hora de generación con el usuario que genera el reporte, que no es necesariamente quien registró la venta. Si la venta está anulada, lo indica de forma visible; si no existe, muestra un mensaje claro.
+El comprobante de una venta está disponible en `/Comprobante/{idVenta}` para los roles Administrador y Cajero. Es un documento HTML imprimible, sin el menú del sitio, con el logo y los colores del proyecto. Muestra el comprobante y la fecha de la venta, el CI/NIT y la razón social del cliente, el detalle, el total (también en letras) y, al pie, la fecha y hora de la venta (`VENTA.fechaVenta`) con el nombre de usuario del cajero que la registró (`VENTA.idUsuario` unido a `USUARIO.username`), de modo que el pie es el mismo sin importar quién ni cuándo abra el comprobante. Si la venta está anulada, lo indica de forma visible; si no existe, muestra un mensaje claro.
 
 ### Piezas y puertos
 
 | Pieza | Capa | Rol |
 |---|---|---|
-| `IComprobanteService` / `ComprobanteService` | Application | Arma el `ComprobanteDto` con la fecha y hora actuales (`TimeProvider`) y el usuario actual (`IUsuarioActual`). |
+| `IComprobanteService` / `ComprobanteService` | Application | Arma el `ComprobanteDto` con los datos que devuelve el repositorio: la fecha de la venta y el usuario cajero se usan como fecha y usuario del pie. No depende de la hora ni del usuario del momento en que se abre. |
 | `IComprobanteRepository` | Application (puerto de salida) | Lectura de la venta y su detalle. Es un puerto nuevo y de solo lectura: no altera ningún repositorio existente. |
 | `IGeneradorComprobante` | Application (puerto de salida) | Convierte un `ComprobanteDto` en un documento. |
 | `MySqlComprobanteRepository` / `InMemoryComprobanteRepository` | Infrastructure | Adaptadores del puerto de lectura, con SQL parametrizado. |

@@ -1,11 +1,6 @@
-using Proyecto_Arquitectura_Micromercado.Application.Security;
-
 namespace Proyecto_Arquitectura_Micromercado.Application.Comprobantes;
 
-public sealed class ComprobanteService(
-    IComprobanteRepository repositorio,
-    IUsuarioActual usuarioActual,
-    TimeProvider reloj) : IComprobanteService
+public sealed class ComprobanteService(IComprobanteRepository repositorio) : IComprobanteService
 {
     public async Task<ComprobanteDto?> ObtenerAsync(
         int idVenta,
@@ -32,8 +27,8 @@ public sealed class ComprobanteService(
             AgruparPorProducto(venta.Detalle),
             venta.MontoTotal,
             MontoEnLetras.Convertir(venta.MontoTotal),
-            reloj.GetLocalNow().DateTime,
-            usuarioActual.NombreUsuario);
+            venta.FechaVenta,
+            venta.UsuarioCajero);
     }
 
     private static IReadOnlyList<LineaComprobanteDto> AgruparPorProducto(
