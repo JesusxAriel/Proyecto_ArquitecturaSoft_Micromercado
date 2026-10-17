@@ -48,7 +48,7 @@ public sealed class MySqlClienteConsultaRepository(
             LIMIT 20;
             """;
 
-        return ErroresDePersistencia.TraducirAsync<IReadOnlyList<ClienteConsultaDto>>(async () =>
+        return ErroresDePersistencia.TraducirAsync(() => ReintentoDeLecturas.EjecutarAsync<IReadOnlyList<ClienteConsultaDto>>(async () =>
         {
             await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
             await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
@@ -65,6 +65,6 @@ public sealed class MySqlClienteConsultaRepository(
             }
 
             return clientes;
-        });
+        }));
     }
 }

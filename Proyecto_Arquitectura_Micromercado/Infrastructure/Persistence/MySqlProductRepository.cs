@@ -234,25 +234,28 @@ public sealed class MySqlProductRepository(
             LIMIT @limite;
             """;
 
-        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
-        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
-        command.Parameters.AddWithValue("@patron", SqlLike.ContainsPattern(termino));
-        command.Parameters.AddWithValue("@limite", limite + 1);
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-
-        var productos = new List<ProductoParaVenta>();
-        while (await reader.ReadAsync(cancellationToken))
+        return await ReintentoDeLecturas.EjecutarAsync(async () =>
         {
-            productos.Add(new ProductoParaVenta(
-                reader.GetInt32(reader.GetOrdinal("id")),
-                reader.GetString(reader.GetOrdinal("nombre")),
-                reader.GetString(reader.GetOrdinal("empaquePresentacion")),
-                reader.GetDecimal(reader.GetOrdinal("precioVenta")),
-                reader.GetInt32(reader.GetOrdinal("stockActual"))));
-        }
+            await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+            await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
+            command.Parameters.AddWithValue("@patron", SqlLike.ContainsPattern(termino));
+            command.Parameters.AddWithValue("@limite", limite + 1);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-        var hayMas = productos.Count > limite;
-        return new ResultadoBusquedaParaVenta(hayMas ? productos.Take(limite).ToList() : productos, hayMas);
+            var productos = new List<ProductoParaVenta>();
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                productos.Add(new ProductoParaVenta(
+                    reader.GetInt32(reader.GetOrdinal("id")),
+                    reader.GetString(reader.GetOrdinal("nombre")),
+                    reader.GetString(reader.GetOrdinal("empaquePresentacion")),
+                    reader.GetDecimal(reader.GetOrdinal("precioVenta")),
+                    reader.GetInt32(reader.GetOrdinal("stockActual"))));
+            }
+
+            var hayMas = productos.Count > limite;
+            return new ResultadoBusquedaParaVenta(hayMas ? productos.Take(limite).ToList() : productos, hayMas);
+        });
     }
 
     public Task<IReadOnlyList<LookupOption>> GetPackagingsAsync(CancellationToken cancellationToken = default) =>
