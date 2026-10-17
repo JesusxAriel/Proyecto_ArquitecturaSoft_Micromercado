@@ -21,6 +21,8 @@ public sealed class IndexModel(
     IClienteCreacionService clienteCreacionService,
     ILogger<IndexModel> logger) : PageModel
 {
+    private static readonly TimeSpan TiempoMaximoBusqueda = TimeSpan.FromSeconds(8);
+
     public SaleInputModel Input { get; } = new();
     public DateTime FechaActual { get; } = DateTime.Now;
 
@@ -271,49 +273,98 @@ public sealed class IndexModel(
         }
     }
 
-    public async Task<JsonResult> OnGetBuscarClientesAsync(
+    public async Task<IActionResult> OnGetBuscarClientesAsync(
         string? termino, CancellationToken cancellationToken)
     {
-        var clientes = await clienteConsultaService.BuscarAsync(termino, cancellationToken);
-        return new JsonResult(clientes.Select(cliente => new
+        Response.Headers.CacheControl = "no-store";
+        if (cancellationToken.IsCancellationRequested)
         {
-            id = cliente.Id,
-            nitCi = cliente.NitCi,
-            razonSocial = cliente.RazonSocial
-        }));
+            return new JsonResult(Array.Empty<object>());
+        }
+
+        using var limite = new CancellationTokenSource(TiempoMaximoBusqueda);
+        try
+        {
+            var clientes = await clienteConsultaService.BuscarAsync(termino, limite.Token);
+            return new JsonResult(clientes.Select(cliente => new
+            {
+                id = cliente.Id,
+                nitCi = cliente.NitCi,
+                razonSocial = cliente.RazonSocial
+            }));
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return new JsonResult(Array.Empty<object>());
+        }
+        catch (Exception ex)
+        {
+            return FalloDeBusqueda(
+                ex,
+                "clientes",
+                new { mensaje = "No se pudo buscar clientes. Intente nuevamente." });
+        }
     }
 
     public async Task<IActionResult> OnGetBuscarProductosAsync(
         string? termino, CancellationToken cancellationToken)
     {
         Response.Headers.CacheControl = "no-store";
-        if (string.IsNullOrWhiteSpace(termino))
+        if (cancellationToken.IsCancellationRequested)
         {
-            return new JsonResult(new { productos = Array.Empty<object>(), total = 0 });
+            return new JsonResult(RespuestaDeProductos([], false, null));
         }
 
+        using var limite = new CancellationTokenSource(TiempoMaximoBusqueda);
         try
         {
-            var listado = await productService.GetPagedForSalesAsync(1, 10, termino, cancellationToken);
-            return new JsonResult(new
-            {
-                productos = listado.Items.Select(producto => new
+            var resultado = await productService.BuscarParaVentaAsync(termino, limite.Token);
+            return new JsonResult(RespuestaDeProductos(
+                resultado.Productos.Select(producto => new
                 {
                     id = producto.Id,
                     nombre = producto.Nombre,
-                    presentacion = producto.EmpaquePresentacion,
+                    presentacion = producto.Presentacion,
                     precioVenta = producto.PrecioVenta,
-                    stockDisponible = producto.StockCalculado
-                }),
-                total = listado.TotalCount
-            });
+                    stockDisponible = producto.StockDisponible
+                }).ToArray(),
+                resultado.HayMas,
+                null));
         }
-        catch (ErrorDePersistenciaException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            return new JsonResult(new { mensaje = "No se pudo buscar productos. Intente nuevamente." })
-            {
-                StatusCode = StatusCodes.Status503ServiceUnavailable
-            };
+            return new JsonResult(RespuestaDeProductos([], false, null));
         }
+        catch (Exception ex)
+        {
+            return FalloDeBusqueda(
+                ex,
+                "productos",
+                RespuestaDeProductos([], false, "No se pudo buscar productos. Intente nuevamente."));
+        }
+    }
+
+    private static object RespuestaDeProductos(IReadOnlyCollection<object> productos, bool hayMas, string? mensaje) =>
+        new { productos, total = productos.Count, hayMas, mensaje };
+
+    private JsonResult FalloDeBusqueda(Exception ex, string descripcion, object cuerpo)
+    {
+        if (ex is OperationCanceledException)
+        {
+            logger.LogWarning("La búsqueda de {Descripcion} superó el tiempo máximo.", descripcion);
+        }
+        else if (ex is ErrorDePersistenciaException)
+        {
+            logger.LogWarning(ex, "No se pudo buscar {Descripcion}.", descripcion);
+        }
+        else
+        {
+            logger.LogError(ex, "Error inesperado al buscar {Descripcion}.", descripcion);
+        }
+
+        return new JsonResult(cuerpo)
+        {
+            StatusCode = StatusCodes.Status503ServiceUnavailable
+        };
     }
 }
