@@ -104,6 +104,109 @@
             if (actual === version) resultados.setAttribute("aria-busy", "false");
         }
     }
+
+    const modalCliente = document.getElementById("crearClienteModal");
+    if (modalCliente) {
+        const formularioCliente = document.getElementById("crearClienteForm");
+        const campoNitCi = document.getElementById("crearClienteNitCi");
+        const campoRazonSocial = document.getElementById("crearClienteRazonSocial");
+        const errorNitCi = document.getElementById("crearClienteNitCiError");
+        const errorRazonSocial = document.getElementById("crearClienteRazonSocialError");
+        const errorGeneral = document.getElementById("crearClienteError");
+        const guardarCliente = document.getElementById("crearClienteGuardar");
+        const antiforgeryCliente = document.querySelector('input[name="__RequestVerificationToken"]');
+        const modalClienteBootstrap = bootstrap.Modal.getOrCreateInstance(modalCliente);
+        let guardandoCliente = false;
+
+        function mostrarErrorCampo(campo, contenedor, mensaje) {
+            contenedor.textContent = mensaje ?? "";
+            contenedor.hidden = !mensaje;
+            campo.classList.toggle("is-invalid", Boolean(mensaje));
+            campo.setAttribute("aria-invalid", String(Boolean(mensaje)));
+        }
+
+        function mostrarErrorGeneral(mensaje) {
+            errorGeneral.textContent = mensaje ?? "";
+            errorGeneral.hidden = !mensaje;
+        }
+
+        function limpiarFormularioCliente() {
+            formularioCliente.reset();
+            mostrarErrorCampo(campoNitCi, errorNitCi, "");
+            mostrarErrorCampo(campoRazonSocial, errorRazonSocial, "");
+            mostrarErrorGeneral("");
+        }
+
+        function seleccionarClienteCreado(cliente) {
+            idCliente.value = String(cliente.id);
+            seleccionado.textContent = `Cliente seleccionado: ${cliente.razonSocial} — CI/NIT: ${cliente.nitCi}`;
+            quitar.hidden = false;
+            idCliente.dispatchEvent(new Event("change"));
+            entrada.value = cliente.nitCi;
+            entrada.dispatchEvent(new Event("input"));
+        }
+
+        formularioCliente.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            if (guardandoCliente) return;
+
+            mostrarErrorGeneral("");
+            const errores = VentasReglas.validarCliente(campoNitCi.value, campoRazonSocial.value);
+            mostrarErrorCampo(campoNitCi, errorNitCi, errores.nitCi);
+            mostrarErrorCampo(campoRazonSocial, errorRazonSocial, errores.razonSocial);
+            if (errores.nitCi) {
+                campoNitCi.focus();
+                return;
+            }
+            if (errores.razonSocial) {
+                campoRazonSocial.focus();
+                return;
+            }
+
+            guardandoCliente = true;
+            guardarCliente.disabled = true;
+            guardarCliente.textContent = "Guardando…";
+            try {
+                const respuesta = await fetch(formularioCliente.dataset.crearUrl, {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                        RequestVerificationToken: antiforgeryCliente.value
+                    },
+                    body: JSON.stringify({
+                        nitCi: campoNitCi.value.trim(),
+                        razonSocial: campoRazonSocial.value.trim()
+                    })
+                });
+                const resultado = await respuesta.json().catch(() => null);
+                if (!respuesta.ok || !resultado?.exito) {
+                    throw new Error(resultado?.mensaje || (respuesta.status === 400
+                        ? "No se pudo validar la solicitud. Revise los datos o recargue la página si su sesión expiró."
+                        : "No se pudo registrar el cliente. Intente nuevamente."));
+                }
+
+                guardandoCliente = false;
+                modalClienteBootstrap.hide();
+                seleccionarClienteCreado(resultado);
+            } catch (error) {
+                mostrarErrorGeneral(error instanceof TypeError
+                    ? "No se pudo conectar con el servidor. El cliente no fue registrado."
+                    : error.message);
+            } finally {
+                guardandoCliente = false;
+                guardarCliente.disabled = false;
+                guardarCliente.textContent = "Guardar cliente";
+            }
+        });
+
+        modalCliente.addEventListener("shown.bs.modal", () => campoNitCi.focus());
+        modalCliente.addEventListener("hide.bs.modal", (event) => {
+            if (guardandoCliente) event.preventDefault();
+        });
+        modalCliente.addEventListener("hidden.bs.modal", limpiarFormularioCliente);
+    }
 })();
 
 (() => {

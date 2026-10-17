@@ -145,11 +145,11 @@
                     <div class="input-group">
                         <input asp-for="Input.IdentificacionCliente" class="form-control"
                                placeholder="CI/NIT o razón social" autocomplete="off" aria-describedby="clienteHelp" />
-                        <a asp-page="/Customers/Create" target="_blank" rel="noopener"
-                           class="btn btn-outline-primary" title="Registrar cliente en otra pestaña"
-                           aria-label="Registrar cliente en otra pestaña">
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
+                                data-bs-target="#crearClienteModal" title="Registrar cliente nuevo"
+                                aria-label="Registrar cliente nuevo">
                             <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                        </a>
+                        </button>
                     </div>
                     <div id="clienteHelp" class="form-text">Seleccione un resultado para asociarlo a la venta.</div>
                 </div>
@@ -399,6 +399,37 @@
     </div>
 </div>
 
+<div class="modal fade" id="crearClienteModal" tabindex="-1" aria-labelledby="crearClienteTitulo" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form id="crearClienteForm" class="modal-content" novalidate
+              data-crear-url="@Url.Page("/Sales/Index", "CrearCliente")">
+            <div class="modal-header">
+                <h2 id="crearClienteTitulo" class="modal-title fs-5">Registrar cliente</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="crearClienteError" class="alert alert-danger" role="alert" hidden></div>
+                <div class="mb-3">
+                    <label for="crearClienteNitCi" class="form-label">CI/NIT</label>
+                    <input id="crearClienteNitCi" class="form-control" maxlength="30" required autocomplete="off"
+                           aria-describedby="crearClienteNitCiError" />
+                    <div id="crearClienteNitCiError" class="invalid-feedback" role="alert" hidden></div>
+                </div>
+                <div class="mb-3">
+                    <label for="crearClienteRazonSocial" class="form-label">Razón social</label>
+                    <input id="crearClienteRazonSocial" class="form-control" maxlength="150" required autocomplete="off"
+                           aria-describedby="crearClienteRazonSocialError" />
+                    <div id="crearClienteRazonSocialError" class="invalid-feedback" role="alert" hidden></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button id="crearClienteGuardar" type="submit" class="btn btn-primary">Guardar cliente</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="modal fade" id="editarCantidadModal" tabindex="-1" aria-labelledby="editarCantidadTitulo" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <form id="editarCantidadForm" class="modal-content" novalidate>
@@ -470,5 +501,6 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/ventas-reglas.js" asp-append-version="true"></script>
     <script src="~/js/ventas.js" asp-append-version="true"></script>
 }

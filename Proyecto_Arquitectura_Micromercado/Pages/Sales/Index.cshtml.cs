@@ -18,6 +18,7 @@ public sealed class IndexModel(
     IFachadaVenta fachadaVenta,
     IVentaConsultaService ventaConsultaService,
     IFachadaAnulacion fachadaAnulacion,
+    IClienteCreacionService clienteCreacionService,
     ILogger<IndexModel> logger) : PageModel
 {
     public SaleInputModel Input { get; } = new();
@@ -59,6 +60,56 @@ public sealed class IndexModel(
         {
             logger.LogError(ex, "No se pudo registrar la venta.");
             return new JsonResult(new { exito = false, mensaje = "No se pudo registrar la venta. Revise el stock disponible y el efectivo pagado, o intente nuevamente." })
+            {
+                StatusCode = StatusCodes.Status503ServiceUnavailable
+            };
+        }
+    }
+
+    public async Task<JsonResult> OnPostCrearClienteAsync(
+        [FromBody] ClienteCreacionDto? cliente, CancellationToken cancellationToken)
+    {
+        if (cliente is null || !ModelState.IsValid)
+        {
+            var mensajes = ModelState.Values
+                .SelectMany(estado => estado.Errors)
+                .Select(error => error.ErrorMessage)
+                .Where(mensaje => !string.IsNullOrWhiteSpace(mensaje))
+                .Distinct();
+            var texto = string.Join(" ", mensajes);
+
+            return new JsonResult(new
+            {
+                exito = false,
+                mensaje = string.IsNullOrWhiteSpace(texto) ? "Ingrese el CI/NIT y la razón social." : texto
+            })
+            {
+                StatusCode = StatusCodes.Status400BadRequest
+            };
+        }
+
+        try
+        {
+            var id = await clienteCreacionService.CrearAsync(cliente, cancellationToken);
+            return new JsonResult(new
+            {
+                exito = true,
+                id,
+                nitCi = cliente.NitCi.Trim(),
+                razonSocial = cliente.RazonSocial.Trim()
+            });
+        }
+        catch (Exception ex) when (ex is ClienteDuplicadoException or ValidationException)
+        {
+            return new JsonResult(new { exito = false, mensaje = ex.Message })
+            {
+                StatusCode = StatusCodes.Status400BadRequest
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "No se pudo registrar el cliente desde ventas.");
+            return new JsonResult(new { exito = false, mensaje = "No se pudo registrar el cliente. Intente nuevamente." })
             {
                 StatusCode = StatusCodes.Status503ServiceUnavailable
             };

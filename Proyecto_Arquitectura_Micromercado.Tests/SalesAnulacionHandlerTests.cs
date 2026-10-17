@@ -92,7 +92,7 @@ public class SalesAnulacionHandlerTests
     private static IndexModel CrearPagina(AnulacionPrueba fachada, string rol)
     {
         var identidad = new ClaimsIdentity([new Claim(ClaimTypes.Role, rol)], "prueba");
-        return new IndexModel(null!, null!, null!, null!, fachada, NullLogger<IndexModel>.Instance)
+        return new IndexModel(null!, null!, null!, null!, fachada, null!, NullLogger<IndexModel>.Instance)
         {
             PageContext = new PageContext
             {
