@@ -178,6 +178,90 @@ public class SalesHistorialHandlerTests
         Assert.Equal([LogLevel.Error], registro.Niveles);
     }
 
+    [Fact]
+    public async Task Con_la_peticion_ya_cancelada_el_detalle_no_consulta_y_no_devuelve_nada()
+    {
+        var servicio = new ConsultaPrueba();
+        var registro = new RegistroEspia();
+        var page = CrearPagina(servicio, registro);
+
+        var resultado = await page.OnGetDetalleAsync(7, Cancelado());
+
+        Assert.IsType<EmptyResult>(resultado);
+        Assert.Equal(0, servicio.Llamadas);
+        Assert.Empty(registro.Entradas);
+    }
+
+    [Fact]
+    public async Task Si_la_peticion_se_cancela_durante_el_detalle_no_hay_500_ni_logs()
+    {
+        var origen = new CancellationTokenSource();
+        var servicio = new ConsultaPrueba { Antes = () => origen.Cancel(), Error = new OperationCanceledException() };
+        var registro = new RegistroEspia();
+        var page = CrearPagina(servicio, registro);
+
+        var resultado = await page.OnGetDetalleAsync(7, origen.Token);
+
+        Assert.IsType<EmptyResult>(resultado);
+        Assert.Empty(registro.Entradas);
+    }
+
+    [Fact]
+    public async Task Si_la_peticion_se_cancela_mientras_responde_el_servicio_el_detalle_no_se_serializa()
+    {
+        var origen = new CancellationTokenSource();
+        var servicio = new ConsultaPrueba { Antes = () => origen.Cancel() };
+        var page = CrearPagina(servicio);
+
+        var resultado = await page.OnGetDetalleAsync(7, origen.Token);
+
+        Assert.IsType<EmptyResult>(resultado);
+    }
+
+    [Fact]
+    public async Task El_token_de_la_peticion_no_llega_a_la_consulta_del_detalle()
+    {
+        var origen = new CancellationTokenSource();
+        var servicio = new ConsultaPrueba();
+        var page = CrearPagina(servicio);
+
+        await page.OnGetDetalleAsync(7, origen.Token);
+        origen.Cancel();
+
+        Assert.NotNull(servicio.TokenRecibido);
+        Assert.NotEqual(origen.Token, servicio.TokenRecibido);
+        Assert.False(servicio.TokenRecibido!.Value.IsCancellationRequested);
+    }
+
+    [Fact]
+    public async Task El_vencimiento_del_tiempo_en_el_detalle_devuelve_503_y_un_aviso()
+    {
+        var servicio = new ConsultaPrueba { Error = new TaskCanceledException() };
+        var registro = new RegistroEspia();
+        var page = CrearPagina(servicio, registro);
+
+        var resultado = Assert.IsType<JsonResult>(await page.OnGetDetalleAsync(7, default));
+        var json = JsonSerializer.SerializeToElement(resultado.Value);
+
+        Assert.Equal(503, resultado.StatusCode);
+        Assert.Equal("No se pudo cargar el detalle de la venta. Intente nuevamente.", json.GetProperty("mensaje").GetString());
+        Assert.Equal([LogLevel.Warning], registro.Niveles);
+    }
+
+    [Fact]
+    public async Task Una_excepcion_inesperada_en_el_detalle_devuelve_503_y_se_registra_como_error()
+    {
+        var servicio = new ConsultaPrueba { Error = new InvalidOperationException("Información interna") };
+        var registro = new RegistroEspia();
+        var page = CrearPagina(servicio, registro);
+
+        var resultado = Assert.IsType<JsonResult>(await page.OnGetDetalleAsync(7, default));
+
+        Assert.Equal(503, resultado.StatusCode);
+        Assert.DoesNotContain("Información interna", JsonSerializer.Serialize(resultado.Value));
+        Assert.Equal([LogLevel.Error], registro.Niveles);
+    }
+
     private static IndexModel CrearPagina(ConsultaPrueba servicio, RegistroEspia? registro = null) =>
         new(null!, null!, null!, servicio, null!, null!, registro ?? new RegistroEspia())
         {
@@ -212,6 +296,9 @@ public class SalesHistorialHandlerTests
         public Task<VentaDetalleDto?> ObtenerDetalleAsync(
             int idVenta, CancellationToken cancellationToken = default)
         {
+            TokenRecibido = cancellationToken;
+            Llamadas++;
+            Antes?.Invoke();
             if (Error is not null) return Task.FromException<VentaDetalleDto?>(Error);
             if (idVenta != 7) return Task.FromResult<VentaDetalleDto?>(null);
 

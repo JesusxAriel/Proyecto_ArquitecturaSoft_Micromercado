@@ -825,7 +825,6 @@
     const aviso = document.getElementById("avisoHistorial");
     const antiforgery = document.querySelector('input[name="__RequestVerificationToken"]');
     const ventasPorId = new Map();
-    let consultaDetalle;
     let versionDetalle = 0;
     let ventaEnAnulacion = null;
     let resumenAnulacionCargado = false;
@@ -1036,10 +1035,7 @@
     }
 
     async function abrirDetalle(idVenta) {
-        consultaDetalle?.abort();
         const actual = ++versionDetalle;
-        const controlador = new AbortController();
-        consultaDetalle = controlador;
         limpiarDetalle();
         detalleModal.show();
 
@@ -1047,7 +1043,6 @@
             const url = new URL(seccion.dataset.detalleUrl, window.location.href);
             url.searchParams.set("idVenta", String(idVenta));
             const respuesta = await fetch(url, {
-                signal: controlador.signal,
                 headers: { Accept: "application/json" },
                 cache: "no-store"
             });
@@ -1059,7 +1054,7 @@
 
             mostrarDetalle(datos);
         } catch (error) {
-            if (actual !== versionDetalle || error.name === "AbortError") return;
+            if (actual !== versionDetalle) return;
             mostrarErrorDetalle(error instanceof TypeError
                 ? "No se pudo conectar con el servidor. Intente nuevamente."
                 : error.message);
@@ -1067,7 +1062,6 @@
     }
 
     modalDetalle.addEventListener("hidden.bs.modal", () => {
-        consultaDetalle?.abort();
         versionDetalle++;
     });
 

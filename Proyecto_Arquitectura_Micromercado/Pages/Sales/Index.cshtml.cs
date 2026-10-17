@@ -219,58 +219,56 @@ public sealed class IndexModel(
             new { mensaje = "No se pudo cargar el historial de ventas. Intente nuevamente." });
     }
 
-    public async Task<IActionResult> OnGetDetalleAsync(
+    public Task<IActionResult> OnGetDetalleAsync(
         int idVenta, CancellationToken cancellationToken)
     {
         Response.Headers.CacheControl = "no-store";
 
-        try
-        {
-            var venta = await ventaConsultaService.ObtenerDetalleAsync(idVenta, cancellationToken);
-            if (venta is null)
+        return EjecutarSinCancelacionAsync(
+            cancellationToken,
+            TiempoMaximoConsulta,
+            async limite =>
             {
-                return new JsonResult(new { mensaje = "La venta solicitada no existe." })
+                var venta = await ventaConsultaService.ObtenerDetalleAsync(idVenta, limite);
+                if (venta is null)
                 {
-                    StatusCode = StatusCodes.Status404NotFound
-                };
-            }
-
-            return new JsonResult(new
-            {
-                id = venta.Id,
-                nroComprobante = venta.NroComprobante,
-                fechaHora = venta.FechaHora,
-                nitCiCliente = venta.NitCiCliente,
-                razonSocialCliente = venta.RazonSocialCliente,
-                usuarioCajero = venta.UsuarioCajero,
-                estado = venta.Estado,
-                total = venta.Total,
-                efectivoPagado = venta.EfectivoPagado,
-                cambio = venta.Cambio,
-                motivoAnulacion = venta.MotivoAnulacion,
-                fechaAnulacion = venta.FechaAnulacion,
-                usuarioAnulacion = venta.UsuarioAnulacion,
-                lineas = venta.Lineas.Select(linea => new
-                {
-                    cantidad = linea.Cantidad,
-                    descripcion = linea.Descripcion,
-                    precioUnitario = linea.PrecioUnitario,
-                    subtotal = linea.Subtotal,
-                    lotes = linea.Lotes.Select(lote => new
+                    return new JsonResult(new { mensaje = "La venta solicitada no existe." })
                     {
-                        codigoLote = lote.CodigoLote,
-                        cantidad = lote.Cantidad
+                        StatusCode = StatusCodes.Status404NotFound
+                    };
+                }
+
+                return new JsonResult(new
+                {
+                    id = venta.Id,
+                    nroComprobante = venta.NroComprobante,
+                    fechaHora = venta.FechaHora,
+                    nitCiCliente = venta.NitCiCliente,
+                    razonSocialCliente = venta.RazonSocialCliente,
+                    usuarioCajero = venta.UsuarioCajero,
+                    estado = venta.Estado,
+                    total = venta.Total,
+                    efectivoPagado = venta.EfectivoPagado,
+                    cambio = venta.Cambio,
+                    motivoAnulacion = venta.MotivoAnulacion,
+                    fechaAnulacion = venta.FechaAnulacion,
+                    usuarioAnulacion = venta.UsuarioAnulacion,
+                    lineas = venta.Lineas.Select(linea => new
+                    {
+                        cantidad = linea.Cantidad,
+                        descripcion = linea.Descripcion,
+                        precioUnitario = linea.PrecioUnitario,
+                        subtotal = linea.Subtotal,
+                        lotes = linea.Lotes.Select(lote => new
+                        {
+                            codigoLote = lote.CodigoLote,
+                            cantidad = lote.Cantidad
+                        })
                     })
-                })
-            });
-        }
-        catch (ErrorDePersistenciaException)
-        {
-            return new JsonResult(new { mensaje = "No se pudo cargar el detalle de la venta. Intente nuevamente." })
-            {
-                StatusCode = StatusCodes.Status503ServiceUnavailable
-            };
-        }
+                });
+            },
+            "el detalle de la venta",
+            new { mensaje = "No se pudo cargar el detalle de la venta. Intente nuevamente." });
     }
 
     public async Task<IActionResult> OnGetBuscarClientesAsync(
