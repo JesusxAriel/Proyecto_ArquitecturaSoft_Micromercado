@@ -536,6 +536,11 @@
                 renderizarDetalle();
                 quitar.click();
                 actualizarConfirmacionVenta();
+                VentasReglas.actualizarProductoEnResultados(
+                    listadoVisible.productos, resultado.idProducto, resultado.precioActual, resultado.stockDisponible);
+                pintarResultados(listadoVisible);
+                const terminoVigente = entrada.value.trim();
+                if (VentasReglas.terminoDeBusquedaValido(terminoVigente)) buscar(terminoVigente, ++version);
             }
             if (!respuesta.ok || !resultado?.exito) {
                 throw new Error(resultado?.mensaje || (respuesta.status === 400
@@ -730,6 +735,44 @@
     document.addEventListener("venta:anulada", refrescarStocks);
     document.addEventListener("venta:registrada", refrescarStocks);
 
+    let listadoVisible = { productos: [], hayMas: false };
+
+    function pintarResultados(listado) {
+        listadoVisible = listado;
+        resultados.replaceChildren();
+        listado.productos.forEach((producto) => {
+            const fila = document.createElement("li");
+            fila.className = "list-group-item";
+            const nombre = document.createElement("div");
+            nombre.className = "fw-semibold text-break";
+            nombre.textContent = producto.nombre;
+            const datos = document.createElement("div");
+            datos.className = "small text-muted text-break";
+            const resumen = resumenProducto(producto);
+            datos.textContent = resumen;
+            const boton = document.createElement("button");
+            boton.type = "button";
+            boton.dataset.productoId = String(producto.id);
+            boton.setAttribute("aria-label", `Seleccionar ${producto.nombre}, ${producto.presentacion}`);
+            boton.addEventListener("click", () => {
+                idProducto.value = String(producto.id);
+                productoSeleccionado = producto;
+                mostrarEstadoDetalle("");
+                seleccionado.textContent = `Producto seleccionado: ${producto.nombre} — ${resumen}`;
+                quitar.hidden = false;
+                actualizarSeleccion();
+            });
+            fila.append(nombre, datos, boton);
+            resultados.append(fila);
+        });
+        actualizarSeleccion();
+        estado.textContent = listado.productos.length
+            ? listado.hayMas
+                ? `Mostrando los primeros ${listado.productos.length} productos. Afine la búsqueda para ver otras coincidencias.`
+                : `${listado.productos.length} producto(s) encontrado(s).`
+            : "No se encontraron productos con ese término.";
+    }
+
     async function buscar(termino, actual) {
         resultados.setAttribute("aria-busy", "true");
 
@@ -746,38 +789,7 @@
             });
             if (actual !== version) return;
 
-            resultados.replaceChildren();
-            listado.productos.forEach((producto) => {
-                const fila = document.createElement("li");
-                fila.className = "list-group-item";
-                const nombre = document.createElement("div");
-                nombre.className = "fw-semibold text-break";
-                nombre.textContent = producto.nombre;
-                const datos = document.createElement("div");
-                datos.className = "small text-muted text-break";
-                const resumen = resumenProducto(producto);
-                datos.textContent = resumen;
-                const boton = document.createElement("button");
-                boton.type = "button";
-                boton.dataset.productoId = String(producto.id);
-                boton.setAttribute("aria-label", `Seleccionar ${producto.nombre}, ${producto.presentacion}`);
-                boton.addEventListener("click", () => {
-                    idProducto.value = String(producto.id);
-                    productoSeleccionado = producto;
-                    mostrarEstadoDetalle("");
-                    seleccionado.textContent = `Producto seleccionado: ${producto.nombre} — ${resumen}`;
-                    quitar.hidden = false;
-                    actualizarSeleccion();
-                });
-                fila.append(nombre, datos, boton);
-                resultados.append(fila);
-            });
-            actualizarSeleccion();
-            estado.textContent = listado.productos.length
-                ? listado.hayMas
-                    ? `Mostrando los primeros ${listado.productos.length} productos. Afine la búsqueda para ver otras coincidencias.`
-                    : `${listado.productos.length} producto(s) encontrado(s).`
-                : "No se encontraron productos con ese término.";
+            pintarResultados(listado);
         } catch (error) {
             if (actual !== version) return;
             resultados.replaceChildren();

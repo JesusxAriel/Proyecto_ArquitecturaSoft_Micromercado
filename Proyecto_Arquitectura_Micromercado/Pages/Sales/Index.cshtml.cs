@@ -67,7 +67,7 @@ public sealed class IndexModel(
                         mensaje = ex.Message,
                         codigo = "precio-cambiado",
                         idProducto = ex.IdProducto,
-                        precioVigente = ex.PrecioVigente
+                        precioActual = ex.PrecioVigente
                     })
                     {
                         StatusCode = StatusCodes.Status400BadRequest

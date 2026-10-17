@@ -38,7 +38,7 @@ public class SalesRegistroHandlerTests
         Assert.False(json.GetProperty("exito").GetBoolean());
         Assert.Equal("precio-cambiado", json.GetProperty("codigo").GetString());
         Assert.Equal(8, json.GetProperty("idProducto").GetInt32());
-        Assert.Equal(7m, json.GetProperty("precioVigente").GetDecimal());
+        Assert.Equal(7m, json.GetProperty("precioActual").GetDecimal());
         Assert.Equal("El precio cambió.", json.GetProperty("mensaje").GetString());
     }
 

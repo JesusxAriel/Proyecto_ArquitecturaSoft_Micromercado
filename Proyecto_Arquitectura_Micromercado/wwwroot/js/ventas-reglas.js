@@ -165,6 +165,20 @@
         return quitadas;
     }
 
+    function actualizarProductoEnResultados(productos, idProducto, precioActual, stockDisponible) {
+        const producto = (productos ?? []).find((candidato) => candidato.id === idProducto);
+        const precioNuevo = Number(precioActual);
+        if (!producto || precioActual === null || precioActual === undefined || !Number.isFinite(precioNuevo)) {
+            return false;
+        }
+
+        producto.precioVenta = precioNuevo;
+        if (stockDisponible !== null && stockDisponible !== undefined && Number.isFinite(Number(stockDisponible))) {
+            producto.stockDisponible = Number(stockDisponible);
+        }
+        return true;
+    }
+
     function puedeConfirmarAnulacion(estado) {
         return Boolean(estado.resumenCargado)
             && !estado.anulando
@@ -225,7 +239,8 @@
         describirLotes,
         agregarAlDetalle,
         modificarCantidad,
-        quitarProductoDelDetalle
+        quitarProductoDelDetalle,
+        actualizarProductoEnResultados
     };
 
     if (typeof module !== "undefined" && module.exports) {

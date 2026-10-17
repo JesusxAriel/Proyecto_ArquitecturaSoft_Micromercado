@@ -266,3 +266,32 @@ test("fetchConSesion ante un 401 avisa, redirige al login con el aviso y no devu
     assert.equal(avisado, true);
     assert.equal(destino, "/Login?ReturnUrl=%2FSales&SesionVencida=true");
 });
+
+test("actualizarProductoEnResultados cambia el precio y el stock del producto visible", () => {
+    const productos = [
+        { id: 1, nombre: "Leche", precioVenta: 6.5, stockDisponible: 10 },
+        { id: 2, nombre: "Yogurt", precioVenta: 12, stockDisponible: 4 }
+    ];
+
+    assert.equal(reglas.actualizarProductoEnResultados(productos, 1, 7, 8), true);
+    assert.deepEqual(productos[0], { id: 1, nombre: "Leche", precioVenta: 7, stockDisponible: 8 });
+    assert.deepEqual(productos[1], { id: 2, nombre: "Yogurt", precioVenta: 12, stockDisponible: 4 });
+});
+
+test("actualizarProductoEnResultados conserva el stock cuando el rechazo no lo trae", () => {
+    const productos = [{ id: 1, precioVenta: 6.5, stockDisponible: 10 }];
+
+    assert.equal(reglas.actualizarProductoEnResultados(productos, 1, "7.25"), true);
+    assert.equal(productos[0].precioVenta, 7.25);
+    assert.equal(productos[0].stockDisponible, 10);
+});
+
+test("actualizarProductoEnResultados no toca nada si el producto no está visible o el precio no es válido", () => {
+    const productos = [{ id: 1, precioVenta: 6.5, stockDisponible: 10 }];
+
+    assert.equal(reglas.actualizarProductoEnResultados(productos, 9, 7), false);
+    assert.equal(reglas.actualizarProductoEnResultados(productos, 1, undefined), false);
+    assert.equal(reglas.actualizarProductoEnResultados(productos, 1, "abc"), false);
+    assert.equal(reglas.actualizarProductoEnResultados(undefined, 1, 7), false);
+    assert.deepEqual(productos[0], { id: 1, precioVenta: 6.5, stockDisponible: 10 });
+});
