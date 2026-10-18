@@ -30,12 +30,18 @@ CREATE TABLE `USUARIO` (
   `estado` ENUM('PENDIENTE', 'ACTIVO', 'INACTIVO') NOT NULL DEFAULT 'ACTIVO',
   `debeCambiarPassword` TINYINT(1) NOT NULL DEFAULT 0,
   `idUsuarioCreacion` INT DEFAULT NULL,
+  `tokenActivacionHash` VARCHAR(255) DEFAULT NULL,
+  `tokenActivacionExpira` DATETIME DEFAULT NULL,
+  `fechaActivacion` DATETIME DEFAULT NULL,
+  `idUsuarioEliminacion` INT DEFAULT NULL,
+  `fechaEliminacion` DATETIME DEFAULT NULL,
   `fechaCreacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `fechaActualizacion` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UQ_Usuario_username` (`username`),
   UNIQUE KEY `UQ_Usuario_correo` (`correo`),
   KEY `FK_Usuario_Creador` (`idUsuarioCreacion`),
+  KEY `FK_Usuario_Eliminador` (`idUsuarioEliminacion`),
   KEY `FK_Usuario_Rol` (`idRol`),
   CONSTRAINT `CK_Usuario_debeCambiarPassword` CHECK (`debeCambiarPassword` IN (0,1)),
   CONSTRAINT `CK_Usuario_estado` CHECK (
@@ -43,6 +49,8 @@ CREATE TABLE `USUARIO` (
     (`estado` IN ('PENDIENTE', 'INACTIVO') AND `estaActivo` = 0)),
   CONSTRAINT `CK_Usuario_estaActivo` CHECK (`estaActivo` IN (0,1)),
   CONSTRAINT `FK_Usuario_Creador` FOREIGN KEY (`idUsuarioCreacion`)
+    REFERENCES `USUARIO` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `FK_Usuario_Eliminador` FOREIGN KEY (`idUsuarioEliminacion`)
     REFERENCES `USUARIO` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `FK_Usuario_Rol` FOREIGN KEY (`idRol`)
     REFERENCES `ROL` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
