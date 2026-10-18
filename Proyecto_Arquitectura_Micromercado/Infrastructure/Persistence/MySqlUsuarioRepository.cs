@@ -7,15 +7,15 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 public sealed class MySqlUsuarioRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) : IUsuarioRepository
 {
     public Task<CredencialesDeUsuario?> ObtenerCredencialesAsync(
-        string nombreUsuario,
+        string correo,
         CancellationToken cancellationToken = default)
     {
         const string sql = """
             SELECT u.id, u.username, u.nombreCompleto, u.passwordHash, u.estaActivo,
-                   r.nombre AS rol
+                   u.estado, u.debeCambiarPassword, r.nombre AS rol
             FROM USUARIO u
             INNER JOIN ROL r ON r.id = u.idRol
-            WHERE u.username = @username AND r.estaActivo = 1
+            WHERE u.correo = @correo AND r.estaActivo = 1
             LIMIT 1;
             """;
 
@@ -23,7 +23,7 @@ public sealed class MySqlUsuarioRepository(MySqlUnidadDeTrabajo unidadDeTrabajo)
         {
             await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
             await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
-            command.Parameters.AddWithValue("@username", nombreUsuario);
+            command.Parameters.AddWithValue("@correo", correo);
             await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
             if (!await reader.ReadAsync(cancellationToken))
@@ -37,7 +37,9 @@ public sealed class MySqlUsuarioRepository(MySqlUnidadDeTrabajo unidadDeTrabajo)
                 reader.GetString(reader.GetOrdinal("nombreCompleto")),
                 reader.GetString(reader.GetOrdinal("rol")),
                 reader.GetString(reader.GetOrdinal("passwordHash")),
-                reader.GetBoolean(reader.GetOrdinal("estaActivo")));
+                reader.GetBoolean(reader.GetOrdinal("estaActivo")),
+                reader.GetString(reader.GetOrdinal("estado")),
+                reader.GetBoolean(reader.GetOrdinal("debeCambiarPassword")));
         });
     }
 }
