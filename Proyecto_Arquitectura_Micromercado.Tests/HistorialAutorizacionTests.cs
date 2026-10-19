@@ -200,6 +200,19 @@ public class HistorialAutorizacionTests
         Assert.DoesNotContain("historialVentasSeccion", vista);
     }
 
+    [Fact]
+    public void El_historial_y_el_detalle_no_muestran_efectivo_ni_cambio()
+    {
+        var vista = File.ReadAllText(Path.Combine(RaizDelProyecto(), "Pages", "Sales", "Historial.cshtml"));
+        var script = File.ReadAllText(Path.Combine(RaizDelProyecto(), "wwwroot", "js", "historial.js"));
+
+        foreach (var contenido in new[] { vista, script })
+        {
+            Assert.DoesNotContain("efectivo", contenido, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("cambio", contenido, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     private static string RaizDelProyecto()
     {
         var directorio = new DirectoryInfo(AppContext.BaseDirectory);

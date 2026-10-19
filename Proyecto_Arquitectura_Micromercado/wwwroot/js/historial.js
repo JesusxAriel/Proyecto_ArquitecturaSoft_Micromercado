@@ -26,8 +26,6 @@
     const detalleEstado = document.getElementById("detalleVentaEstado");
     const detalleProductos = document.getElementById("detalleVentaProductos");
     const detalleTotal = document.getElementById("detalleVentaTotal");
-    const detalleEfectivo = document.getElementById("detalleVentaEfectivo");
-    const detalleCambio = document.getElementById("detalleVentaCambio");
     const detalleAnulacion = document.getElementById("detalleVentaAnulacion");
     const detalleMotivo = document.getElementById("detalleVentaMotivo");
     const detalleUsuarioAnulacion = document.getElementById("detalleVentaUsuarioAnulacion");
@@ -233,7 +231,7 @@
         detalleError.hidden = true;
         detalleAnulacion.hidden = true;
         detalleEnlaceComprobante.hidden = true;
-        [detalleComprobante, detalleCliente, detalleFecha, detalleUsuario, detalleEfectivo, detalleCambio, detalleTotal]
+        [detalleComprobante, detalleCliente, detalleFecha, detalleUsuario, detalleTotal]
             .forEach((elemento) => { elemento.textContent = "Cargando…"; });
         detalleEstado.textContent = "Cargando…";
         detalleEstado.className = "badge bg-secondary";
@@ -242,7 +240,7 @@
 
     function mostrarErrorDetalle(mensaje) {
         limpiarDetalle();
-        [detalleComprobante, detalleCliente, detalleFecha, detalleUsuario, detalleEfectivo, detalleCambio, detalleTotal]
+        [detalleComprobante, detalleCliente, detalleFecha, detalleUsuario, detalleTotal]
             .forEach((elemento) => { elemento.textContent = "—"; });
         detalleEstado.textContent = "—";
         detalleProductos.replaceChildren(crearFilaDetalle("No hay productos para mostrar."));
@@ -260,8 +258,6 @@
         detalleEstado.textContent = anulada ? "Anulada" : "Completada";
         detalleEstado.className = `badge bg-${anulada ? "danger" : "success"}`;
         detalleTotal.textContent = precio.format(detalle.total);
-        detalleEfectivo.textContent = precio.format(detalle.efectivoPagado);
-        detalleCambio.textContent = precio.format(detalle.cambio);
         detalleEnlaceComprobante.href = urlDeComprobante(detalle.id);
         detalleEnlaceComprobante.hidden = false;
 
