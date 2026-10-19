@@ -247,6 +247,31 @@
         return true;
     }
 
+    const TAMANO_PAGINA_POR_DEFECTO = 10;
+
+    function paginar(elementos, pagina, tamano) {
+        const lista = Array.isArray(elementos) ? elementos : [];
+        const porPagina = Number.isInteger(tamano) && tamano > 0 ? tamano : TAMANO_PAGINA_POR_DEFECTO;
+        const totalPaginas = Math.max(1, Math.ceil(lista.length / porPagina));
+        const solicitada = Number.isInteger(pagina) ? pagina : 1;
+        const actual = Math.min(Math.max(1, solicitada), totalPaginas);
+        const inicio = (actual - 1) * porPagina;
+        const items = lista.slice(inicio, inicio + porPagina);
+
+        return {
+            items,
+            pagina: actual,
+            totalPaginas,
+            total: lista.length,
+            desde: items.length ? inicio + 1 : 0,
+            hasta: inicio + items.length
+        };
+    }
+
+    function puedeMostrarAnular(puedeAnular, estado) {
+        return puedeAnular === true && estado === "COMPLETADA";
+    }
+
     function puedeConfirmarAnulacion(estado) {
         return Boolean(estado.resumenCargado)
             && !estado.anulando
@@ -298,6 +323,8 @@
         terminoDeBusquedaValido,
         conReintento,
         puedeConfirmarAnulacion,
+        paginar,
+        puedeMostrarAnular,
         validarCliente,
         validarEfectivo,
         urlDeLogin,

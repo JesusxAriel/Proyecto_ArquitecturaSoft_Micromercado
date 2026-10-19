@@ -421,3 +421,54 @@ test("saldoDeEfectivo distingue cambio, falta y pago exacto", () => {
     assert.deepEqual(reglas.saldoDeEfectivo(2510, 20), { tipo: "falta", centavos: 510 });
     assert.deepEqual(reglas.saldoDeEfectivo(2510, 25.1), { tipo: "cambio", centavos: 0 });
 });
+
+test("paginar devuelve la primera página con el rango mostrado", () => {
+    const elementos = Array.from({ length: 25 }, (_, indice) => indice + 1);
+
+    const pagina = reglas.paginar(elementos, 1, 10);
+
+    assert.deepEqual(pagina.items, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    assert.equal(pagina.pagina, 1);
+    assert.equal(pagina.totalPaginas, 3);
+    assert.equal(pagina.total, 25);
+    assert.equal(pagina.desde, 1);
+    assert.equal(pagina.hasta, 10);
+});
+
+test("paginar devuelve la última página incompleta y limita páginas fuera de rango", () => {
+    const elementos = Array.from({ length: 25 }, (_, indice) => indice + 1);
+
+    const ultima = reglas.paginar(elementos, 3, 10);
+    assert.deepEqual(ultima.items, [21, 22, 23, 24, 25]);
+    assert.equal(ultima.desde, 21);
+    assert.equal(ultima.hasta, 25);
+
+    assert.equal(reglas.paginar(elementos, 99, 10).pagina, 3);
+    assert.equal(reglas.paginar(elementos, 0, 10).pagina, 1);
+    assert.equal(reglas.paginar(elementos, "x", 10).pagina, 1);
+});
+
+test("paginar con una lista vacía deja una sola página sin rango", () => {
+    const pagina = reglas.paginar([], 1, 10);
+
+    assert.deepEqual(pagina.items, []);
+    assert.equal(pagina.totalPaginas, 1);
+    assert.equal(pagina.desde, 0);
+    assert.equal(pagina.hasta, 0);
+    assert.equal(reglas.paginar(undefined, 1, 10).total, 0);
+});
+
+test("paginar usa diez por página cuando el tamaño no es válido", () => {
+    const elementos = Array.from({ length: 12 }, (_, indice) => indice);
+
+    assert.equal(reglas.paginar(elementos, 1, 0).items.length, 10);
+    assert.equal(reglas.paginar(elementos, 1, -3).totalPaginas, 2);
+});
+
+test("el botón de anular solo se ofrece al administrador y en ventas completadas", () => {
+    assert.equal(reglas.puedeMostrarAnular(true, "COMPLETADA"), true);
+    assert.equal(reglas.puedeMostrarAnular(true, "ANULADA"), false);
+    assert.equal(reglas.puedeMostrarAnular(false, "COMPLETADA"), false);
+    assert.equal(reglas.puedeMostrarAnular(undefined, "COMPLETADA"), false);
+    assert.equal(reglas.puedeMostrarAnular("true", "COMPLETADA"), false);
+});
