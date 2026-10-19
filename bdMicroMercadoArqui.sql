@@ -245,8 +245,8 @@ CREATE TABLE `VENTA` (
   `idUsuario` INT NOT NULL,
   `fechaVenta` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `montoTotal` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  `efectivoPagado` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  `cambio` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `efectivoPagado` DECIMAL(10,2) DEFAULT NULL,
+  `cambio` DECIMAL(10,2) DEFAULT NULL,
   `estado` ENUM('COMPLETADA','ANULADA') NOT NULL DEFAULT 'COMPLETADA',
 
   `motivoAnulacion` VARCHAR(255) DEFAULT NULL,
@@ -262,11 +262,7 @@ CREATE TABLE `VENTA` (
   KEY `IX_Venta_usuario_fecha` (`idUsuario`, `fechaVenta`),
   KEY `FK_Venta_Cliente` (`idCliente`),
   KEY `FK_Venta_UsuarioAnulacion` (`idUsuarioAnulacion`),
-  CONSTRAINT `CK_Venta_montos` CHECK (
-    `montoTotal` >= 0 AND `efectivoPagado` >= 0 AND `cambio` >= 0
-    AND `efectivoPagado` >= `montoTotal`
-    AND `cambio` = `efectivoPagado` - `montoTotal`
-  ),
+  CONSTRAINT `CK_Venta_montos` CHECK (`montoTotal` >= 0),
   CONSTRAINT `CK_Venta_anulacion` CHECK (
     (`estado` = 'COMPLETADA' AND `motivoAnulacion` IS NULL AND `fechaAnulacion` IS NULL)
     OR
@@ -358,8 +354,6 @@ SELECT
     dv.precioUnitario,
     dv.subtotal,
     v.montoTotal,
-    v.efectivoPagado,
-    v.cambio,
     v.estado
 FROM `VENTA` v
 INNER JOIN `CLIENTE` c        ON v.idCliente = c.id
@@ -679,9 +673,7 @@ BEGIN
             OR NEW.idCliente   <> OLD.idCliente
             OR NEW.idUsuario <> OLD.idUsuario
             OR NEW.fechaVenta  <> OLD.fechaVenta
-            OR NEW.montoTotal  <> OLD.montoTotal
-            OR NEW.efectivoPagado <> OLD.efectivoPagado
-            OR NEW.cambio      <> OLD.cambio) THEN
+            OR NEW.montoTotal  <> OLD.montoTotal) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Una venta cerrada no se puede editar; solo se puede anular';
     END IF;
