@@ -168,6 +168,9 @@ public class HistorialAutorizacionTests
         Assert.True(enlace < primeraCondicion);
         Assert.Contains("Historial de ventas", menu[enlace..(enlace + 160)]);
         Assert.DoesNotMatch(@"Historial de Ventas\s*<span[^>]*>Próximamente", layout);
+        Assert.DoesNotContain("Arqueo", layout, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Distribución por Pasillos", layout);
+        Assert.Contains("Productos por Proveedor", layout);
     }
 
     [Fact]
