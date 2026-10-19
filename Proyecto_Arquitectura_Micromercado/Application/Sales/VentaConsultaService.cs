@@ -39,8 +39,6 @@ public sealed class VentaConsultaService(
             venta.UsuarioCajero,
             venta.Estado,
             venta.Total,
-            venta.EfectivoPagado,
-            venta.Cambio,
             venta.MotivoAnulacion,
             venta.FechaAnulacion,
             venta.UsuarioAnulacion,

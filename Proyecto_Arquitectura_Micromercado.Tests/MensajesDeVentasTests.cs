@@ -25,7 +25,7 @@ public class MensajesDeVentasTests
         }
 
         var apariciones = textos.Sum(t => Regex.Matches(t.Contenido, "Ingrese una cantidad entera mayor a cero[.]").Count);
-        Assert.True(apariciones >= 3);
+        Assert.True(apariciones >= 2);
     }
 
     [Fact]

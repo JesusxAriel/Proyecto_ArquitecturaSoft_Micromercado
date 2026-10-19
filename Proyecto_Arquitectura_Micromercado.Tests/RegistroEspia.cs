@@ -3,7 +3,7 @@ using Proyecto_Arquitectura_Micromercado.Pages.Sales;
 
 namespace Proyecto_Arquitectura_Micromercado.Tests;
 
-internal sealed class RegistroEspia : ILogger<IndexModel>
+internal sealed class RegistroEspia : ILogger<IndexModel>, ILogger<HistorialModel>
 {
     public List<LogLevel> Niveles { get; } = [];
     public List<string> Entradas { get; } = [];

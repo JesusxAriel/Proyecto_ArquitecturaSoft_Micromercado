@@ -29,8 +29,6 @@ public sealed record VentaDetalleConFilasDto(
     string UsuarioCajero,
     string Estado,
     decimal Total,
-    decimal EfectivoPagado,
-    decimal Cambio,
     string? MotivoAnulacion,
     DateTime? FechaAnulacion,
     string? UsuarioAnulacion,

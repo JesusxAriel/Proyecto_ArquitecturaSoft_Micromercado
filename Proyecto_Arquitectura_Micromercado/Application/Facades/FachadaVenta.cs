@@ -76,14 +76,8 @@ public sealed class FachadaVenta(
                 }
             }
 
-            if (dto.EfectivoPagado < total)
-            {
-                throw new InvalidOperationException("El efectivo pagado es menor al monto total.");
-            }
-
             var nroComprobante = Venta.GenerarNroComprobante(reloj.GetLocalNow().DateTime, idVenta);
-            await ventaRepository.CerrarVentaAsync(
-                idVenta, nroComprobante, total, dto.EfectivoPagado, cancellationToken);
+            await ventaRepository.CerrarVentaAsync(idVenta, nroComprobante, total, cancellationToken);
 
             await unidad.ConfirmarAsync(cancellationToken);
             return new ResultadoVentaDto(idVenta, total);
@@ -143,21 +137,6 @@ public sealed class FachadaVenta(
         if (dto.Lineas.Any(linea => linea is null || linea.IdProducto <= 0 || linea.Cantidad <= 0))
         {
             throw new InvalidOperationException("Cada línea debe tener un producto válido y una cantidad mayor a cero.");
-        }
-
-        if (dto.EfectivoPagado < 0)
-        {
-            throw new InvalidOperationException("El efectivo pagado no puede ser negativo.");
-        }
-
-        if (dto.EfectivoPagado > Venta.EfectivoMaximo)
-        {
-            throw new InvalidOperationException("El efectivo pagado no puede superar Bs 1.000.000,00.");
-        }
-
-        if (decimal.Round(dto.EfectivoPagado, 2) != dto.EfectivoPagado)
-        {
-            throw new InvalidOperationException("El efectivo pagado admite hasta dos decimales.");
         }
     }
 }

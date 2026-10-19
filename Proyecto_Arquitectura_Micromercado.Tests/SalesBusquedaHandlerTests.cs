@@ -232,7 +232,7 @@ public class SalesBusquedaHandlerTests
         ProductosPrueba? productos = null,
         ClientesPrueba? clientes = null,
         RegistroEspia? registro = null) =>
-        new(clientes ?? new ClientesPrueba(), productos ?? new ProductosPrueba(), null!, null!, null!, null!,
+        new(clientes ?? new ClientesPrueba(), productos ?? new ProductosPrueba(), null!, null!,
             registro ?? new RegistroEspia())
         {
             PageContext = new PageContext { HttpContext = new DefaultHttpContext() }

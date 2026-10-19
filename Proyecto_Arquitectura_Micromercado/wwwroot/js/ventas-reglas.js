@@ -24,26 +24,29 @@
         return errores;
     }
 
-    const EFECTIVO_MAXIMO = 1000000;
+    const PAGO_MAXIMO = 1000000;
 
-    function validarEfectivo(valor) {
+    function validarMontoDePago(valor) {
         const texto = String(valor ?? "").trim();
-        const efectivo = Number(texto);
-
-        if (texto === "" || !Number.isFinite(efectivo)) {
-            return "Ingrese un efectivo pagado válido.";
+        if (texto === "") {
+            return null;
         }
 
-        if (efectivo < 0) {
-            return "El efectivo pagado no puede ser negativo.";
+        const monto = Number(texto);
+        if (!Number.isFinite(monto)) {
+            return "Ingrese un monto válido.";
         }
 
-        if (efectivo > EFECTIVO_MAXIMO) {
-            return "El efectivo pagado no puede superar Bs 1.000.000,00.";
+        if (monto < 0) {
+            return "El monto no puede ser negativo.";
         }
 
-        if (Math.abs(efectivo * 100 - Math.round(efectivo * 100)) > 1e-6) {
-            return "El efectivo pagado admite hasta dos decimales.";
+        if (monto > PAGO_MAXIMO) {
+            return "El monto no puede superar Bs 1.000.000,00.";
+        }
+
+        if (Math.abs(monto * 100 - Math.round(monto * 100)) > 1e-6) {
+            return "El monto admite hasta dos decimales.";
         }
 
         return null;
@@ -154,6 +157,74 @@
         return { item };
     }
 
+    const MENSAJE_CANTIDAD = "Ingrese una cantidad entera mayor a cero.";
+
+    function agregarConUnClic(detalle, producto) {
+        const stock = Number(producto.stockDisponible);
+        const stockConocido = Number.isFinite(stock);
+
+        if (stockConocido && stock <= 0) {
+            return { error: `${producto.nombre} no tiene stock disponible.`, campo: "producto" };
+        }
+
+        const existente = detalle.find((item) => item.idProducto === producto.id);
+        if (existente && stockConocido && existente.cantidad + 1 > stock) {
+            return {
+                item: existente,
+                sinCambios: true,
+                tope: true,
+                aviso: `Ya agregó todo el stock disponible de ${producto.nombre} (${stock}).`
+            };
+        }
+
+        const resultado = agregarAlDetalle(detalle, producto, 1);
+        if (resultado.error) {
+            return resultado;
+        }
+
+        resultado.tope = stockConocido && resultado.total >= stock;
+        resultado.aviso = resultado.tope ? `${producto.nombre}: alcanzó el stock disponible (${stock}).` : null;
+        return resultado;
+    }
+
+    function cambiarCantidad(detalle, item, valor) {
+        const texto = String(valor ?? "").trim();
+        const unidades = Number(texto);
+        if (texto === "" || !Number.isSafeInteger(unidades) || unidades <= 0) {
+            return { error: MENSAJE_CANTIDAD };
+        }
+
+        return modificarCantidad(detalle, item, unidades);
+    }
+
+    function ajustarCantidad(detalle, item, diferencia) {
+        return cambiarCantidad(detalle, item, item.cantidad + diferencia);
+    }
+
+    function puedeAumentar(item) {
+        const stock = Number(item.stockDisponible);
+        return !Number.isFinite(stock) || item.cantidad < stock;
+    }
+
+    function puedeDisminuir(item) {
+        return item.cantidad > 1;
+    }
+
+    function resumirDetalle(detalle) {
+        return {
+            productos: detalle.length,
+            unidades: detalle.reduce((total, item) => total + item.cantidad, 0),
+            totalCentavos: detalle.reduce((total, item) => total + Math.round(item.subtotal * 100), 0)
+        };
+    }
+
+    function calcularVuelto(totalCentavos, monto) {
+        const diferencia = Math.round(monto * 100) - totalCentavos;
+        return diferencia >= 0
+            ? { tipo: "vuelto", centavos: diferencia }
+            : { tipo: "falta", centavos: -diferencia };
+    }
+
     function quitarProductoDelDetalle(detalle, idProducto) {
         let quitadas = 0;
         for (let indice = detalle.length - 1; indice >= 0; indice--) {
@@ -177,6 +248,31 @@
             producto.stockDisponible = Number(stockDisponible);
         }
         return true;
+    }
+
+    const TAMANO_PAGINA_POR_DEFECTO = 10;
+
+    function paginar(elementos, pagina, tamano) {
+        const lista = Array.isArray(elementos) ? elementos : [];
+        const porPagina = Number.isInteger(tamano) && tamano > 0 ? tamano : TAMANO_PAGINA_POR_DEFECTO;
+        const totalPaginas = Math.max(1, Math.ceil(lista.length / porPagina));
+        const solicitada = Number.isInteger(pagina) ? pagina : 1;
+        const actual = Math.min(Math.max(1, solicitada), totalPaginas);
+        const inicio = (actual - 1) * porPagina;
+        const items = lista.slice(inicio, inicio + porPagina);
+
+        return {
+            items,
+            pagina: actual,
+            totalPaginas,
+            total: lista.length,
+            desde: items.length ? inicio + 1 : 0,
+            hasta: inicio + items.length
+        };
+    }
+
+    function puedeMostrarAnular(puedeAnular, estado) {
+        return puedeAnular === true && estado === "COMPLETADA";
     }
 
     function puedeConfirmarAnulacion(estado) {
@@ -230,8 +326,10 @@
         terminoDeBusquedaValido,
         conReintento,
         puedeConfirmarAnulacion,
+        paginar,
+        puedeMostrarAnular,
         validarCliente,
-        validarEfectivo,
+        validarMontoDePago,
         urlDeLogin,
         fetchConSesion,
         unidadesEnDetalle,
@@ -240,6 +338,14 @@
         agregarAlDetalle,
         modificarCantidad,
         quitarProductoDelDetalle,
+        MENSAJE_CANTIDAD,
+        agregarConUnClic,
+        cambiarCantidad,
+        ajustarCantidad,
+        puedeAumentar,
+        puedeDisminuir,
+        resumirDetalle,
+        calcularVuelto,
         actualizarProductoEnResultados
     };
 

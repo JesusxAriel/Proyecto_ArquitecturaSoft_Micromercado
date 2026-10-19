@@ -25,7 +25,7 @@ public class VentaConsultaServiceTests
 
     private static VentaDetalleConFilasDto Venta(params FilaDetalleVenta[] filas) => new(
         5, "V-20260615-0005", new DateTime(2026, 6, 15, 10, 30, 0), "123", "Cliente Uno",
-        "Cajero Uno", "COMPLETADA", 100m, 100m, 0m, null, null, null, filas);
+        "Cajero Uno", "COMPLETADA", 100m, null, null, null, filas);
 
     private static VentaConsultaService Crear(ConsultaRepositoryDoble doble) =>
         new(new VentaRepositoryEnMemoria(), doble);

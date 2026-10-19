@@ -205,7 +205,7 @@ public class SalesClienteHandlerTests
     }
 
     private static IndexModel CrearPagina(CreacionPrueba servicio, RegistroEspia? registro = null) =>
-        new(null!, null!, null!, null!, null!, servicio, registro ?? new RegistroEspia());
+        new(null!, null!, null!, servicio, registro ?? new RegistroEspia());
 
     private sealed class CreacionPrueba : IClienteCreacionService
     {

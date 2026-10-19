@@ -211,21 +211,6 @@ test("el ejecutor secuencial se recupera si una operación falla", async () => {
     assert.equal(ejecuciones, 2);
 });
 
-test("validarEfectivo acepta importes con hasta dos decimales dentro del máximo", () => {
-    for (const valor of ["0", "10", "10.5", "10.05", "0.07", "1000000", "999999.99", " 25.00 "]) {
-        assert.equal(reglas.validarEfectivo(valor), null, valor);
-    }
-});
-
-test("validarEfectivo rechaza vacío, negativo, tres decimales y más del máximo con mensajes claros", () => {
-    assert.equal(reglas.validarEfectivo(""), "Ingrese un efectivo pagado válido.");
-    assert.equal(reglas.validarEfectivo("abc"), "Ingrese un efectivo pagado válido.");
-    assert.equal(reglas.validarEfectivo("-1"), "El efectivo pagado no puede ser negativo.");
-    assert.equal(reglas.validarEfectivo("10.005"), "El efectivo pagado admite hasta dos decimales.");
-    assert.equal(reglas.validarEfectivo("1000000.01"), "El efectivo pagado no puede superar Bs 1.000.000,00.");
-    assert.equal(reglas.validarEfectivo("1e12"), "El efectivo pagado no puede superar Bs 1.000.000,00.");
-});
-
 test("urlDeLogin lleva a /Login con la página actual como retorno y el aviso de sesión vencida", () => {
     assert.equal(
         reglas.urlDeLogin({ pathname: "/Sales", search: "?x=1" }),
@@ -294,4 +279,212 @@ test("actualizarProductoEnResultados no toca nada si el producto no está visibl
     assert.equal(reglas.actualizarProductoEnResultados(productos, 1, "abc"), false);
     assert.equal(reglas.actualizarProductoEnResultados(undefined, 1, 7), false);
     assert.deepEqual(productos[0], { id: 1, precioVenta: 6.5, stockDisponible: 10 });
+});
+
+test("agregarConUnClic crea la fila con cantidad 1 y sin aviso si queda stock", () => {
+    const detalle = [];
+    const resultado = reglas.agregarConUnClic(detalle, leche);
+
+    assert.equal(resultado.error, undefined);
+    assert.equal(resultado.fusionado, false);
+    assert.equal(resultado.tope, false);
+    assert.equal(resultado.aviso, null);
+    assert.equal(detalle.length, 1);
+    assert.equal(detalle[0].cantidad, 1);
+    assert.equal(detalle[0].subtotal, 6.5);
+});
+
+test("agregarConUnClic suma 1 al repetir el producto sin duplicar la fila", () => {
+    const detalle = [];
+    reglas.agregarConUnClic(detalle, leche);
+    const resultado = reglas.agregarConUnClic(detalle, leche);
+
+    assert.equal(resultado.fusionado, true);
+    assert.equal(detalle.length, 1);
+    assert.equal(detalle[0].cantidad, 2);
+    assert.equal(detalle[0].subtotal, 13);
+});
+
+test("agregarConUnClic avisa al alcanzar el tope de stock y luego no pasa de él", () => {
+    const detalle = [];
+    const poco = { ...leche, stockDisponible: 2 };
+
+    assert.equal(reglas.agregarConUnClic(detalle, poco).tope, false);
+    const alcanzado = reglas.agregarConUnClic(detalle, poco);
+    assert.equal(alcanzado.tope, true);
+    assert.equal(alcanzado.aviso, "Leche: alcanzó el stock disponible (2).");
+    assert.equal(detalle[0].cantidad, 2);
+
+    const excedido = reglas.agregarConUnClic(detalle, poco);
+    assert.equal(excedido.sinCambios, true);
+    assert.equal(excedido.aviso, "Ya agregó todo el stock disponible de Leche (2).");
+    assert.equal(detalle[0].cantidad, 2);
+    assert.equal(detalle[0].subtotal, 13);
+});
+
+test("agregarConUnClic rechaza un producto sin stock y no toca el detalle", () => {
+    const detalle = [];
+    const resultado = reglas.agregarConUnClic(detalle, { ...leche, stockDisponible: 0 });
+
+    assert.equal(resultado.error, "Leche no tiene stock disponible.");
+    assert.equal(detalle.length, 0);
+});
+
+test("agregarConUnClic no limita cuando el stock no se conoce", () => {
+    const detalle = [];
+    const sinDato = { ...leche, stockDisponible: undefined };
+
+    reglas.agregarConUnClic(detalle, sinDato);
+    const resultado = reglas.agregarConUnClic(detalle, sinDato);
+
+    assert.equal(resultado.tope, false);
+    assert.equal(detalle[0].cantidad, 2);
+});
+
+test("cambiarCantidad acepta un entero positivo dentro del stock y recalcula el subtotal", () => {
+    const detalle = [];
+    reglas.agregarConUnClic(detalle, leche);
+
+    const resultado = reglas.cambiarCantidad(detalle, detalle[0], "7");
+
+    assert.equal(resultado.error, undefined);
+    assert.equal(detalle[0].cantidad, 7);
+    assert.equal(detalle[0].subtotal, 45.5);
+});
+
+test("cambiarCantidad rechaza vacío, cero, negativos y decimales con el mensaje de cantidad", () => {
+    const detalle = [];
+    reglas.agregarConUnClic(detalle, leche);
+
+    for (const valor of ["", "0", "-2", "1.5", "abc", undefined]) {
+        assert.equal(reglas.cambiarCantidad(detalle, detalle[0], valor).error, "Ingrese una cantidad entera mayor a cero.", String(valor));
+    }
+    assert.equal(detalle[0].cantidad, 1);
+});
+
+test("cambiarCantidad rechaza superar el stock y conserva la cantidad anterior", () => {
+    const detalle = [];
+    reglas.agregarConUnClic(detalle, leche);
+
+    const resultado = reglas.cambiarCantidad(detalle, detalle[0], "11");
+
+    assert.equal(resultado.error, "La cantidad total de Leche en el detalle (11) supera el stock disponible (10).");
+    assert.equal(detalle[0].cantidad, 1);
+});
+
+test("ajustarCantidad suma o resta uno y respeta el mínimo y el tope", () => {
+    const detalle = [];
+    reglas.agregarConUnClic(detalle, { ...leche, stockDisponible: 2 });
+    const item = detalle[0];
+
+    assert.equal(reglas.puedeDisminuir(item), false);
+    assert.equal(reglas.puedeAumentar(item), true);
+    assert.equal(reglas.ajustarCantidad(detalle, item, 1).error, undefined);
+    assert.equal(item.cantidad, 2);
+    assert.equal(reglas.puedeAumentar(item), false);
+    assert.equal(reglas.puedeDisminuir(item), true);
+    assert.ok(reglas.ajustarCantidad(detalle, item, 1).error);
+    assert.equal(item.cantidad, 2);
+    assert.equal(reglas.ajustarCantidad(detalle, item, -1).error, undefined);
+    assert.equal(item.cantidad, 1);
+    assert.ok(reglas.ajustarCantidad(detalle, item, -1).error);
+    assert.equal(item.cantidad, 1);
+});
+
+test("resumirDetalle calcula productos, unidades y total en centavos", () => {
+    const detalle = [];
+    reglas.agregarConUnClic(detalle, leche);
+    reglas.agregarConUnClic(detalle, leche);
+    reglas.agregarConUnClic(detalle, { id: 2, nombre: "Yogurt", presentacion: "1kg", precioVenta: 12.1, stockDisponible: 5 });
+
+    assert.deepEqual(reglas.resumirDetalle(detalle), { productos: 2, unidades: 3, totalCentavos: 2510 });
+    assert.deepEqual(reglas.resumirDetalle([]), { productos: 0, unidades: 0, totalCentavos: 0 });
+});
+
+
+test("paginar devuelve la primera página con el rango mostrado", () => {
+    const elementos = Array.from({ length: 25 }, (_, indice) => indice + 1);
+
+    const pagina = reglas.paginar(elementos, 1, 10);
+
+    assert.deepEqual(pagina.items, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    assert.equal(pagina.pagina, 1);
+    assert.equal(pagina.totalPaginas, 3);
+    assert.equal(pagina.total, 25);
+    assert.equal(pagina.desde, 1);
+    assert.equal(pagina.hasta, 10);
+});
+
+test("paginar devuelve la última página incompleta y limita páginas fuera de rango", () => {
+    const elementos = Array.from({ length: 25 }, (_, indice) => indice + 1);
+
+    const ultima = reglas.paginar(elementos, 3, 10);
+    assert.deepEqual(ultima.items, [21, 22, 23, 24, 25]);
+    assert.equal(ultima.desde, 21);
+    assert.equal(ultima.hasta, 25);
+
+    assert.equal(reglas.paginar(elementos, 99, 10).pagina, 3);
+    assert.equal(reglas.paginar(elementos, 0, 10).pagina, 1);
+    assert.equal(reglas.paginar(elementos, "x", 10).pagina, 1);
+});
+
+test("paginar con una lista vacía deja una sola página sin rango", () => {
+    const pagina = reglas.paginar([], 1, 10);
+
+    assert.deepEqual(pagina.items, []);
+    assert.equal(pagina.totalPaginas, 1);
+    assert.equal(pagina.desde, 0);
+    assert.equal(pagina.hasta, 0);
+    assert.equal(reglas.paginar(undefined, 1, 10).total, 0);
+});
+
+test("paginar usa diez por página cuando el tamaño no es válido", () => {
+    const elementos = Array.from({ length: 12 }, (_, indice) => indice);
+
+    assert.equal(reglas.paginar(elementos, 1, 0).items.length, 10);
+    assert.equal(reglas.paginar(elementos, 1, -3).totalPaginas, 2);
+});
+
+test("el botón de anular solo se ofrece al administrador y en ventas completadas", () => {
+    assert.equal(reglas.puedeMostrarAnular(true, "COMPLETADA"), true);
+    assert.equal(reglas.puedeMostrarAnular(true, "ANULADA"), false);
+    assert.equal(reglas.puedeMostrarAnular(false, "COMPLETADA"), false);
+    assert.equal(reglas.puedeMostrarAnular(undefined, "COMPLETADA"), false);
+    assert.equal(reglas.puedeMostrarAnular("true", "COMPLETADA"), false);
+});
+
+test("validarMontoDePago acepta vacío porque el monto es opcional", () => {
+    assert.equal(reglas.validarMontoDePago(""), null);
+    assert.equal(reglas.validarMontoDePago("   "), null);
+    assert.equal(reglas.validarMontoDePago(undefined), null);
+    assert.equal(reglas.validarMontoDePago(null), null);
+});
+
+test("validarMontoDePago acepta importes con hasta dos decimales dentro del máximo", () => {
+    for (const valor of ["0", "10", "10.5", "10.05", "0.07", "1000000", "999999.99", " 25.00 "]) {
+        assert.equal(reglas.validarMontoDePago(valor), null, valor);
+    }
+});
+
+test("validarMontoDePago rechaza negativos, tres decimales, más del máximo y textos con mensajes claros", () => {
+    assert.equal(reglas.validarMontoDePago("abc"), "Ingrese un monto válido.");
+    assert.equal(reglas.validarMontoDePago("-1"), "El monto no puede ser negativo.");
+    assert.equal(reglas.validarMontoDePago("10.005"), "El monto admite hasta dos decimales.");
+    assert.equal(reglas.validarMontoDePago("1000000.01"), "El monto no puede superar Bs 1.000.000,00.");
+    assert.equal(reglas.validarMontoDePago("1e12"), "El monto no puede superar Bs 1.000.000,00.");
+});
+
+test("calcularVuelto devuelve el vuelto cuando el monto alcanza", () => {
+    assert.deepEqual(reglas.calcularVuelto(2510, 30), { tipo: "vuelto", centavos: 490 });
+    assert.deepEqual(reglas.calcularVuelto(2510, 100), { tipo: "vuelto", centavos: 7490 });
+});
+
+test("calcularVuelto devuelve el faltante cuando el monto es menor al total", () => {
+    assert.deepEqual(reglas.calcularVuelto(2510, 20), { tipo: "falta", centavos: 510 });
+    assert.deepEqual(reglas.calcularVuelto(2510, 0), { tipo: "falta", centavos: 2510 });
+});
+
+test("calcularVuelto con pago exacto da vuelto cero sin errores de redondeo", () => {
+    assert.deepEqual(reglas.calcularVuelto(2510, 25.1), { tipo: "vuelto", centavos: 0 });
+    assert.deepEqual(reglas.calcularVuelto(710, 7.1), { tipo: "vuelto", centavos: 0 });
 });

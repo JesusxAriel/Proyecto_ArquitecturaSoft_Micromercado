@@ -227,10 +227,9 @@ internal sealed class VentaRepositoryConErroresTraducidos(IVentaRepository inter
         int idVenta,
         string nroComprobante,
         decimal montoTotal,
-        decimal efectivoPagado,
         CancellationToken cancellationToken = default) =>
         ErroresDePersistencia.TraducirAsync(
-            () => interno.CerrarVentaAsync(idVenta, nroComprobante, montoTotal, efectivoPagado, cancellationToken));
+            () => interno.CerrarVentaAsync(idVenta, nroComprobante, montoTotal, cancellationToken));
 
     public Task<Venta?> ObtenerParaAnularAsync(int idVenta, CancellationToken cancellationToken = default) =>
         ErroresDePersistencia.TraducirAsync(() => interno.ObtenerParaAnularAsync(idVenta, cancellationToken));

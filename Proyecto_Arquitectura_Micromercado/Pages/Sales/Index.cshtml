@@ -4,436 +4,115 @@
     ViewData["Title"] = "Registro de ventas";
 }
 
-<style>
-    .sale-heading {
-        border-bottom: 1px solid #d8e0e8;
-        padding-bottom: 1rem;
-    }
+@section Styles {
+    <link rel="stylesheet" href="~/css/ventas.css" asp-append-version="true" />
+}
 
-    .sale-kicker {
-        color: #64748b;
-        font-size: .75rem;
-        font-weight: 700;
-        margin-bottom: .25rem;
-        text-transform: uppercase;
-    }
-
-    .sale-date {
-        border-left: 3px solid #f59e0b;
-        padding-left: .85rem;
-    }
-
-    .sale-date span,
-    .sale-date time {
-        display: block;
-    }
-
-    .sale-date span {
-        color: #64748b;
-        font-size: .8rem;
-    }
-
-    .sale-date time {
-        color: #1e293b;
-        font-weight: 700;
-        font-variant-numeric: tabular-nums;
-    }
-
-    .sale-panel {
-        border: 1px solid #d8e0e8;
-        border-radius: 6px;
-        box-shadow: none !important;
-    }
-
-    .sale-panel .card-body {
-        padding: 1.25rem;
-    }
-
-    .sale-panel h2 {
-        color: #1e293b;
-    }
-
-    .sale-lines thead th {
-        background: #f1f5f9;
-        color: #334155;
-        font-size: .8rem;
-        white-space: nowrap;
-    }
-
-    .sale-summary {
-        background: #f8fafc;
-        border: 1px solid #d8e0e8;
-        border-radius: 6px;
-    }
-
-    .sale-summary-total {
-        color: #1e293b;
-        font-size: 1.2rem;
-        font-weight: 700;
-        font-variant-numeric: tabular-nums;
-    }
-
-    .sale-primary-action {
-        min-width: 10rem;
-    }
-
-    #resultadosClientes > .list-group-item,
-    #resultadosProductos > .list-group-item {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        column-gap: .75rem;
-        padding: .5rem .75rem;
-    }
-
-    #resultadosClientes > .list-group-item > div,
-    #resultadosProductos > .list-group-item > div {
-        grid-column: 1;
-        min-width: 0;
-        line-height: 1.35;
-    }
-
-    #resultadosClientes > .list-group-item > button,
-    #resultadosProductos > .list-group-item > button {
-        grid-column: 2;
-        grid-row: 1 / span 2;
-        align-self: center;
-        margin-top: 0 !important;
-    }
-
-    #resultadosProductos {
-        max-height: 23rem;
-        overflow-y: auto;
-    }
-
-    #estadoBusquedaClientes:empty,
-    #estadoBusquedaProductos:empty,
-    #estadoDetalle:empty {
-        margin: 0 !important;
-    }
-
-    @@media (max-width: 575.98px) {
-        .sale-panel .card-body {
-            padding: 1rem;
-        }
-
-        .sale-date {
-            width: 100%;
-        }
-    }
-</style>
-
-<header class="sale-heading d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-    <div>
-        <p class="sale-kicker">Caja · Nueva transacción</p>
-        <h1 class="page-heading mb-0">Registro de venta</h1>
-    </div>
-    <div class="sale-date" aria-label="Fecha y hora automática de la venta">
-        <span>Fecha y hora</span>
+<header class="sale-heading d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <h1 class="page-heading mb-0">Registro de venta</h1>
+    <div class="sale-date" aria-label="Fecha y hora de la venta">
         <time>@Model.FechaActual.ToString("dd/MM/yyyy HH:mm")</time>
     </div>
 </header>
 @Html.AntiForgeryToken()
 
-<div class="row g-4">
-    <div class="col-12 col-lg-4">
-        <section id="buscadorClientes" class="card sale-panel h-100" aria-labelledby="clienteHeading"
-                 data-busqueda-url="@Url.Page("/Sales/Index", "BuscarClientes")">
-            <div class="card-body">
-                <h2 id="clienteHeading" class="h5 mb-2">Cliente</h2>
-                <div class="mb-2">
-                    <label asp-for="Input.IdentificacionCliente" class="form-label">Buscar por CI/NIT o razón social</label>
-                    <div class="input-group">
-                        <input asp-for="Input.IdentificacionCliente" class="form-control"
-                               placeholder="CI/NIT o razón social" autocomplete="off" aria-describedby="clienteHelp" />
-                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
-                                data-bs-target="#crearClienteModal" title="Registrar cliente nuevo"
-                                aria-label="Registrar cliente nuevo">
-                            <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                        </button>
-                    </div>
-                    <div id="clienteHelp" class="form-text">Seleccione un resultado para asociarlo a la venta.</div>
-                </div>
-                <p id="estadoBusquedaClientes" class="small text-muted mb-2" role="status" aria-live="polite"></p>
-                <ul id="resultadosClientes" class="list-group mb-2" aria-label="Resultados de clientes" aria-busy="false"></ul>
-                <input asp-for="Input.IdCliente" type="hidden" />
-                <div class="border rounded p-2 bg-light small">
-                    <p id="clienteSeleccionado" class="mb-0" role="status" aria-live="polite">Ningún cliente seleccionado.</p>
-                    <button id="quitarCliente" type="button" class="btn btn-outline-secondary btn-sm mt-2" hidden>Quitar selección</button>
-                </div>
-                <noscript><p class="text-danger mt-3">Active JavaScript para buscar y seleccionar clientes.</p></noscript>
-            </div>
-        </section>
-    </div>
-
+<div class="row g-4 align-items-start">
     <div class="col-12 col-lg-8">
-        <section id="buscadorProductos" class="card sale-panel h-100" aria-labelledby="productoHeading"
+        <section id="buscadorProductos" class="card sale-panel mb-4" aria-labelledby="productoHeading"
                  data-busqueda-url="@Url.Page("/Sales/Index", "BuscarProductos")">
             <div class="card-body">
-                <h2 id="productoHeading" class="h5 mb-2">Producto</h2>
-                <div class="row g-2">
-                    <div class="col-12 col-md-8">
-                        <label asp-for="Input.BusquedaProducto" class="form-label"></label>
-                        <input asp-for="Input.BusquedaProducto" class="form-control"
-                               placeholder="Nombre o presentación del producto" autocomplete="off" aria-describedby="productoHelp" />
-                        <div id="productoHelp" class="form-text">Seleccione un producto de los resultados para agregarlo al detalle.</div>
-                    </div>
-                    <div class="col-12 col-md-4">
-                        <label asp-for="Input.Cantidad" class="form-label"></label>
-                        <input asp-for="Input.Cantidad" class="form-control" type="number" min="1" step="1" required aria-describedby="estadoDetalle" />
-                    </div>
+                <h2 id="productoHeading" class="h5 mb-3">Productos</h2>
+                <label asp-for="Input.BusquedaProducto" class="visually-hidden"></label>
+                <div class="input-group">
+                    <span class="input-group-text" aria-hidden="true"><i class="bi bi-search"></i></span>
+                    <input asp-for="Input.BusquedaProducto" class="form-control" placeholder="Seleccione un cliente primero"
+                           autocomplete="off" disabled />
                 </div>
-                <p id="estadoBusquedaProductos" class="small text-muted mt-2 mb-2" role="status" aria-live="polite"></p>
-                <ul id="resultadosProductos" class="list-group mb-2" tabindex="0" aria-label="Resultados de productos" aria-busy="false"></ul>
-                <input asp-for="Input.IdProducto" type="hidden" />
-                <div class="border rounded p-2 bg-light small">
-                    <p id="productoSeleccionado" class="mb-0 text-break" role="status" aria-live="polite">Ningún producto seleccionado.</p>
-                    <button id="quitarProducto" type="button" class="btn btn-outline-secondary btn-sm mt-2" hidden>Quitar selección</button>
-                </div>
-                <noscript><p class="text-danger mt-3">Active JavaScript para buscar y seleccionar productos.</p></noscript>
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3">
-                    <button id="agregarAlDetalle" type="button" class="btn btn-warning fw-semibold" disabled aria-describedby="ayudaAgregarAlDetalle">
-                        <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Agregar al detalle
-                    </button>
-                </div>
-                <p id="ayudaAgregarAlDetalle" class="small text-muted mt-2 mb-0" role="status" aria-live="polite">Seleccione un cliente para habilitar esta acción.</p>
-                <p id="estadoDetalle" class="small mt-3 mb-0" role="status" aria-live="polite"></p>
+                <p id="estadoBusquedaProductos" class="small text-body-secondary mt-2 mb-0" role="status" aria-live="polite"></p>
+                <ul id="resultadosProductos" class="resultados-lista list-unstyled mt-2 mb-0" aria-label="Resultados de productos" aria-busy="false"></ul>
+                <p id="avisoDetalle" class="small mt-2 mb-0" role="status" aria-live="polite"></p>
+                <noscript><p class="text-danger mt-3 mb-0">Active JavaScript para registrar ventas.</p></noscript>
             </div>
         </section>
-    </div>
 
-    <div class="col-12">
         <section class="card sale-panel" aria-labelledby="detalleHeading">
             <div class="card-body">
-                <h2 id="detalleHeading" class="h5 mb-2">Detalle temporal</h2>
-                <p id="clienteDelDetalle" class="small text-muted mb-2" role="status" aria-live="polite">Cliente de esta venta: Ningún cliente seleccionado.</p>
-                <p id="detalleHelp" class="text-muted">Agregue los productos que formarán parte de la venta.</p>
-                <div class="table-responsive rounded-3 border">
-                    <table class="table table-hover align-middle mb-0 sale-lines" aria-labelledby="detalleHeading" aria-describedby="detalleHelp">
+                <h2 id="detalleHeading" class="h5 mb-3">Detalle</h2>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0 sale-lines" aria-labelledby="detalleHeading">
                         <thead>
                             <tr>
                                 <th scope="col">Producto</th>
-                                <th scope="col">Presentación</th>
-                                <th scope="col" class="text-end">Precio unitario (Bs)</th>
-                                <th scope="col" class="text-center">Cantidad</th>
+                                <th scope="col" class="text-end">Precio (Bs)</th>
+                                <th scope="col" class="columna-cantidad">Cantidad</th>
                                 <th scope="col" class="text-end">Subtotal (Bs)</th>
-                                <th scope="col">Acciones</th>
+                                <th scope="col"><span class="visually-hidden">Quitar</span></th>
                             </tr>
                         </thead>
                         <tbody id="detalleTemporal">
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">Todavía no hay productos en el detalle.</td>
+                                <td colspan="5" class="text-center text-body-secondary py-4">Aún no hay productos</td>
                             </tr>
                         </tbody>
                     </table>
-                </div>
-                <section class="sale-summary p-3 mt-3" aria-labelledby="resumenVentaHeading" aria-live="polite" aria-atomic="true">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-12 col-md">
-                            <h3 id="resumenVentaHeading" class="h6 mb-2">Resumen de la venta</h3>
-                            <p class="mb-1">Productos distintos: <span id="productosDistintos">0</span></p>
-                            <p class="mb-1">Unidades totales: <span id="unidadesTotales">0</span></p>
-                            <p class="sale-summary-total mb-0">Total: Bs <span id="totalGeneral">0.00</span></p>
-                        </div>
-                        <div class="col-12 col-md-5">
-                            <label for="efectivoPagado" class="form-label">Efectivo pagado (Bs)</label>
-                            <input id="efectivoPagado" class="form-control" type="number" min="0" max="1000000" step="0.01" required />
-                        </div>
-                    </div>
-                </section>
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
-                    <p class="text-muted mb-0">El total final se validará al guardar.</p>
-                    <div class="d-flex flex-wrap align-items-center gap-3">
-                        <button id="registrarVenta" type="button" class="btn btn-warning fw-semibold sale-primary-action" disabled>Guardar venta</button>
-                    </div>
                 </div>
             </div>
         </section>
     </div>
-</div>
 
-<section id="historialVentasSeccion" class="card shadow-sm mt-4" aria-labelledby="historialVentasHeading"
-         data-historial-url="@Url.Page("/Sales/Index", "Historial")"
-         data-detalle-url="@Url.Page("/Sales/Index", "Detalle")"
-         data-anular-url="@Url.Page("/Sales/Index", "AnularVenta")"
-         data-puede-anular="@(User.IsInRole(Proyecto_Arquitectura_Micromercado.Application.Security.Roles.Administrador) ? "true" : "false")">
-    <div class="card-header bg-dark text-white d-flex flex-wrap align-items-center gap-2 py-3">
-        <i class="bi bi-journal-text" aria-hidden="true"></i>
-        <h2 id="historialVentasHeading" class="h5 mb-0">Historial de ventas</h2>
-        <div class="d-flex flex-wrap align-items-center gap-3 ms-auto">
-            <div class="form-check mb-0">
-                <input id="mostrarAnuladas" class="form-check-input" type="checkbox" />
-                <label class="form-check-label" for="mostrarAnuladas">Mostrar anuladas</label>
-            </div>
-            <button id="actualizarHistorial" type="button" class="btn btn-outline-light btn-sm">
-                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Actualizar
-            </button>
-        </div>
-    </div>
-    <div class="card-body">
-        <p id="historialVentasHelp" class="text-muted mb-3">Se muestran las últimas 50 ventas, de la más reciente a la más antigua.</p>
-        <p id="estadoHistorial" class="visually-hidden" role="status" aria-live="polite"></p>
-        <div id="avisoHistorial" class="alert alert-success" role="status" hidden></div>
-        <div class="table-responsive rounded-3 border">
-            <table class="table table-hover align-middle mb-0" aria-labelledby="historialVentasHeading" aria-describedby="historialVentasHelp">
-                <thead class="table-light">
-                    <tr>
-                        <th scope="col" class="text-nowrap">Nro. comprobante</th>
-                        <th scope="col" class="text-nowrap">Fecha y hora</th>
-                        <th scope="col">Cliente</th>
-                        <th scope="col">Estado</th>
-                        <th scope="col" class="text-end">Total</th>
-                        <th scope="col" class="text-end">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="historialVentas" aria-busy="false">
-                    <tr>
-                        <td colspan="6" class="text-center py-4">
-                            <i class="bi bi-receipt d-block fs-2 text-muted mb-2" aria-hidden="true"></i>
-                            <p class="text-muted mb-3">Cargando historial…</p>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</section>
+    <div class="col-12 col-lg-4">
+        <aside class="sale-aside" aria-label="Resumen de la venta">
+            <div class="card sale-panel">
+                <div class="card-body">
+                    <section id="buscadorClientes" aria-labelledby="clienteHeading"
+                             data-busqueda-url="@Url.Page("/Sales/Index", "BuscarClientes")">
+                        <h2 id="clienteHeading" class="h6 sale-label">Cliente</h2>
+                        <div id="clienteBusqueda">
+                            <label asp-for="Input.IdentificacionCliente" class="visually-hidden">Buscar cliente por CI/NIT o razón social</label>
+                            <div class="input-group">
+                                <input asp-for="Input.IdentificacionCliente" class="form-control"
+                                       placeholder="CI/NIT o razón social" autocomplete="off" />
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
+                                        data-bs-target="#crearClienteModal" title="Registrar cliente nuevo"
+                                        aria-label="Registrar cliente nuevo">
+                                    <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                            <p id="estadoBusquedaClientes" class="small text-body-secondary mt-2 mb-0" role="status" aria-live="polite"></p>
+                            <ul id="resultadosClientes" class="resultados-lista list-unstyled mt-2 mb-0" aria-label="Resultados de clientes" aria-busy="false"></ul>
+                        </div>
+                        <div id="clienteTarjeta" class="cliente-tarjeta" hidden>
+                            <div class="min-w-0">
+                                <p id="clienteNombre" class="fw-semibold mb-0 text-break"></p>
+                                <p id="clienteDocumento" class="small text-body-secondary mb-0 text-break"></p>
+                            </div>
+                            <button id="cambiarCliente" type="button" class="btn btn-outline-secondary btn-sm">Cambiar</button>
+                        </div>
+                        <input asp-for="Input.IdCliente" type="hidden" />
+                    </section>
 
-<div class="modal fade" id="detalleVentaModal" tabindex="-1" aria-labelledby="detalleVentaTitulo" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header bg-dark text-white">
-                <h2 id="detalleVentaTitulo" class="modal-title fs-5">Detalle de venta</h2>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body">
-                <p class="small text-muted">Vista de solo lectura.</p>
-                <div id="detalleVentaError" class="alert alert-danger" role="alert" hidden></div>
-                <dl class="row g-2 mb-4">
-                    <dt class="col-sm-4">Nro. comprobante</dt>
-                    <dd id="detalleVentaComprobante" class="col-sm-8 text-break">Sin seleccionar</dd>
-                    <dt class="col-sm-4">Cliente</dt>
-                    <dd id="detalleVentaCliente" class="col-sm-8 text-break">Sin seleccionar</dd>
-                    <dt class="col-sm-4">Fecha y hora</dt>
-                    <dd id="detalleVentaFecha" class="col-sm-8">Sin seleccionar</dd>
-                    <dt class="col-sm-4">Usuario</dt>
-                    <dd id="detalleVentaUsuario" class="col-sm-8 text-break">Sin seleccionar</dd>
-                    <dt class="col-sm-4">Estado</dt>
-                    <dd class="col-sm-8"><span id="detalleVentaEstado" class="badge bg-secondary">Sin seleccionar</span></dd>
-                </dl>
-                <h3 id="detalleVentaProductosHeading" class="h6 mb-3">Productos de la venta</h3>
-                <div class="table-responsive rounded-3 border">
-                    <table class="table align-middle mb-0" aria-labelledby="detalleVentaProductosHeading">
-                        <thead class="table-light">
-                            <tr>
-                                <th scope="col" class="text-center">Cantidad</th>
-                                <th scope="col">Producto</th>
-                                <th scope="col">Lote</th>
-                                <th scope="col" class="text-end text-nowrap">Precio unitario (Bs)</th>
-                                <th scope="col" class="text-end text-nowrap">Subtotal (Bs)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="detalleVentaProductos">
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-4">No hay productos cargados en esta vista.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <hr class="my-3" />
+
+                    <div class="sale-total-bloque" role="status" aria-live="polite" aria-atomic="true">
+                        <p class="sale-label mb-0">Total a cobrar</p>
+                        <p class="sale-total mb-0">Bs <span id="totalGeneral">0,00</span></p>
+                        <p class="small text-body-secondary mb-0"><span id="unidadesTotales">0</span> unidad(es)</p>
+                    </div>
+
+                    <div class="mt-3">
+                        <label for="montoPago" class="form-label sale-label">Con cuánto paga (opcional)</label>
+                        <input id="montoPago" class="form-control" type="number" inputmode="decimal" min="0" max="1000000" step="0.01" />
+                        <p id="vueltoPago" class="small mb-0 mt-1" role="status" aria-live="polite"></p>
+                    </div>
+
+                    <p id="estadoVenta" class="alert py-2 px-3 small mt-3 mb-0" role="status" aria-live="polite" hidden></p>
+
+                    <button id="confirmarVenta" type="button" class="btn btn-warning fw-semibold w-100 mt-3" disabled
+                            data-registro-url="@Url.Page("/Sales/Index", "RegistrarVenta")"
+                            data-comprobante-base="@Url.Content("~/Comprobante/")">Confirmar venta</button>
                 </div>
-                <div class="bg-light border rounded p-3 mt-3">
-                    <div class="d-flex flex-wrap justify-content-between gap-2">
-                        <span class="fw-semibold">Total (Bs)</span>
-                        <span id="detalleVentaTotal" class="fw-semibold text-muted">Sin seleccionar</span>
-                    </div>
-                    <div class="d-flex flex-wrap justify-content-between gap-2">
-                        <span>Efectivo pagado (Bs)</span>
-                        <span id="detalleVentaEfectivo">Sin seleccionar</span>
-                    </div>
-                    <div class="d-flex flex-wrap justify-content-between gap-2">
-                        <span>Cambio (Bs)</span>
-                        <span id="detalleVentaCambio">Sin seleccionar</span>
-                    </div>
-                </div>
-                <section id="detalleVentaAnulacion" class="alert alert-danger mt-3 mb-0" aria-labelledby="detalleVentaAnulacionTitulo" hidden>
-                    <h3 id="detalleVentaAnulacionTitulo" class="h6">Venta anulada</h3>
-                    <dl class="row g-2 mb-0">
-                        <dt class="col-sm-4">Motivo</dt>
-                        <dd id="detalleVentaMotivo" class="col-sm-8 text-break mb-0"></dd>
-                        <dt class="col-sm-4">Anulada por</dt>
-                        <dd id="detalleVentaUsuarioAnulacion" class="col-sm-8 text-break mb-0"></dd>
-                        <dt class="col-sm-4">Fecha de anulación</dt>
-                        <dd id="detalleVentaFechaAnulacion" class="col-sm-8 mb-0"></dd>
-                    </dl>
-                </section>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="anularVentaModal" tabindex="-1" aria-labelledby="anularVentaTitulo" aria-describedby="anularVentaMensaje" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h2 id="anularVentaTitulo" class="modal-title fs-5">Anular venta</h2>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body">
-                <p id="anularVentaMensaje" class="small text-muted">Paso 1: revise los datos de la venta. Paso 2: indique el motivo y confirme la anulación.</p>
-                <div id="anularVentaCarga" class="alert alert-secondary" role="status">Cargando los datos de la venta…</div>
-                <div id="anularVentaErrorDetalle" class="alert alert-danger" role="alert" hidden></div>
-                <section id="anularVentaResumen" aria-labelledby="anularVentaResumenTitulo" hidden>
-                    <h3 id="anularVentaResumenTitulo" class="h6 mb-3">Datos de la venta (solo lectura)</h3>
-                    <dl class="row g-2 mb-3">
-                        <dt class="col-sm-4">Nro. comprobante</dt>
-                        <dd id="anularVentaComprobante" class="col-sm-8 text-break"></dd>
-                        <dt class="col-sm-4">Fecha y hora</dt>
-                        <dd id="anularVentaFecha" class="col-sm-8"></dd>
-                        <dt class="col-sm-4">Cliente</dt>
-                        <dd id="anularVentaCliente" class="col-sm-8 text-break"></dd>
-                        <dt class="col-sm-4">Usuario (cajero)</dt>
-                        <dd id="anularVentaUsuario" class="col-sm-8 text-break"></dd>
-                    </dl>
-                    <div class="table-responsive rounded-3 border">
-                        <table class="table table-sm align-middle mb-0" aria-labelledby="anularVentaResumenTitulo">
-                            <thead class="table-light">
-                                <tr>
-                                    <th scope="col" class="text-center">Cantidad</th>
-                                    <th scope="col">Producto</th>
-                                    <th scope="col">Lote</th>
-                                    <th scope="col" class="text-end text-nowrap">Precio unitario (Bs)</th>
-                                    <th scope="col" class="text-end text-nowrap">Subtotal (Bs)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="anularVentaProductos"></tbody>
-                        </table>
-                    </div>
-                    <div class="d-flex flex-wrap justify-content-between gap-2 bg-light border rounded p-3 mt-3">
-                        <span class="fw-semibold">Total (Bs)</span>
-                        <span id="anularVentaTotal" class="fw-semibold"></span>
-                    </div>
-                </section>
-                <hr />
-                <section aria-labelledby="anularVentaAccionesTitulo">
-                    <h3 id="anularVentaAccionesTitulo" class="h6 mb-3">Anulación</h3>
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>
-                        La anulación cambiará el estado de la venta a <strong>ANULADA</strong> y devolverá las unidades vendidas al inventario, lote por lote.
-                    </div>
-                    <div class="mb-3">
-                        <label for="anularVentaMotivo" class="form-label">Motivo de la anulación</label>
-                        <textarea id="anularVentaMotivo" class="form-control" rows="3" maxlength="255" required aria-describedby="anularVentaHelp"></textarea>
-                        <p id="anularVentaHelp" class="form-text mb-0">Obligatorio. Máximo 255 caracteres.</p>
-                    </div>
-                    <div id="anularVentaError" class="alert alert-danger mb-0" role="alert" hidden></div>
-                </section>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button id="confirmarAnulacionVenta" type="button" class="btn btn-danger" disabled>Confirmar anulación</button>
-            </div>
-        </div>
+        </aside>
     </div>
 </div>
 
@@ -465,77 +144,6 @@
                 <button id="crearClienteGuardar" type="submit" class="btn btn-primary">Guardar cliente</button>
             </div>
         </form>
-    </div>
-</div>
-
-<div class="modal fade" id="editarCantidadModal" tabindex="-1" aria-labelledby="editarCantidadTitulo" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <form id="editarCantidadForm" class="modal-content" novalidate>
-            <div class="modal-header">
-                <h2 id="editarCantidadTitulo" class="modal-title fs-5">Editar cantidad</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body">
-                <p class="mb-3">Producto: <strong id="editarCantidadProducto" class="text-break"></strong></p>
-                <p id="editarCantidadStock" class="small text-muted mb-2"></p>
-                <label for="editarCantidadInput" class="form-label">Cantidad</label>
-                <input id="editarCantidadInput" class="form-control" type="number" min="1" step="1" required
-                       aria-describedby="editarCantidadError" aria-invalid="false" />
-                <div id="editarCantidadError" class="invalid-feedback" role="alert" hidden>Ingrese una cantidad entera mayor a cero.</div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="submit" class="btn btn-primary">Guardar cambios</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div class="modal fade" id="confirmarVentaModal" tabindex="-1" aria-labelledby="confirmarVentaTitulo" aria-hidden="true"
-     data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="confirmarVentaTitulo" class="modal-title fs-5">Confirmar venta temporal</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body">
-                <p id="confirmacionCliente" class="text-break"></p>
-                <h3 id="confirmacionDetalleHeading" class="h6 mb-2">Productos de la venta</h3>
-                <div class="table-responsive rounded-3 border mb-3">
-                    <table class="table table-sm align-middle mb-0" aria-labelledby="confirmacionDetalleHeading">
-                        <thead class="table-light">
-                            <tr>
-                                <th scope="col">Producto</th>
-                                <th scope="col" class="text-end">Precio unitario (Bs)</th>
-                                <th scope="col" class="text-center">Cantidad</th>
-                                <th scope="col" class="text-end">Subtotal (Bs)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="confirmacionDetalle">
-                            <tr>
-                                <td colspan="4" class="text-center text-muted py-3">Sin productos.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <p class="mb-1">Productos distintos: <span id="confirmacionProductosDistintos">0</span></p>
-                <p class="mb-1">Unidades totales: <span id="confirmacionUnidadesTotales">0</span></p>
-                <p class="fw-semibold">Total general: Bs <span id="confirmacionTotalGeneral">0.00</span></p>
-                <div class="border rounded p-3 bg-light mb-3">
-                    <p class="mb-1">Efectivo pagado: Bs <span id="confirmacionEfectivo">Pendiente</span></p>
-                    <p id="confirmacionSaldo" class="small text-muted mb-0" role="status" aria-live="polite">Ingrese el efectivo pagado para calcular el cambio o faltante.</p>
-                </div>
-                <p class="small text-muted">El total y el cambio son estimados. Al registrar se validarán nuevamente los precios, el stock y el efectivo pagado.</p>
-                <p id="estadoConfirmacionVenta" class="alert alert-info mb-0" role="status" aria-live="polite" hidden></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button id="confirmarVenta" type="button" class="btn btn-primary"
-                        data-registro-url="@Url.Page("/Sales/Index", "RegistrarVenta")"
-                        data-comprobante-base="@Url.Content("~/Comprobante/")">Confirmar venta</button>
-            </div>
-        </div>
     </div>
 </div>
 

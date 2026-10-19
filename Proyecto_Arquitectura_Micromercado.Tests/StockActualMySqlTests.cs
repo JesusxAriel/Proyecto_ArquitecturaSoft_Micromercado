@@ -82,7 +82,7 @@ public class StockActualMySqlTests
         var cantidad = Math.Min(stockInicial, 75);
 
         var resultado = await pila.Venta.RegistrarVentaAsync(
-            new NuevaVentaDto(1, 100000m, [new LineaVentaDto(1, cantidad)]));
+            new NuevaVentaDto(1, [new LineaVentaDto(1, cantidad)]));
 
         Assert.Equal(stockInicial - cantidad, await StockDe(1));
         Assert.Equal(0, await ProductosDesincronizados());
@@ -90,7 +90,7 @@ public class StockActualMySqlTests
         var ventasAntes = await TotalDeVentas();
         var stockAntes = await StockDe(1);
         await Assert.ThrowsAsync<StockInsuficienteException>(() => pila.Venta.RegistrarVentaAsync(
-            new NuevaVentaDto(1, 100000m, [new LineaVentaDto(1, 1), new LineaVentaDto(2, 1000000)])));
+            new NuevaVentaDto(1, [new LineaVentaDto(1, 1), new LineaVentaDto(2, 1000000)])));
 
         Assert.Equal(stockAntes, await StockDe(1));
         Assert.Equal(ventasAntes, await TotalDeVentas());
@@ -114,7 +114,7 @@ public class StockActualMySqlTests
         {
             var pilas = new[] { CrearPila(), CrearPila(), CrearPila() };
             var resultados = await Task.WhenAll(pilas.Select(pila => pila.Venta.RegistrarVentaAsync(
-                new NuevaVentaDto(1, 100000m, [new LineaVentaDto(1, 1)]))));
+                new NuevaVentaDto(1, [new LineaVentaDto(1, 1)]))));
             ids.AddRange(resultados.Select(r => r.IdVenta));
         }
 
@@ -202,5 +202,24 @@ public class StockActualMySqlTests
 
         Assert.Equal(stockAntes, await StockDe(idProducto));
         Assert.Equal(0, await ProductosDesincronizados());
+    }
+
+    [Fact]
+    public async Task La_tabla_VENTA_no_tiene_columnas_de_efectivo_ni_cambio_y_registrar_una_venta_funciona()
+    {
+        if (string.IsNullOrWhiteSpace(Conexion)) return;
+
+        var pila = CrearPila();
+        var resultado = await pila.Venta.RegistrarVentaAsync(new NuevaVentaDto(1, [new LineaVentaDto(1, 1)]));
+        try
+        {
+            Assert.Equal(0, await Escalar<int>(
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'VENTA' AND COLUMN_NAME IN ('efectivoPagado', 'cambio')"));
+            Assert.Equal(1, await Escalar<int>($"SELECT montoTotal = {resultado.Total.ToString(System.Globalization.CultureInfo.InvariantCulture)} FROM VENTA WHERE id = {resultado.IdVenta}"));
+        }
+        finally
+        {
+            await pila.Anulacion.AnularVentaAsync(resultado.IdVenta, "Prueba automatizada");
+        }
     }
 }

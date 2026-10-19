@@ -216,6 +216,15 @@ public class ComprobanteTests
     }
 
     [Fact]
+    public async Task El_html_no_muestra_efectivo_ni_cambio()
+    {
+        var html = await HtmlDe(Venta(detalle: [Fila(1, "Leche", 1, 6.50m)]));
+
+        Assert.DoesNotContain("Efectivo", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Cambio", html, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task El_boton_imprimir_se_oculta_al_imprimir()
     {
         var html = await HtmlDe(Venta(detalle: [Fila(1, "Leche", 1, 6.50m)]));

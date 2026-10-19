@@ -19,8 +19,6 @@ public class Venta
     public int IdUsuario { get; set; }
     public List<DetalleVenta> Detalles { get; set; } = [];
 
-    public const decimal EfectivoMaximo = 1_000_000m;
-
     public static string GenerarNroComprobante(DateTime fecha, int idVenta)
     {
         return $"V-{fecha:yyyyMMdd}-{idVenta:0000}";
