@@ -211,21 +211,6 @@ test("el ejecutor secuencial se recupera si una operación falla", async () => {
     assert.equal(ejecuciones, 2);
 });
 
-test("validarEfectivo acepta importes con hasta dos decimales dentro del máximo", () => {
-    for (const valor of ["0", "10", "10.5", "10.05", "0.07", "1000000", "999999.99", " 25.00 "]) {
-        assert.equal(reglas.validarEfectivo(valor), null, valor);
-    }
-});
-
-test("validarEfectivo rechaza vacío, negativo, tres decimales y más del máximo con mensajes claros", () => {
-    assert.equal(reglas.validarEfectivo(""), "Ingrese un efectivo pagado válido.");
-    assert.equal(reglas.validarEfectivo("abc"), "Ingrese un efectivo pagado válido.");
-    assert.equal(reglas.validarEfectivo("-1"), "El efectivo pagado no puede ser negativo.");
-    assert.equal(reglas.validarEfectivo("10.005"), "El efectivo pagado admite hasta dos decimales.");
-    assert.equal(reglas.validarEfectivo("1000000.01"), "El efectivo pagado no puede superar Bs 1.000.000,00.");
-    assert.equal(reglas.validarEfectivo("1e12"), "El efectivo pagado no puede superar Bs 1.000.000,00.");
-});
-
 test("urlDeLogin lleva a /Login con la página actual como retorno y el aviso de sesión vencida", () => {
     assert.equal(
         reglas.urlDeLogin({ pathname: "/Sales", search: "?x=1" }),
@@ -416,11 +401,6 @@ test("resumirDetalle calcula productos, unidades y total en centavos", () => {
     assert.deepEqual(reglas.resumirDetalle([]), { productos: 0, unidades: 0, totalCentavos: 0 });
 });
 
-test("saldoDeEfectivo distingue cambio, falta y pago exacto", () => {
-    assert.deepEqual(reglas.saldoDeEfectivo(2510, 30), { tipo: "cambio", centavos: 490 });
-    assert.deepEqual(reglas.saldoDeEfectivo(2510, 20), { tipo: "falta", centavos: 510 });
-    assert.deepEqual(reglas.saldoDeEfectivo(2510, 25.1), { tipo: "cambio", centavos: 0 });
-});
 
 test("paginar devuelve la primera página con el rango mostrado", () => {
     const elementos = Array.from({ length: 25 }, (_, indice) => indice + 1);
@@ -471,4 +451,40 @@ test("el botón de anular solo se ofrece al administrador y en ventas completada
     assert.equal(reglas.puedeMostrarAnular(false, "COMPLETADA"), false);
     assert.equal(reglas.puedeMostrarAnular(undefined, "COMPLETADA"), false);
     assert.equal(reglas.puedeMostrarAnular("true", "COMPLETADA"), false);
+});
+
+test("validarMontoDePago acepta vacío porque el monto es opcional", () => {
+    assert.equal(reglas.validarMontoDePago(""), null);
+    assert.equal(reglas.validarMontoDePago("   "), null);
+    assert.equal(reglas.validarMontoDePago(undefined), null);
+    assert.equal(reglas.validarMontoDePago(null), null);
+});
+
+test("validarMontoDePago acepta importes con hasta dos decimales dentro del máximo", () => {
+    for (const valor of ["0", "10", "10.5", "10.05", "0.07", "1000000", "999999.99", " 25.00 "]) {
+        assert.equal(reglas.validarMontoDePago(valor), null, valor);
+    }
+});
+
+test("validarMontoDePago rechaza negativos, tres decimales, más del máximo y textos con mensajes claros", () => {
+    assert.equal(reglas.validarMontoDePago("abc"), "Ingrese un monto válido.");
+    assert.equal(reglas.validarMontoDePago("-1"), "El monto no puede ser negativo.");
+    assert.equal(reglas.validarMontoDePago("10.005"), "El monto admite hasta dos decimales.");
+    assert.equal(reglas.validarMontoDePago("1000000.01"), "El monto no puede superar Bs 1.000.000,00.");
+    assert.equal(reglas.validarMontoDePago("1e12"), "El monto no puede superar Bs 1.000.000,00.");
+});
+
+test("calcularVuelto devuelve el vuelto cuando el monto alcanza", () => {
+    assert.deepEqual(reglas.calcularVuelto(2510, 30), { tipo: "vuelto", centavos: 490 });
+    assert.deepEqual(reglas.calcularVuelto(2510, 100), { tipo: "vuelto", centavos: 7490 });
+});
+
+test("calcularVuelto devuelve el faltante cuando el monto es menor al total", () => {
+    assert.deepEqual(reglas.calcularVuelto(2510, 20), { tipo: "falta", centavos: 510 });
+    assert.deepEqual(reglas.calcularVuelto(2510, 0), { tipo: "falta", centavos: 2510 });
+});
+
+test("calcularVuelto con pago exacto da vuelto cero sin errores de redondeo", () => {
+    assert.deepEqual(reglas.calcularVuelto(2510, 25.1), { tipo: "vuelto", centavos: 0 });
+    assert.deepEqual(reglas.calcularVuelto(710, 7.1), { tipo: "vuelto", centavos: 0 });
 });

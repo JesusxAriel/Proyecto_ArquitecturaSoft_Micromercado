@@ -226,8 +226,8 @@
     const unidadesTotales = document.getElementById("unidadesTotales");
     const totalGeneral = document.getElementById("totalGeneral");
     const idCliente = document.getElementById("Input_IdCliente");
-    const efectivoPagado = document.getElementById("efectivoPagado");
-    const saldoEfectivo = document.getElementById("saldoEfectivo");
+    const montoPago = document.getElementById("montoPago");
+    const vueltoPago = document.getElementById("vueltoPago");
     const estadoVenta = document.getElementById("estadoVenta");
     const confirmarVenta = document.getElementById("confirmarVenta");
     const antiforgery = document.querySelector('input[name="__RequestVerificationToken"]');
@@ -263,29 +263,28 @@
         confirmarVenta.disabled = registrandoVenta || !ventaLista();
     }
 
-    function actualizarSaldo() {
-        const texto = efectivoPagado.value.trim();
-        saldoEfectivo.className = "small mb-0";
-        if (texto === "") {
-            saldoEfectivo.textContent = "";
+    function actualizarVuelto() {
+        const texto = montoPago.value.trim();
+        vueltoPago.className = "small mb-0 mt-1";
+        const error = VentasReglas.validarMontoDePago(texto);
+        if (error) {
+            vueltoPago.textContent = error;
+            vueltoPago.classList.add("text-danger");
             return;
         }
-
-        const error = VentasReglas.validarEfectivo(texto);
-        if (error) {
-            saldoEfectivo.textContent = error;
-            saldoEfectivo.classList.add("text-danger");
+        if (texto === "") {
+            vueltoPago.textContent = "";
             return;
         }
 
         const { totalCentavos } = VentasReglas.resumirDetalle(detalleTemporal);
-        const saldo = VentasReglas.saldoDeEfectivo(totalCentavos, Number(texto));
-        if (saldo.tipo === "cambio") {
-            saldoEfectivo.textContent = `Cambio: Bs ${precio.format(saldo.centavos / 100)}`;
-            saldoEfectivo.classList.add("text-success");
+        const saldo = VentasReglas.calcularVuelto(totalCentavos, Number(texto));
+        if (saldo.tipo === "vuelto") {
+            vueltoPago.textContent = `Vuelto: Bs ${precio.format(saldo.centavos / 100)}`;
+            vueltoPago.classList.add("text-success");
         } else {
-            saldoEfectivo.textContent = `Falta: Bs ${precio.format(saldo.centavos / 100)}`;
-            saldoEfectivo.classList.add("text-danger");
+            vueltoPago.textContent = `Falta Bs ${precio.format(saldo.centavos / 100)}`;
+            vueltoPago.classList.add("text-danger");
         }
     }
 
@@ -293,7 +292,7 @@
         const resumen = VentasReglas.resumirDetalle(detalleTemporal);
         unidadesTotales.textContent = String(resumen.unidades);
         totalGeneral.textContent = precio.format(resumen.totalCentavos / 100);
-        actualizarSaldo();
+        actualizarVuelto();
         actualizarBotonConfirmar();
     }
 
@@ -323,7 +322,7 @@
         if (hayCliente()) entrada.focus();
     });
 
-    efectivoPagado.addEventListener("input", actualizarSaldo);
+    montoPago.addEventListener("input", actualizarVuelto);
 
     function mostrarErrorFila(referencias, mensaje) {
         referencias.error.textContent = mensaje;
@@ -587,7 +586,7 @@
 
     function reiniciarVenta() {
         detalleTemporal.length = 0;
-        efectivoPagado.value = "";
+        montoPago.value = "";
         limpiarBusqueda();
         renderizarDetalle();
         mostrarAviso("");
@@ -621,16 +620,8 @@
             mostrarEstadoVenta("Agregue al menos un producto y revise que las cantidades sean enteras mayores a cero.", "danger");
             return;
         }
-        const errorEfectivo = VentasReglas.validarEfectivo(efectivoPagado.value);
-        if (errorEfectivo) {
-            mostrarEstadoVenta(errorEfectivo, "danger");
-            efectivoPagado.focus();
-            return;
-        }
-
         const payload = {
             idCliente: cliente,
-            efectivoPagado: Number(efectivoPagado.value),
             lineas: detalleTemporal.map(item => ({ idProducto: item.idProducto, cantidad: item.cantidad, precioEsperado: item.precioUnitario }))
         };
         registrandoVenta = true;

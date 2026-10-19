@@ -24,26 +24,29 @@
         return errores;
     }
 
-    const EFECTIVO_MAXIMO = 1000000;
+    const PAGO_MAXIMO = 1000000;
 
-    function validarEfectivo(valor) {
+    function validarMontoDePago(valor) {
         const texto = String(valor ?? "").trim();
-        const efectivo = Number(texto);
-
-        if (texto === "" || !Number.isFinite(efectivo)) {
-            return "Ingrese un efectivo pagado válido.";
+        if (texto === "") {
+            return null;
         }
 
-        if (efectivo < 0) {
-            return "El efectivo pagado no puede ser negativo.";
+        const monto = Number(texto);
+        if (!Number.isFinite(monto)) {
+            return "Ingrese un monto válido.";
         }
 
-        if (efectivo > EFECTIVO_MAXIMO) {
-            return "El efectivo pagado no puede superar Bs 1.000.000,00.";
+        if (monto < 0) {
+            return "El monto no puede ser negativo.";
         }
 
-        if (Math.abs(efectivo * 100 - Math.round(efectivo * 100)) > 1e-6) {
-            return "El efectivo pagado admite hasta dos decimales.";
+        if (monto > PAGO_MAXIMO) {
+            return "El monto no puede superar Bs 1.000.000,00.";
+        }
+
+        if (Math.abs(monto * 100 - Math.round(monto * 100)) > 1e-6) {
+            return "El monto admite hasta dos decimales.";
         }
 
         return null;
@@ -215,10 +218,10 @@
         };
     }
 
-    function saldoDeEfectivo(totalCentavos, efectivo) {
-        const diferencia = Math.round(efectivo * 100) - totalCentavos;
+    function calcularVuelto(totalCentavos, monto) {
+        const diferencia = Math.round(monto * 100) - totalCentavos;
         return diferencia >= 0
-            ? { tipo: "cambio", centavos: diferencia }
+            ? { tipo: "vuelto", centavos: diferencia }
             : { tipo: "falta", centavos: -diferencia };
     }
 
@@ -326,7 +329,7 @@
         paginar,
         puedeMostrarAnular,
         validarCliente,
-        validarEfectivo,
+        validarMontoDePago,
         urlDeLogin,
         fetchConSesion,
         unidadesEnDetalle,
@@ -342,7 +345,7 @@
         puedeAumentar,
         puedeDisminuir,
         resumirDetalle,
-        saldoDeEfectivo,
+        calcularVuelto,
         actualizarProductoEnResultados
     };
 
