@@ -8,6 +8,7 @@ using Proyecto_Arquitectura_Micromercado.Application.Facades;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Application.Security;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
+using Proyecto_Arquitectura_Micromercado.Pages.Shared;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Sales;
 
@@ -25,6 +26,8 @@ public sealed class IndexModel(
     private static readonly TimeSpan TiempoMaximoConsulta = TimeSpan.FromSeconds(8);
     private static readonly TimeSpan TiempoMaximoEscritura = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan TiempoMaximoCreacionDeCliente = TimeSpan.FromSeconds(15);
+
+    private readonly EjecutorDePeticiones ejecutor = new(logger);
 
     public SaleInputModel Input { get; } = new();
     public DateTime FechaActual { get; } = DateTime.Now;
@@ -46,7 +49,7 @@ public sealed class IndexModel(
             };
         }
 
-        return await EjecutarSinCancelacionAsync(
+        return await ejecutor.EjecutarAsync(
             cancellationToken,
             TiempoMaximoEscritura,
             async limite =>
@@ -107,7 +110,7 @@ public sealed class IndexModel(
             };
         }
 
-        return await EjecutarSinCancelacionAsync(
+        return await ejecutor.EjecutarAsync(
             cancellationToken,
             TiempoMaximoCreacionDeCliente,
             async limite =>
@@ -154,7 +157,7 @@ public sealed class IndexModel(
             };
         }
 
-        return await EjecutarSinCancelacionAsync(
+        return await ejecutor.EjecutarAsync(
             cancellationToken,
             TiempoMaximoEscritura,
             async limite =>
@@ -214,7 +217,7 @@ public sealed class IndexModel(
     {
         Response.Headers.CacheControl = "no-store";
 
-        return EjecutarSinCancelacionAsync(
+        return ejecutor.EjecutarAsync(
             cancellationToken,
             TiempoMaximoConsulta,
             async limite =>
@@ -242,7 +245,7 @@ public sealed class IndexModel(
     {
         Response.Headers.CacheControl = "no-store";
 
-        return EjecutarSinCancelacionAsync(
+        return ejecutor.EjecutarAsync(
             cancellationToken,
             TiempoMaximoConsulta,
             async limite =>
@@ -368,55 +371,6 @@ public sealed class IndexModel(
                 "productos",
                 RespuestaDeProductos([], false, "No se pudo buscar productos. Intente nuevamente."));
         }
-    }
-
-    private async Task<IActionResult> EjecutarSinCancelacionAsync(
-        CancellationToken peticion,
-        TimeSpan tiempoMaximo,
-        Func<CancellationToken, Task<IActionResult>> operacion,
-        string descripcion,
-        object cuerpoDeFallo)
-    {
-        if (peticion.IsCancellationRequested)
-        {
-            return new EmptyResult();
-        }
-
-        using var limite = new CancellationTokenSource(tiempoMaximo);
-        try
-        {
-            var resultado = await operacion(limite.Token);
-            return peticion.IsCancellationRequested ? new EmptyResult() : resultado;
-        }
-        catch (OperationCanceledException) when (peticion.IsCancellationRequested)
-        {
-            return new EmptyResult();
-        }
-        catch (Exception ex)
-        {
-            return FalloDeOperacion(ex, descripcion, cuerpoDeFallo);
-        }
-    }
-
-    private JsonResult FalloDeOperacion(Exception ex, string descripcion, object cuerpo)
-    {
-        if (ex is OperationCanceledException)
-        {
-            logger.LogWarning("La operación sobre {Descripcion} superó el tiempo máximo.", descripcion);
-        }
-        else if (ex is ErrorDePersistenciaException)
-        {
-            logger.LogWarning(ex, "No se pudo completar la operación sobre {Descripcion}.", descripcion);
-        }
-        else
-        {
-            logger.LogError(ex, "Error inesperado en la operación sobre {Descripcion}.", descripcion);
-        }
-
-        return new JsonResult(cuerpo)
-        {
-            StatusCode = StatusCodes.Status503ServiceUnavailable
-        };
     }
 
     private static object RespuestaDeProductos(IReadOnlyCollection<object> productos, bool hayMas, string? mensaje) =>
