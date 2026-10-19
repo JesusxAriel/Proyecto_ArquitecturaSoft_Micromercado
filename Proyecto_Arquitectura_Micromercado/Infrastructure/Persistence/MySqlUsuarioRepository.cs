@@ -42,4 +42,24 @@ public sealed class MySqlUsuarioRepository(MySqlUnidadDeTrabajo unidadDeTrabajo)
                 reader.GetBoolean(reader.GetOrdinal("debeCambiarPassword")));
         });
     }
+
+    public Task ActualizarPasswordAsync(int usuarioId, string nuevoPasswordHash, CancellationToken cancellationToken = default)
+{
+    const string sql = """
+        UPDATE USUARIO 
+        SET passwordHash = @passwordHash, 
+            debeCambiarPassword = 0, 
+            fechaActualizacion = CURRENT_TIMESTAMP
+        WHERE id = @id;
+        """;
+
+    return ErroresDePersistencia.TraducirAsync(async () =>
+    {
+        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
+        command.Parameters.AddWithValue("@passwordHash", nuevoPasswordHash);
+        command.Parameters.AddWithValue("@id", usuarioId);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    });
+}
 }
