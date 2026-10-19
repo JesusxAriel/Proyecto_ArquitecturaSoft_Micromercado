@@ -205,7 +205,7 @@ public class StockActualMySqlTests
     }
 
     [Fact]
-    public async Task Una_venta_registrada_deja_efectivo_y_cambio_en_NULL()
+    public async Task La_tabla_VENTA_no_tiene_columnas_de_efectivo_ni_cambio_y_registrar_una_venta_funciona()
     {
         if (string.IsNullOrWhiteSpace(Conexion)) return;
 
@@ -213,7 +213,8 @@ public class StockActualMySqlTests
         var resultado = await pila.Venta.RegistrarVentaAsync(new NuevaVentaDto(1, [new LineaVentaDto(1, 1)]));
         try
         {
-            Assert.Equal(1, await Escalar<int>($"SELECT efectivoPagado IS NULL AND cambio IS NULL FROM VENTA WHERE id = {resultado.IdVenta}"));
+            Assert.Equal(0, await Escalar<int>(
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'VENTA' AND COLUMN_NAME IN ('efectivoPagado', 'cambio')"));
             Assert.Equal(1, await Escalar<int>($"SELECT montoTotal = {resultado.Total.ToString(System.Globalization.CultureInfo.InvariantCulture)} FROM VENTA WHERE id = {resultado.IdVenta}"));
         }
         finally
