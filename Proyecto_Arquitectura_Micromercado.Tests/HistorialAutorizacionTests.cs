@@ -184,6 +184,22 @@ public class HistorialAutorizacionTests
         Assert.Contains("VentasReglas.puedeMostrarAnular(puedeAnular, venta.estado)", script);
     }
 
+    [Fact]
+    public void La_pantalla_de_registro_ya_no_tiene_historial_detalle_ni_anulacion()
+    {
+        var metodos = typeof(IndexModel).GetMethods().Select(m => m.Name).ToList();
+        var script = File.ReadAllText(Path.Combine(RaizDelProyecto(), "wwwroot", "js", "ventas.js"));
+        var vista = File.ReadAllText(Path.Combine(RaizDelProyecto(), "Pages", "Sales", "Index.cshtml"));
+
+        Assert.DoesNotContain("OnGetHistorialAsync", metodos);
+        Assert.DoesNotContain("OnGetDetalleAsync", metodos);
+        Assert.DoesNotContain("OnPostAnularVentaAsync", metodos);
+        Assert.DoesNotContain("historialVentasSeccion", script);
+        Assert.DoesNotContain("anularVentaModal", vista);
+        Assert.DoesNotContain("detalleVentaModal", vista);
+        Assert.DoesNotContain("historialVentasSeccion", vista);
+    }
+
     private static string RaizDelProyecto()
     {
         var directorio = new DirectoryInfo(AppContext.BaseDirectory);
