@@ -139,8 +139,8 @@ public sealed class MySqlVentaRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) :
         await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
         const string sql = @"
-            INSERT INTO VENTA (nroComprobante, idCliente, idUsuario, fechaVenta, montoTotal, efectivoPagado, cambio, estado)
-            VALUES (CONCAT('TMP-', UUID()), @idCliente, @idUsuario, NOW(), 0, 0, 0, 'COMPLETADA');";
+            INSERT INTO VENTA (nroComprobante, idCliente, idUsuario, fechaVenta, montoTotal, estado)
+            VALUES (CONCAT('TMP-', UUID()), @idCliente, @idUsuario, NOW(), 0, 'COMPLETADA');";
 
         await using var cmd = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         cmd.Parameters.AddWithValue("@idCliente", idCliente);
@@ -168,19 +168,18 @@ public sealed class MySqlVentaRepository(MySqlUnidadDeTrabajo unidadDeTrabajo) :
         await cmd.ExecuteNonQueryAsync(cancellationToken);
     }
 
-    public async Task CerrarVentaAsync(int idVenta, string nroComprobante, decimal montoTotal, decimal efectivoPagado, CancellationToken cancellationToken = default)
+    public async Task CerrarVentaAsync(int idVenta, string nroComprobante, decimal montoTotal, CancellationToken cancellationToken = default)
     {
         await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
 
         const string sql = @"
             UPDATE VENTA
-            SET nroComprobante = @nro, montoTotal = @total, efectivoPagado = @efectivo, cambio = @efectivo - @total
+            SET nroComprobante = @nro, montoTotal = @total
             WHERE id = @idVenta;";
 
         await using var cmd = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
         cmd.Parameters.AddWithValue("@nro", nroComprobante);
         cmd.Parameters.AddWithValue("@total", montoTotal);
-        cmd.Parameters.AddWithValue("@efectivo", efectivoPagado);
         cmd.Parameters.AddWithValue("@idVenta", idVenta);
         await cmd.ExecuteNonQueryAsync(cancellationToken);
     }

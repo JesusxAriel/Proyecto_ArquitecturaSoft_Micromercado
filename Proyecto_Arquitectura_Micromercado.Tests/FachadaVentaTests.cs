@@ -42,7 +42,7 @@ public class FachadaVentaTests
         e.Lotes.Agregar(2, new LoteDisponible(20, 20, null));
 
         await e.Fachada.RegistrarVentaAsync(
-            Venta(100m, new LineaVentaDto(2, 1), new LineaVentaDto(1, 1)));
+            Venta(new LineaVentaDto(2, 1), new LineaVentaDto(1, 1)));
 
         var detalles = Assert.Single(e.Ventas.Cabeceras).Detalles;
         Assert.Equal([1, 2], detalles.Select(d => d.IdProducto));
@@ -56,7 +56,7 @@ public class FachadaVentaTests
         e.Ventas.FallosPendientes.Enqueue(new InterbloqueoSimulado());
         e.Interbloqueos.Reconocer<InterbloqueoSimulado>();
 
-        var resultado = await e.Fachada.RegistrarVentaAsync(Venta(100m, new LineaVentaDto(1, 4)));
+        var resultado = await e.Fachada.RegistrarVentaAsync(Venta(new LineaVentaDto(1, 4)));
 
         Assert.Equal(2, e.Unidad.Iniciadas);
         Assert.Equal(1, e.Unidad.Revertidas);
@@ -76,7 +76,7 @@ public class FachadaVentaTests
         e.Interbloqueos.Reconocer<InterbloqueoSimulado>();
 
         await Assert.ThrowsAsync<InterbloqueoSimulado>(
-            () => e.Fachada.RegistrarVentaAsync(Venta(100m, new LineaVentaDto(1, 4))));
+            () => e.Fachada.RegistrarVentaAsync(Venta(new LineaVentaDto(1, 4))));
 
         Assert.Equal(2, e.Unidad.Iniciadas);
         Assert.Equal(2, e.Unidad.Revertidas);
@@ -91,13 +91,13 @@ public class FachadaVentaTests
         e.Ventas.FallosPendientes.Enqueue(new InterbloqueoSimulado());
 
         await Assert.ThrowsAsync<InterbloqueoSimulado>(
-            () => e.Fachada.RegistrarVentaAsync(Venta(100m, new LineaVentaDto(1, 4))));
+            () => e.Fachada.RegistrarVentaAsync(Venta(new LineaVentaDto(1, 4))));
 
         Assert.Equal(1, e.Unidad.Iniciadas);
     }
 
-    private static NuevaVentaDto Venta(decimal efectivo, params LineaVentaDto[] lineas) =>
-        new(3, efectivo, lineas);
+    private static NuevaVentaDto Venta(params LineaVentaDto[] lineas) =>
+        new(3, lineas);
 
     [Fact]
     public async Task Una_venta_correcta_registra_cabecera_detalle_y_confirma()
@@ -105,7 +105,7 @@ public class FachadaVentaTests
         var e = new Escenario();
         e.Lotes.Agregar(1, new LoteDisponible(10, 20, null));
 
-        var resultado = await e.Fachada.RegistrarVentaAsync(Venta(100m, new LineaVentaDto(1, 4)));
+        var resultado = await e.Fachada.RegistrarVentaAsync(Venta(new LineaVentaDto(1, 4)));
 
         var cabecera = Assert.Single(e.Ventas.Cabeceras);
         Assert.Equal(resultado.IdVenta, cabecera.Id);
@@ -117,7 +117,6 @@ public class FachadaVentaTests
         Assert.Equal(10m, detalle.PrecioUnitario);
         Assert.Equal(40m, resultado.Total);
         Assert.Equal(40m, cabecera.MontoTotal);
-        Assert.Equal(100m, cabecera.EfectivoPagado);
         Assert.Equal("V-20260615-0001", cabecera.NroComprobante);
         Assert.Equal(16, await e.Disponible(1, 10));
         Assert.Equal(1, e.Unidad.Iniciadas);
@@ -132,7 +131,7 @@ public class FachadaVentaTests
         e.Lotes.Agregar(1, new LoteDisponible(10, 3, new DateOnly(2026, 7, 1)));
         e.Lotes.Agregar(1, new LoteDisponible(11, 10, new DateOnly(2026, 8, 1)));
 
-        var resultado = await e.Fachada.RegistrarVentaAsync(Venta(100m, new LineaVentaDto(1, 5)));
+        var resultado = await e.Fachada.RegistrarVentaAsync(Venta(new LineaVentaDto(1, 5)));
 
         var detalles = Assert.Single(e.Ventas.Cabeceras).Detalles;
         Assert.Equal(2, detalles.Count);
@@ -148,7 +147,7 @@ public class FachadaVentaTests
         e.Lotes.Agregar(1, new LoteDisponible(10, 2, null));
 
         await Assert.ThrowsAsync<StockInsuficienteException>(
-            () => e.Fachada.RegistrarVentaAsync(Venta(100m, new LineaVentaDto(1, 5))));
+            () => e.Fachada.RegistrarVentaAsync(Venta(new LineaVentaDto(1, 5))));
 
         Assert.Equal(1, e.Unidad.Iniciadas);
         Assert.Equal(0, e.Unidad.Confirmadas);
@@ -163,7 +162,7 @@ public class FachadaVentaTests
         e.Lotes.Agregar(2, new LoteDisponible(20, 1, null));
 
         var ex = await Assert.ThrowsAsync<StockInsuficienteException>(
-            () => e.Fachada.RegistrarVentaAsync(Venta(500m, new LineaVentaDto(1, 2), new LineaVentaDto(2, 5))));
+            () => e.Fachada.RegistrarVentaAsync(Venta(new LineaVentaDto(1, 2), new LineaVentaDto(2, 5))));
 
         Assert.Equal("Stock insuficiente para Yogurt Frutado PIL (Frasco 1kg).", ex.Message);
         Assert.Equal(0, e.Unidad.Confirmadas);
@@ -177,7 +176,7 @@ public class FachadaVentaTests
         e.Lotes.Agregar(1, new LoteDisponible(10, 20, null));
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => e.Fachada.RegistrarVentaAsync(new NuevaVentaDto(99, 100m, [new LineaVentaDto(1, 1)])));
+            () => e.Fachada.RegistrarVentaAsync(new NuevaVentaDto(99, [new LineaVentaDto(1, 1)])));
 
         Assert.Equal("Cliente inexistente o inactivo.", ex.Message);
         Assert.Equal(0, e.Unidad.Iniciadas);
@@ -191,7 +190,7 @@ public class FachadaVentaTests
         e.Lotes.Agregar(1, new LoteDisponible(10, 20, null));
 
         var ex = await Assert.ThrowsAsync<PrecioCambiadoException>(
-            () => e.Fachada.RegistrarVentaAsync(Venta(500m, new LineaVentaDto(1, 2, 9.50m))));
+            () => e.Fachada.RegistrarVentaAsync(Venta(new LineaVentaDto(1, 2, 9.50m))));
 
         Assert.Equal(1, ex.IdProducto);
         Assert.Equal(10m, ex.PrecioVigente);
@@ -209,23 +208,9 @@ public class FachadaVentaTests
         var e = new Escenario();
         e.Lotes.Agregar(1, new LoteDisponible(10, 20, null));
 
-        var resultado = await e.Fachada.RegistrarVentaAsync(Venta(500m, new LineaVentaDto(1, 2, 10m)));
+        var resultado = await e.Fachada.RegistrarVentaAsync(Venta(new LineaVentaDto(1, 2, 10m)));
 
         Assert.Equal(20m, resultado.Total);
-    }
-
-    [Fact]
-    public async Task Efectivo_menor_al_total_lanza_y_revierte()
-    {
-        var e = new Escenario();
-        e.Lotes.Agregar(1, new LoteDisponible(10, 20, null));
-
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => e.Fachada.RegistrarVentaAsync(Venta(39m, new LineaVentaDto(1, 4))));
-
-        Assert.Equal("El efectivo pagado es menor al monto total.", ex.Message);
-        Assert.Equal(0, e.Unidad.Confirmadas);
-        Assert.Equal(1, e.Unidad.Revertidas);
     }
 
     [Fact]
@@ -234,7 +219,7 @@ public class FachadaVentaTests
         var e = new Escenario();
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => e.Fachada.RegistrarVentaAsync(Venta(100m, new LineaVentaDto(99, 1))));
+            () => e.Fachada.RegistrarVentaAsync(Venta(new LineaVentaDto(99, 1))));
 
         Assert.Equal("Producto inexistente o inactivo.", ex.Message);
         Assert.Equal(0, e.Unidad.Confirmadas);
@@ -249,7 +234,7 @@ public class FachadaVentaTests
         e.Lotes.Agregar(2, new LoteDisponible(20, 20, null));
 
         var resultado = await e.Fachada.RegistrarVentaAsync(
-            Venta(100m, new LineaVentaDto(1, 2), new LineaVentaDto(2, 3)));
+            Venta(new LineaVentaDto(1, 2), new LineaVentaDto(2, 3)));
 
         Assert.Equal(35m, resultado.Total);
         Assert.Equal(2, Assert.Single(e.Ventas.Cabeceras).Detalles.Count);
@@ -261,7 +246,7 @@ public class FachadaVentaTests
         var e = new Escenario();
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => e.Fachada.RegistrarVentaAsync(new NuevaVentaDto(0, 10m, [new LineaVentaDto(1, 1)])));
+            () => e.Fachada.RegistrarVentaAsync(new NuevaVentaDto(0, [new LineaVentaDto(1, 1)])));
 
         Assert.Equal(0, e.Unidad.Iniciadas);
     }
@@ -272,7 +257,7 @@ public class FachadaVentaTests
         var e = new Escenario();
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => e.Fachada.RegistrarVentaAsync(Venta(10m)));
+            () => e.Fachada.RegistrarVentaAsync(Venta()));
 
         Assert.Equal(0, e.Unidad.Iniciadas);
     }
@@ -283,46 +268,34 @@ public class FachadaVentaTests
         var e = new Escenario();
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => e.Fachada.RegistrarVentaAsync(Venta(10m, new LineaVentaDto(1, 0))));
+            () => e.Fachada.RegistrarVentaAsync(Venta(new LineaVentaDto(1, 0))));
 
-        Assert.Equal(0, e.Unidad.Iniciadas);
-    }
-
-    [Theory]
-    [InlineData("1000000.01", "El efectivo pagado no puede superar Bs 1.000.000,00.")]
-    [InlineData("1000000000000", "El efectivo pagado no puede superar Bs 1.000.000,00.")]
-    [InlineData("10.005", "El efectivo pagado admite hasta dos decimales.")]
-    public async Task Un_efectivo_fuera_de_rango_o_con_tres_decimales_lanza_sin_iniciar_transaccion(string efectivo, string mensaje)
-    {
-        var e = new Escenario();
-        e.Lotes.Agregar(1, new LoteDisponible(10, 20, null));
-
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => e.Fachada.RegistrarVentaAsync(Venta(decimal.Parse(efectivo, System.Globalization.CultureInfo.InvariantCulture), new LineaVentaDto(1, 1))));
-
-        Assert.Equal(mensaje, ex.Message);
         Assert.Equal(0, e.Unidad.Iniciadas);
     }
 
     [Fact]
-    public async Task El_efectivo_maximo_con_dos_decimales_se_acepta()
+    public async Task Una_venta_se_registra_sin_ningun_dato_de_efectivo()
     {
         var e = new Escenario();
         e.Lotes.Agregar(1, new LoteDisponible(10, 20, null));
 
-        var resultado = await e.Fachada.RegistrarVentaAsync(Venta(1000000m, new LineaVentaDto(1, 1)));
+        var resultado = await e.Fachada.RegistrarVentaAsync(Venta(new LineaVentaDto(1, 4)));
 
-        Assert.Equal(10m, resultado.Total);
+        Assert.Equal(40m, resultado.Total);
+        Assert.Equal(40m, Assert.Single(e.Ventas.Cabeceras).MontoTotal);
+        Assert.Equal(1, e.Unidad.Confirmadas);
     }
 
     [Fact]
-    public async Task Efectivo_negativo_lanza_sin_iniciar_transaccion()
+    public void El_servidor_ya_no_modela_efectivo_ni_cambio_en_la_venta()
     {
-        var e = new Escenario();
+        var nombres = new[] { typeof(NuevaVentaDto), typeof(Proyecto_Arquitectura_Micromercado.Application.Sales.VentaDetalleDto) }
+            .SelectMany(tipo => tipo.GetProperties().Select(p => p.Name))
+            .Concat(typeof(IVentaRepository).GetMethods().SelectMany(m => m.GetParameters().Select(p => p.Name!)))
+            .ToList();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => e.Fachada.RegistrarVentaAsync(Venta(-1m, new LineaVentaDto(1, 1))));
-
-        Assert.Equal(0, e.Unidad.Iniciadas);
+        Assert.DoesNotContain(nombres, nombre =>
+            nombre.Contains("efectivo", StringComparison.OrdinalIgnoreCase) ||
+            nombre.Contains("cambio", StringComparison.OrdinalIgnoreCase));
     }
 }

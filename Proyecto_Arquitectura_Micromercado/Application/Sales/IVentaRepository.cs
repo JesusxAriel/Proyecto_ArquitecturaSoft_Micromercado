@@ -11,7 +11,7 @@ public interface IVentaRepository
 
     Task<int> InsertarCabeceraAsync(int idCliente, int idUsuario, CancellationToken cancellationToken = default);
     Task InsertarDetalleAsync(int idVenta, int idProducto, int idLote, int cantidad, decimal precioUnitario, CancellationToken cancellationToken = default);
-    Task CerrarVentaAsync(int idVenta, string nroComprobante, decimal montoTotal, decimal efectivoPagado, CancellationToken cancellationToken = default);
+    Task CerrarVentaAsync(int idVenta, string nroComprobante, decimal montoTotal, CancellationToken cancellationToken = default);
     Task<Venta?> ObtenerParaAnularAsync(int idVenta, CancellationToken cancellationToken = default);
     Task MarcarAnuladaAsync(int idVenta, string motivo, int idUsuarioAnulacion, CancellationToken cancellationToken = default);
 }

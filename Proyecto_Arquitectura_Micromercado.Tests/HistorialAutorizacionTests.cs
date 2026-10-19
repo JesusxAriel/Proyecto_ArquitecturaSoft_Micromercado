@@ -43,7 +43,7 @@ public class HistorialAutorizacionTests
         public async Task<int> RegistrarVenta()
         {
             Lotes.Agregar(1, new LoteDisponible(10, 20, new DateOnly(2026, 8, 1)));
-            var resultado = await Venta.RegistrarVentaAsync(new NuevaVentaDto(3, 100m, [new LineaVentaDto(1, 5)]));
+            var resultado = await Venta.RegistrarVentaAsync(new NuevaVentaDto(3, [new LineaVentaDto(1, 5)]));
             return resultado.IdVenta;
         }
 
@@ -235,6 +235,6 @@ public class HistorialAutorizacionTests
         public override Task<VentaDetalleDto?> ObtenerDetalleAsync(int idVenta, CancellationToken cancellationToken = default) =>
             Task.FromResult<VentaDetalleDto?>(new VentaDetalleDto(
                 7, "V-20260615-0007", new DateTime(2026, 6, 15, 10, 30, 0), "123", "Cliente Uno", "cajero1",
-                "COMPLETADA", 40m, 50m, 10m, null, null, null, []));
+                "COMPLETADA", 40m, null, null, null, []));
     }
 }

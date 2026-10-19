@@ -21,7 +21,6 @@ public class SalesRegistroHandlerTests
         Assert.Equal(73, json.GetProperty("idVenta").GetInt32());
         Assert.Equal(19.75m, json.GetProperty("total").GetDecimal());
         Assert.Equal(4, fachada.Recibido!.IdCliente);
-        Assert.Equal(25m, fachada.Recibido.EfectivoPagado);
         Assert.Equal(new LineaVentaDto(8, 2, 9.5m), Assert.Single(fachada.Recibido.Lineas));
     }
 
@@ -50,7 +49,6 @@ public class SalesRegistroHandlerTests
         var entrada = new IndexModel.RegistrarVentaInput
         {
             IdCliente = 4,
-            EfectivoPagado = 25m,
             Lineas = [new() { IdProducto = 8, Cantidad = 2 }]
         };
 
@@ -76,14 +74,14 @@ public class SalesRegistroHandlerTests
     [Fact]
     public async Task ErrorDeNegocioDevuelveMensajeLegible()
     {
-        var page = CrearPagina(new FachadaPrueba { Error = new InvalidOperationException("Efectivo insuficiente.") });
+        var page = CrearPagina(new FachadaPrueba { Error = new InvalidOperationException("Stock insuficiente.") });
 
         var resultado = Assert.IsType<JsonResult>(await page.OnPostRegistrarVentaAsync(Entrada(), default));
         var json = JsonSerializer.SerializeToElement(resultado.Value);
 
         Assert.Equal(400, resultado.StatusCode);
         Assert.False(json.GetProperty("exito").GetBoolean());
-        Assert.Equal("Efectivo insuficiente.", json.GetProperty("mensaje").GetString());
+        Assert.Equal("Stock insuficiente.", json.GetProperty("mensaje").GetString());
     }
 
     [Fact]
@@ -174,7 +172,7 @@ public class SalesRegistroHandlerTests
         Assert.Equal(503, resultado.StatusCode);
         Assert.False(json.GetProperty("exito").GetBoolean());
         Assert.Equal(
-            "No se pudo registrar la venta. Revise el stock disponible y el efectivo pagado, o intente nuevamente.",
+            "No se pudo registrar la venta. Revise el stock disponible o intente nuevamente.",
             json.GetProperty("mensaje").GetString());
         Assert.Equal([LogLevel.Warning], registro.Niveles);
     }
@@ -199,7 +197,6 @@ public class SalesRegistroHandlerTests
     private static IndexModel.RegistrarVentaInput Entrada() => new()
     {
         IdCliente = 4,
-        EfectivoPagado = 25m,
         Lineas = [new() { IdProducto = 8, Cantidad = 2, PrecioEsperado = 9.5m }]
     };
 

@@ -37,10 +37,10 @@ public sealed class IndexModel(
         [FromBody] RegistrarVentaInput? venta, CancellationToken cancellationToken)
     {
         if (venta is null || !ModelState.IsValid || venta.IdCliente is null ||
-            venta.EfectivoPagado is null || venta.Lineas is null ||
+            venta.Lineas is null ||
             venta.Lineas.Any(linea => linea is null || linea.IdProducto is null || linea.Cantidad is null || linea.PrecioEsperado is null))
         {
-            return new JsonResult(new { exito = false, mensaje = "Revise el cliente, el efectivo y las cantidades de la venta. Todos son obligatorios y deben ser válidos." })
+            return new JsonResult(new { exito = false, mensaje = "Revise el cliente y las cantidades de la venta. Todos son obligatorios y deben ser válidos." })
             {
                 StatusCode = StatusCodes.Status400BadRequest
             };
@@ -54,7 +54,7 @@ public sealed class IndexModel(
                 try
                 {
                     var resultado = await fachadaVenta.RegistrarVentaAsync(new NuevaVentaDto(
-                        venta.IdCliente!.Value, venta.EfectivoPagado!.Value,
+                        venta.IdCliente!.Value,
                         venta.Lineas!.Select(linea => new LineaVentaDto(linea.IdProducto!.Value, linea.Cantidad!.Value, linea.PrecioEsperado!.Value)).ToArray()),
                         limite);
                     return new JsonResult(new { exito = true, idVenta = resultado.IdVenta, total = resultado.Total });
@@ -82,7 +82,7 @@ public sealed class IndexModel(
                 }
             },
             "el registro de la venta",
-            new { exito = false, mensaje = "No se pudo registrar la venta. Revise el stock disponible y el efectivo pagado, o intente nuevamente." });
+            new { exito = false, mensaje = "No se pudo registrar la venta. Revise el stock disponible o intente nuevamente." });
     }
 
     public async Task<IActionResult> OnPostCrearClienteAsync(
@@ -139,9 +139,6 @@ public sealed class IndexModel(
     {
         [Required, Range(1, int.MaxValue)]
         public int? IdCliente { get; init; }
-
-        [Required, Range(typeof(decimal), "0", "79228162514264337593543950335")]
-        public decimal? EfectivoPagado { get; init; }
 
         [Required, MinLength(1)]
         public List<LineaInput>? Lineas { get; init; }

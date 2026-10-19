@@ -33,7 +33,7 @@ public class FachadaAnulacionTests
         {
             Lotes.Agregar(1, new LoteDisponible(10, 3, new DateOnly(2026, 7, 1)));
             Lotes.Agregar(1, new LoteDisponible(11, 10, new DateOnly(2026, 8, 1)));
-            var resultado = await Venta.RegistrarVentaAsync(new NuevaVentaDto(3, 100m, [new LineaVentaDto(1, 5)]));
+            var resultado = await Venta.RegistrarVentaAsync(new NuevaVentaDto(3, [new LineaVentaDto(1, 5)]));
             return resultado.IdVenta;
         }
 

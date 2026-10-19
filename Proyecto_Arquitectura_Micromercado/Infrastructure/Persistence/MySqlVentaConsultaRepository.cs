@@ -52,7 +52,7 @@ public sealed class MySqlVentaConsultaRepository(MySqlUnidadDeTrabajo unidadDeTr
         CancellationToken cancellationToken = default)
     {
         const string cabeceraSql = """
-            SELECT v.id, v.nroComprobante, v.fechaVenta, v.estado, v.montoTotal, v.efectivoPagado, v.cambio,
+            SELECT v.id, v.nroComprobante, v.fechaVenta, v.estado, v.montoTotal,
                    v.motivoAnulacion, v.fechaAnulacion,
                    c.nitCi, c.razonSocial,
                    u.nombreCompleto AS usuarioCajero,
@@ -81,7 +81,7 @@ public sealed class MySqlVentaConsultaRepository(MySqlUnidadDeTrabajo unidadDeTr
             string? motivoAnulacion, usuarioAnulacion;
             DateTime fechaVenta;
             DateTime? fechaAnulacion;
-            decimal montoTotal, efectivoPagado, cambio;
+            decimal montoTotal;
 
             await using (var cabecera = new MySqlCommand(cabeceraSql, alquiler.Conexion, alquiler.Transaccion))
             {
@@ -102,8 +102,6 @@ public sealed class MySqlVentaConsultaRepository(MySqlUnidadDeTrabajo unidadDeTr
                 fechaVenta = reader.GetDateTime(reader.GetOrdinal("fechaVenta"));
                 estado = reader.GetString(reader.GetOrdinal("estado"));
                 montoTotal = reader.GetDecimal(reader.GetOrdinal("montoTotal"));
-                efectivoPagado = reader.GetDecimal(reader.GetOrdinal("efectivoPagado"));
-                cambio = reader.GetDecimal(reader.GetOrdinal("cambio"));
                 motivoAnulacion = reader.IsDBNull(ordMotivo) ? null : reader.GetString(ordMotivo);
                 fechaAnulacion = reader.IsDBNull(ordFechaAnulacion) ? null : reader.GetDateTime(ordFechaAnulacion);
                 nitCi = reader.GetString(reader.GetOrdinal("nitCi"));
@@ -140,8 +138,6 @@ public sealed class MySqlVentaConsultaRepository(MySqlUnidadDeTrabajo unidadDeTr
                 usuarioCajero,
                 estado,
                 montoTotal,
-                efectivoPagado,
-                cambio,
                 motivoAnulacion,
                 fechaAnulacion,
                 usuarioAnulacion,

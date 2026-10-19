@@ -82,7 +82,7 @@ public class StockActualMySqlTests
         var cantidad = Math.Min(stockInicial, 75);
 
         var resultado = await pila.Venta.RegistrarVentaAsync(
-            new NuevaVentaDto(1, 100000m, [new LineaVentaDto(1, cantidad)]));
+            new NuevaVentaDto(1, [new LineaVentaDto(1, cantidad)]));
 
         Assert.Equal(stockInicial - cantidad, await StockDe(1));
         Assert.Equal(0, await ProductosDesincronizados());
@@ -90,7 +90,7 @@ public class StockActualMySqlTests
         var ventasAntes = await TotalDeVentas();
         var stockAntes = await StockDe(1);
         await Assert.ThrowsAsync<StockInsuficienteException>(() => pila.Venta.RegistrarVentaAsync(
-            new NuevaVentaDto(1, 100000m, [new LineaVentaDto(1, 1), new LineaVentaDto(2, 1000000)])));
+            new NuevaVentaDto(1, [new LineaVentaDto(1, 1), new LineaVentaDto(2, 1000000)])));
 
         Assert.Equal(stockAntes, await StockDe(1));
         Assert.Equal(ventasAntes, await TotalDeVentas());
@@ -114,7 +114,7 @@ public class StockActualMySqlTests
         {
             var pilas = new[] { CrearPila(), CrearPila(), CrearPila() };
             var resultados = await Task.WhenAll(pilas.Select(pila => pila.Venta.RegistrarVentaAsync(
-                new NuevaVentaDto(1, 100000m, [new LineaVentaDto(1, 1)]))));
+                new NuevaVentaDto(1, [new LineaVentaDto(1, 1)]))));
             ids.AddRange(resultados.Select(r => r.IdVenta));
         }
 
@@ -202,5 +202,23 @@ public class StockActualMySqlTests
 
         Assert.Equal(stockAntes, await StockDe(idProducto));
         Assert.Equal(0, await ProductosDesincronizados());
+    }
+
+    [Fact]
+    public async Task Una_venta_registrada_deja_efectivo_y_cambio_en_NULL()
+    {
+        if (string.IsNullOrWhiteSpace(Conexion)) return;
+
+        var pila = CrearPila();
+        var resultado = await pila.Venta.RegistrarVentaAsync(new NuevaVentaDto(1, [new LineaVentaDto(1, 1)]));
+        try
+        {
+            Assert.Equal(1, await Escalar<int>($"SELECT efectivoPagado IS NULL AND cambio IS NULL FROM VENTA WHERE id = {resultado.IdVenta}"));
+            Assert.Equal(1, await Escalar<int>($"SELECT montoTotal = {resultado.Total.ToString(System.Globalization.CultureInfo.InvariantCulture)} FROM VENTA WHERE id = {resultado.IdVenta}"));
+        }
+        finally
+        {
+            await pila.Anulacion.AnularVentaAsync(resultado.IdVenta, "Prueba automatizada");
+        }
     }
 }

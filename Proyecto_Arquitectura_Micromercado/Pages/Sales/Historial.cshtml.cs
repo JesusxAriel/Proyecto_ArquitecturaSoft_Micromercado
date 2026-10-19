@@ -124,8 +124,6 @@ public sealed class HistorialModel(
                     usuarioCajero = venta.UsuarioCajero,
                     estado = venta.Estado,
                     total = venta.Total,
-                    efectivoPagado = venta.EfectivoPagado,
-                    cambio = venta.Cambio,
                     motivoAnulacion = venta.MotivoAnulacion,
                     fechaAnulacion = venta.FechaAnulacion,
                     usuarioAnulacion = venta.UsuarioAnulacion,

@@ -43,8 +43,8 @@ public class SalesHistorialHandlerTests
         Assert.Equal("V-20260615-0007", json.GetProperty("nroComprobante").GetString());
         Assert.Equal("Cliente Uno", json.GetProperty("razonSocialCliente").GetString());
         Assert.Equal("Cajero Uno", json.GetProperty("usuarioCajero").GetString());
-        Assert.Equal(50m, json.GetProperty("efectivoPagado").GetDecimal());
-        Assert.Equal(10m, json.GetProperty("cambio").GetDecimal());
+        Assert.False(json.TryGetProperty("efectivoPagado", out _));
+        Assert.False(json.TryGetProperty("cambio", out _));
         var linea = Assert.Single(json.GetProperty("lineas").EnumerateArray());
         Assert.Equal(4, linea.GetProperty("cantidad").GetInt32());
         Assert.Equal("Leche", linea.GetProperty("descripcion").GetString());
@@ -304,7 +304,7 @@ public class SalesHistorialHandlerTests
 
             return Task.FromResult<VentaDetalleDto?>(new VentaDetalleDto(
                 7, "V-20260615-0007", Fecha, "123", "Cliente Uno", "Cajero Uno", "COMPLETADA",
-                40m, 50m, 10m, null, null, null,
+                40m, null, null, null,
                 [new LineaDetalleVentaDto(4, "Leche", 10m, 40m, [new LoteConsumidoDto("LOT-A", 3), new LoteConsumidoDto("LOT-B", 1)])]));
         }
     }

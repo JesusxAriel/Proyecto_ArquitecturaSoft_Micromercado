@@ -55,7 +55,6 @@ internal sealed class CabeceraRegistrada
     public int? IdUsuarioAnulacion { get; set; }
     public string? NroComprobante { get; set; }
     public decimal MontoTotal { get; set; }
-    public decimal EfectivoPagado { get; set; }
     public List<DetalleVenta> Detalles { get; } = [];
 }
 
@@ -89,12 +88,11 @@ internal sealed class VentaRepositoryEnMemoria : IVentaRepository
         return Task.CompletedTask;
     }
 
-    public Task CerrarVentaAsync(int idVenta, string nroComprobante, decimal montoTotal, decimal efectivoPagado, CancellationToken cancellationToken = default)
+    public Task CerrarVentaAsync(int idVenta, string nroComprobante, decimal montoTotal, CancellationToken cancellationToken = default)
     {
         var cabecera = Cabeceras.Single(c => c.Id == idVenta);
         cabecera.NroComprobante = nroComprobante;
         cabecera.MontoTotal = montoTotal;
-        cabecera.EfectivoPagado = efectivoPagado;
         return Task.CompletedTask;
     }
 
