@@ -95,4 +95,24 @@ public sealed class MySqlUsuarioAdministracionRepository(MySqlUnidadDeTrabajo un
             }
             return checked((int)command.LastInsertedId);
         });
+
+    public Task EliminarAsync(int usuarioId, int idUsuarioEliminacion, CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync(async () =>
+        {
+            const string sql = """
+                UPDATE USUARIO 
+                SET estado = 'INACTIVO',
+                    estaActivo = 0,
+                    idUsuarioEliminacion = @idUsuarioEliminacion,
+                    fechaEliminacion = CURRENT_TIMESTAMP,
+                    fechaActualizacion = CURRENT_TIMESTAMP
+                WHERE id = @id;
+                """;
+
+            await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+            await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
+            command.Parameters.AddWithValue("@id", usuarioId);
+            command.Parameters.AddWithValue("@idUsuarioEliminacion", idUsuarioEliminacion);
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        });
 }
