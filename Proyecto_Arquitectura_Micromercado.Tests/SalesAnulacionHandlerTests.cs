@@ -184,10 +184,10 @@ public class SalesAnulacionHandlerTests
         Assert.Equal([LogLevel.Error], registro.Niveles);
     }
 
-    private static IndexModel CrearPagina(AnulacionPrueba fachada, string rol, RegistroEspia? registro = null)
+    private static HistorialModel CrearPagina(AnulacionPrueba fachada, string rol, RegistroEspia? registro = null)
     {
         var identidad = new ClaimsIdentity([new Claim(ClaimTypes.Role, rol)], "prueba");
-        return new IndexModel(null!, null!, null!, null!, fachada, null!, registro ?? new RegistroEspia())
+        return new HistorialModel(null!, fachada, registro ?? new RegistroEspia())
         {
             PageContext = new PageContext
             {
@@ -196,7 +196,7 @@ public class SalesAnulacionHandlerTests
         };
     }
 
-    private static IndexModel.AnularVentaInput Entrada() => new()
+    private static HistorialModel.AnularVentaInput Entrada() => new()
     {
         IdVenta = 12,
         Motivo = "Error de digitación"

@@ -262,8 +262,8 @@ public class SalesHistorialHandlerTests
         Assert.Equal([LogLevel.Error], registro.Niveles);
     }
 
-    private static IndexModel CrearPagina(ConsultaPrueba servicio, RegistroEspia? registro = null) =>
-        new(null!, null!, null!, servicio, null!, null!, registro ?? new RegistroEspia())
+    private static HistorialModel CrearPagina(ConsultaPrueba servicio, RegistroEspia? registro = null) =>
+        new(servicio, null!, registro ?? new RegistroEspia())
         {
             PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
         };
