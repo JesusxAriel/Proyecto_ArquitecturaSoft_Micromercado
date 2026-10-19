@@ -115,7 +115,7 @@ La Page conoce una sola interfaz y llama un método; la coordinación de colabor
 
 ### Pago y vuelto
 
-La venta guarda solo lo vendido y el total a cobrar: el sistema no registra manejo de dinero físico, porque en Bolivia es común pagar por QR o transferencia. El campo **Con cuánto paga (opcional)** de la pantalla de registro es una calculadora: muestra el vuelto, o cuánto falta, y no se envía al servidor ni bloquea **Confirmar venta**. Solo valida en pantalla un máximo de Bs 1.000.000 y dos decimales. Las columnas `VENTA.efectivoPagado` y `VENTA.cambio` se conservan, pero admiten `NULL` y ya no se escriben, de modo que las ventas anteriores no se pierden. Para una base ya creada, ejecute `migracion_efectivo_opcional.sql`; para una nueva, `bdMicroMercadoArqui.sql` ya incluye el cambio.
+La venta guarda solo lo vendido y el total a cobrar: el sistema no registra manejo de dinero físico, porque en Bolivia es común pagar por QR o transferencia, y la tabla `VENTA` no tiene columnas de efectivo ni de cambio. El campo **Con cuánto paga (opcional)** de la pantalla de registro es una calculadora: muestra el vuelto, o cuánto falta, y no se envía al servidor ni bloquea **Confirmar venta**. Solo valida en pantalla un máximo de Bs 1.000.000 y dos decimales.
 
 ### Historial, detalle y anulación de ventas
 
