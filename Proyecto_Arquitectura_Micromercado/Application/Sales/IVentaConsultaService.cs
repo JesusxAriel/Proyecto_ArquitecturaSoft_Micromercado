@@ -11,4 +11,7 @@ public interface IVentaConsultaService
     Task<VentaDetalleDto?> ObtenerDetalleAsync(
         int idVenta,
         CancellationToken cancellationToken = default);
+
+    Task InvalidarHistorialAsync(
+    CancellationToken cancellationToken = default);
 }

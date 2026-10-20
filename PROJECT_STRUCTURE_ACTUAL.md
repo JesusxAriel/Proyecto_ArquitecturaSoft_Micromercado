@@ -1,357 +1,237 @@
-# Estructura del proyecto PuntoMarket
+# Estructura actual del proyecto PuntoMarket
 
-Este documento describe la estructura versionada y relevante del proyecto de gestión
-para el micromercado. La solución es una aplicación monolítica modular construida con
-ASP.NET Core Razor Pages sobre .NET 10, C# y MySQL. La estructura está organizada en
-capas lógicas para separar presentación, casos de uso, dominio y detalles técnicos.
+Este documento describe la estructura versionada y relevante del sistema de
+gestion para el micromercado. La solucion es una aplicacion monolitica modular
+con ASP.NET Core Razor Pages sobre .NET 10, C# y MySQL. Las capas logicas viven
+dentro de `Proyecto_Arquitectura_Micromercado/`; los dobles en memoria y las
+pruebas se encuentran en un proyecto separado.
 
-## Árbol completo del repositorio
+El inventario se actualizo a partir del contenido actual del repositorio. Se
+omiten `.git/`, `bin/`, `obj/`, dependencias de `wwwroot/lib/` y otros
+artefactos generados.
 
-El árbol siguiente incluye todas las carpetas y archivos del proyecto fuente. Se
-excluyen intencionalmente artefactos generados o dependencias: `.git/`, `bin/`,
-`obj/`, `node_modules/`, `dist/`, `vendor/`, `packages/` y
-`wwwroot/lib/` (bibliotecas frontend copiadas desde dependencias).
+## Arbol del repositorio
 
-```tree
+```text
 Proyecto_Arquitectura_Micromercado - copia/
 ├── .gitignore
-├── PROJECT_STRUCTURE_ACTUAL.md
 ├── README.md
-├── Proyecto_Arquitectura_Micromercado.slnx
+├── PROJECT_STRUCTURE_ACTUAL.md
+├── EXPLICACION_ESTRUCTURA_ACTUAL.md
+├── INFORME_ANALISIS_ATQUERRA.md
+├── historial_actualizado.txt
+├── historial_commits.txt
 ├── bdMicroMercadoArqui.sql
+├── Proyecto_Arquitectura_Micromercado.slnx
 ├── doc/
 │   └── .gitkeep
-└── Proyecto_Arquitectura_Micromercado/
-    ├── Application/
-    │   ├── Common/
-    │   │   ├── IRepositorioBase.cs
-    │   │   └── IServicioCRUD.cs
-    │   ├── Categories/
-    │   │   ├── CategoryService.cs
-    │   │   ├── ICategoryRepository.cs
-    │   │   └── ICategoryService.cs
-    │   ├── Products/
-    │   │   ├── IProductRepository.cs
-    │   │   ├── IProductService.cs
-    │   │   ├── IConCatalogo.cs
-    │   │   ├── IConHistorialPrecios.cs
-    │   │   ├── IConListado.cs
-    │   │   ├── IConRegistroHistorial.cs
-    │   │   └── ProductService.cs
-    │   └── Suppliers/
-    │       ├── IConBusqueda.cs
-    │       ├── IConListado.cs
-    │       ├── ISupplierRepository.cs
-    │       ├── ISupplierService.cs
-    │       └── SupplierService.cs
-    ├── Domain/
-    │   ├── Categories/
-    │   │   ├── Category.cs
-    │   │   └── CategoryDtos.cs
-    │   ├── Products/
-    │   │   ├── Product.cs
-    │   │   ├── ProductDtos.cs
-    │   │   └── ProductPriceHistory.cs
-    │   └── Suppliers/
-    │       ├── Supplier.cs
-    │       └── SupplierDtos.cs
-    ├── Infrastructure/
-    │   ├── Persistence/
-    │   │   ├── MySqlCategoryRepository.cs
-    │   │   ├── MySqlPriceHistoryRepository.cs
-    │   │   ├── MySqlProductRepository.cs
-    │   │   └── MySqlSupplierRepository.cs
-    │   ├── Database/
-    │   │   └── DatabaseConnection.cs
-    │   ├── Factories/
-    │   │   ├── CreatorCategoryRepository.cs
-    │   │   ├── CreatorPriceHistoryRepository.cs
-    │   │   ├── CreatorProductRepository.cs
-    │   │   ├── CreatorRepositorio.cs
-    │   │   └── CreatorSupplierRepository.cs
-    │   └── Web/
-    │       └── DecimalModelBinder.cs
-    ├── Pages/
-    │   ├── Categories/
-    │   │   ├── _CategoryForm.cshtml
-    │   │   ├── CategoryFormModel.cs
-    │   │   ├── Create.cshtml
-    │   │   ├── Create.cshtml.cs
-    │   │   ├── Delete.cshtml
-    │   │   ├── Delete.cshtml.cs
-    │   │   ├── Edit.cshtml
-    │   │   ├── Edit.cshtml.cs
-    │   │   ├── Index.cshtml
-    │   │   └── Index.cshtml.cs
-    │   ├── Products/
-    │   │   ├── _ProductForm.cshtml
-    │   │   ├── Create.cshtml
-    │   │   ├── Create.cshtml.cs
-    │   │   ├── Delete.cshtml
-    │   │   ├── Delete.cshtml.cs
-    │   │   ├── Edit.cshtml
-    │   │   ├── Edit.cshtml.cs
-    │   │   ├── History.cshtml
-    │   │   ├── History.cshtml.cs
-    │   │   ├── Index.cshtml
-    │   │   ├── Index.cshtml.cs
-    │   │   └── ProductFormModel.cs
-    │   ├── Shared/
-    │   │   ├── _Layout.cshtml
-    │   │   ├── _Layout.cshtml.css
-    │   │   └── _ValidationScriptsPartial.cshtml
-    │   ├── Suppliers/
-    │   │   ├── _SupplierForm.cshtml
-    │   │   ├── _SupplierForm.cshtml.cs
-    │   │   ├── Create.cshtml
-    │   │   ├── Create.cshtml.cs
-    │   │   ├── Delete.cshtml
-    │   │   ├── Delete.cshtml.cs
-    │   │   ├── Edit.cshtml
-    │   │   ├── Edit.cshtml.cs
-    │   │   ├── Index.cshtml
-    │   │   ├── Index.cshtml.cs
-    │   │   └── SupplierFormModel.cs
-    │   ├── _ViewImports.cshtml
-    │   ├── _ViewStart.cshtml
-    │   ├── Error.cshtml
-    │   ├── Error.cshtml.cs
-    │   ├── Index.cshtml
-    │   ├── Index.cshtml.cs
-    │   ├── Login.cshtml
-    │   ├── Login.cshtml.cs
-    │   ├── Privacy.cshtml
-    │   └── Privacy.cshtml.cs
-    ├── Properties/
-    │   └── launchSettings.json
-    ├── Validations/
-    │   └── Validation.cs
-    ├── wwwroot/
-    │   ├── css/
-    │   │   └── site.css
-    │   ├── images/
-    │   │   └── logo.jpg
-    │   ├── js/
-    │   │   └── site.js
-    │   └── favicon.ico
-    ├── appsettings.Development.json
-    ├── appsettings.json
-    ├── Program.cs
-    ├── Proyecto_Arquitectura_Micromercado.csproj
-    └── Proyecto_Arquitectura_Micromercado.csproj.user
+├── Proyecto_Arquitectura_Micromercado/
+│   ├── Application/
+│   │   ├── Categories/
+│   │   │   ├── CategoryCodeGenerator.cs
+│   │   │   ├── CategoryCodePreview.cs
+│   │   │   ├── CategoryService.cs
+│   │   │   ├── ICategoryRepository.cs
+│   │   │   ├── ICategoryService.cs
+│   │   │   ├── IConListado.cs
+│   │   │   ├── IConListadoPaginado.cs
+│   │   │   └── IConVerificacionDeNombre.cs
+│   │   ├── Common/
+│   │   │   ├── ErrorDePersistenciaException.cs
+│   │   │   ├── IDetectorDeInterbloqueo.cs
+│   │   │   ├── IRepositorioBase.cs
+│   │   │   ├── IServicioCRUD.cs
+│   │   │   ├── IUnidadDeTrabajo.cs
+│   │   │   └── PagedQuery.cs
+│   │   ├── Comprobantes/
+│   │   ├── Customers/
+│   │   ├── Facades/
+│   │   ├── Products/
+│   │   ├── Sales/
+│   │   ├── Security/
+│   │   ├── Stock/
+│   │   └── Suppliers/
+│   ├── Domain/
+│   │   ├── Categories/
+│   │   ├── Common/
+│   │   ├── Products/
+│   │   ├── Sales/
+│   │   ├── Stock/
+│   │   └── Suppliers/
+│   ├── Infrastructure/
+│   │   ├── Background/
+│   │   ├── Comprobantes/
+│   │   ├── Database/
+│   │   ├── Factories/
+│   │   ├── Persistence/
+│   │   │   ├── EnMemoria/
+│   │   │   └── Errores/
+│   │   ├── Security/
+│   │   └── Web/
+│   ├── Pages/
+│   │   ├── Categories/Index.cshtml[.cs]
+│   │   ├── Comprobante/Index.cshtml[.cs]
+│   │   ├── Customers/Create.cshtml[.cs]
+│   │   ├── Products/
+│   │   │   ├── Catalog.cshtml[.cs]
+│   │   │   ├── History.cshtml[.cs]
+│   │   │   ├── Index.cshtml[.cs]
+│   │   │   └── _PriceHistoryDetail.cshtml
+│   │   ├── Sales/
+│   │   │   ├── Historial.cshtml[.cs]
+│   │   │   ├── Index.cshtml[.cs]
+│   │   │   └── SaleInputModel.cs
+│   │   ├── Shared/
+│   │   │   ├── _Layout.cshtml[.css]
+│   │   │   ├── _Pager.cshtml
+│   │   │   ├── _SearchBox.cshtml
+│   │   │   ├── ComprobanteUrl.cs
+│   │   │   ├── EjecutorDePeticiones.cs
+│   │   │   ├── PrincipalDeSesion.cs
+│   │   │   ├── SearchBoxModel.cs
+│   │   │   ├── UniqueCheckResult.cs
+│   │   │   └── VariablesDeSesion.cs
+│   │   ├── Suppliers/Index.cshtml[.cs]
+│   │   ├── AccesoDenegado.cshtml[.cs]
+│   │   ├── Error.cshtml[.cs]
+│   │   ├── Index.cshtml[.cs]
+│   │   ├── Login.cshtml[.cs]
+│   │   ├── Logout.cshtml[.cs]
+│   │   ├── Privacy.cshtml[.cs]
+│   │   ├── _ViewImports.cshtml
+│   │   └── _ViewStart.cshtml
+│   ├── Properties/launchSettings.json
+│   ├── wwwroot/
+│   │   ├── css/site.css
+│   │   ├── images/logo.jpg
+│   │   ├── js/
+│   │   │   ├── historial.js
+│   │   │   ├── site.js
+│   │   │   ├── ventas-reglas.js
+│   │   │   └── ventas.js
+│   │   └── favicon.ico
+│   ├── appsettings.example.json
+│   ├── appsettings.json
+│   ├── Program.cs
+│   └── Proyecto_Arquitectura_Micromercado.csproj
+└── Proyecto_Arquitectura_Micromercado.Tests/
+    ├── pruebas unitarias de dominio, aplicacion e infraestructura (*.cs)
+    ├── pruebas de reglas JavaScript (js/ventas-reglas.test.cjs)
+    └── Proyecto_Arquitectura_Micromercado.Tests.csproj
 ```
 
-## Organización arquitectónica
+`[.cs]` representa el PageModel asociado a una vista Razor. Las carpetas que
+aparecen sin detallar contienen los archivos del modulo indicado; el listado
+completo puede consultarse directamente en el repositorio.
 
-### `Domain/`: reglas y modelos del negocio
+## Capas y responsabilidades
 
-Contiene las entidades y objetos de transferencia relacionados con categorías,
-productos y proveedores. Esta capa representa conceptos del micromercado y sus
-validaciones, sin conocer Razor Pages, MySQL ni el contenedor de servicios.
+### `Domain/`
 
-- `Categories/` agrupa `Category` y sus atributos de validación para nombre, código,
-  ubicación de pasillo y descripción.
-- `Products/` agrupa `Product`, `ProductListItem`, `LookupOption`,
-  `ProductPriceHistory` y atributos para textos, precio de venta y precio de costo.
-- `Suppliers/` agrupa `Supplier`, `SupplierListItem`, sus DTOs y validaciones de
-  correo, teléfono, nombre y la regla de proveedor autogestionado.
+Contiene las reglas y modelos del negocio, sin referencias a Razor Pages, SQL o
+MySQL:
 
-Esta separación favorece **responsabilidad única (SRP)**: las entidades expresan el
-modelo y las reglas intrínsecas, mientras que la persistencia y la presentación se
-mantienen fuera del dominio.
+- `Categories/`: categoria, DTOs y excepciones de duplicidad.
+- `Products/`: producto, DTOs, historial, cambio de precio y validaciones.
+- `Suppliers/`: proveedor, DTOs y reglas de duplicidad o de productos asociados.
+- `Sales/`: venta, detalle y estados de venta.
+- `Stock/`: lotes disponibles, consumo FEFO, resultados de baja y excepciones
+  de stock insuficiente o restauracion invalida.
+- `Common/`: `PagedResult<T>` para resultados paginados.
 
-### `Application/`: casos de uso y contratos
+### `Application/`
 
-Implementa la lógica de aplicación para productos, categorías y proveedores.
-Cada módulo contiene interfaces de servicios y repositorios, más la implementación
-del servicio correspondiente.
+Define contratos y coordina casos de uso:
 
-- `IProductService`, `ICategoryService` e `ISupplierService` definen las operaciones
-  que necesita la presentación.
-- `IProductRepository`, `ICategoryRepository` e `ISupplierRepository` definen las
-  operaciones de persistencia que necesita cada servicio.
-- `ProductService`, `CategoryService` y `SupplierService` coordinan validaciones,
-  normalización, reglas de negocio, eliminación lógica, historial de precios y
-  acceso a repositorios.
+- `Categories/`, `Products/` y `Suppliers/`: servicios, repositorios,
+  contratos segregados, validaciones y operaciones paginadas.
+- `Customers/`: consulta y creacion de clientes, DTOs y deteccion de
+  duplicados de CI/NIT.
+- `Sales/`: registro, consulta, anulacion y DTOs de ventas.
+- `Facades/`: fachadas para venta, anulacion y actualizacion de stock.
+- `Comprobantes/`: servicio, DTOs y contrato del generador de comprobantes.
+- `Security/`: autenticacion, roles, claims, usuario actual y credenciales.
+- `Stock/`: baja automatica de lotes vencidos y contrato del servicio.
+- `Common/`: repositorios y servicios genericos, unidad de trabajo, paginacion,
+  deteccion de interbloqueos y errores de persistencia.
 
-Las interfaces aplican **Inversión de Dependencias (DIP)** y **Segregación de
-Interfaces (ISP)**: los PageModels dependen de servicios abstractos y los servicios
-dependen de repositorios abstractos, no de clases MySQL concretas. También favorece
-**Sustitución de Liskov (LSP)**, porque una implementación alternativa de un
-repositorio puede reemplazar a la implementación MySQL sin cambiar el contrato.
+Los servicios dependen de interfaces. Las implementaciones MySQL y en memoria
+se encuentran en `Infrastructure/`.
 
-`Application/Common/IRepositorioBase.cs` define
-`IRepositorioBase<TEntidad, TListItem, TId>` para obtener por identificador, crear,
-listar, actualizar y desactivar lógicamente de forma asíncrona. `TListItem`
-conserva la diferencia entre las entidades editables y las proyecciones de listado
-sin convertir una proyección incompleta en una entidad.
+### `Infrastructure/`
 
-`Application/Common/IServicioCRUD.cs` define
-`IServicioCRUD<TEntidad, TId, TCrearDto, TActualizarDto>` para las operaciones
-asíncronas comunes de caso de uso. En esta iteración los DTOs de creación y
-actualización son los tipos que ya reciben los servicios, por lo que no se altera
-ningún consumidor existente.
+Implementa los adaptadores tecnicos:
 
-Las interfaces segregadas son:
+- `Persistence/`: repositorios MySQL para categorias, productos, proveedores,
+  clientes, ventas, comprobantes, usuarios y lotes; unidad de trabajo,
+  consultas paginadas, reintentos y traduccion de errores.
+- `Persistence/EnMemoria/`: repositorios y unidad de trabajo para pruebas.
+- `Factories/`: Factory Method para seleccionar repositorios MySQL o en memoria.
+- `Database/DatabaseConnection.cs`: acceso centralizado a conexiones MySQL.
+- `Comprobantes/`: generador HTML de comprobantes.
+- `Security/`: hash BCrypt.
+- `Web/`: model binder decimal, campos no enlazables, sesion vencida y
+  adaptadores de usuario actual.
+- `Background/`: baja automatica de lotes vencidos.
 
-- `Products/IConListado.cs`: listado como `ProductListItem`.
-- `Products/IConCatalogo.cs`: catálogos de categorías y proveedores.
-- `Products/IConHistorialPrecios.cs`: consulta del historial de precios.
-- `Products/IConRegistroHistorial.cs`: registro de historial, exclusivo del
-  repositorio porque el servicio actual no expone ese método.
-- `Suppliers/IConListado.cs`: listado como `SupplierListItem`.
-- `Suppliers/IConBusqueda.cs`: comprobación de nombre de empresa duplicado.
+### `Pages/`
 
-`Category` conserva sus contratos sincrónicos para `Pages/Categories`, mientras
-`CategoryService` y `MySqlCategoryRepository` implementan además los métodos
-asíncronos del contrato genérico mediante `Task.FromResult`, reutilizando la lógica
-sincrónica existente.
+Es la capa de presentacion Razor Pages. Los PageModels reciben dependencias por
+constructor, validan entradas y delegan la logica a `Application`:
 
-### `Infrastructure/`: adaptadores técnicos
-
-- `Database/DatabaseConnection.cs` implementa un Singleton manual con
-  **Double-Check Locking**. `Program.cs` lo inicializa una vez al arrancar mediante
-  `GetInstance(builder.Configuration.GetConnectionString("MySqlConnection")!)`.
-  Los repositorios obtienen conexiones nuevas para cada operación con
-  `DatabaseConnection.Instance.CreateConnection()`, manteniendo centralizada la
-  cadena de conexión sin registrar el Singleton en el contenedor de dependencias.
-- `Factories/` implementa el patrón **Factory Method** mediante
-  `CreatorRepositorio<T>` y los cuatro creadores concretos:
-  `CreatorCategoryRepository`, `CreatorProductRepository`,
-  `CreatorSupplierRepository` y `CreatorPriceHistoryRepository`. Los creadores ya
-  no reciben `IConfiguration` y construyen sus repositorios sin parámetros.
-- `Persistence/` contiene `MySqlCategoryRepository`,
-  `MySqlProductRepository`, `MySqlSupplierRepository` y
-  `MySqlPriceHistoryRepository`. Estas clases implementan los contratos de
-  `Application` y ejecutan SQL parametrizado mediante `MySql.Data`/ADO.NET.
-  Incluyen consultas de listado, búsqueda, creación, actualización, eliminación
-  lógica, catálogos de categorías/proveedores e historial de precios. Las
-  operaciones de creación conservan el identificador autogenerado de MySQL en la
-  entidad y también lo retornan, preparando el contrato genérico para encadenar
-  operaciones posteriores.
-- `Web/DecimalModelBinder.cs` adapta la entrada HTTP a `decimal`, permitiendo
-  interpretar formatos decimales con coma o punto según la cultura configurada.
-
-La infraestructura queda en el borde de la aplicación: puede cambiar MySQL o el
-model binding sin modificar las entidades ni los casos de uso. Esto materializa
-**Abierto/Cerrado (OCP)** y DIP.
-
-### `Pages/`: presentación Razor Pages
-
-Es la capa de entrada web. Cada página combina una vista `.cshtml` con su
-PageModel `.cshtml.cs`. Los PageModels reciben solicitudes, ejecutan model binding
-y validación de `ModelState`, invocan interfaces de `Application` y devuelven una
-página o redirección. No contienen SQL.
-
-- `Categories/` ofrece listado y formularios CRUD de categorías. `Index` también
-  soporta el flujo de edición; `_CategoryForm.cshtml` reutiliza el formulario y
-  `CategoryFormModel.cs` centraliza dependencias y datos comunes de creación/edición.
-- `Products/` ofrece listado, creación, edición, eliminación lógica e historial de
-  precios. `_ProductForm.cshtml` es el formulario compartido y
-  `ProductFormModel.cs` centraliza catálogos de categorías/proveedores y la
-  dependencia de `IProductService`.
-- `Suppliers/` ofrece CRUD de proveedores. `Index.cshtml` y su PageModel concentran
-  los modales/handlers de crear, editar y eliminar; `SupplierFormModel.cs` y
-  `_SupplierForm.cshtml` reutilizan la preparación y representación del formulario.
-- `Shared/` contiene `_Layout.cshtml`, la navegación, recursos globales y el
-  `@RenderBody`; `_Layout.cshtml.css` contiene sus estilos; y
-  `_ValidationScriptsPartial.cshtml` carga validación cliente.
-- `_ViewImports.cshtml` importa namespaces y Tag Helpers; `_ViewStart.cshtml`
-  establece `_Layout` como layout predeterminado.
-- `Index`, `Login`, `Privacy` y `Error` son páginas transversales de inicio,
-  acceso visual, privacidad y manejo de errores. `Index.cshtml.cs` carga el
-  resumen de productos; `Login` representa actualmente la pantalla de acceso.
-
-La capa de presentación mantiene **SRP** al delegar la lógica de negocio a
-servicios. La inyección por constructor de los PageModels evita instanciar
-repositorios o servicios directamente y mantiene bajo acoplamiento.
-
-### `Validations/`
-
-`Validation.cs` proporciona utilidades reutilizables para campos obligatorios,
-longitud máxima, correo electrónico y teléfono. Complementa las anotaciones de
-datos definidas junto a las entidades/DTOs sin mezclar validación con SQL o
-renderizado.
+- `Categories/Index`: listado paginado y operaciones CRUD de categorias.
+- `Products/Index`, `History` y `Catalog`: gestion, historial de precios y
+  catalogo de consulta.
+- `Suppliers/Index`: listado y operaciones CRUD de proveedores.
+- `Customers/Create`: alta minima de clientes para el flujo de ventas.
+- `Sales/Index` y `Sales/Historial`: registro, consulta y anulacion de ventas.
+- `Comprobante/Index`: consulta y renderizado de comprobantes.
+- `Login`, `Logout` y `AccesoDenegado`: autenticacion y autorizacion.
+- `Shared/`: layout, paginador, buscador y utilidades de sesion/comprobantes.
 
 ### `wwwroot/`
 
-Recursos estáticos servidos directamente por ASP.NET Core:
+Contiene recursos estaticos. `ventas.js` y `ventas-reglas.js` gestionan la
+interaccion del detalle de venta, busqueda, cantidades y validaciones; `site.js`
+e `historial.js` contienen comportamiento general e historial. `lib/` contiene
+dependencias frontend de terceros y se omite del arbol detallado.
 
-- `css/site.css`: estilos globales de la interfaz.
-- `images/logo.jpg`: identidad visual mostrada por el layout.
-- `js/site.js`: comportamiento JavaScript global y eventos de interfaz.
-- `favicon.ico`: icono del sitio.
-- `lib/` no se documenta en el árbol porque contiene bibliotecas frontend de
-  terceros/dependencias; además, sus subcarpetas `dist/` son artefactos de esas
-  dependencias.
+## Configuracion, base de datos y pruebas
 
-## Archivos de configuración y arranque
+- `Program.cs`: registra Razor Pages, autenticacion, autorizacion, servicios,
+  repositorios, factories, model binders, cultura y tareas de fondo.
+- `appsettings.json` y `appsettings.example.json`: configuracion y plantilla de
+  configuracion; las credenciales reales no deben versionarse.
+- `Properties/launchSettings.json`: perfiles locales de ejecucion.
+- `Proyecto_Arquitectura_Micromercado.csproj`: proyecto web .NET 10 y
+  dependencias de ejecucion, incluida `MySql.Data`.
+- `bdMicroMercadoArqui.sql`: esquema y datos iniciales de MySQL, incluyendo
+  categorias, proveedores, productos, lotes, ventas, clientes, usuarios,
+  comprobantes e historial de precios.
+- `Proyecto_Arquitectura_Micromercado.Tests/`: pruebas de dominio, servicios,
+  fachadas, handlers Razor Pages, repositorios en memoria, seguridad,
+  accesibilidad y reglas JavaScript.
 
-- `Program.cs`: punto de composición de la aplicación. Registra Razor Pages,
-  configura `DecimalModelBinder`, registra los cuatro creadores y los servicios
-  con ciclo de vida `Scoped`, inicializa el Singleton `DatabaseConnection` con la
-  cadena `MySqlConnection`, configura la cultura `es-BO`, HTTPS, manejo de errores,
-  routing y el mapeo de páginas.
-- `appsettings.json`: configuración base, incluida la cadena
-  `ConnectionStrings:MySqlConnection`, logging y hosts permitidos. La contraseña
-  debe mantenerse fuera del control de versiones en un entorno real.
-- `appsettings.Development.json`: errores detallados y logging de desarrollo.
-- `Properties/launchSettings.json`: perfiles locales HTTP/HTTPS, puertos de
-  desarrollo y variable `ASPNETCORE_ENVIRONMENT`.
-- `Proyecto_Arquitectura_Micromercado.csproj`: define el SDK web, `net10.0`,
-  nullable reference types, implicit usings y la dependencia `MySql.Data`.
-- `Proyecto_Arquitectura_Micromercado.csproj.user`: preferencias locales de
-  Visual Studio/Razor, como el perfil de depuración seleccionado.
-- `Proyecto_Arquitectura_Micromercado.slnx`: archivo de solución que agrupa el
-  proyecto.
+## Flujo de dependencias
 
-## Base de datos y documentación raíz
-
-- `bdMicroMercadoArqui.sql`: script de creación y datos de prueba de MySQL.
-  Define `CATEGORIAS`, `PROVEEDOR`, `PRODUCTO`, `LOTE` y `HISTORIAL_PRECIO`,
-  relaciones y restricciones, eliminación lógica mediante `estaActivo` y la vista
-  `vw_productos_con_stock` para calcular inventario a partir de lotes.
-- `README.md`: descripción funcional, tecnologías, arquitectura en N capas,
-  flujo de operaciones y guía de funcionalidades.
-- `doc/.gitkeep`: conserva la carpeta destinada a documentación adicional.
-- `.gitignore`: evita versionar archivos locales, temporales y artefactos
-  generados.
-- `PROJECT_STRUCTURE_ACTUAL.md`: este inventario arquitectónico y de archivos.
-
-## Flujo de dependencias e inyección
-
-La composición se realiza en `Program.cs` con el contenedor integrado de ASP.NET
-Core:
-
-```csharp
-IProductRepository  -> MySqlProductRepository
-IProductService     -> ProductService
-ICategoryRepository -> MySqlCategoryRepository
-ICategoryService    -> CategoryService
-ISupplierRepository -> MySqlSupplierRepository
-ISupplierService    -> SupplierService
-
-CreatorCategoryRepository      -> MySqlCategoryRepository
-CreatorProductRepository       -> MySqlProductRepository
-CreatorSupplierRepository      -> MySqlSupplierRepository
-CreatorPriceHistoryRepository  -> MySqlPriceHistoryRepository
-
-DatabaseConnection.GetInstance(...) -> DatabaseConnection.Instance
-DatabaseConnection.Instance         -> MySqlConnection
+```text
+Razor Page / PageModel
+        |
+        v
+Servicio o fachada de Application
+        |
+        v
+Contrato de repositorio / unidad de trabajo
+        |
+        v
+Infrastructure (MySQL o implementacion en memoria)
+        |
+        v
+Base de datos MySQL
 ```
 
-El flujo normal de una operación es:
-
-1. Una vista Razor envía un formulario o handler.
-2. El PageModel recibe y valida los datos.
-3. El PageModel invoca un `I*Service`.
-4. El servicio aplica reglas del caso de uso y utiliza un `I*Repository`.
-5. El repositorio MySQL solicita una conexión a
-   `DatabaseConnection.Instance.CreateConnection()` y ejecuta la consulta
-   parametrizada.
-6. El resultado retorna al servicio y luego al PageModel para mostrarlo o redirigir.
-
-Así, la UI conoce contratos de aplicación, la aplicación conoce contratos de
-persistencia y solo `Infrastructure` conoce MySQL. Esta dirección de dependencias
-preserva SOLID, facilita pruebas con dobles de las interfaces y permite cambiar
-detalles técnicos sin reescribir el dominio.
+La interfaz web no ejecuta SQL ni instancia repositorios concretos. Los
+repositorios utilizan consultas parametrizadas y las pruebas pueden sustituir
+las implementaciones MySQL por dobles en memoria. Esta separacion mantiene la
+direccion de dependencias hacia los contratos y permite probar los casos de uso
+sin requerir una base de datos real.

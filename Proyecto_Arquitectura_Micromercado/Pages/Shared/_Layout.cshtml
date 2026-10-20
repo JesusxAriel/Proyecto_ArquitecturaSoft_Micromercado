@@ -39,6 +39,9 @@
                 <a class="navbar-brand" asp-area="" asp-page="/Index" aria-label="PuntoMarket, ir al inicio">
                     <img src="~/images/logo.jpg" alt="" class="navbar-logo" style="height: 76px; width: auto; object-fit: contain;">
                 </a>
+                <span class="badge rounded-pill text-bg-secondary ms-2">
+    Instancia: @Context.Items["ReplicaId"]
+</span>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavigation"
                         aria-controls="mainNavigation" aria-expanded="false" aria-label="Abrir navegación">
                     <span class="navbar-toggler-icon"></span>

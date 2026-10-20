@@ -19,6 +19,10 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
 using System.Globalization;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
 
+
+using Microsoft.AspNetCore.DataProtection;
+using System.IO;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorPages()
@@ -45,13 +49,23 @@ builder.Services
         options.Events.OnRedirectToLogin = SesionVencidaAjax.ResponderAsync;
     });
 
-builder.Services.AddDistributedMemoryCache();
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration =
+        builder.Configuration.GetConnectionString("Redis")
+        ?? "redis:6379";
+
+    options.InstanceName = "PuntoMarket:";
+});
+
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
+
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUsuarioActual, UsuarioActualDesdeClaims>();
@@ -113,7 +127,30 @@ builder.Services.AddSingleton<IDetectorDeInterbloqueo, DetectorDeInterbloqueoMyS
 builder.Services.AddScoped<IFachadaVenta, FachadaVenta>();
 builder.Services.AddScoped<IFachadaAnulacion, FachadaAnulacion>();
 
+builder.Services
+    .AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo("/keys"))
+    .SetApplicationName("PuntoMarket");
+
 var app = builder.Build();
+
+var replicaId = Environment.GetEnvironmentVariable("REPLICA_ID")
+    ?? Environment.MachineName;
+
+app.Use(async (context, next) =>
+{
+    context.Items["ReplicaId"] = replicaId; // Añadir esta línea
+    context.Response.Headers["X-Replica-Id"] = replicaId;
+
+    await next();
+});
+app.Use(async (context, next) =>
+{
+    context.Items["ReplicaId"] = replicaId;
+    context.Response.Headers["X-Replica-Id"] = replicaId;
+
+    await next();
+});
 var boliviaCulture = new CultureInfo("es-BO");
 app.UseRequestLocalization(new RequestLocalizationOptions
 {

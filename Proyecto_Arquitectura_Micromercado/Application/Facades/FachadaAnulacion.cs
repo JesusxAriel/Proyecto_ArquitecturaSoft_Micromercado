@@ -10,7 +10,10 @@ public sealed class FachadaAnulacion(
     IUnidadDeTrabajo unidad,
     IVentaRepository ventaRepository,
     IFachadaActualizacionStockProducto stock,
-    IUsuarioActual usuarioActual) : IFachadaAnulacion
+    
+    IUsuarioActual usuarioActual,
+    IVentaConsultaService consultaVentas) : IFachadaAnulacion
+
 {
     public async Task AnularVentaAsync(
         int idVenta,
@@ -41,7 +44,12 @@ public sealed class FachadaAnulacion(
                 cancellationToken);
             await ventaRepository.MarcarAnuladaAsync(idVenta, motivo.Trim(), usuarioActual.Id, cancellationToken);
 
+                
             await unidad.ConfirmarAsync(cancellationToken);
+
+            await consultaVentas.InvalidarHistorialAsync(
+                CancellationToken.None);
+
         }
         catch
         {

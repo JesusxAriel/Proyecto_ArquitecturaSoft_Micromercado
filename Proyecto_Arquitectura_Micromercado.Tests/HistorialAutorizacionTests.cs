@@ -232,6 +232,11 @@ public class HistorialAutorizacionTests
 
     private class ConsultaVacia : IVentaConsultaService
     {
+        public Task InvalidarHistorialAsync(
+    CancellationToken cancellationToken = default)
+{
+    return Task.CompletedTask;
+}
         public virtual Task<decimal> ObtenerVentasDelDiaAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(0m);
 

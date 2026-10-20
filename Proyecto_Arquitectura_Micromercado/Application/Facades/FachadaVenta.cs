@@ -17,7 +17,8 @@ public sealed class FachadaVenta(
     IUsuarioActual usuarioActual,
     TimeProvider reloj,
     IDetectorDeInterbloqueo interbloqueos,
-    IClienteConsultaRepository clientes) : IFachadaVenta
+    IClienteConsultaRepository clientes,
+    IVentaConsultaService consultaVentas) : IFachadaVenta
 {
     private const int IntentosMaximos = 2;
 
@@ -79,8 +80,14 @@ public sealed class FachadaVenta(
             var nroComprobante = Venta.GenerarNroComprobante(reloj.GetLocalNow().DateTime, idVenta);
             await ventaRepository.CerrarVentaAsync(idVenta, nroComprobante, total, cancellationToken);
 
+            
             await unidad.ConfirmarAsync(cancellationToken);
+
+            await consultaVentas.InvalidarHistorialAsync(
+                CancellationToken.None);
+
             return new ResultadoVentaDto(idVenta, total);
+
         }
         catch
         {
