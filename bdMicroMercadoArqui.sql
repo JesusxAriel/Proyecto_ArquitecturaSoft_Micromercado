@@ -1,3 +1,5 @@
+SET NAMES utf8mb4;
+
 DROP DATABASE IF EXISTS `bdMicroMercadoArqui`;
 CREATE DATABASE `bdMicroMercadoArqui`
   DEFAULT CHARACTER SET utf8mb4

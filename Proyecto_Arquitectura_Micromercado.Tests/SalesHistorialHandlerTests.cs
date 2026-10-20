@@ -270,6 +270,11 @@ public class SalesHistorialHandlerTests
 
     private sealed class ConsultaPrueba : IVentaConsultaService
     {
+        public Task InvalidarHistorialAsync(
+    CancellationToken cancellationToken = default)
+{
+    return Task.CompletedTask;
+}
         public bool? IncluirAnuladasRecibido { get; private set; }
         public CancellationToken? TokenRecibido { get; private set; }
         public int Llamadas { get; private set; }
