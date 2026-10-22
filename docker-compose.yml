@@ -3,11 +3,13 @@ services:
   mysql:
     image: mysql:8.4
     restart: unless-stopped
+    command: --default-time-zone=-04:00
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: America/La_Paz
     volumes:
       - mysql_data:/var/lib/mysql
       - ./bdMicroMercadoArqui.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
@@ -31,6 +33,7 @@ services:
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      TZ: America/La_Paz
       ASPNETCORE_URLS: http://+:8080
       REPLICA_ID: app1
       ConnectionStrings__MySqlConnection: "Server=mysql;Port=3306;Database=${MYSQL_DATABASE};Uid=${MYSQL_USER};Pwd=${MYSQL_PASSWORD};AllowPublicKeyRetrieval=True;SslMode=Preferred;"
@@ -48,6 +51,7 @@ services:
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      TZ: America/La_Paz
       ASPNETCORE_URLS: http://+:8080
       REPLICA_ID: app2
       ConnectionStrings__MySqlConnection: "Server=mysql;Port=3306;Database=${MYSQL_DATABASE};Uid=${MYSQL_USER};Pwd=${MYSQL_PASSWORD};AllowPublicKeyRetrieval=True;SslMode=Preferred;"
@@ -65,6 +69,7 @@ services:
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      TZ: America/La_Paz
       ASPNETCORE_URLS: http://+:8080
       REPLICA_ID: app3
       ConnectionStrings__MySqlConnection: "Server=mysql;Port=3306;Database=${MYSQL_DATABASE};Uid=${MYSQL_USER};Pwd=${MYSQL_PASSWORD};AllowPublicKeyRetrieval=True;SslMode=Preferred;"
