@@ -9,15 +9,18 @@ using Proyecto_Arquitectura_Micromercado.Application.Categories;
 using Proyecto_Arquitectura_Micromercado.Application.Products;
 using Proyecto_Arquitectura_Micromercado.Application.Stock;
 using Proyecto_Arquitectura_Micromercado.Application.Security;
+using Proyecto_Arquitectura_Micromercado.Application.Users;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Background;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Factories;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Comprobantes;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Email;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Security;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
 using System.Globalization;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
+using Proyecto_Arquitectura_Micromercado.Pages.Shared;
 
 
 using Microsoft.AspNetCore.DataProtection;
@@ -34,6 +37,8 @@ builder.Services.AddRazorPages()
 
         options.ModelBindingMessageProvider.SetValueMustBeANumberAccessor(
             _ => "Ingrese un número válido.");
+
+        options.Filters.Add(new CambioPasswordObligatorioPageFilter());
     });
 
 builder.Services
@@ -47,6 +52,7 @@ builder.Services
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
         options.Events.OnRedirectToLogin = SesionVencidaAjax.ResponderAsync;
+        options.Events.OnValidatePrincipal = ValidacionCookieUsuarioActivo.ValidarAsync;
     });
 
 
@@ -72,6 +78,16 @@ builder.Services.AddScoped<IUsuarioActual, UsuarioActualDesdeClaims>();
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IUsuarioRepository, MySqlUsuarioRepository>();
 builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
+builder.Services.AddScoped<IActivacionUsuarioRepository, MySqlActivacionUsuarioRepository>();
+builder.Services.AddScoped<IActivacionUsuarioService, ActivacionUsuarioService>();
+builder.Services.AddScoped<IUsuarioAdministracionRepository, MySqlUsuarioAdministracionRepository>();
+builder.Services.AddScoped<IUsuarioAdministracionService, UsuarioAdministracionService>();
+builder.Services.Configure<SmtpEmailOptions>(
+    builder.Configuration.GetSection(SmtpEmailOptions.SectionName));
+builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
+builder.Services.Configure<ActivacionEmailOptions>(
+    builder.Configuration.GetSection(ActivacionEmailOptions.SectionName));
+builder.Services.AddScoped<IEmailActivacionUsuario, EmailActivacionUsuario>();
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IComprobanteRepository, MySqlComprobanteRepository>();

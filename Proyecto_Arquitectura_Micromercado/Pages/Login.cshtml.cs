@@ -13,7 +13,7 @@ namespace Proyecto_Arquitectura_Micromercado.Pages;
 [AllowAnonymous]
 public sealed class LoginModel(IAutenticacionService autenticacion) : PageModel
 {
-    private const string MensajeCredencialesInvalidas = "Usuario o contraseña incorrectos.";
+    private const string MensajeCredencialesInvalidas = "Correo o contraseña incorrectos.";
 
     [BindProperty]
     public CredencialesInput Input { get; set; } = new();
@@ -41,7 +41,7 @@ public sealed class LoginModel(IAutenticacionService autenticacion) : PageModel
         try
         {
             usuario = await autenticacion.AutenticarAsync(
-                Input.Usuario,
+                Input.Correo,
                 Input.Contrasena,
                 cancellationToken);
         }
@@ -65,7 +65,8 @@ public sealed class LoginModel(IAutenticacionService autenticacion) : PageModel
             usuario.Id,
             usuario.NombreUsuario,
             usuario.Rol,
-            CookieAuthenticationDefaults.AuthenticationScheme);
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            usuario.DebeCambiarPassword);
 
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
@@ -74,6 +75,12 @@ public sealed class LoginModel(IAutenticacionService autenticacion) : PageModel
             VariablesDeSesion.InicioDeSesion,
             DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
 
+        // REQUISITO: Si debe cambiar contraseña en el primer acceso, redirigir obligatoriamente
+        if (usuario.DebeCambiarPassword)
+        {
+            return RedirectToPage("/Users/CambiarPassword");
+        }
+
         return !string.IsNullOrEmpty(ReturnUrl) && Url.IsLocalUrl(ReturnUrl)
             ? LocalRedirect(ReturnUrl)
             : RedirectToPage("/Index");
@@ -81,9 +88,10 @@ public sealed class LoginModel(IAutenticacionService autenticacion) : PageModel
 
     public sealed class CredencialesInput
     {
-        [Required(ErrorMessage = "Ingrese su usuario.")]
-        [Display(Name = "Usuario")]
-        public string Usuario { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Ingrese su correo electrónico.")]
+        [EmailAddress(ErrorMessage = "El formato del correo no es válido.")]
+        [Display(Name = "Correo electrónico")]
+        public string Correo { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Ingrese su contraseña.")]
         [DataType(DataType.Password)]
