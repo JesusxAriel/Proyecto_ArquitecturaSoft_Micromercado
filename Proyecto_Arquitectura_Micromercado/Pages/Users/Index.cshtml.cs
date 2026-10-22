@@ -55,7 +55,7 @@ public class IndexModel(IUsuarioAdministracionService servicio) : PageModel
         {
             ModelState.AddModelError(string.Empty,
                 "El usuario quedó creado como PENDIENTE, pero no se pudo enviar el enlace. " +
-                "Revise la configuración SMTP antes de volver a intentar el alta.");
+                "Revise la configuración SMTP y use Reenviar activación en el listado. No repita el alta.");
         }
         catch (ArgumentException)
         {
