@@ -11,6 +11,16 @@ x-app: &app
     redis:
       condition: service_healthy
 
+x-app-secundaria: &app-secundaria
+  <<: *app
+  depends_on:
+    mysql:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    app1:
+      condition: service_healthy
+
 x-app-entorno: &app-entorno
   ASPNETCORE_ENVIRONMENT: Production
   ASPNETCORE_URLS: http://+:8080
@@ -57,15 +67,21 @@ services:
     environment:
       <<: *app-entorno
       REPLICA_ID: app1
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET /Login HTTP/1.0\r\n\r\n\" >&3 && head -n1 <&3 | grep -q 200'"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
 
   app2:
-    <<: *app
+    <<: *app-secundaria
     environment:
       <<: *app-entorno
       REPLICA_ID: app2
 
   app3:
-    <<: *app
+    <<: *app-secundaria
     environment:
       <<: *app-entorno
       REPLICA_ID: app3
