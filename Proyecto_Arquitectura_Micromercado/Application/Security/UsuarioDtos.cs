@@ -7,7 +7,7 @@ public sealed record CredencialesDeUsuario(
     string Rol,
     string HashContrasena,
     bool EstaActivo,
-    string Estado,              // <-- Agregado
+    string Estado,
     bool DebeCambiarPassword,
     string Correo = "");
 
@@ -16,4 +16,4 @@ public sealed record UsuarioAutenticado(
     string NombreUsuario,
     string NombreCompleto,
     string Rol,
-    bool DebeCambiarPassword); // <-- Agregado para que coincida con el AutenticacionService
+    bool DebeCambiarPassword);
