@@ -24,7 +24,7 @@ public class FachadaVentaTests
             var stock = new FachadaActualizacionStockProducto(Lotes, reloj, new UnidadDeTrabajoEspia(), new UsuarioActualEnMemoria());
             var precios = new PrecioVigenteDoble(new Dictionary<int, decimal> { [1] = 10m, [2] = 5m });
             Fachada = new FachadaVenta(
-                Unidad, Ventas, precios, stock, new UsuarioActualEnMemoria(id: 7), reloj, Interbloqueos, new ClientesDoble(3));
+                Unidad, Ventas, precios, stock, new UsuarioActualEnMemoria(id: 7), reloj, Interbloqueos, new ClientesDoble(3), new HistorialVentasDoble());
         }
 
         public async Task<int> Disponible(int idProducto, int idLote)

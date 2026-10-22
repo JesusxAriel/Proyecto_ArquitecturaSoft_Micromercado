@@ -11,6 +11,7 @@ using Proyecto_Arquitectura_Micromercado.Application.Stock;
 using Proyecto_Arquitectura_Micromercado.Application.Security;
 using Proyecto_Arquitectura_Micromercado.Application.Users;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Background;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Cache;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Factories;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Comprobantes;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
@@ -58,9 +59,9 @@ builder.Services
 
 builder.Services.AddStackExchangeRedisCache(options =>
 {
-    options.Configuration =
+    options.ConfigurationOptions = OpcionesDeRedis.Crear(
         builder.Configuration.GetConnectionString("Redis")
-        ?? "redis:6379";
+        ?? "redis:6379");
 
     options.InstanceName = "PuntoMarket:";
 });
@@ -90,6 +91,7 @@ builder.Services.Configure<ActivacionEmailOptions>(
 builder.Services.AddScoped<IEmailActivacionUsuario, EmailActivacionUsuario>();
 
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<IIdentificadorReplica, IdentificadorReplicaDelEntorno>();
 builder.Services.AddScoped<IComprobanteRepository, MySqlComprobanteRepository>();
 builder.Services.AddScoped<IComprobanteService, ComprobanteService>();
 builder.Services.AddSingleton<IGeneradorComprobante, GeneradorComprobanteHtml>();
@@ -145,21 +147,14 @@ builder.Services.AddScoped<IFachadaAnulacion, FachadaAnulacion>();
 
 builder.Services
     .AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo("/keys"))
+    .PersistKeysToFileSystem(new DirectoryInfo(
+        builder.Configuration["DataProtection:KeysPath"] ?? "/keys"))
     .SetApplicationName("PuntoMarket");
 
 var app = builder.Build();
 
-var replicaId = Environment.GetEnvironmentVariable("REPLICA_ID")
-    ?? Environment.MachineName;
+var replicaId = app.Services.GetRequiredService<IIdentificadorReplica>().Valor;
 
-app.Use(async (context, next) =>
-{
-    context.Items["ReplicaId"] = replicaId; // Añadir esta línea
-    context.Response.Headers["X-Replica-Id"] = replicaId;
-
-    await next();
-});
 app.Use(async (context, next) =>
 {
     context.Items["ReplicaId"] = replicaId;

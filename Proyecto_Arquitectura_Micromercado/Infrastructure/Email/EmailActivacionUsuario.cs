@@ -31,16 +31,16 @@ public sealed class EmailActivacionUsuario(
         var enlaceHtml = WebUtility.HtmlEncode(enlace);
         var vencimiento = WebUtility.HtmlEncode(expira.ToString("dd/MM/yyyy HH:mm 'UTC'"));
         var cuerpo = $"""
-            <p>Se creó una cuenta para ti en Micromercado.</p>
+            <p>Se creó una cuenta para usted en Micromercado.</p>
             <p><a href="{enlaceHtml}">Definir contraseña y activar cuenta</a></p>
-            <p>Este enlace vence en 10 minutos (hasta {vencimiento}). Si no esperabas este mensaje, puedes ignorarlo.</p>
+            <p>Este enlace vence en 10 minutos (hasta {vencimiento}). Si no esperaba este mensaje, puede ignorarlo.</p>
             """;
 
         try
         {
             await emailSender.EnviarAsync(
                 correo,
-                "Activa tu cuenta de Micromercado",
+                "Active su cuenta de Micromercado",
                 cuerpo,
                 cancellationToken);
         }

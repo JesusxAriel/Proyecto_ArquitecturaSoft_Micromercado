@@ -53,13 +53,11 @@ public sealed class AutenticacionService(
             return null;
         }
 
-        // Validar contraseña y que esté activo
         if (!hasher.Verify(contrasena, credenciales.HashContrasena) || !credenciales.EstaActivo)
         {
             return null;
         }
 
-        // REQUISITO DE LA PARTE 2: Bloquear si está PENDIENTE o INACTIVO
         if (credenciales.Estado != "ACTIVO")
         {
             return null;
@@ -70,6 +68,6 @@ public sealed class AutenticacionService(
             credenciales.NombreUsuario,
             credenciales.NombreCompleto,
             credenciales.Rol,
-            credenciales.DebeCambiarPassword); // Por si ocupas pasar este flag al token/sesión
+            credenciales.DebeCambiarPassword);
     }
 }
