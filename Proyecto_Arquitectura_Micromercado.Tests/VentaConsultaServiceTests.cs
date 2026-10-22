@@ -1,3 +1,7 @@
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
 
 namespace Proyecto_Arquitectura_Micromercado.Tests;
@@ -28,7 +32,7 @@ public class VentaConsultaServiceTests
         "Cajero Uno", "COMPLETADA", 100m, null, null, null, filas);
 
     private static VentaConsultaService Crear(ConsultaRepositoryDoble doble) =>
-        new(new VentaRepositoryEnMemoria(), doble);
+        new(new VentaRepositoryEnMemoria(), doble, new MemoryDistributedCache(Options.Create(new MemoryDistributedCacheOptions())), NullLogger<VentaConsultaService>.Instance);
 
     [Fact]
     public async Task Agrupa_las_filas_del_mismo_producto_en_una_linea()

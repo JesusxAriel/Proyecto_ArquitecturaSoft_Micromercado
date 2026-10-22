@@ -153,3 +153,25 @@ internal sealed class ClientesDoble(params int[] activos) : IClienteConsultaRepo
     public Task<IReadOnlyList<ClienteConsultaDto>> BuscarAsync(string? termino, CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 }
+
+internal sealed class HistorialVentasDoble : IVentaConsultaService
+{
+    public int Invalidaciones { get; private set; }
+
+    public Task<decimal> ObtenerVentasDelDiaAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(0m);
+
+    public Task<IReadOnlyList<VentaResumenDto>> ListarAsync(
+        bool incluirAnuladas, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<VentaResumenDto>>([]);
+
+    public Task<VentaDetalleDto?> ObtenerDetalleAsync(
+        int idVenta, CancellationToken cancellationToken = default) =>
+        Task.FromResult<VentaDetalleDto?>(null);
+
+    public Task InvalidarHistorialAsync(CancellationToken cancellationToken = default)
+    {
+        Invalidaciones++;
+        return Task.CompletedTask;
+    }
+}
