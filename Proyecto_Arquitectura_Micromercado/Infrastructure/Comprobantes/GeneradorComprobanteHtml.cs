@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Net;
-using System.Text;
 using Proyecto_Arquitectura_Micromercado.Application.Comprobantes;
 
 namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Comprobantes;
@@ -8,84 +7,113 @@ namespace Proyecto_Arquitectura_Micromercado.Infrastructure.Comprobantes;
 public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
 {
     private const string RutaDelLogo = "/images/logo.jpg";
+    private const int MinimoDeFilas = 10;
+    private const string FilaVacia =
+        "<tr class=\"vacia\" aria-hidden=\"true\"><td>&nbsp;</td><td></td><td></td><td></td></tr>\n";
     private static readonly CultureInfo Cultura = CultureInfo.GetCultureInfo("es-BO");
 
     public string GenerarHtml(ComprobanteDto comprobante)
     {
         ArgumentNullException.ThrowIfNull(comprobante);
 
-        var html = new StringBuilder();
-
-        html.AppendLine("<!DOCTYPE html>");
-        html.AppendLine("<html lang=\"es\">");
-        html.AppendLine("<head>");
-        html.AppendLine("<meta charset=\"utf-8\" />");
-        html.AppendLine("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />");
-        html.AppendLine($"<title>Comprobante de venta {Esc(comprobante.NroComprobante)} - PuntoMarket</title>");
-        html.AppendLine("<style>");
-        html.AppendLine(Estilos);
-        html.AppendLine("</style>");
-        html.AppendLine("</head>");
-        html.AppendLine("<body>");
-        html.AppendLine("<main class=\"recibo\">");
-
-        html.AppendLine("<header class=\"encabezado\">");
-        html.AppendLine($"<img class=\"logo\" src=\"{RutaDelLogo}\" alt=\"Logo\" />");
-        html.AppendLine("<h1>COMPROBANTE DE VENTA</h1>");
-        html.AppendLine("</header>");
-
-        if (comprobante.EstaAnulada)
-        {
-            html.AppendLine("<p class=\"anulada\" role=\"alert\">ANULADA</p>");
-        }
-
-        html.AppendLine("<section class=\"datos\">");
-        html.AppendLine($"<p><strong>Fecha:</strong> {comprobante.FechaVenta.ToString("dd/MM/yyyy", Cultura)}</p>");
-        html.AppendLine("<div class=\"datos-cliente\">");
-        html.AppendLine($"<span><strong>CI/NIT:</strong> {Esc(comprobante.NitCiCliente)}</span>");
-        html.AppendLine($"<span><strong>Razón Social:</strong> {Esc(comprobante.RazonSocialCliente)}</span>");
-        html.AppendLine("</div>");
-        html.AppendLine("</section>");
-
-        html.AppendLine("<table class=\"detalle\">");
-        html.AppendLine("<thead><tr>");
-        html.AppendLine("<th>Cantidad</th><th>Descripción</th><th class=\"num\">Precio Unitario Bs.</th><th class=\"num\">Importe Bs.</th>");
-        html.AppendLine("</tr></thead>");
-        html.AppendLine("<tbody>");
-
-        foreach (var linea in comprobante.Lineas)
-        {
-            html.AppendLine("<tr>");
-            html.AppendLine($"<td class=\"centro\">{linea.Cantidad.ToString(Cultura)}</td>");
-            html.AppendLine($"<td>{Esc(linea.Descripcion)}</td>");
-            html.AppendLine($"<td class=\"num\">{Dinero(linea.PrecioUnitario)}</td>");
-            html.AppendLine($"<td class=\"num\">{Dinero(linea.Importe)}</td>");
-            html.AppendLine("</tr>");
-        }
-
-        html.AppendLine("</tbody>");
-        html.AppendLine("<tfoot>");
-        html.AppendLine("<tr>");
-        html.AppendLine($"<td colspan=\"3\" class=\"num total\">Total Bs:</td><td class=\"num total\">{Dinero(comprobante.Total)}</td>");
-        html.AppendLine("</tr>");
-        html.AppendLine("</tfoot>");
-        html.AppendLine("</table>");
-
-        html.AppendLine("<div class=\"pie-container\">");
-        html.AppendLine($"<p class=\"letras\">{Esc(comprobante.TotalEnLetras)}</p>");
-        html.AppendLine($"<p class=\"firma-sistema\">{comprobante.FechaGeneracion.ToString("dd/MM/yyyy - HH:mm:ss", Cultura)}-{Esc(comprobante.UsuarioGenerador)}</p>");
-        html.AppendLine("</div>");
-
-        html.AppendLine("<div class=\"acciones\">");
-        html.AppendLine("<button type=\"button\" onclick=\"window.print()\">Imprimir Comprobante</button>");
-        html.AppendLine("</div>");
-
-        html.AppendLine("</main>");
-        html.AppendLine("</body>");
-        html.AppendLine("</html>");
-
-        return html.ToString();
+        return $"""
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>Comprobante de venta {Esc(comprobante.NroComprobante)} - PuntoMarket</title>
+            <style>
+            {Estilos}
+            </style>
+            </head>
+            <body>
+            <main class="recibo">
+            {Encabezado(comprobante)}
+            {AvisoDeAnulada(comprobante)}
+            {DatosDelCliente(comprobante)}
+            {TablaDeDetalle(comprobante.Lineas)}
+            {RecuadroTotal(comprobante)}
+            {Pie(comprobante)}
+            {Acciones()}
+            </main>
+            </body>
+            </html>
+            """;
     }
+
+    private static string Encabezado(ComprobanteDto comprobante) => $"""
+        <header class="encabezado">
+        <div class="marca-bloque">
+        <img class="logo" src="{RutaDelLogo}" alt="PuntoMarket" />
+        <div class="titulo">
+        <p class="marca">PuntoMarket</p>
+        <h1>COMPROBANTE DE VENTA</h1>
+        </div>
+        </div>
+        <div class="folio">
+        <p class="folio-etiqueta">N.º</p>
+        <p class="folio-numero">{Esc(comprobante.NroComprobante)}</p>
+        <p class="folio-fecha">Fecha: {comprobante.FechaVenta.ToString("dd/MM/yyyy", Cultura)}</p>
+        </div>
+        </header>
+        """;
+
+    private static string AvisoDeAnulada(ComprobanteDto comprobante) =>
+        comprobante.EstaAnulada ? "<p class=\"anulada\" role=\"alert\">ANULADA</p>" : string.Empty;
+
+    private static string DatosDelCliente(ComprobanteDto comprobante) => $"""
+        <section class="cliente" aria-label="Datos del cliente">
+        <div class="campo"><span class="etiqueta">CI/NIT</span><span class="valor">{Esc(comprobante.NitCiCliente)}</span></div>
+        <div class="campo"><span class="etiqueta">RAZÓN SOCIAL</span><span class="valor">{Esc(comprobante.RazonSocialCliente)}</span></div>
+        </section>
+        """;
+
+    private static string TablaDeDetalle(IReadOnlyList<LineaComprobanteDto> lineas) => $"""
+        <div class="tabla-envoltorio">
+        <table class="detalle">
+        <thead><tr><th class="cant">CANT.</th><th>ARTÍCULO</th><th class="num">PRECIO</th><th class="num">IMPORTE</th></tr></thead>
+        <tbody>
+        {string.Concat(lineas.Select(FilaDeLinea))}{FilasVacias(lineas.Count)}</tbody>
+        </table>
+        </div>
+        """;
+
+    private static string FilaDeLinea(LineaComprobanteDto linea) => $"""
+        <tr>
+        <td class="cant">{linea.Cantidad.ToString(Cultura)}</td>
+        <td>{Esc(linea.Descripcion)}</td>
+        <td class="num">{Dinero(linea.PrecioUnitario)}</td>
+        <td class="num">{Dinero(linea.Importe)}</td>
+        </tr>
+
+        """;
+
+    private static string FilasVacias(int filasUsadas) =>
+        string.Concat(Enumerable.Repeat(FilaVacia, Math.Max(0, MinimoDeFilas - filasUsadas)));
+
+    private static string RecuadroTotal(ComprobanteDto comprobante) => $"""
+        <section class="cierre">
+        <div class="recuadro-total">
+        <span class="total-etiqueta">TOTAL Bs</span>
+        <span class="total-monto">{Dinero(comprobante.Total)}</span>
+        </div>
+        </section>
+        <p class="letras">{Esc(comprobante.TotalEnLetras)}</p>
+        """;
+
+    private static string Pie(ComprobanteDto comprobante) => $"""
+        <footer class="pie">
+        <p class="generado">Generado por {Esc(comprobante.UsuarioGenerador)} el {comprobante.FechaGeneracion.ToString("dd/MM/yyyy HH:mm:ss", Cultura)}</p>
+        <p class="gracias">Gracias por su compra</p>
+        </footer>
+        """;
+
+    private static string Acciones() => """
+        <div class="acciones">
+        <button type="button" onclick="window.print()">Imprimir Comprobante</button>
+        </div>
+        """;
 
     private static string Esc(string valor) => WebUtility.HtmlEncode(valor);
     private static string Dinero(decimal monto) => monto.ToString("N2", Cultura);

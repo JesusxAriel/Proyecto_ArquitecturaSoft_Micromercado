@@ -69,7 +69,7 @@ public class ComprobanteTests
 
         var html = await HtmlDe(venta);
 
-        Assert.Contains("23/06/2030 - 09:58:00-maria", html);
+        Assert.Contains("Generado por maria el 23/06/2030 09:58:00", html);
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public class ComprobanteTests
         var segunda = generador.GenerarHtml((await servicio.ObtenerAsync(7))!);
 
         Assert.Equal(primera, segunda);
-        Assert.Contains("23/06/2030 - 09:58:00-cajero1", segunda);
+        Assert.Contains("Generado por cajero1 el 23/06/2030 09:58:00", segunda);
     }
 
     [Fact]
