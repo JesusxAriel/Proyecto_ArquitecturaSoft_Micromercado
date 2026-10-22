@@ -36,8 +36,8 @@ public class HistorialAutorizacionTests
             var precios = new PrecioVigenteDoble(new Dictionary<int, decimal> { [1] = 10m });
             Venta = new FachadaVenta(
                 new UnidadDeTrabajoEspia(), Ventas, precios, stock, new UsuarioActualEnMemoria(id: 7), reloj,
-                new DetectorDeInterbloqueoDoble(), new ClientesDoble(3));
-            Anulacion = new FachadaAnulacion(Unidad, Ventas, stock, new UsuarioActualEnMemoria(id: 9));
+                new DetectorDeInterbloqueoDoble(), new ClientesDoble(3), new HistorialVentasDoble());
+            Anulacion = new FachadaAnulacion(Unidad, Ventas, stock, new UsuarioActualEnMemoria(id: 9), new HistorialVentasDoble());
         }
 
         public async Task<int> RegistrarVenta()
