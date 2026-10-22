@@ -307,10 +307,12 @@ dotnet user-secrets set "ConnectionStrings:MySqlConnection" "Server=localhost;Po
 
 El script crea dos usuarios con contraseñas protegidas con BCrypt. Estas credenciales son solo para desarrollo y pruebas; cámbielas antes de cualquier uso real.
 
-| Usuario | Contraseña | Rol | Acceso |
+El inicio de sesión se hace con el **correo** y la contraseña.
+
+| Correo | Contraseña | Rol | Acceso |
 |---|---|---|---|
-| `admin` | `admin123` | Administrador | Todo el sistema: inventario, categorías, proveedores y caja. |
-| `cajero1` | `cajero123` | Cajero | Solo caja y ventas: registro, historial y comprobante. |
+| `gerencia@micromercado.com` | `admin123` | Administrador | Todo el sistema: inventario, categorías, proveedores y caja. |
+| `carlos.mamani@micromercado.com` | `cajero123` | Cajero | Solo caja y ventas: registro, historial y comprobante. |
 
 La sesión se cierra tras 30 minutos sin actividad. La identidad del usuario (id, nombre de usuario y rol) viaja en los claims de la cookie de autenticación y es la única fuente de los datos de auditoría; la `Session` solo guarda datos de conveniencia, como el nombre para mostrar y la hora de inicio.
 
@@ -360,6 +362,100 @@ Las URLs pueden consultarse en `Proyecto_Arquitectura_Micromercado/Properties/la
 - `https://localhost:7205`
 
 La aplicación debe ejecutarse con el servidor MySQL activo y con una cadena de conexión válida.
+
+## 🐳 Ejecución con Docker (escalamiento horizontal)
+
+El mismo monolito se ejecuta en tres réplicas detrás de Nginx, con MySQL compartido y Redis como caché distribuida.
+
+```
+Navegador ──► Nginx :8080 ──► app1 / app2 / app3 ──► MySQL
+                                      └──────────► Redis
+```
+
+Las tres réplicas comparten las claves de Data Protection en el volumen `dataprotection_keys`, por lo que una cookie emitida por una réplica es válida en las demás.
+
+### Requisitos
+
+- Docker Desktop en ejecución (el motor debe estar activo).
+- Una cuenta de correo con contraseña de aplicación si desea probar el envío de enlaces de activación.
+
+### Primer arranque
+
+1. Copie la plantilla de variables y complete los valores en el archivo `.env` (no se versiona):
+
+```bash
+cp .env.example .env
+```
+
+| Variable | Uso |
+|---|---|
+| `MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD` | Base de datos MySQL |
+| `ACTIVACION_BASE_URL` | URL pública de la aplicación para los enlaces de activación (`http://localhost:8080`) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENABLE_SSL` | Servidor de correo (`smtp.gmail.com`, `587`, `true`) |
+| `SMTP_FROM_ADDRESS`, `SMTP_FROM_NAME`, `SMTP_USER_NAME`, `SMTP_PASSWORD` | Remitente y credenciales del correo |
+
+2. Levante todos los servicios:
+
+```bash
+docker compose up -d --build
+```
+
+3. Abra `http://localhost:8080` e ingrese con los usuarios de prueba de la sección anterior.
+
+El orden de arranque es automático: `app1` crea las claves de Data Protection y pasa a estado saludable antes de iniciar `app2` y `app3`.
+
+### Ver la réplica que atiende
+
+- En la barra superior, el texto **Instancia: appN**. También aparece en la pantalla de inicio de sesión.
+- En la cabecera de respuesta `X-Replica-Id`:
+
+```bash
+curl -s -o /dev/null -D - http://localhost:8080/Login
+```
+
+### Detener y volver a levantar una réplica
+
+```bash
+docker compose stop app2
+docker compose start app2
+```
+
+Con una réplica detenida, Nginx reparte las peticiones entre las restantes y las sesiones continúan.
+
+### Agregar la cuarta réplica
+
+1. En `docker-compose.yml`, copie el bloque de `app3` como `app4` (cambia `REPLICA_ID`) y agregue `- app4` en `depends_on` de `nginx`.
+2. En `nginx/nginx.conf`, agregue en el `upstream`: `server app4:8080 max_fails=2 fail_timeout=10s;`
+3. Aplique los cambios:
+
+```bash
+docker compose up -d
+docker compose restart nginx
+```
+
+### Inspeccionar Redis
+
+```bash
+docker compose exec redis redis-cli KEYS '*'
+docker compose exec redis redis-cli TTL "PuntoMarket:ventas:historial:incluir-anuladas:False"
+docker compose exec redis redis-cli MONITOR
+```
+
+Cada lectura del historial de ventas registra en el log de la réplica si fue `HIT` o `MISS`, la clave, el origen (Redis o MySQL) y la réplica:
+
+```bash
+docker compose logs app1 app2 app3 | grep "Caché del historial"
+```
+
+La entrada expira a los 30 segundos y se invalida al registrar o anular una venta.
+
+### Limpiar
+
+```bash
+docker compose down -v
+```
+
+Elimina los contenedores y también los volúmenes (base de datos y claves de Data Protection).
 
 ## ✅ Validaciones y buenas prácticas
 

@@ -9,8 +9,6 @@ namespace Proyecto_Arquitectura_Micromercado.Tests;
 
 public class UsuarioAdministracionMySqlTests
 {
-    // Base de pruebas previamente creada con bdMicroMercadoArqui.sql actualizado.
-    // Todos los datos creados aquí se revierten al terminar.
     [MySqlUsuariosFact]
     [Trait("Categoria", "MySql")]
     public async Task Alta_listado_restricciones_y_roles_funcionan_en_mysql()

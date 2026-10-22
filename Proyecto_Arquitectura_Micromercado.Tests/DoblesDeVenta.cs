@@ -175,3 +175,8 @@ internal sealed class HistorialVentasDoble : IVentaConsultaService
         return Task.CompletedTask;
     }
 }
+
+internal sealed class ReplicaFija(string valor) : IIdentificadorReplica
+{
+    public string Valor { get; } = valor;
+}

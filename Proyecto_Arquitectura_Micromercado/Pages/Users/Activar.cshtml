@@ -10,18 +10,18 @@
             @if (Model.ActivacionCompleta)
             {
                 <h1 class="h4 fw-bold text-center mb-3">Cuenta activada</h1>
-                <p class="text-center">Ya puedes iniciar sesión con tu correo y la contraseña que acabas de definir.</p>
+                <p class="text-center">Ya puede iniciar sesión con su correo y la contraseña que acaba de definir.</p>
                 <a asp-page="/Login" class="btn btn-primary w-100">Ir al inicio de sesión</a>
             }
             else if (Model.TokenInvalido)
             {
                 <h1 class="h4 fw-bold text-center mb-3">Enlace inválido o vencido</h1>
-                <p class="text-center">El enlace de activación no es válido, ya fue utilizado o venció. Solicita un nuevo enlace al administrador.</p>
+                <p class="text-center">El enlace de activación no es válido, ya fue utilizado o venció. Solicite un nuevo enlace al administrador.</p>
             }
             else
             {
                 <h1 class="h4 fw-bold text-center mb-3">Activar cuenta</h1>
-                <p class="text-muted text-center small mb-4">Define una contraseña segura para completar la activación.</p>
+                <p class="text-muted text-center small mb-4">Defina una contraseña segura para completar la activación.</p>
                 <form method="post">
                     <input type="hidden" asp-for="Token" />
                     <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>

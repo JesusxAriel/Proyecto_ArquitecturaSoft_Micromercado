@@ -33,7 +33,6 @@ public sealed class CambiarPasswordModel(IAutenticacionService autenticacion) : 
             return Page();
         }
 
-        // Obtenemos el ID del usuario actual desde los claims de la sesión
         var userIdString = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (!int.TryParse(userIdString, out var usuarioId))
         {

@@ -65,7 +65,7 @@ public class CatalogBajaDeLotesHandlerTests
 
         await pagina.OnPostDarDeBajaLotesVencidosAsync(default);
 
-        Assert.Equal("No se pudo dar de baja los lotes vencidos. Intente nuevamente.", pagina.ErrorMessage);
+        Assert.Equal("No se pudieron dar de baja los lotes vencidos. Intente nuevamente.", pagina.ErrorMessage);
         Assert.Null(pagina.StatusMessage);
     }
 
