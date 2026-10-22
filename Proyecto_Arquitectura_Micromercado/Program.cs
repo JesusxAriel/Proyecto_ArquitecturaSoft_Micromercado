@@ -63,6 +63,8 @@ builder.Services.AddScoped<IUsuarioActual, UsuarioActualDesdeClaims>();
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IUsuarioRepository, MySqlUsuarioRepository>();
 builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
+builder.Services.AddScoped<IActivacionUsuarioRepository, MySqlActivacionUsuarioRepository>();
+builder.Services.AddScoped<IActivacionUsuarioService, ActivacionUsuarioService>();
 builder.Services.AddScoped<IUsuarioAdministracionRepository, MySqlUsuarioAdministracionRepository>();
 builder.Services.AddScoped<IUsuarioAdministracionService, UsuarioAdministracionService>();
 builder.Services.Configure<SmtpEmailOptions>(

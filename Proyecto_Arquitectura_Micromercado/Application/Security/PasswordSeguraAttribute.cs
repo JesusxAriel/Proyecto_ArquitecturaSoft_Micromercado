@@ -13,12 +13,6 @@ public sealed class PasswordSeguraAttribute : ValidationAttribute
             return new ValidationResult("La contraseña es obligatoria.");
         }
 
-        // Reglas de la Parte 2:
-        // - Mínimo 8 caracteres
-        // - 1 mayúscula
-        // - 1 minúscula
-        // - 1 número
-        // - 1 carácter especial
         if (password.Length < 8)
         {
             return new ValidationResult("La contraseña debe tener al menos 8 caracteres.");
@@ -42,4 +36,12 @@ public sealed class PasswordSeguraAttribute : ValidationAttribute
 
         return ValidationResult.Success;
     }
+
+    public static bool CumpleRequisitos(string? password) =>
+        !string.IsNullOrWhiteSpace(password)
+        && password.Length >= 8
+        && Regex.IsMatch(password, @"[A-Z]")
+        && Regex.IsMatch(password, @"[a-z]")
+        && Regex.IsMatch(password, @"[0-9]")
+        && Regex.IsMatch(password, @"[\W_]");
 }
