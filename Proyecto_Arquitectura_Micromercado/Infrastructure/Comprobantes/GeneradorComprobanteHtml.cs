@@ -122,81 +122,155 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
         * { box-sizing: border-box; }
         body {
           margin: 0;
-          padding: 20px;
+          padding: 24px 12px;
           background: #E2E8F0;
-          color: #000000;
-          font-family: Arial, sans-serif;
-          font-size: 13px;
+          color: #1E293B;
+          font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+          font-size: 14px;
+          line-height: 1.4;
         }
         .recibo {
-          max-width: 680px;
+          position: relative;
+          max-width: 800px;
           margin: 0 auto;
-          padding: 25px 30px;
+          padding: 24px 28px;
           background: #FFFFFF;
-          border: 1px solid #000000;
+          border-top: 6px solid #F59E0B;
+          border-radius: 4px;
+          box-shadow: 0 4px 18px rgba(30, 41, 59, 0.15);
         }
         .encabezado {
           display: flex;
-          align-items: center;
-          gap: 20px;
-          padding-bottom: 12px;
-          border-bottom: 2px solid #000000;
-          margin-bottom: 15px;
-        }
-        .logo { height: 50px; width: auto; object-fit: contain; }
-        h1 { margin: 0; font-size: 20px; font-weight: bold; color: #000000; letter-spacing: 0.5px; }
-        .anulada {
-          margin: 10px 0;
-          padding: 5px;
-          text-align: center;
-          font-weight: bold;
-          color: #EF4444;
-          border: 2px solid #EF4444;
-        }
-        .datos { margin-bottom: 15px; }
-        .datos p { margin: 5px 0; }
-        .datos-cliente {
-          display: flex;
-          gap: 30px;
-          margin-top: 5px;
-        }
-        .detalle { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        .detalle th, .detalle td {
-          padding: 7px 10px;
-          border: 1px solid #000000;
-          font-size: 13px;
-        }
-        .detalle th {
-          background: #FFFFFF;
-          font-weight: bold;
-          text-align: center;
-        }
-        .num { text-align: right; white-space: nowrap; }
-        .centro { text-align: center; }
-        .total { font-weight: bold; font-size: 14px; border-top: 1px solid #000000; }
-        .pie-container {
-          display: flex;
+          flex-wrap: wrap;
+          align-items: stretch;
           justify-content: space-between;
-          align-items: flex-end;
-          margin-top: 15px;
+          gap: 16px;
+          padding-bottom: 16px;
+          margin-bottom: 16px;
+          border-bottom: 2px solid #1E293B;
         }
-        .letras { margin: 0; font-weight: bold; font-size: 13px; }
-        .firma-sistema { margin: 0; font-size: 12px; font-style: italic; white-space: nowrap; }
-        .acciones { margin-top: 25px; text-align: center; }
-        .acciones button {
-          padding: 8px 20px;
-          background: #000000;
+        .marca-bloque { display: flex; align-items: center; gap: 16px; }
+        .logo { display: block; height: 64px; width: auto; border-radius: 4px; }
+        .marca {
+          margin: 0;
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          color: #B45309;
+        }
+        h1 { margin: 2px 0 0; font-size: 22px; font-weight: 800; letter-spacing: 0.5px; color: #1E293B; }
+        .folio {
+          min-width: 190px;
+          padding: 8px 14px;
+          text-align: center;
+          border: 2px solid #1E293B;
+          border-radius: 6px;
+        }
+        .folio p { margin: 0; }
+        .folio-etiqueta { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: #334155; }
+        .folio-numero { font-size: 20px; font-weight: 800; color: #1E293B; }
+        .folio-fecha { margin-top: 4px; font-size: 12px; color: #334155; }
+        .anulada {
+          margin: 0 0 16px;
+          padding: 6px;
+          text-align: center;
+          font-weight: 800;
+          letter-spacing: 2px;
+          color: #B91C1C;
+          border: 2px solid #B91C1C;
+          border-radius: 4px;
+        }
+        .cliente {
+          display: grid;
+          grid-template-columns: 1fr 2fr;
+          gap: 12px 20px;
+          padding: 12px 14px;
+          margin-bottom: 16px;
+          border: 2px solid #1E293B;
+          border-radius: 6px;
+        }
+        .campo {
+          display: flex;
+          align-items: baseline;
+          gap: 8px;
+          min-width: 0;
+          padding-bottom: 2px;
+          border-bottom: 1px solid #94A3B8;
+        }
+        .etiqueta { font-size: 11px; font-weight: 800; letter-spacing: 1px; white-space: nowrap; color: #334155; }
+        .valor { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+        .tabla-envoltorio { margin-bottom: 16px; overflow-x: auto; }
+        .detalle { width: 100%; min-width: 520px; border-collapse: collapse; border: 2px solid #1E293B; }
+        .detalle th {
+          padding: 8px 10px;
+          font-size: 12px;
+          letter-spacing: 1px;
+          text-align: left;
           color: #FFFFFF;
+          background: #1E293B;
+          border: 1px solid #1E293B;
+        }
+        .detalle td { height: 30px; padding: 5px 10px; border: 1px solid #CBD5E1; }
+        .detalle tbody tr:nth-child(even) { background: #F1F5F9; }
+        .detalle .cant { width: 72px; text-align: center; }
+        .detalle .num { width: 120px; text-align: right; white-space: nowrap; }
+        .cierre { display: flex; justify-content: flex-end; }
+        .recuadro-total {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 8px 18px;
+          background: #FFFBEB;
+          border: 3px solid #D97706;
+          border-radius: 6px;
+        }
+        .total-etiqueta { font-size: 14px; font-weight: 800; letter-spacing: 1px; }
+        .total-monto { font-size: 28px; font-weight: 800; white-space: nowrap; }
+        .letras {
+          margin: 10px 0 16px;
+          padding: 8px 14px;
+          font-size: 13px;
+          font-weight: 700;
+          color: #FFFFFF;
+          background: #1E293B;
+          border-radius: 4px;
+        }
+        .pie {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: space-between;
+          gap: 8px;
+          padding-top: 10px;
+          font-size: 12px;
+          color: #475569;
+          border-top: 1px solid #CBD5E1;
+        }
+        .pie p { margin: 0; }
+        .gracias { font-weight: 700; color: #1E293B; }
+        .acciones { margin-top: 24px; text-align: center; }
+        .acciones button {
+          padding: 9px 22px;
+          font-size: 13px;
+          font-weight: 700;
+          color: #FFFFFF;
+          background: #1E293B;
           border: none;
           border-radius: 4px;
-          font-size: 13px;
-          font-weight: bold;
           cursor: pointer;
         }
-        .acciones button:hover { background: #333333; }
+        .acciones button:hover { background: #334155; }
+        @media (max-width: 600px) {
+          .recibo { padding: 16px; }
+          .encabezado { flex-direction: column; }
+          .folio { width: 100%; }
+          .cliente { grid-template-columns: 1fr; }
+          .recuadro-total { width: 100%; justify-content: space-between; }
+          h1 { font-size: 18px; }
+        }
         @media print {
           body { padding: 0; background: #FFFFFF; }
-          .recibo { border: none; padding: 0; max-width: none; }
+          .recibo { max-width: none; padding: 0; border-radius: 0; box-shadow: none; }
           .acciones { display: none; }
           @page { margin: 10mm; }
         }
