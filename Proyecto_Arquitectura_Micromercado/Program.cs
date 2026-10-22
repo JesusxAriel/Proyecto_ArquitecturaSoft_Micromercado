@@ -90,6 +90,7 @@ builder.Services.Configure<ActivacionEmailOptions>(
 builder.Services.AddScoped<IEmailActivacionUsuario, EmailActivacionUsuario>();
 
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<IIdentificadorReplica, IdentificadorReplicaDelEntorno>();
 builder.Services.AddScoped<IComprobanteRepository, MySqlComprobanteRepository>();
 builder.Services.AddScoped<IComprobanteService, ComprobanteService>();
 builder.Services.AddSingleton<IGeneradorComprobante, GeneradorComprobanteHtml>();
@@ -150,8 +151,7 @@ builder.Services
 
 var app = builder.Build();
 
-var replicaId = Environment.GetEnvironmentVariable("REPLICA_ID")
-    ?? Environment.MachineName;
+var replicaId = app.Services.GetRequiredService<IIdentificadorReplica>().Valor;
 
 app.Use(async (context, next) =>
 {

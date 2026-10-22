@@ -2,6 +2,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
+using Proyecto_Arquitectura_Micromercado.Application.Common;
 
 namespace Proyecto_Arquitectura_Micromercado.Application.Sales;
 
@@ -9,7 +10,8 @@ public sealed class VentaConsultaService(
     IVentaRepository ventaRepository,
     IVentaConsultaRepository consultaRepository,
     IDistributedCache cache,
-    ILogger<VentaConsultaService> logger) : IVentaConsultaService
+    ILogger<VentaConsultaService> logger,
+    IIdentificadorReplica replica) : IVentaConsultaService
 {
     private const int LimiteHistorial = 50;
 
@@ -24,49 +26,67 @@ public sealed class VentaConsultaService(
         bool incluirAnuladas,
         CancellationToken cancellationToken = default)
     {
-        // Clave diferente para cada tipo de historial.
-        var clave = $"ventas:historial:incluir-anuladas:{incluirAnuladas}";
+        var clave = ClaveHistorial(incluirAnuladas);
 
-        // 1. Intentar recuperar el historial desde Redis.
-        try
+        var guardadas = await LeerDeCacheAsync(clave, cancellationToken);
+        if (guardadas is not null)
         {
-            var json = await cache.GetStringAsync(
-                clave,
-                cancellationToken);
-
-            if (!string.IsNullOrWhiteSpace(json))
-            {
-                var ventasGuardadas =
-                    JsonSerializer.Deserialize<List<VentaResumenDto>>(json);
-
-                if (ventasGuardadas is not null)
-                {
-                    return ventasGuardadas;
-                }
-            }
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            // Si Redis falla, se continúa consultando MySQL.
-            logger.LogWarning(
-                ex,
-                "No se pudo leer el historial de ventas desde Redis.");
+            RegistrarAcceso("HIT", clave, "Redis");
+            return guardadas;
         }
 
-        // 2. Si no existe la caché, consultar MySQL.
         var ventas = await consultaRepository.ListarAsync(
             incluirAnuladas,
             LimiteHistorial,
             cancellationToken);
+        RegistrarAcceso("MISS", clave, "MySQL");
 
-        // 3. Guardar el resultado en Redis durante 30 segundos.
+        await GuardarEnCacheAsync(clave, ventas, cancellationToken);
+        return ventas;
+    }
+
+    public async Task InvalidarHistorialAsync(
+        CancellationToken cancellationToken = default)
+    {
+        foreach (var clave in new[] { ClaveHistorial(false), ClaveHistorial(true) })
+        {
+            await InvalidarClaveAsync(clave, cancellationToken);
+        }
+    }
+
+    private static string ClaveHistorial(bool incluirAnuladas) =>
+        $"ventas:historial:incluir-anuladas:{incluirAnuladas}";
+
+    private async Task<IReadOnlyList<VentaResumenDto>?> LeerDeCacheAsync(
+        string clave,
+        CancellationToken cancellationToken)
+    {
         try
         {
-            var json = JsonSerializer.Serialize(ventas);
+            var json = await cache.GetStringAsync(clave, cancellationToken);
+            return string.IsNullOrWhiteSpace(json)
+                ? null
+                : JsonSerializer.Deserialize<List<VentaResumenDto>>(json);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(
+                ex,
+                "No se pudo leer el historial de ventas desde Redis.");
+            return null;
+        }
+    }
 
+    private async Task GuardarEnCacheAsync(
+        string clave,
+        IReadOnlyList<VentaResumenDto> ventas,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
             await cache.SetStringAsync(
                 clave,
-                json,
+                JsonSerializer.Serialize(ventas),
                 new DistributedCacheEntryOptions
                 {
                     AbsoluteExpirationRelativeToNow = DuracionCache
@@ -75,41 +95,36 @@ public sealed class VentaConsultaService(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            // Si Redis falla, el historial sigue funcionando con MySQL.
             logger.LogWarning(
                 ex,
                 "No se pudo guardar el historial de ventas en Redis.");
         }
-
-        return ventas;
     }
 
-    public async Task InvalidarHistorialAsync(
-        CancellationToken cancellationToken = default)
+    private async Task InvalidarClaveAsync(
+        string clave,
+        CancellationToken cancellationToken)
     {
-        // Eliminar las dos variantes del historial.
-        var claves = new[]
+        try
         {
-            "ventas:historial:incluir-anuladas:False",
-            "ventas:historial:incluir-anuladas:True"
-        };
-
-        foreach (var clave in claves)
+            await cache.RemoveAsync(clave, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            try
-            {
-                await cache.RemoveAsync(clave, cancellationToken);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                // La operación de venta ya puede estar confirmada en MySQL.
-                logger.LogWarning(
-                    ex,
-                    "No se pudo invalidar la clave {Clave} en Redis.",
-                    clave);
-            }
+            logger.LogWarning(
+                ex,
+                "No se pudo invalidar la clave {Clave} en Redis.",
+                clave);
         }
     }
+
+    private void RegistrarAcceso(string resultado, string clave, string origen) =>
+        logger.LogInformation(
+            "Caché del historial: {Resultado} clave={Clave} origen={Origen} réplica={Replica}",
+            resultado,
+            clave,
+            origen,
+            replica.Valor);
 
     public async Task<VentaDetalleDto?> ObtenerDetalleAsync(
         int idVenta,
