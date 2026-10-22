@@ -5,7 +5,7 @@ public static class CambioDePrecio
     public const string MotivoPorDefecto = "Actualización de precio";
 
     public const string MotivoInvalidoMessage =
-        "Ingresa una justificación de al menos 3 caracteres. Evita etiquetas HTML, comillas y caracteres de control.";
+        "Ingrese una justificación de al menos 3 caracteres. Evite etiquetas HTML, comillas y caracteres de control.";
 
     private const int LargoMinimoDelMotivo = 3;
 

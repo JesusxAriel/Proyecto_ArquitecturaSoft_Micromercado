@@ -32,5 +32,5 @@ public sealed class UsuarioActualDesdeClaims(IHttpContextAccessor accesor) : IUs
     }
 
     private static InvalidOperationException SinUsuario() =>
-        new("No hay un usuario autenticado en la peticion actual.");
+        new("No hay un usuario autenticado en la petición actual.");
 }

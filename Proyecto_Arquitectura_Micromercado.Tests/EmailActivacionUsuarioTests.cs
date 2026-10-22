@@ -18,7 +18,7 @@ public class EmailActivacionUsuarioTests
         await servicio.EnviarEnlaceAsync("ana@ejemplo.com", "token+/&", expira);
 
         Assert.Equal("ana@ejemplo.com", sender.Destinatario);
-        Assert.Equal("Activa tu cuenta de Micromercado", sender.Asunto);
+        Assert.Equal("Active su cuenta de Micromercado", sender.Asunto);
         Assert.Contains("https://tienda.ejemplo.com/Users/Activar?token=token%2B%2F%26", sender.Cuerpo);
         Assert.Contains("vence en 10 minutos", sender.Cuerpo);
         Assert.Contains("22/10/2026 04:10 UTC", sender.Cuerpo);

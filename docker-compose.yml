@@ -1,4 +1,41 @@
 
+x-app: &app
+  image: puntomarket-app
+  build: .
+  restart: unless-stopped
+  volumes:
+    - dataprotection_keys:/keys
+  depends_on:
+    mysql:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+x-app-secundaria: &app-secundaria
+  <<: *app
+  depends_on:
+    mysql:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    app1:
+      condition: service_healthy
+
+x-app-entorno: &app-entorno
+  ASPNETCORE_ENVIRONMENT: Production
+  TZ: America/La_Paz
+  ASPNETCORE_URLS: http://+:8080
+  ConnectionStrings__MySqlConnection: "Server=mysql;Port=3306;Database=${MYSQL_DATABASE};Uid=${MYSQL_USER};Pwd=${MYSQL_PASSWORD};AllowPublicKeyRetrieval=True;SslMode=Preferred;"
+  ConnectionStrings__Redis: redis:6379
+  Activacion__BaseUrl: ${ACTIVACION_BASE_URL:-http://localhost:8080}
+  Smtp__Host: ${SMTP_HOST:-smtp.gmail.com}
+  Smtp__Port: ${SMTP_PORT:-587}
+  Smtp__EnableSsl: ${SMTP_ENABLE_SSL:-true}
+  Smtp__FromAddress: ${SMTP_FROM_ADDRESS:-}
+  Smtp__FromName: ${SMTP_FROM_NAME:-PuntoMarket}
+  Smtp__UserName: ${SMTP_USER_NAME:-}
+  Smtp__Password: ${SMTP_PASSWORD:-}
+
 services:
   mysql:
     image: mysql:8.4
@@ -29,58 +66,28 @@ services:
       retries: 10
 
   app1:
-    build: .
-    restart: unless-stopped
+    <<: *app
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
-      TZ: America/La_Paz
-      ASPNETCORE_URLS: http://+:8080
+      <<: *app-entorno
       REPLICA_ID: app1
-      ConnectionStrings__MySqlConnection: "Server=mysql;Port=3306;Database=${MYSQL_DATABASE};Uid=${MYSQL_USER};Pwd=${MYSQL_PASSWORD};AllowPublicKeyRetrieval=True;SslMode=Preferred;"
-      ConnectionStrings__Redis: redis:6379
-    volumes:
-      - dataprotection_keys:/keys
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET /Login HTTP/1.0\r\n\r\n\" >&3 && head -n1 <&3 | grep -q 200'"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
 
   app2:
-    build: .
-    restart: unless-stopped
+    <<: *app-secundaria
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
-      TZ: America/La_Paz
-      ASPNETCORE_URLS: http://+:8080
+      <<: *app-entorno
       REPLICA_ID: app2
-      ConnectionStrings__MySqlConnection: "Server=mysql;Port=3306;Database=${MYSQL_DATABASE};Uid=${MYSQL_USER};Pwd=${MYSQL_PASSWORD};AllowPublicKeyRetrieval=True;SslMode=Preferred;"
-      ConnectionStrings__Redis: redis:6379
-    volumes:
-      - dataprotection_keys:/keys
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
 
   app3:
-    build: .
-    restart: unless-stopped
+    <<: *app-secundaria
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
-      TZ: America/La_Paz
-      ASPNETCORE_URLS: http://+:8080
+      <<: *app-entorno
       REPLICA_ID: app3
-      ConnectionStrings__MySqlConnection: "Server=mysql;Port=3306;Database=${MYSQL_DATABASE};Uid=${MYSQL_USER};Pwd=${MYSQL_PASSWORD};AllowPublicKeyRetrieval=True;SslMode=Preferred;"
-      ConnectionStrings__Redis: redis:6379
-    volumes:
-      - dataprotection_keys:/keys
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
 
   nginx:
     image: nginx:alpine

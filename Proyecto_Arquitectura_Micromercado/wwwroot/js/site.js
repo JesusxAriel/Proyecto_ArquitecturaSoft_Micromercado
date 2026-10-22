@@ -78,9 +78,9 @@
         } else if (input.dataset.gteField && isLessThanField(input)) {
             message = input.dataset.gteMessage || 'El valor no puede ser menor al del campo relacionado.';
         } else if (input.type === 'number' && input.value && Number.isNaN(Number(input.value))) {
-            message = 'Ingresa un número válido.';
+            message = 'Ingrese un número válido.';
         } else if (input.dataset.sanitize === 'text' && input.value && !validationPattern.test(input.value)) {
-            message = 'Usa solo letras, números, espacios, puntos, comas o guiones.';
+            message = 'Use solo letras, números, espacios, puntos, comas o guiones.';
         } else if (input._uniqueError) {
             message = input._uniqueError;
         }

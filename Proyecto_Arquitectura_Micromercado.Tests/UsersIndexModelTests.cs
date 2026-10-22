@@ -222,8 +222,6 @@ public class UsersIndexModelTests
     private static IndexModel CrearPagina(ServicioPrueba servicio) =>
         new(servicio) { NuevoUsuario = FormularioValido() };
 
-    // Las llamadas directas al PageModel no ejecutan el filtro TempData de Razor Pages.
-    // Transferimos únicamente las propiedades marcadas como TempData entre peticiones.
     private static IndexModel SeguirRedireccion(ServicioPrueba servicio, IndexModel anterior)
     {
         var siguiente = CrearPagina(servicio);

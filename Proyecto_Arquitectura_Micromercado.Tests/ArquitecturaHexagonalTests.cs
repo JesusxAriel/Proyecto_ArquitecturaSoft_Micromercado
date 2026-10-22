@@ -22,7 +22,6 @@ public class ArquitecturaHexagonalTests
         Assert.False(autenticacion.IsAssignableFrom(administracion));
         Assert.Contains(servicio.GetConstructors().Single().GetParameters(), p => p.ParameterType == administracion);
         Assert.DoesNotContain(servicio.GetConstructors().Single().GetParameters(), p => p.ParameterType == autenticacion);
-        // También cubre cualquier futura Pages/Users, sin depender de que exista hoy.
         Pages_no_depende_de_repositorios();
     }
 

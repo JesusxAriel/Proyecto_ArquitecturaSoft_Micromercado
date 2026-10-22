@@ -21,18 +21,16 @@ public sealed class UsuarioAdministracionService(
         if (usuarioId <= 0)
             throw new ArgumentOutOfRangeException(nameof(usuarioId));
 
-        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
-            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
-        var tokenHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+        var token = GenerarTokenActivacion();
         var expira = timeProvider.GetUtcNow().AddMinutes(10);
         var correo = await repositorio.RenovarTokenActivacionAsync(
-            usuarioId, tokenHash, expira.UtcDateTime, cancellationToken);
+            usuarioId, token.Hash, expira.UtcDateTime, cancellationToken);
         if (correo is null)
             return false;
 
         try
         {
-            await emailActivacion.EnviarEnlaceAsync(correo, token, expira, cancellationToken);
+            await emailActivacion.EnviarEnlaceAsync(correo, token.Valor, expira, cancellationToken);
         }
         catch (ErrorEnvioCorreoException ex)
         {
@@ -94,12 +92,8 @@ public sealed class UsuarioAdministracionService(
         if (letrasNombre.Length == 0 || primerApellido.Length == 0)
             throw new ArgumentException("Nombre y primer apellido deben contener letras latinas para generar el username.");
         var baseUsername = letrasNombre[..1] + primerApellido;
-        // Valor aleatorio de un solo uso, descartado: no es una contraseña entregable ni de activación.
-        var hash = hasher.Hash(Convert.ToHexString(RandomNumberGenerator.GetBytes(32)));
-        var tokenActivacion = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
-            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
-        var tokenActivacionHash = Convert.ToHexString(
-            SHA256.HashData(Encoding.UTF8.GetBytes(tokenActivacion)));
+        var hash = HashDeContrasenaDescartable();
+        var tokenActivacion = GenerarTokenActivacion();
         var tokenActivacionExpira = timeProvider.GetUtcNow().AddMinutes(10);
         var idCreador = usuarioActual.Id;
         for (long sufijo = 0; ; sufijo = checked(sufijo + 1))
@@ -112,11 +106,11 @@ public sealed class UsuarioAdministracionService(
             {
                 var id = await repositorio.CrearAsync(new UsuarioAltaInterna(
                     nombre, apellido, correo, username, usuario.IdRol, hash, idCreador,
-                    tokenActivacionHash, tokenActivacionExpira.UtcDateTime), cancellationToken);
+                    tokenActivacion.Hash, tokenActivacionExpira.UtcDateTime), cancellationToken);
                 try
                 {
                     await emailActivacion.EnviarEnlaceAsync(
-                        correo, tokenActivacion, tokenActivacionExpira, cancellationToken);
+                        correo, tokenActivacion.Valor, tokenActivacionExpira, cancellationToken);
                 }
                 catch (ErrorEnvioCorreoException ex)
                 {
@@ -127,10 +121,23 @@ public sealed class UsuarioAdministracionService(
             }
             catch (UsernameUsuarioDuplicadoException)
             {
-                // Una creación concurrente reservó este username. Probar el siguiente sufijo.
+                continue;
             }
         }
     }
+
+    private sealed record TokenActivacion(string Valor, string Hash);
+
+    private static TokenActivacion GenerarTokenActivacion()
+    {
+        var valor = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
+            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(valor)));
+        return new TokenActivacion(valor, hash);
+    }
+
+    private string HashDeContrasenaDescartable() =>
+        hasher.Hash(Convert.ToHexString(RandomNumberGenerator.GetBytes(32)));
 
     private void ExigirAdministrador()
     {

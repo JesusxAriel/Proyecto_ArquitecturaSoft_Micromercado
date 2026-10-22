@@ -75,7 +75,6 @@ public sealed class LoginModel(IAutenticacionService autenticacion) : PageModel
             VariablesDeSesion.InicioDeSesion,
             DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
 
-        // REQUISITO: Si debe cambiar contraseña en el primer acceso, redirigir obligatoriamente
         if (usuario.DebeCambiarPassword)
         {
             return RedirectToPage("/Users/CambiarPassword");

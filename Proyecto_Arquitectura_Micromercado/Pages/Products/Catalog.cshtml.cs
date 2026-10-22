@@ -64,7 +64,7 @@ public sealed class CatalogModel(
         }
         catch (ErrorDePersistenciaException)
         {
-            ErrorMessage = "No se pudo dar de baja los lotes vencidos. Intente nuevamente.";
+            ErrorMessage = "No se pudieron dar de baja los lotes vencidos. Intente nuevamente.";
         }
         catch (InvalidOperationException ex)
         {
