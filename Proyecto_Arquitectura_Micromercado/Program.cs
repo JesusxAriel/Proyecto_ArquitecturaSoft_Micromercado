@@ -157,13 +157,6 @@ var replicaId = app.Services.GetRequiredService<IIdentificadorReplica>().Valor;
 
 app.Use(async (context, next) =>
 {
-    context.Items["ReplicaId"] = replicaId; // Añadir esta línea
-    context.Response.Headers["X-Replica-Id"] = replicaId;
-
-    await next();
-});
-app.Use(async (context, next) =>
-{
     context.Items["ReplicaId"] = replicaId;
     context.Response.Headers["X-Replica-Id"] = replicaId;
 
