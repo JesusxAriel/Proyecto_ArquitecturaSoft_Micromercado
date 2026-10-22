@@ -14,6 +14,7 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Background;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Factories;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Comprobantes;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
+using Proyecto_Arquitectura_Micromercado.Infrastructure.Email;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Security;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
@@ -64,6 +65,9 @@ builder.Services.AddScoped<IUsuarioRepository, MySqlUsuarioRepository>();
 builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
 builder.Services.AddScoped<IUsuarioAdministracionRepository, MySqlUsuarioAdministracionRepository>();
 builder.Services.AddScoped<IUsuarioAdministracionService, UsuarioAdministracionService>();
+builder.Services.Configure<SmtpEmailOptions>(
+    builder.Configuration.GetSection(SmtpEmailOptions.SectionName));
+builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IComprobanteRepository, MySqlComprobanteRepository>();
