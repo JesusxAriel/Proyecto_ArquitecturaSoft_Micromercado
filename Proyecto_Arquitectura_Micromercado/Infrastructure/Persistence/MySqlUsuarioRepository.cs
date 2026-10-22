@@ -44,22 +44,37 @@ public sealed class MySqlUsuarioRepository(MySqlUnidadDeTrabajo unidadDeTrabajo)
     }
 
     public Task ActualizarPasswordAsync(int usuarioId, string nuevoPasswordHash, CancellationToken cancellationToken = default)
-{
-    const string sql = """
-        UPDATE USUARIO 
-        SET passwordHash = @passwordHash, 
-            debeCambiarPassword = 0, 
-            fechaActualizacion = CURRENT_TIMESTAMP
-        WHERE id = @id;
-        """;
-
-    return ErroresDePersistencia.TraducirAsync(async () =>
     {
-        await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
-        await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
-        command.Parameters.AddWithValue("@passwordHash", nuevoPasswordHash);
-        command.Parameters.AddWithValue("@id", usuarioId);
-        await command.ExecuteNonQueryAsync(cancellationToken);
-    });
-}
+        const string sql = """
+            UPDATE USUARIO 
+            SET passwordHash = @passwordHash, 
+                debeCambiarPassword = 0, 
+                fechaActualizacion = CURRENT_TIMESTAMP
+            WHERE id = @id;
+            """;
+
+        return ErroresDePersistencia.TraducirAsync(async () =>
+        {
+            await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+            await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
+            command.Parameters.AddWithValue("@passwordHash", nuevoPasswordHash);
+            command.Parameters.AddWithValue("@id", usuarioId);
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        });
+    }
+
+    public Task<bool> EstaActivoAsync(int usuarioId, CancellationToken cancellationToken = default)
+    {
+        const string sql = "SELECT estaActivo FROM USUARIO WHERE id = @id LIMIT 1;";
+
+        return ErroresDePersistencia.TraducirAsync(async () =>
+        {
+            await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+            await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
+            command.Parameters.AddWithValue("@id", usuarioId);
+            var result = await command.ExecuteScalarAsync(cancellationToken);
+
+            return result != null && Convert.ToBoolean(result);
+        });
+    }
 }
