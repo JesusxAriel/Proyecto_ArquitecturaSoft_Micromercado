@@ -12,6 +12,7 @@ public sealed class MySqlUsuarioRepository(MySqlUnidadDeTrabajo unidadDeTrabajo)
     {
         const string sql = """
             SELECT u.id, u.username, u.nombreCompleto, u.passwordHash, u.estaActivo,
+                   COALESCE(u.correo, '') AS correo,
                    u.estado, u.debeCambiarPassword, r.nombre AS rol
             FROM USUARIO u
             INNER JOIN ROL r ON r.id = u.idRol
@@ -39,7 +40,8 @@ public sealed class MySqlUsuarioRepository(MySqlUnidadDeTrabajo unidadDeTrabajo)
                 reader.GetString(reader.GetOrdinal("passwordHash")),
                 reader.GetBoolean(reader.GetOrdinal("estaActivo")),
                 reader.GetString(reader.GetOrdinal("estado")),
-                reader.GetBoolean(reader.GetOrdinal("debeCambiarPassword")));
+                reader.GetBoolean(reader.GetOrdinal("debeCambiarPassword")),
+                reader.GetString(reader.GetOrdinal("correo")));
         });
     }
 
@@ -49,6 +51,7 @@ public sealed class MySqlUsuarioRepository(MySqlUnidadDeTrabajo unidadDeTrabajo)
     {
         const string sql = """
             SELECT u.id, u.username, u.nombreCompleto, u.passwordHash, u.estaActivo,
+                   COALESCE(u.correo, '') AS correo,
                    u.estado, u.debeCambiarPassword, r.nombre AS rol
             FROM USUARIO u
             INNER JOIN ROL r ON r.id = u.idRol
@@ -76,7 +79,8 @@ public sealed class MySqlUsuarioRepository(MySqlUnidadDeTrabajo unidadDeTrabajo)
                 reader.GetString(reader.GetOrdinal("passwordHash")),
                 reader.GetBoolean(reader.GetOrdinal("estaActivo")),
                 reader.GetString(reader.GetOrdinal("estado")),
-                reader.GetBoolean(reader.GetOrdinal("debeCambiarPassword")));
+                reader.GetBoolean(reader.GetOrdinal("debeCambiarPassword")),
+                reader.GetString(reader.GetOrdinal("correo")));
         });
     }
 
@@ -102,7 +106,7 @@ public sealed class MySqlUsuarioRepository(MySqlUnidadDeTrabajo unidadDeTrabajo)
 
     public Task<bool> EstaActivoAsync(int usuarioId, CancellationToken cancellationToken = default)
     {
-        const string sql = "SELECT estaActivo FROM USUARIO WHERE id = @id LIMIT 1;";
+        const string sql = "SELECT estaActivo = 1 AND estado = 'ACTIVO' FROM USUARIO WHERE id = @id LIMIT 1;";
 
         return ErroresDePersistencia.TraducirAsync(async () =>
         {

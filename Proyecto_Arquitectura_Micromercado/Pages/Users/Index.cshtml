@@ -83,6 +83,7 @@
                     <th scope="col">Rol</th>
                     <th scope="col">Estado</th>
                     <th scope="col">Fecha de creación</th>
+                    <th scope="col">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -96,6 +97,23 @@
                         <td>@usuario.Rol</td>
                         <td>@usuario.Estado</td>
                         <td>@usuario.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td class="text-nowrap">
+                            @if (usuario.Estado == "PENDIENTE")
+                            {
+                                <form method="post" asp-page-handler="ReenviarActivacion" class="d-inline">
+                                    <input type="hidden" name="usuarioId" value="@usuario.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Reenviar activación</button>
+                                </form>
+                            }
+                            @if (usuario.Estado is "ACTIVO" or "PENDIENTE")
+                            {
+                                <form method="post" asp-page-handler="Desactivar" class="d-inline"
+                                      onsubmit="return confirm('¿Desactivar este usuario?');">
+                                    <input type="hidden" name="usuarioId" value="@usuario.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Desactivar</button>
+                                </form>
+                            }
+                        </td>
                     </tr>
                 }
             </tbody>

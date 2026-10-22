@@ -99,7 +99,46 @@ public sealed class MySqlUsuarioAdministracionRepository(MySqlUnidadDeTrabajo un
             return checked((int)command.LastInsertedId);
         });
 
-    public Task EliminarAsync(int usuarioId, int idUsuarioEliminacion, CancellationToken cancellationToken = default) =>
+    public Task<string?> RenovarTokenActivacionAsync(
+        int usuarioId,
+        string tokenHash,
+        DateTime tokenExpiraUtc,
+        CancellationToken cancellationToken = default) =>
+        ErroresDePersistencia.TraducirAsync<string?>(async () =>
+        {
+            const string actualizar = """
+                UPDATE USUARIO
+                SET tokenActivacionHash = @tokenHash,
+                    tokenActivacionExpira = @tokenExpira,
+                    fechaActualizacion = CURRENT_TIMESTAMP
+                WHERE id = @id AND estado = 'PENDIENTE' AND estaActivo = 0;
+                """;
+            const string obtenerCorreo = """
+                SELECT correo FROM USUARIO
+                WHERE id = @id AND estado = 'PENDIENTE' AND estaActivo = 0
+                  AND tokenActivacionHash = @tokenHash
+                LIMIT 1;
+                """;
+            await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
+            await using (var command = new MySqlCommand(actualizar, alquiler.Conexion, alquiler.Transaccion))
+            {
+                command.Parameters.AddWithValue("@id", usuarioId);
+                command.Parameters.AddWithValue("@tokenHash", tokenHash);
+                command.Parameters.AddWithValue("@tokenExpira", tokenExpiraUtc);
+                if (await command.ExecuteNonQueryAsync(cancellationToken) != 1)
+                    return null;
+            }
+
+            await using var consulta = new MySqlCommand(obtenerCorreo, alquiler.Conexion, alquiler.Transaccion);
+            consulta.Parameters.AddWithValue("@id", usuarioId);
+            consulta.Parameters.AddWithValue("@tokenHash", tokenHash);
+            return Convert.ToString(await consulta.ExecuteScalarAsync(cancellationToken));
+        });
+
+    public Task<bool> DesactivarAsync(
+        int usuarioId,
+        int idUsuarioEliminacion,
+        CancellationToken cancellationToken = default) =>
         ErroresDePersistencia.TraducirAsync(async () =>
         {
             const string sql = """
@@ -108,14 +147,16 @@ public sealed class MySqlUsuarioAdministracionRepository(MySqlUnidadDeTrabajo un
                     estaActivo = 0,
                     idUsuarioEliminacion = @idUsuarioEliminacion,
                     fechaEliminacion = CURRENT_TIMESTAMP,
+                    tokenActivacionHash = NULL,
+                    tokenActivacionExpira = NULL,
                     fechaActualizacion = CURRENT_TIMESTAMP
-                WHERE id = @id;
+                WHERE id = @id AND estado IN ('ACTIVO', 'PENDIENTE');
                 """;
 
             await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
             await using var command = new MySqlCommand(sql, alquiler.Conexion, alquiler.Transaccion);
             command.Parameters.AddWithValue("@id", usuarioId);
             command.Parameters.AddWithValue("@idUsuarioEliminacion", idUsuarioEliminacion);
-            await command.ExecuteNonQueryAsync(cancellationToken);
+            return await command.ExecuteNonQueryAsync(cancellationToken) == 1;
         });
 }

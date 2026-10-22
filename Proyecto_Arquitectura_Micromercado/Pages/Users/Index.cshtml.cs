@@ -77,6 +77,59 @@ public class IndexModel(IUsuarioAdministracionService servicio) : PageModel
         return RedirectToPage();
     }
 
+    public async Task<IActionResult> OnPostReenviarActivacionAsync(
+        int usuarioId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            StatusMessage = await servicio.ReenviarActivacionAsync(usuarioId, cancellationToken)
+                ? "Se envió un nuevo enlace de activación. Es válido durante 10 minutos."
+                : "El usuario ya no está pendiente de activación o no existe.";
+        }
+        catch (ErrorEnvioActivacionException)
+        {
+            ModelState.AddModelError(string.Empty,
+                "No se pudo enviar el enlace. El token fue renovado; puedes volver a intentar el envío.");
+            await CargarDatosAsync(cancellationToken);
+            return Page();
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException and not UnauthorizedAccessException)
+        {
+            ModelState.AddModelError(string.Empty, "No se pudo reenviar el enlace. Intente nuevamente.");
+            await CargarDatosAsync(cancellationToken);
+            return Page();
+        }
+
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostDesactivarAsync(
+        int usuarioId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            StatusMessage = await servicio.DesactivarAsync(usuarioId, cancellationToken)
+                ? "Usuario desactivado correctamente."
+                : "El usuario ya estaba inactivo o no existe.";
+        }
+        catch (NoPuedeDesactivarSuPropiaCuentaException)
+        {
+            ModelState.AddModelError(string.Empty, "No puedes desactivar tu propia cuenta.");
+            await CargarDatosAsync(cancellationToken);
+            return Page();
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException and not UnauthorizedAccessException)
+        {
+            ModelState.AddModelError(string.Empty, "No se pudo desactivar el usuario. Intente nuevamente.");
+            await CargarDatosAsync(cancellationToken);
+            return Page();
+        }
+
+        return RedirectToPage();
+    }
+
     private async Task CargarDatosAsync(CancellationToken cancellationToken)
     {
         try

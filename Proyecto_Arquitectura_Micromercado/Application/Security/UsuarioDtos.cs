@@ -8,7 +8,8 @@ public sealed record CredencialesDeUsuario(
     string HashContrasena,
     bool EstaActivo,
     string Estado,              // <-- Agregado
-    bool DebeCambiarPassword);  // <-- Agregado
+    bool DebeCambiarPassword,
+    string Correo = "");
 
 public sealed record UsuarioAutenticado(
     int Id,

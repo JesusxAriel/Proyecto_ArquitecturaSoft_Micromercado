@@ -13,6 +13,48 @@ public sealed class UsuarioAdministracionService(
     TimeProvider timeProvider,
     IEmailActivacionUsuario emailActivacion) : IUsuarioAdministracionService
 {
+    public async Task<bool> ReenviarActivacionAsync(
+        int usuarioId,
+        CancellationToken cancellationToken = default)
+    {
+        ExigirAdministrador();
+        if (usuarioId <= 0)
+            throw new ArgumentOutOfRangeException(nameof(usuarioId));
+
+        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
+            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        var tokenHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+        var expira = timeProvider.GetUtcNow().AddMinutes(10);
+        var correo = await repositorio.RenovarTokenActivacionAsync(
+            usuarioId, tokenHash, expira.UtcDateTime, cancellationToken);
+        if (correo is null)
+            return false;
+
+        try
+        {
+            await emailActivacion.EnviarEnlaceAsync(correo, token, expira, cancellationToken);
+        }
+        catch (ErrorEnvioCorreoException ex)
+        {
+            throw new ErrorEnvioActivacionException(usuarioId, ex);
+        }
+
+        return true;
+    }
+
+    public async Task<bool> DesactivarAsync(
+        int usuarioId,
+        CancellationToken cancellationToken = default)
+    {
+        ExigirAdministrador();
+        if (usuarioId <= 0)
+            throw new ArgumentOutOfRangeException(nameof(usuarioId));
+        if (usuarioId == usuarioActual.Id)
+            throw new NoPuedeDesactivarSuPropiaCuentaException();
+
+        return await repositorio.DesactivarAsync(usuarioId, usuarioActual.Id, cancellationToken);
+    }
+
     public Task<IReadOnlyList<UsuarioListadoDto>> ListarAsync(CancellationToken cancellationToken = default)
     {
         ExigirAdministrador();
@@ -76,7 +118,7 @@ public sealed class UsuarioAdministracionService(
                     await emailActivacion.EnviarEnlaceAsync(
                         correo, tokenActivacion, tokenActivacionExpira, cancellationToken);
                 }
-                catch (Exception ex) when (ex is not OperationCanceledException)
+                catch (ErrorEnvioCorreoException ex)
                 {
                     throw new ErrorEnvioActivacionException(id, ex);
                 }

@@ -14,9 +14,12 @@ public sealed class InMemoryUsuarioRepository : IUsuarioRepository
 
     public Task<CredencialesDeUsuario?> ObtenerCredencialesAsync(
         string correo,
-        CancellationToken cancellationToken = default) =>
-        Task.FromResult(usuarios.FirstOrDefault(usuario =>
-            string.Equals(usuario.NombreUsuario, correo, StringComparison.OrdinalIgnoreCase)));
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(usuarios.FirstOrDefault(usuario =>
+            string.Equals(usuario.Correo, correo.Trim(), StringComparison.OrdinalIgnoreCase)));
+    }
 
     public Task<CredencialesDeUsuario?> ObtenerCredencialesPorIdAsync(
         int usuarioId,

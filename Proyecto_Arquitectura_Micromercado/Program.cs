@@ -48,6 +48,7 @@ builder.Services
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
         options.Events.OnRedirectToLogin = SesionVencidaAjax.ResponderAsync;
+        options.Events.OnValidatePrincipal = ValidacionCookieUsuarioActivo.ValidarAsync;
     });
 
 builder.Services.AddDistributedMemoryCache();

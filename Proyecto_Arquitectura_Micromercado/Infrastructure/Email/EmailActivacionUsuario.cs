@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Mail;
 using Microsoft.Extensions.Options;
 using Proyecto_Arquitectura_Micromercado.Application.Users;
 
@@ -8,7 +9,7 @@ public sealed class EmailActivacionUsuario(
     IEmailSender emailSender,
     IOptions<ActivacionEmailOptions> options) : IEmailActivacionUsuario
 {
-    public Task EnviarEnlaceAsync(
+    public async Task EnviarEnlaceAsync(
         string correo,
         string token,
         DateTimeOffset expira,
@@ -21,8 +22,9 @@ public sealed class EmailActivacionUsuario(
             || !string.IsNullOrEmpty(origen.Query)
             || !string.IsNullOrEmpty(origen.Fragment))
         {
-            throw new InvalidOperationException(
-                "Configure Activacion:BaseUrl con la URL pública HTTP/HTTPS de la aplicación.");
+            throw new ErrorEnvioCorreoException(
+                "Configure Activacion:BaseUrl con la URL pública HTTP/HTTPS de la aplicación.",
+                new InvalidOperationException("La URL base de activación no es válida."));
         }
 
         var enlace = new Uri(origen, $"Users/Activar?token={Uri.EscapeDataString(token)}").ToString();
@@ -34,10 +36,25 @@ public sealed class EmailActivacionUsuario(
             <p>Este enlace vence en 10 minutos (hasta {vencimiento}). Si no esperabas este mensaje, puedes ignorarlo.</p>
             """;
 
-        return emailSender.EnviarAsync(
-            correo,
-            "Activa tu cuenta de Micromercado",
-            cuerpo,
-            cancellationToken);
+        try
+        {
+            await emailSender.EnviarAsync(
+                correo,
+                "Activa tu cuenta de Micromercado",
+                cuerpo,
+                cancellationToken);
+        }
+        catch (SmtpException ex)
+        {
+            throw new ErrorEnvioCorreoException("No se pudo enviar el correo de activación.", ex);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new ErrorEnvioCorreoException("La configuración de correo no es válida.", ex);
+        }
+        catch (FormatException ex)
+        {
+            throw new ErrorEnvioCorreoException("La dirección de correo o la configuración no es válida.", ex);
+        }
     }
 }
