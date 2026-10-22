@@ -70,6 +70,9 @@ builder.Services.AddScoped<IUsuarioAdministracionService, UsuarioAdministracionS
 builder.Services.Configure<SmtpEmailOptions>(
     builder.Configuration.GetSection(SmtpEmailOptions.SectionName));
 builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
+builder.Services.Configure<ActivacionEmailOptions>(
+    builder.Configuration.GetSection(ActivacionEmailOptions.SectionName));
+builder.Services.AddScoped<IEmailActivacionUsuario, EmailActivacionUsuario>();
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IComprobanteRepository, MySqlComprobanteRepository>();

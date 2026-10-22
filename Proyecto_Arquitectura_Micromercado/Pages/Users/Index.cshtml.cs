@@ -51,6 +51,12 @@ public class IndexModel(IUsuarioAdministracionService servicio) : PageModel
         {
             ModelState.AddModelError("NuevoUsuario.Correo", "El correo ya está registrado. Ingrese otro correo.");
         }
+        catch (ErrorEnvioActivacionException)
+        {
+            ModelState.AddModelError(string.Empty,
+                "El usuario quedó creado como PENDIENTE, pero no se pudo enviar el enlace. " +
+                "Revise la configuración SMTP antes de volver a intentar el alta.");
+        }
         catch (ArgumentException)
         {
             ModelState.AddModelError(string.Empty,

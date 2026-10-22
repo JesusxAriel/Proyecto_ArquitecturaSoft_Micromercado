@@ -10,7 +10,8 @@ public sealed class UsuarioAdministracionService(
     IUsuarioAdministracionRepository repositorio,
     IUsuarioActual usuarioActual,
     IPasswordHasher hasher,
-    TimeProvider timeProvider) : IUsuarioAdministracionService
+    TimeProvider timeProvider,
+    IEmailActivacionUsuario emailActivacion) : IUsuarioAdministracionService
 {
     public Task<IReadOnlyList<UsuarioListadoDto>> ListarAsync(CancellationToken cancellationToken = default)
     {
@@ -70,7 +71,17 @@ public sealed class UsuarioAdministracionService(
                 var id = await repositorio.CrearAsync(new UsuarioAltaInterna(
                     nombre, apellido, correo, username, usuario.IdRol, hash, idCreador,
                     tokenActivacionHash, tokenActivacionExpira.UtcDateTime), cancellationToken);
-                return new UsuarioCreadoDto(id, tokenActivacion, tokenActivacionExpira);
+                try
+                {
+                    await emailActivacion.EnviarEnlaceAsync(
+                        correo, tokenActivacion, tokenActivacionExpira, cancellationToken);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    throw new ErrorEnvioActivacionException(id, ex);
+                }
+
+                return new UsuarioCreadoDto(id);
             }
             catch (UsernameUsuarioDuplicadoException)
             {
