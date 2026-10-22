@@ -65,7 +65,8 @@ public sealed class LoginModel(IAutenticacionService autenticacion) : PageModel
             usuario.Id,
             usuario.NombreUsuario,
             usuario.Rol,
-            CookieAuthenticationDefaults.AuthenticationScheme);
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            usuario.DebeCambiarPassword);
 
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 

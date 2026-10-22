@@ -1,9 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Proyecto_Arquitectura_Micromercado.Application.Common;
 using Proyecto_Arquitectura_Micromercado.Application.Security;
+using System.Security.Claims;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Users;
 
@@ -56,7 +59,22 @@ public sealed class CambiarPasswordModel(IAutenticacionService autenticacion) : 
             return Page();
         }
 
-        // Una vez cambiada con éxito, redirigimos al inicio
+        if (User.Identity is not ClaimsIdentity identidad)
+        {
+            return RedirectToPage("/Login");
+        }
+
+        var claimCambioPassword = identidad.FindFirst(ClaimsDeIdentidad.DebeCambiarPassword);
+        if (claimCambioPassword is not null)
+        {
+            identidad.RemoveClaim(claimCambioPassword);
+        }
+
+        identidad.AddClaim(new Claim(ClaimsDeIdentidad.DebeCambiarPassword, bool.FalseString));
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(identidad));
+
         return RedirectToPage("/Index");
     }
 

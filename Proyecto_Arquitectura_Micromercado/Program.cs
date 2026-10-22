@@ -19,6 +19,7 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Security;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
 using System.Globalization;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
+using Proyecto_Arquitectura_Micromercado.Pages.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +32,8 @@ builder.Services.AddRazorPages()
 
         options.ModelBindingMessageProvider.SetValueMustBeANumberAccessor(
             _ => "Ingrese un número válido.");
+
+        options.Filters.Add(new CambioPasswordObligatorioPageFilter());
     });
 
 builder.Services
