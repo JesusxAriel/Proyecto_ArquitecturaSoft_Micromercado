@@ -6,4 +6,10 @@ public interface IAutenticacionService
         string correo,
         string contrasena,
         CancellationToken cancellationToken = default);
+
+    Task<bool> CambiarPasswordAsync(
+        int usuarioId,
+        string contrasenaActual,
+        string nuevaContrasena,
+        CancellationToken cancellationToken = default);
 }

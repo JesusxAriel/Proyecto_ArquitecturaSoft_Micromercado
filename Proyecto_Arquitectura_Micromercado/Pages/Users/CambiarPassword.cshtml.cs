@@ -8,9 +8,7 @@ using Proyecto_Arquitectura_Micromercado.Application.Security;
 namespace Proyecto_Arquitectura_Micromercado.Pages.Users;
 
 [Authorize]
-public sealed class CambiarPasswordModel(
-    IUsuarioRepository usuariosRepository,
-    IPasswordHasher passwordHasher) : PageModel
+public sealed class CambiarPasswordModel(IAutenticacionService autenticacion) : PageModel
 {
     [BindProperty]
     public CambiarPasswordInput Input { get; set; } = new();
@@ -41,11 +39,16 @@ public sealed class CambiarPasswordModel(
 
         try
         {
-            // Opcional: verificar la contraseña actual
-            // Aquí puedes validar si el usuario existe y su contraseña actual es correcta
-            
-            var nuevoHash = passwordHasher.Hash(Input.NuevaContrasena);
-            await usuariosRepository.ActualizarPasswordAsync(usuarioId, nuevoHash, cancellationToken);
+            var actualizado = await autenticacion.CambiarPasswordAsync(
+                usuarioId,
+                Input.ContrasenaActual,
+                Input.NuevaContrasena,
+                cancellationToken);
+            if (!actualizado)
+            {
+                MensajeDeError = "La contraseña actual es incorrecta o la cuenta ya no está activa.";
+                return Page();
+            }
         }
         catch (ErrorDePersistenciaException)
         {
@@ -66,7 +69,7 @@ public sealed class CambiarPasswordModel(
 
         [Required(ErrorMessage = "Ingrese la nueva contraseña.")]
         [DataType(DataType.Password)]
-        [PasswordSegura] // Usamos el atributo que acabamos de crear
+        [PasswordSegura]
         [Display(Name = "Nueva contraseña")]
         public string NuevaContrasena { get; set; } = string.Empty;
 

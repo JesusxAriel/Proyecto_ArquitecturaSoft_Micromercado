@@ -6,6 +6,33 @@ public sealed class AutenticacionService(
 {
     private readonly Lazy<string> hashDeRelleno = new(() => hasher.Hash("relleno"));
 
+    public async Task<bool> CambiarPasswordAsync(
+        int usuarioId,
+        string contrasenaActual,
+        string nuevaContrasena,
+        CancellationToken cancellationToken = default)
+    {
+        if (usuarioId <= 0 || string.IsNullOrEmpty(contrasenaActual) || string.IsNullOrEmpty(nuevaContrasena))
+        {
+            return false;
+        }
+
+        var credenciales = await usuarios.ObtenerCredencialesPorIdAsync(usuarioId, cancellationToken);
+        if (credenciales is null ||
+            !credenciales.EstaActivo ||
+            credenciales.Estado != "ACTIVO" ||
+            !hasher.Verify(contrasenaActual, credenciales.HashContrasena))
+        {
+            return false;
+        }
+
+        await usuarios.ActualizarPasswordAsync(
+            usuarioId,
+            hasher.Hash(nuevaContrasena),
+            cancellationToken);
+        return true;
+    }
+
     public async Task<UsuarioAutenticado?> AutenticarAsync(
         string correo,
         string contrasena,
