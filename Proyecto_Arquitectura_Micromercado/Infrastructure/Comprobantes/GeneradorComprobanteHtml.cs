@@ -284,6 +284,8 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
         @media (max-width: 600px) {
           .recibo { padding: 16px; }
           .encabezado { flex-direction: column; }
+          .marca-bloque { flex-wrap: wrap; }
+          .logo { height: 48px; }
           .folio { width: 100%; }
           .cliente { grid-template-columns: 1fr; }
           .recuadro-total { width: 100%; justify-content: space-between; }
