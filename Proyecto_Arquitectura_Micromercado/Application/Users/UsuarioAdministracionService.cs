@@ -9,7 +9,8 @@ namespace Proyecto_Arquitectura_Micromercado.Application.Users;
 public sealed class UsuarioAdministracionService(
     IUsuarioAdministracionRepository repositorio,
     IUsuarioActual usuarioActual,
-    IPasswordHasher hasher) : IUsuarioAdministracionService
+    IPasswordHasher hasher,
+    TimeProvider timeProvider) : IUsuarioAdministracionService
 {
     public Task<IReadOnlyList<UsuarioListadoDto>> ListarAsync(CancellationToken cancellationToken = default)
     {
@@ -23,7 +24,9 @@ public sealed class UsuarioAdministracionService(
         return repositorio.ListarRolesActivosAsync(cancellationToken);
     }
 
-    public async Task<int> CrearAsync(UsuarioCreacionDto usuario, CancellationToken cancellationToken = default)
+    public async Task<UsuarioCreadoDto> CrearAsync(
+        UsuarioCreacionDto usuario,
+        CancellationToken cancellationToken = default)
     {
         ExigirAdministrador();
         ArgumentNullException.ThrowIfNull(usuario);
@@ -50,6 +53,11 @@ public sealed class UsuarioAdministracionService(
         var baseUsername = letrasNombre[..1] + primerApellido;
         // Valor aleatorio de un solo uso, descartado: no es una contraseña entregable ni de activación.
         var hash = hasher.Hash(Convert.ToHexString(RandomNumberGenerator.GetBytes(32)));
+        var tokenActivacion = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
+            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        var tokenActivacionHash = Convert.ToHexString(
+            SHA256.HashData(Encoding.UTF8.GetBytes(tokenActivacion)));
+        var tokenActivacionExpira = timeProvider.GetUtcNow().AddMinutes(10);
         var idCreador = usuarioActual.Id;
         for (long sufijo = 0; ; sufijo = checked(sufijo + 1))
         {
@@ -59,8 +67,10 @@ public sealed class UsuarioAdministracionService(
             if (await repositorio.ExisteUsernameAsync(username, cancellationToken)) continue;
             try
             {
-                return await repositorio.CrearAsync(new UsuarioAltaInterna(
-                    nombre, apellido, correo, username, usuario.IdRol, hash, idCreador), cancellationToken);
+                var id = await repositorio.CrearAsync(new UsuarioAltaInterna(
+                    nombre, apellido, correo, username, usuario.IdRol, hash, idCreador,
+                    tokenActivacionHash, tokenActivacionExpira.UtcDateTime), cancellationToken);
+                return new UsuarioCreadoDto(id, tokenActivacion, tokenActivacionExpira);
             }
             catch (UsernameUsuarioDuplicadoException)
             {

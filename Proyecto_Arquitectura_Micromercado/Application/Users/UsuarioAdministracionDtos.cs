@@ -9,7 +9,10 @@ public sealed record UsuarioListadoDto(
 
 public sealed record RolActivoDto(int Id, string Nombre);
 
+public sealed record UsuarioCreadoDto(int Id, string TokenActivacion, DateTimeOffset TokenActivacionExpira);
+
 // Puerto interno de escritura: nunca se utiliza como entrada de un formulario ni como respuesta.
 public sealed record UsuarioAltaInterna(
     string Nombre, string Apellido, string Correo, string Username,
-    int IdRol, string HashContrasena, int IdUsuarioCreacion);
+    int IdRol, string HashContrasena, int IdUsuarioCreacion,
+    string TokenActivacionHash, DateTime TokenActivacionExpira);

@@ -42,9 +42,10 @@ public class IndexModel(IUsuarioAdministracionService servicio) : PageModel
 
         try
         {
-            UsuarioCreadoId = await servicio.CrearAsync(new UsuarioCreacionDto(
+            var usuarioCreado = await servicio.CrearAsync(new UsuarioCreacionDto(
                 NuevoUsuario.Nombre, NuevoUsuario.Apellido, NuevoUsuario.Correo,
                 NuevoUsuario.IdRol!.Value), cancellationToken);
+            UsuarioCreadoId = usuarioCreado.Id;
         }
         catch (CorreoUsuarioDuplicadoException)
         {

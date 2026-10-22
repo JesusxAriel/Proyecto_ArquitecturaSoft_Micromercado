@@ -65,9 +65,10 @@ public sealed class MySqlUsuarioAdministracionRepository(MySqlUnidadDeTrabajo un
             const string sql = """
                 INSERT INTO USUARIO
                     (nombre, apellido, nombreCompleto, correo, username, idRol, passwordHash,
-                     estado, estaActivo, debeCambiarPassword, idUsuarioCreacion)
+                     estado, estaActivo, debeCambiarPassword, idUsuarioCreacion,
+                     tokenActivacionHash, tokenActivacionExpira)
                 SELECT @nombre, @apellido, @nombreCompleto, @correo, @username, id, @hash,
-                       'PENDIENTE', 0, 1, @creador
+                       'PENDIENTE', 0, 1, @creador, @tokenHash, @tokenExpira
                 FROM ROL WHERE id = @rol AND estaActivo = 1;
                 """;
             await using var alquiler = await unidadDeTrabajo.AlquilarAsync(cancellationToken);
@@ -80,6 +81,8 @@ public sealed class MySqlUsuarioAdministracionRepository(MySqlUnidadDeTrabajo un
             command.Parameters.AddWithValue("@rol", usuario.IdRol);
             command.Parameters.AddWithValue("@hash", usuario.HashContrasena);
             command.Parameters.AddWithValue("@creador", usuario.IdUsuarioCreacion);
+            command.Parameters.AddWithValue("@tokenHash", usuario.TokenActivacionHash);
+            command.Parameters.AddWithValue("@tokenExpira", usuario.TokenActivacionExpira);
             try
             {
                 if (await command.ExecuteNonQueryAsync(cancellationToken) != 1)
