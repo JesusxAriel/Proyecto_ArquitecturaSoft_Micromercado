@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Proyecto_Arquitectura_Micromercado.Application.Comprobantes;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Comprobantes;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Persistence.EnMemoria;
@@ -69,7 +70,7 @@ public class ComprobanteTests
 
         var html = await HtmlDe(venta);
 
-        Assert.Contains("23/06/2030 - 09:58:00-maria", html);
+        Assert.Contains("Generado por maria el 23/06/2030 09:58:00", html);
     }
 
     [Fact]
@@ -83,7 +84,7 @@ public class ComprobanteTests
         var segunda = generador.GenerarHtml((await servicio.ObtenerAsync(7))!);
 
         Assert.Equal(primera, segunda);
-        Assert.Contains("23/06/2030 - 09:58:00-cajero1", segunda);
+        Assert.Contains("Generado por cajero1 el 23/06/2030 09:58:00", segunda);
     }
 
     [Fact]
@@ -232,5 +233,85 @@ public class ComprobanteTests
         Assert.Contains("Imprimir", html);
         Assert.Contains("@media print", html);
         Assert.Contains(".acciones { display: none; }", html);
+    }
+
+    private static async Task<string> HtmlConLineas(int cantidad, string estado = EstadoDeVenta.Completada)
+    {
+        var filas = Enumerable.Range(1, cantidad)
+            .Select(numero => Fila(numero, $"Producto {numero}", 1, 2.50m))
+            .ToArray();
+
+        return await HtmlDe(Venta(estado, filas));
+    }
+
+    private static int FilasVacias(string html) => Regex.Count(html, "class=\"vacia\"");
+
+    [Fact]
+    public async Task El_numero_de_comprobante_se_muestra_en_el_recuadro_del_encabezado()
+    {
+        var html = await HtmlConLineas(1);
+
+        Assert.Contains("<p class=\"folio-etiqueta\">N.º</p>", html);
+        Assert.Contains("<p class=\"folio-numero\">V-20300623-0007</p>", html);
+        Assert.Contains("Fecha: 23/06/2030", html);
+    }
+
+    [Theory]
+    [InlineData(0, 10)]
+    [InlineData(3, 7)]
+    [InlineData(9, 1)]
+    [InlineData(10, 0)]
+    [InlineData(12, 0)]
+    public async Task Las_filas_vacias_completan_el_minimo_de_diez_sin_pasarse(int lineas, int vaciasEsperadas)
+    {
+        var html = await HtmlConLineas(lineas);
+
+        Assert.Equal(vaciasEsperadas, FilasVacias(html));
+    }
+
+    [Fact]
+    public async Task Todas_las_lineas_aparecen_aunque_superen_el_minimo()
+    {
+        var html = await HtmlConLineas(12);
+
+        Assert.Contains("Producto 1<", html);
+        Assert.Contains("Producto 12<", html);
+    }
+
+    [Fact]
+    public async Task El_sello_de_anulada_solo_aparece_en_ventas_anuladas()
+    {
+        var anulada = await HtmlConLineas(2, EstadoDeVenta.Anulada);
+        var completada = await HtmlConLineas(2);
+
+        Assert.Contains("class=\"sello\"", anulada);
+        Assert.Contains("role=\"alert\">ANULADA</p>", anulada);
+        Assert.DoesNotContain("class=\"sello\"", completada);
+        Assert.DoesNotContain("ANULADA", completada);
+    }
+
+    [Fact]
+    public async Task Un_script_en_la_descripcion_sale_escapado()
+    {
+        var venta = Venta(detalle: [Fila(1, "<script>alert('x')</script>", 1, 6.50m)]);
+
+        var html = await HtmlDe(venta);
+
+        Assert.DoesNotContain("<script>alert", html);
+        Assert.Contains("&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt;", html);
+    }
+
+    [Fact]
+    public async Task El_comprobante_muestra_los_encabezados_del_detalle_el_total_y_el_agradecimiento()
+    {
+        var html = await HtmlConLineas(2);
+
+        Assert.Contains("CANT.", html);
+        Assert.Contains("ARTÍCULO", html);
+        Assert.Contains("PRECIO", html);
+        Assert.Contains("IMPORTE", html);
+        Assert.Contains("RAZÓN SOCIAL", html);
+        Assert.Contains("TOTAL Bs", html);
+        Assert.Contains("Gracias por su compra", html);
     }
 }
