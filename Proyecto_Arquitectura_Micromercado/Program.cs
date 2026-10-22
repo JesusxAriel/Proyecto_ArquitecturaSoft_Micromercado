@@ -147,7 +147,8 @@ builder.Services.AddScoped<IFachadaAnulacion, FachadaAnulacion>();
 
 builder.Services
     .AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo("/keys"))
+    .PersistKeysToFileSystem(new DirectoryInfo(
+        builder.Configuration["DataProtection:KeysPath"] ?? "/keys"))
     .SetApplicationName("PuntoMarket");
 
 var app = builder.Build();
