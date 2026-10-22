@@ -78,6 +78,31 @@ public class UsersIndexModelTests
     }
 
     [Fact]
+    public async Task Reenviar_activacion_informa_resultado_y_redirige()
+    {
+        var servicio = new ServicioPrueba();
+        servicio.Usuarios.Add(new(42, "Ana", "Pérez", "ana@ejemplo.com", "aperez", Roles.Cajero,
+            "PENDIENTE", new DateTime(2026, 10, 1)));
+        var pagina = CrearPagina(servicio);
+
+        Assert.IsType<RedirectToPageResult>(await pagina.OnPostReenviarActivacionAsync(42, default));
+
+        Assert.Equal("Se envió un nuevo enlace de activación. Es válido durante 10 minutos.", pagina.StatusMessage);
+    }
+
+    [Fact]
+    public async Task Desactivar_informa_resultado_y_refresca_estado_tras_redireccion()
+    {
+        var servicio = new ServicioPrueba();
+        var pagina = CrearPagina(servicio);
+
+        Assert.IsType<RedirectToPageResult>(await pagina.OnPostDesactivarAsync(1, default));
+
+        Assert.Equal("Usuario desactivado correctamente.", pagina.StatusMessage);
+        Assert.Equal("INACTIVO", Assert.Single(servicio.Usuarios, usuario => usuario.Id == 1).Estado);
+    }
+
+    [Fact]
     public async Task Correo_duplicado_muestra_error_en_el_campo_y_conserva_formulario_listado_y_roles()
     {
         var servicio = new ServicioPrueba { ErrorCreacion = new CorreoUsuarioDuplicadoException() };
@@ -236,15 +261,27 @@ public class UsersIndexModelTests
             return Task.FromResult(RolesActivos);
         }
 
-        public Task<int> CrearAsync(UsuarioCreacionDto usuario, CancellationToken cancellationToken = default)
+        public Task<UsuarioCreadoDto> CrearAsync(UsuarioCreacionDto usuario, CancellationToken cancellationToken = default)
         {
             Creaciones++;
             Tokens.Add(cancellationToken);
             Creado = usuario;
-            if (ErrorCreacion is not null) return Task.FromException<int>(ErrorCreacion);
+            if (ErrorCreacion is not null) return Task.FromException<UsuarioCreadoDto>(ErrorCreacion);
             Usuarios.Add(new(42, usuario.Nombre, usuario.Apellido, usuario.Correo, "aperez7", Roles.Cajero,
                 "PENDIENTE", new DateTime(2026, 10, 17)));
-            return Task.FromResult(42);
+            return Task.FromResult(new UsuarioCreadoDto(42));
+        }
+
+        public Task<bool> ReenviarActivacionAsync(int usuarioId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Usuarios.Any(usuario => usuario.Id == usuarioId && usuario.Estado == "PENDIENTE"));
+
+        public Task<bool> DesactivarAsync(int usuarioId, CancellationToken cancellationToken = default)
+        {
+            var indice = Usuarios.FindIndex(usuario => usuario.Id == usuarioId &&
+                usuario.Estado is "ACTIVO" or "PENDIENTE");
+            if (indice < 0) return Task.FromResult(false);
+            Usuarios[indice] = Usuarios[indice] with { Estado = "INACTIVO" };
+            return Task.FromResult(true);
         }
     }
 }

@@ -13,11 +13,11 @@ public class AutenticacionServiceTests
     {
         var usuarios = new InMemoryUsuarioRepository()
             .Agregar(new CredencialesDeUsuario(
-                1, "admin", "Gerente General", Roles.Administrador, hasher.Hash("admin123"), true))
+                1, "admin", "Gerente General", Roles.Administrador, hasher.Hash("admin123"), true, "ACTIVO", false, "admin@ejemplo.com"))
             .Agregar(new CredencialesDeUsuario(
-                2, "cajero1", "Carlos Mamani", Roles.Cajero, hasher.Hash("cajero123"), true))
+                2, "cajero1", "Carlos Mamani", Roles.Cajero, hasher.Hash("cajero123"), true, "ACTIVO", false, "cajero@ejemplo.com"))
             .Agregar(new CredencialesDeUsuario(
-                3, "baja", "Usuario de baja", Roles.Cajero, hasher.Hash("baja123"), false));
+                3, "baja", "Usuario de baja", Roles.Cajero, hasher.Hash("baja123"), false, "INACTIVO", false, "baja@ejemplo.com"));
 
         servicio = new AutenticacionService(usuarios, hasher);
     }
@@ -25,7 +25,7 @@ public class AutenticacionServiceTests
     [Fact]
     public async Task Credenciales_correctas_devuelven_el_usuario_con_su_rol()
     {
-        var usuario = await servicio.AutenticarAsync("admin", "admin123");
+        var usuario = await servicio.AutenticarAsync("admin@ejemplo.com", "admin123");
 
         Assert.NotNull(usuario);
         Assert.Equal(1, usuario.Id);
@@ -37,16 +37,16 @@ public class AutenticacionServiceTests
     [Fact]
     public async Task Cada_usuario_recibe_su_propio_rol()
     {
-        var cajero = await servicio.AutenticarAsync("cajero1", "cajero123");
+        var cajero = await servicio.AutenticarAsync("cajero@ejemplo.com", "cajero123");
 
         Assert.NotNull(cajero);
         Assert.Equal(Roles.Cajero, cajero.Rol);
     }
 
     [Fact]
-    public async Task El_nombre_de_usuario_no_distingue_mayusculas_ni_espacios_alrededor()
+    public async Task El_correo_no_distingue_mayusculas_ni_espacios_alrededor()
     {
-        var usuario = await servicio.AutenticarAsync("  ADMIN ", "admin123");
+        var usuario = await servicio.AutenticarAsync("  ADMIN@EJEMPLO.COM ", "admin123");
 
         Assert.NotNull(usuario);
         Assert.Equal(1, usuario.Id);
@@ -55,25 +55,40 @@ public class AutenticacionServiceTests
     [Fact]
     public async Task Una_contrasena_incorrecta_no_inicia_sesion()
     {
-        Assert.Null(await servicio.AutenticarAsync("admin", "otra-clave"));
+        Assert.Null(await servicio.AutenticarAsync("admin@ejemplo.com", "otra-clave"));
     }
 
     [Fact]
     public async Task La_contrasena_si_distingue_mayusculas()
     {
-        Assert.Null(await servicio.AutenticarAsync("admin", "ADMIN123"));
+        Assert.Null(await servicio.AutenticarAsync("admin@ejemplo.com", "ADMIN123"));
     }
 
     [Fact]
     public async Task Un_usuario_inexistente_no_inicia_sesion()
     {
-        Assert.Null(await servicio.AutenticarAsync("fantasma", "admin123"));
+        Assert.Null(await servicio.AutenticarAsync("fantasma@ejemplo.com", "admin123"));
     }
 
     [Fact]
     public async Task Un_usuario_inactivo_no_inicia_sesion_aunque_la_contrasena_sea_correcta()
     {
-        Assert.Null(await servicio.AutenticarAsync("baja", "baja123"));
+        Assert.Null(await servicio.AutenticarAsync("baja@ejemplo.com", "baja123"));
+    }
+
+    [Fact]
+    public async Task Login_no_acepta_username_en_lugar_de_correo()
+    {
+        Assert.Null(await servicio.AutenticarAsync("admin", "admin123"));
+    }
+
+    [Fact]
+    public async Task Cambiar_password_exige_la_clave_actual_y_actualiza_el_hash()
+    {
+        Assert.False(await servicio.CambiarPasswordAsync(1, "incorrecta", "NuevaClave1!"));
+        Assert.True(await servicio.CambiarPasswordAsync(1, "admin123", "NuevaClave1!"));
+        Assert.Null(await servicio.AutenticarAsync("admin@ejemplo.com", "admin123"));
+        Assert.NotNull(await servicio.AutenticarAsync("admin@ejemplo.com", "NuevaClave1!"));
     }
 
     [Theory]
@@ -89,9 +104,10 @@ public class AutenticacionServiceTests
     public async Task Un_hash_corrupto_en_la_base_no_inicia_sesion_ni_lanza_error()
     {
         var usuarios = new InMemoryUsuarioRepository()
-            .Agregar(new CredencialesDeUsuario(9, "roto", "Hash roto", Roles.Cajero, "no-es-un-hash", true));
+            .Agregar(new CredencialesDeUsuario(
+                9, "roto", "Hash roto", Roles.Cajero, "no-es-un-hash", true, "ACTIVO", false, "roto@ejemplo.com"));
         var servicioConHashRoto = new AutenticacionService(usuarios, hasher);
 
-        Assert.Null(await servicioConHashRoto.AutenticarAsync("roto", "lo-que-sea"));
+        Assert.Null(await servicioConHashRoto.AutenticarAsync("roto@ejemplo.com", "lo-que-sea"));
     }
 }

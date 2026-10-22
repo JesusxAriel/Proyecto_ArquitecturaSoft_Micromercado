@@ -16,7 +16,9 @@ public class ArquitecturaHexagonalTests
         var autenticacion = typeof(Proyecto_Arquitectura_Micromercado.Application.Security.IUsuarioRepository);
         var administracion = typeof(Proyecto_Arquitectura_Micromercado.Application.Users.IUsuarioAdministracionRepository);
         var servicio = typeof(Proyecto_Arquitectura_Micromercado.Application.Users.UsuarioAdministracionService);
-        Assert.Equal("ObtenerCredencialesAsync", Assert.Single(autenticacion.GetMethods()).Name);
+        Assert.Equal(
+            ["ActualizarPasswordAsync", "EstaActivoAsync", "ObtenerCredencialesAsync", "ObtenerCredencialesPorIdAsync"],
+            autenticacion.GetMethods().Select(metodo => metodo.Name).OrderBy(nombre => nombre).ToArray());
         Assert.False(autenticacion.IsAssignableFrom(administracion));
         Assert.Contains(servicio.GetConstructors().Single().GetParameters(), p => p.ParameterType == administracion);
         Assert.DoesNotContain(servicio.GetConstructors().Single().GetParameters(), p => p.ParameterType == autenticacion);

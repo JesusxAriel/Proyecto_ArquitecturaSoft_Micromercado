@@ -44,7 +44,8 @@ public class UsuarioAdministracionMySqlTests
         Assert.DoesNotContain(await repo.ListarRolesActivosAsync(), r => r.Id == inactivo);
 
         var alta = new UsuarioAltaInterna("Ariana", "Pérez", identificador + "@ejemplo.com",
-            identificador, roles[0].Id, new BCryptPasswordHasher().Hash(Guid.NewGuid().ToString()), creador);
+            identificador, roles[0].Id, new BCryptPasswordHasher().Hash(Guid.NewGuid().ToString()), creador,
+            "HASH-DE-PRUEBA", DateTime.UtcNow.AddMinutes(10));
         var id = await repo.CrearAsync(alta);
         Assert.True(await repo.ExisteCorreoAsync(alta.Correo.ToUpperInvariant()));
         Assert.True(await repo.ExisteUsernameAsync(alta.Username));
@@ -56,7 +57,26 @@ public class UsuarioAdministracionMySqlTests
         Assert.True(listado.FechaCreacion > DateTime.MinValue);
         Assert.Equal(0, Convert.ToInt32(await Escalar("SELECT estaActivo FROM USUARIO WHERE id = @id;", ("@id", id))));
         Assert.Equal(1, Convert.ToInt32(await Escalar("SELECT debeCambiarPassword FROM USUARIO WHERE id = @id;", ("@id", id))));
+        Assert.Equal("HASH-DE-PRUEBA", Convert.ToString(await Escalar(
+            "SELECT tokenActivacionHash FROM USUARIO WHERE id = @id;", ("@id", id))));
+        Assert.True(Convert.ToDateTime(await Escalar(
+            "SELECT tokenActivacionExpira FROM USUARIO WHERE id = @id;", ("@id", id))) > DateTime.UtcNow);
         Assert.Equal(creador, Convert.ToInt32(await Escalar("SELECT idUsuarioCreacion FROM USUARIO WHERE id = @id;", ("@id", id))));
+        var activacion = new MySqlActivacionUsuarioRepository(unidad);
+        var ahoraUtc = DateTime.UtcNow;
+        Assert.True(await activacion.TokenValidoAsync("HASH-DE-PRUEBA", ahoraUtc));
+        Assert.True(await activacion.ActivarAsync("HASH-DE-PRUEBA", "hash-password-prueba", ahoraUtc));
+        Assert.False(await activacion.TokenValidoAsync("HASH-DE-PRUEBA", ahoraUtc));
+        Assert.Equal("ACTIVO", Convert.ToString(await Escalar("SELECT estado FROM USUARIO WHERE id = @id;", ("@id", id))));
+        Assert.Equal(1, Convert.ToInt32(await Escalar("SELECT estaActivo FROM USUARIO WHERE id = @id;", ("@id", id))));
+        Assert.Equal("hash-password-prueba", Convert.ToString(await Escalar("SELECT passwordHash FROM USUARIO WHERE id = @id;", ("@id", id))));
+        Assert.True(await Escalar("SELECT tokenActivacionHash FROM USUARIO WHERE id = @id;", ("@id", id)) is null or DBNull);
+        Assert.True(await repo.DesactivarAsync(id, creador));
+        Assert.Equal("INACTIVO", Convert.ToString(await Escalar("SELECT estado FROM USUARIO WHERE id = @id;", ("@id", id))));
+        Assert.Equal(0, Convert.ToInt32(await Escalar("SELECT estaActivo FROM USUARIO WHERE id = @id;", ("@id", id))));
+        Assert.Equal(creador, Convert.ToInt32(await Escalar("SELECT idUsuarioEliminacion FROM USUARIO WHERE id = @id;", ("@id", id))));
+        Assert.NotNull(await Escalar("SELECT fechaEliminacion FROM USUARIO WHERE id = @id;", ("@id", id)));
+        Assert.False(await repo.DesactivarAsync(id, creador));
         await Assert.ThrowsAsync<CorreoUsuarioDuplicadoException>(() => repo.CrearAsync(alta with { Username = identificador + "1" }));
         await Assert.ThrowsAsync<UsernameUsuarioDuplicadoException>(() => repo.CrearAsync(alta with { Correo = "otra" + alta.Correo }));
         await Assert.ThrowsAsync<ArgumentException>(() => repo.CrearAsync(alta with { IdRol = inactivo }));
