@@ -15,7 +15,7 @@ public sealed class UnidadDeTrabajoEnMemoria : IUnidadDeTrabajo
         if (HayTransaccionActiva)
         {
             throw new InvalidOperationException(
-                "Ya hay una transaccion en curso en esta unidad de trabajo.");
+                "Ya hay una transacción en curso en esta unidad de trabajo.");
         }
 
         HayTransaccionActiva = true;

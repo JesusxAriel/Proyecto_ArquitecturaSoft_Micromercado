@@ -17,7 +17,7 @@ public sealed class MySqlUnidadDeTrabajo(DatabaseConnection conexion) : IUnidadD
         if (transaccion is not null)
         {
             throw new InvalidOperationException(
-                "Ya hay una transaccion en curso en esta unidad de trabajo.");
+                "Ya hay una transacción en curso en esta unidad de trabajo.");
         }
 
         return ErroresDePersistencia.TraducirAsync(async () =>
