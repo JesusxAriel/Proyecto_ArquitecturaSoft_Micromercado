@@ -29,6 +29,7 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
             </head>
             <body>
             <main class="recibo">
+            {SelloDeAnulada(comprobante)}
             {Encabezado(comprobante)}
             {AvisoDeAnulada(comprobante)}
             {DatosDelCliente(comprobante)}
@@ -58,6 +59,9 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
         </div>
         </header>
         """;
+
+    private static string SelloDeAnulada(ComprobanteDto comprobante) =>
+        comprobante.EstaAnulada ? "<div class=\"sello\" aria-hidden=\"true\">ANULADA</div>" : string.Empty;
 
     private static string AvisoDeAnulada(ComprobanteDto comprobante) =>
         comprobante.EstaAnulada ? "<p class=\"anulada\" role=\"alert\">ANULADA</p>" : string.Empty;
@@ -181,6 +185,23 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
           border: 2px solid #B91C1C;
           border-radius: 4px;
         }
+        .sello {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          z-index: 2;
+          padding: 0 28px;
+          font-size: clamp(48px, 12vw, 108px);
+          font-weight: 900;
+          letter-spacing: 6px;
+          white-space: nowrap;
+          color: rgba(185, 28, 28, 0.22);
+          border: 8px solid rgba(185, 28, 28, 0.22);
+          border-radius: 14px;
+          transform: translate(-50%, -50%) rotate(-28deg);
+          pointer-events: none;
+          user-select: none;
+        }
         .cliente {
           display: grid;
           grid-template-columns: 1fr 2fr;
@@ -268,11 +289,17 @@ public sealed class GeneradorComprobanteHtml : IGeneradorComprobante
           .recuadro-total { width: 100%; justify-content: space-between; }
           h1 { font-size: 18px; }
         }
+        @page { size: letter; margin: 10mm; }
         @media print {
-          body { padding: 0; background: #FFFFFF; }
+          * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          body { padding: 0; background: #FFFFFF; font-size: 12px; }
           .recibo { max-width: none; padding: 0; border-radius: 0; box-shadow: none; }
+          .tabla-envoltorio { overflow: visible; }
+          .detalle { min-width: 0; }
+          .detalle td { height: 8mm; padding-top: 2px; padding-bottom: 2px; }
+          .detalle thead { display: table-header-group; }
+          .detalle tr, .encabezado, .cliente, .cierre, .letras, .pie { break-inside: avoid; }
           .acciones { display: none; }
-          @page { margin: 10mm; }
         }
         """;
 }
