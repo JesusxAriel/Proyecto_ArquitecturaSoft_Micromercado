@@ -390,6 +390,7 @@ cp .env.example .env
 | Variable | Uso |
 |---|---|
 | `MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD` | Base de datos MySQL |
+| `MYSQL_PUBLISHED_PORT` | Puerto de su equipo desde el que se conecta MySQL Workbench (por defecto `3306`) |
 | `ACTIVACION_BASE_URL` | URL pública de la aplicación para los enlaces de activación (`http://localhost:8080`) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENABLE_SSL` | Servidor de correo (`smtp.gmail.com`, `587`, `true`) |
 | `SMTP_FROM_ADDRESS`, `SMTP_FROM_NAME`, `SMTP_USER_NAME`, `SMTP_PASSWORD` | Remitente y credenciales del correo |
@@ -448,6 +449,29 @@ docker compose logs app1 app2 app3 | grep "Caché del historial"
 ```
 
 La entrada expira a los 30 segundos y se invalida al registrar o anular una venta.
+
+### Ver la base de datos con MySQL Workbench
+
+El MySQL de Docker queda publicado solo en su equipo (`127.0.0.1`), en el puerto que defina `MYSQL_PUBLISHED_PORT` en el `.env` (por defecto `3306`). Así puede ver en Workbench los mismos datos que usa la aplicación en `http://localhost:8080`.
+
+Cree una conexión nueva en Workbench:
+
+| Campo | Valor |
+|---|---|
+| Hostname | `127.0.0.1` |
+| Port | `3306`, o el valor de `MYSQL_PUBLISHED_PORT` |
+| Username | `MYSQL_USER` de su `.env` (o `root` con `MYSQL_ROOT_PASSWORD`) |
+| Password | La que corresponda en su `.env` |
+| Default Schema | `bdMicroMercadoArqui` |
+
+Si ya tiene MySQL instalado en su equipo y en ejecución, el puerto 3306 está ocupado y Docker no podrá iniciar el servicio `mysql`. Elija una de estas dos opciones:
+
+- Defina otro puerto en su `.env`, por ejemplo `MYSQL_PUBLISHED_PORT=3307`, y use ese puerto en Workbench.
+- Detenga su MySQL local mientras usa Docker.
+
+Esta es la base de Docker. Cuando ejecuta la aplicación desde Visual Studio se usa su MySQL local, que es otra base distinta. Cada integrante tiene su propia base: los cambios hechos desde `http://localhost:8080` se ven en su conexión, no en la de sus compañeros.
+
+Si cambia el script `bdMicroMercadoArqui.sql`, hay que recrear la base con `docker compose down -v` y volver a levantar (ver «Limpiar»).
 
 ### Limpiar
 
