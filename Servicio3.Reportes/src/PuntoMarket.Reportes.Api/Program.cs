@@ -13,7 +13,11 @@ var parametrosDeToken = CrearParametrosDeValidacion(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(opciones => opciones.TokenValidationParameters = parametrosDeToken);
+    .AddJwtBearer(opciones =>
+    {
+        opciones.MapInboundClaims = false;
+        opciones.TokenValidationParameters = parametrosDeToken;
+    });
 builder.Services.AddAuthorization();
 
 builder.Services.AddSingleton<IReloj, RelojDelSistema>();
