@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\PuntoMarket.Usuarios.Application\PuntoMarket.Usuarios.Application.csproj" />
+    <ProjectReference Include="..\PuntoMarket.Usuarios.Infrastructure\PuntoMarket.Usuarios.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>
