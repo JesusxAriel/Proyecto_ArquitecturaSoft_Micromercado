@@ -4,7 +4,8 @@ namespace PuntoMarket.Usuarios.Application.Ports.Gestion;
 
 public sealed record UsuarioListadoDto(
     int Id, string Nombre, string Apellido, string Correo, string Username,
-    string Rol, string Estado, DateTime FechaCreacion);
+    string Rol, string Estado, DateTime FechaCreacion,
+    DateTime? TokenActivacionExpira = null, DateTime? FechaActivacion = null);
 
 public sealed record RolActivoDto(int Id, string Nombre);
 
