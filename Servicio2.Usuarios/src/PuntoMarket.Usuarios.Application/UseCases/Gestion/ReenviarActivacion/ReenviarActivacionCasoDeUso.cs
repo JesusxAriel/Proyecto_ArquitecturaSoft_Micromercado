@@ -15,7 +15,8 @@ public sealed class ReenviarActivacionCasoDeUso(
         ReenviarActivacionEntrada entrada,
         CancellationToken cancellationToken = default)
     {
-        if (usuarioActual.Rol != "Administrador" || usuarioActual.Id <= 0)
+        var idUsuarioActualizacion = usuarioActual.Id;
+        if (usuarioActual.Rol != "Administrador" || idUsuarioActualizacion <= 0)
             throw new UnauthorizedAccessException("La administración de usuarios requiere el rol Administrador.");
 
         ArgumentNullException.ThrowIfNull(entrada);
@@ -32,7 +33,7 @@ public sealed class ReenviarActivacionCasoDeUso(
 
         var token = generadorToken.Generar(reloj.UtcNow, TimeSpan.FromMinutes(10));
         var correo = await repositorio.RenovarTokenActivacionAsync(
-            entrada.UsuarioId, token.Hash, token.Expira.UtcDateTime, cancellationToken);
+            entrada.UsuarioId, token.Hash, token.Expira.UtcDateTime, idUsuarioActualizacion, cancellationToken);
         if (string.IsNullOrWhiteSpace(correo))
             throw new InvalidOperationException("No se pudo renovar el token de activación del usuario.");
 

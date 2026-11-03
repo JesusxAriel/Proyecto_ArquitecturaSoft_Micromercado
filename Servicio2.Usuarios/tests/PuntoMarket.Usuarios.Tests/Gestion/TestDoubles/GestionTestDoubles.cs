@@ -78,7 +78,7 @@ internal sealed class UsuarioGestionRepositorioStub : IUsuarioGestionRepositorio
     public bool ResultadoActivacion { get; set; } = true;
     public Action? AlActivar { get; set; }
     public List<string> Llamadas { get; } = [];
-    public List<(int UsuarioId, string Hash, DateTime Expira)> Renovaciones { get; } = [];
+    public List<(int UsuarioId, string Hash, DateTime Expira, int IdUsuarioActualizacion)> Renovaciones { get; } = [];
     public List<(int UsuarioId, int IdUsuarioEliminacion)> Bajas { get; } = [];
     public List<(string Hash, DateTime Ahora)> Validaciones { get; } = [];
     public List<(string TokenHash, string PasswordHash, DateTime Ahora)> Activaciones { get; } = [];
@@ -128,10 +128,11 @@ internal sealed class UsuarioGestionRepositorioStub : IUsuarioGestionRepositorio
     }
 
     public Task<string?> RenovarTokenActivacionAsync(int usuarioId, string tokenHash, DateTime tokenExpiraUtc,
+        int idUsuarioActualizacion,
         CancellationToken cancellationToken = default)
     {
         Llamadas.Add(nameof(RenovarTokenActivacionAsync));
-        Renovaciones.Add((usuarioId, tokenHash, tokenExpiraUtc));
+        Renovaciones.Add((usuarioId, tokenHash, tokenExpiraUtc, idUsuarioActualizacion));
         return Task.FromResult(CorreoRenovacion);
     }
 

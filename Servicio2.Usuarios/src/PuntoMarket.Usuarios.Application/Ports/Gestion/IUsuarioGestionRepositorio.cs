@@ -22,6 +22,7 @@ public interface IUsuarioGestionRepositorio
         int usuarioId,
         string tokenHash,
         DateTime tokenExpiraUtc,
+        int idUsuarioActualizacion,
         CancellationToken cancellationToken = default);
 
     Task<bool> DesactivarAsync(

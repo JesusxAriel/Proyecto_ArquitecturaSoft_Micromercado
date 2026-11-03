@@ -75,13 +75,14 @@ public class ReenviarActivacionTests
     {
         var hashAnterior = repositorio.UsuarioParaActivacion!.TokenActivacionHash;
 
-        var salida = await CrearCaso().EjecutarAsync(new(42));
+        var usuarioActual = new UsuarioActualStub(19);
+        var salida = await CrearCaso(usuarioActual).EjecutarAsync(new(42));
 
         Assert.True(salida.Reenviado);
         var token = Assert.Single(tokens.Tokens);
         Assert.NotEqual(hashAnterior, token.Hash);
         Assert.Equal((reloj.UtcNow, TimeSpan.FromMinutes(10)), Assert.Single(tokens.Solicitudes));
-        Assert.Equal((42, token.Hash, reloj.UtcNow.AddMinutes(10).UtcDateTime),
+        Assert.Equal((42, token.Hash, reloj.UtcNow.AddMinutes(10).UtcDateTime, usuarioActual.Id),
             Assert.Single(repositorio.Renovaciones));
     }
 

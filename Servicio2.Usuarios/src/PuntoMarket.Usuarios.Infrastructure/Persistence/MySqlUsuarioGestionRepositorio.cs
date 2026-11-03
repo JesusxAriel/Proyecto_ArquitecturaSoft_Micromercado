@@ -133,12 +133,14 @@ public sealed class MySqlUsuarioGestionRepositorio(ConexionMySql conexionMySql)
         int usuarioId,
         string tokenHash,
         DateTime tokenExpiraUtc,
+        int idUsuarioActualizacion,
         CancellationToken cancellationToken = default)
     {
         const string actualizar = """
             UPDATE USUARIO
             SET tokenActivacionHash = @tokenHash,
                 tokenActivacionExpira = @tokenExpira,
+                idUsuarioActualizacion = @idUsuarioActualizacion,
                 fechaActualizacion = CURRENT_TIMESTAMP
             WHERE id = @id AND estado = 'PENDIENTE' AND estaActivo = 0;
             """;
@@ -156,6 +158,7 @@ public sealed class MySqlUsuarioGestionRepositorio(ConexionMySql conexionMySql)
             command.Parameters.AddWithValue("@id", usuarioId);
             command.Parameters.AddWithValue("@tokenHash", tokenHash);
             command.Parameters.AddWithValue("@tokenExpira", tokenExpiraUtc);
+            command.Parameters.AddWithValue("@idUsuarioActualizacion", idUsuarioActualizacion);
             if (await command.ExecuteNonQueryAsync(cancellationToken) != 1)
                 return null;
         }
@@ -207,6 +210,7 @@ public sealed class MySqlUsuarioGestionRepositorio(ConexionMySql conexionMySql)
                 fechaActivacion = @ahoraUtc,
                 tokenActivacionHash = NULL,
                 tokenActivacionExpira = NULL,
+                idUsuarioActualizacion = NULL,
                 fechaActualizacion = CURRENT_TIMESTAMP
             WHERE tokenActivacionHash = @tokenHash
               AND tokenActivacionExpira > @ahoraUtc
@@ -232,6 +236,7 @@ public sealed class MySqlUsuarioGestionRepositorio(ConexionMySql conexionMySql)
             SET estado = 'INACTIVO',
                 estaActivo = 0,
                 idUsuarioEliminacion = @idUsuarioEliminacion,
+                idUsuarioActualizacion = @idUsuarioEliminacion,
                 fechaEliminacion = CURRENT_TIMESTAMP,
                 fechaActualizacion = CURRENT_TIMESTAMP,
                 tokenActivacionHash = NULL,

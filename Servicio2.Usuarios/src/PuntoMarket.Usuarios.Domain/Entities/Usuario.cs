@@ -16,6 +16,7 @@ public sealed class Usuario
     public bool EstaActivo => Estado == EstadoUsuario.ACTIVO;
     public bool DebeCambiarPassword { get; init; }
     public int? IdUsuarioCreacion { get; init; }
+    public int? IdUsuarioActualizacion { get; init; }
     public string? TokenActivacionHash { get; init; }
     public DateTime? TokenActivacionExpira { get; init; }
     public DateTime? FechaActivacion { get; init; }
