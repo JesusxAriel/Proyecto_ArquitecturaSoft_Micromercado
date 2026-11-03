@@ -13,7 +13,7 @@ public class GeneradorDeTokenDePrueba
 
     public string Clave { get; } = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
 
-    public string Generar(int id, string nombreDeUsuario)
+    public string Generar(int id, string nombreDeUsuario, string? rol = null)
     {
         var credenciales = new SigningCredentials(
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Clave)),
@@ -22,10 +22,19 @@ public class GeneradorDeTokenDePrueba
         var token = new JwtSecurityToken(
             Emisor,
             Audiencia,
-            [new Claim("sub", id.ToString()), new Claim("unique_name", nombreDeUsuario)],
+            CrearClaims(id, nombreDeUsuario, rol),
             expires: DateTime.UtcNow.AddMinutes(5),
             signingCredentials: credenciales);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private static List<Claim> CrearClaims(int id, string nombreDeUsuario, string? rol)
+    {
+        var claims = new List<Claim> { new("sub", id.ToString()), new("unique_name", nombreDeUsuario) };
+        if (rol is not null)
+            claims.Add(new Claim("role", rol));
+
+        return claims;
     }
 }
