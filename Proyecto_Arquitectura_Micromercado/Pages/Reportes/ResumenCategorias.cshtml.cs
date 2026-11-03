@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -44,6 +45,21 @@ public sealed class ResumenCategoriasModel(
             await ConsultarAsync(cancellationToken);
     }
 
+    public IDictionary<string, string?> ParametrosDeConsulta => new Dictionary<string, string?>
+    {
+        ["Consultar"] = "true",
+        [ClaveDesde] = Filtros.Desde?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        [ClaveHasta] = Filtros.Hasta?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        ["Filtros.IdCategoria"] = Filtros.IdCategoria?.ToString(CultureInfo.InvariantCulture),
+        ["Filtros.Top"] = Filtros.Top?.ToString(CultureInfo.InvariantCulture)
+    };
+
+    public Task<IActionResult> OnGetDescargarPdfAsync(CancellationToken cancellationToken) =>
+        DescargarAsync(FormatoDeDescarga.Pdf, cancellationToken);
+
+    public Task<IActionResult> OnGetDescargarExcelAsync(CancellationToken cancellationToken) =>
+        DescargarAsync(FormatoDeDescarga.Xlsx, cancellationToken);
+
     public int AnchoDeBarra(decimal monto)
     {
         var maximo = Resultado?.Filas.Max(f => f.MontoVendido) ?? 0m;
@@ -65,6 +81,24 @@ public sealed class ResumenCategoriasModel(
         catch (ReporteNoDisponibleException excepcion)
         {
             MensajeDeError = excepcion.Message;
+        }
+    }
+
+    private async Task<IActionResult> DescargarAsync(FormatoDeDescarga formato, CancellationToken cancellationToken)
+    {
+        await CargarCategoriasAsync(cancellationToken);
+        if (!FiltrosSonValidos())
+            return Page();
+
+        try
+        {
+            var archivo = await reportes.DescargarVentasPorCategoriaAsync(Filtros.ADto(), formato, cancellationToken);
+            return File(archivo.Contenido, archivo.TipoDeContenido, archivo.NombreDeArchivo);
+        }
+        catch (ReporteNoDisponibleException excepcion)
+        {
+            MensajeDeError = excepcion.Message;
+            return Page();
         }
     }
 

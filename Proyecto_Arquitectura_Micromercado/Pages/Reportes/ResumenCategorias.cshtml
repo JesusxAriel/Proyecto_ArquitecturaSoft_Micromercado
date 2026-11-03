@@ -64,6 +64,17 @@
         <div class="card-body">
             <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
                 <h2 class="h5 mb-0" id="resultadoTitulo">Resultado</h2>
+                @if (resultado.Filas.Count > 0)
+                {
+                    <div class="ms-auto d-flex flex-wrap gap-2">
+                        <a class="btn btn-outline-danger btn-sm" asp-page-handler="DescargarPdf" asp-all-route-data="Model.ParametrosDeConsulta">
+                            <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> Descargar PDF
+                        </a>
+                        <a class="btn btn-outline-success btn-sm" asp-page-handler="DescargarExcel" asp-all-route-data="Model.ParametrosDeConsulta">
+                            <i class="bi bi-file-earmark-excel" aria-hidden="true"></i> Descargar Excel
+                        </a>
+                    </div>
+                }
             </div>
 
             @if (resultado.Filas.Count == 0)
