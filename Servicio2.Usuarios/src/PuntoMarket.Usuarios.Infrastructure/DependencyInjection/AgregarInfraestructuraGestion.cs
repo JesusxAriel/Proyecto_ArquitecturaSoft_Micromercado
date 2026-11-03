@@ -6,6 +6,7 @@ using PuntoMarket.Usuarios.Application.Ports.Gestion;
 using PuntoMarket.Usuarios.Infrastructure.Email;
 using PuntoMarket.Usuarios.Infrastructure.Persistence;
 using PuntoMarket.Usuarios.Infrastructure.Security;
+using PuntoMarket.Usuarios.Infrastructure.Time;
 
 namespace PuntoMarket.Usuarios.Infrastructure.DependencyInjection;
 
@@ -30,6 +31,7 @@ public static class RegistroInfraestructuraGestion
             return new ConexionMySql(cadenaConexion);
         });
         servicios.TryAddSingleton<IHasheadorPassword, BCryptHasheadorPassword>();
+        servicios.TryAddSingleton<IReloj, RelojSistema>();
 
         servicios.AddScoped<IUsuarioGestionRepositorio, MySqlUsuarioGestionRepositorio>();
         servicios.AddSingleton<IGeneradorTokenActivacion, GeneradorTokenActivacion>();
