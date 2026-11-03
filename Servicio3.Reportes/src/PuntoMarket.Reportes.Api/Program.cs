@@ -2,7 +2,9 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using PuntoMarket.Reportes.Api.Security;
+using PuntoMarket.Reportes.Application.DependencyInjection;
 using PuntoMarket.Reportes.Application.Ports.Comunes;
+using PuntoMarket.Reportes.Infrastructure.DependencyInjection;
 using PuntoMarket.Reportes.Infrastructure.Persistence;
 using PuntoMarket.Reportes.Infrastructure.Relojes;
 
@@ -23,6 +25,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IReloj, RelojDelSistema>();
 builder.Services.AddSingleton(_ => new ConexionMySql(ObtenerCadenaDeConexion(builder.Configuration)));
 builder.Services.AddScoped<IUsuarioActual, UsuarioActualHttp>();
+builder.Services.AgregarCasosDeUsoDeVentasPorCategoria().AgregarInfraestructuraDeVentasPorCategoria();
 
 var app = builder.Build();
 
@@ -48,7 +51,8 @@ static TokenValidationParameters CrearParametrosDeValidacion(IConfiguration conf
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(clave)),
         ClockSkew = TimeSpan.FromMinutes(1),
-        NameClaimType = "unique_name"
+        NameClaimType = "unique_name",
+        RoleClaimType = "role"
     };
 }
 
