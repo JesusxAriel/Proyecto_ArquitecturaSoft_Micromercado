@@ -11,7 +11,6 @@ using Proyecto_Arquitectura_Micromercado.Application.Stock;
 using Proyecto_Arquitectura_Micromercado.Application.Security;
 using Proyecto_Arquitectura_Micromercado.Application.Users;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Background;
-using Proyecto_Arquitectura_Micromercado.Infrastructure.Cache;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Factories;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Comprobantes;
 using Proyecto_Arquitectura_Micromercado.Infrastructure.Database;
@@ -58,14 +57,7 @@ builder.Services
     });
 
 
-builder.Services.AddStackExchangeRedisCache(options =>
-{
-    options.ConfigurationOptions = OpcionesDeRedis.Crear(
-        builder.Configuration.GetConnectionString("Redis")
-        ?? "redis:6379");
-
-    options.InstanceName = "PuntoMarket:";
-});
+builder.Services.AddDistributedMemoryCache();
 
 builder.Services.AddSession(options =>
 {
