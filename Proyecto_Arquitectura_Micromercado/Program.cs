@@ -22,6 +22,7 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
 using System.Globalization;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
 using Proyecto_Arquitectura_Micromercado.Pages.Shared;
+using Proyecto_Arquitectura_Micromercado.Servicios.Reportes;
 
 
 using Microsoft.AspNetCore.DataProtection;
@@ -75,6 +76,7 @@ builder.Services.AddSession(options =>
 
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AgregarClienteDeReportes(builder.Configuration);
 builder.Services.AddScoped<IUsuarioActual, UsuarioActualDesdeClaims>();
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IUsuarioRepository, MySqlUsuarioRepository>();
