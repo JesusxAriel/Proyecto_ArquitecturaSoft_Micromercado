@@ -7,7 +7,8 @@
     var desde = document.getElementById('Filtros_Desde');
     var hasta = document.getElementById('Filtros_Hasta');
     var top = document.getElementById('Filtros_Top');
-    var aviso = document.getElementById('errorRangoFechas');
+    var avisoRango = document.getElementById('errorRangoFechas');
+    var avisoTop = document.querySelector('[data-valmsg-for="Filtros.Top"]');
     var mensajeRango = 'La fecha «Desde» no puede ser posterior a la fecha «Hasta».';
     var mensajeTop = 'El valor de «Top» debe ser un número entero entre 1 y 100.';
 
@@ -24,26 +25,28 @@
         return !Number.isInteger(valor) || valor < 1 || valor > 100;
     }
 
-    function mostrar(mensaje) {
-        aviso.textContent = mensaje;
-        aviso.hidden = mensaje === '';
-        desde.setAttribute('aria-invalid', rangoInvertido() ? 'true' : 'false');
-        top.setAttribute('aria-invalid', topInvalido() ? 'true' : 'false');
+    function mostrarErrorDeRango(mensaje) {
+        avisoRango.textContent = mensaje;
+        avisoRango.hidden = mensaje === '';
+        desde.setAttribute('aria-invalid', mensaje === '' ? 'false' : 'true');
+    }
+
+    function mostrarErrorDeTop(mensaje) {
+        avisoTop.textContent = mensaje;
+        avisoTop.className = mensaje === ''
+            ? 'text-danger field-validation-valid'
+            : 'text-danger field-validation-error';
+        top.setAttribute('aria-invalid', mensaje === '' ? 'false' : 'true');
     }
 
     function validar() {
-        if (rangoInvertido()) {
-            mostrar(mensajeRango);
-            return false;
-        }
+        var rangoValido = !rangoInvertido();
+        var topValido = !topInvalido();
 
-        if (topInvalido()) {
-            mostrar(mensajeTop);
-            return false;
-        }
+        mostrarErrorDeRango(rangoValido ? '' : mensajeRango);
+        mostrarErrorDeTop(topValido ? '' : mensajeTop);
 
-        mostrar('');
-        return true;
+        return rangoValido && topValido;
     }
 
     [desde, hasta, top].forEach(function (campo) {
@@ -53,6 +56,7 @@
     formulario.addEventListener('submit', function (evento) {
         if (!validar()) {
             evento.preventDefault();
+            evento.stopImmediatePropagation();
         }
     });
 })();
