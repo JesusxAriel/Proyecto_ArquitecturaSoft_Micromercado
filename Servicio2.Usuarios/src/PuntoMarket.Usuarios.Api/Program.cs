@@ -5,6 +5,7 @@ using PuntoMarket.Usuarios.Infrastructure.DependencyInjection;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AgregarGestionDeUsuarios();
+builder.Services.AgregarAutenticacionDeUsuarios();
 builder.Services.AgregarInfraestructuraGestion(builder.Configuration);
 builder.Services.AgregarAutenticacionJwt(builder.Configuration);
 builder.Services.AddAuthorization();
