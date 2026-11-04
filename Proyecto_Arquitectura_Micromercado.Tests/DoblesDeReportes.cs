@@ -77,4 +77,46 @@ internal sealed class ClienteDeReportesFalso : IReportesApiClient
             ? Task.FromResult(new ArchivoDescargadoDto([1, 2, 3], "application/pdf", "reporte.pdf"))
             : Task.FromException<ArchivoDescargadoDto>(Error);
     }
+
+    public FiltrosListadoVentasDto? FiltrosDeListadoRecibidos { get; private set; }
+
+    public RespuestaListadoVentasDto RespuestaDeListado { get; init; } = new(
+        [
+            new FilaListadoVentasDto(
+                1,
+                "F-0001",
+                new DateTime(2026, 10, 30, 19, 42, 0),
+                "4587963",
+                "Distribuidora La Paz S.R.L.",
+                "ventas01",
+                "COMPLETADA",
+                1842.5m)
+        ],
+        new TotalesListadoVentasDto(1, 0, 1842.5m, 1842.5m),
+        new DateTime(2026, 11, 3, 9, 15, 0),
+        "admin");
+
+    public Task<RespuestaListadoVentasDto> ObtenerListadoDeVentasAsync(
+        FiltrosListadoVentasDto filtros,
+        CancellationToken cancellationToken)
+    {
+        Consultas++;
+        FiltrosDeListadoRecibidos = filtros;
+        return Error is null
+            ? Task.FromResult(RespuestaDeListado)
+            : Task.FromException<RespuestaListadoVentasDto>(Error);
+    }
+
+    public Task<ArchivoDescargadoDto> DescargarListadoDeVentasAsync(
+        FiltrosListadoVentasDto filtros,
+        FormatoDeDescarga formato,
+        CancellationToken cancellationToken)
+    {
+        Descargas++;
+        FiltrosDeListadoRecibidos = filtros;
+        FormatoRecibido = formato;
+        return Error is null
+            ? Task.FromResult(new ArchivoDescargadoDto([1, 2, 3], "application/pdf", "listado-de-ventas.pdf"))
+            : Task.FromException<ArchivoDescargadoDto>(Error);
+    }
 }
