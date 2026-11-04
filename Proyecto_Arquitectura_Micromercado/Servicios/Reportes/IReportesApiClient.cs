@@ -12,4 +12,13 @@ public interface IReportesApiClient
         FiltrosVentasPorCategoriaDto filtros,
         FormatoDeDescarga formato,
         CancellationToken cancellationToken);
+
+    Task<RespuestaListadoVentasDto> ObtenerListadoDeVentasAsync(
+        FiltrosListadoVentasDto filtros,
+        CancellationToken cancellationToken);
+
+    Task<ArchivoDescargadoDto> DescargarListadoDeVentasAsync(
+        FiltrosListadoVentasDto filtros,
+        FormatoDeDescarga formato,
+        CancellationToken cancellationToken);
 }
