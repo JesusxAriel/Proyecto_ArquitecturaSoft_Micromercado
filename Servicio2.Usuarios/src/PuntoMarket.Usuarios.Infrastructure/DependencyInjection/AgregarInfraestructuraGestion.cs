@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using PuntoMarket.Usuarios.Application.Ports.Autenticacion;
 using PuntoMarket.Usuarios.Application.Ports.Comunes;
 using PuntoMarket.Usuarios.Application.Ports.Gestion;
 using PuntoMarket.Usuarios.Infrastructure.Email;
@@ -34,6 +35,7 @@ public static class RegistroInfraestructuraGestion
         servicios.TryAddSingleton<IReloj, RelojSistema>();
 
         servicios.AddScoped<IUsuarioGestionRepositorio, MySqlUsuarioGestionRepositorio>();
+        servicios.AddScoped<IUsuarioAutenticacionRepositorio, MySqlUsuarioAutenticacionRepositorio>();
         servicios.AddSingleton<IGeneradorTokenActivacion, GeneradorTokenActivacion>();
         servicios.AddSingleton<SmtpEnviadorCorreoOpciones>(_ =>
         {
