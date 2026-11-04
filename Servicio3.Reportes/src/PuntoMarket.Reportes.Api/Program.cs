@@ -26,6 +26,7 @@ builder.Services.AddSingleton<IReloj, RelojDelSistema>();
 builder.Services.AddSingleton(_ => new ConexionMySql(ObtenerCadenaDeConexion(builder.Configuration)));
 builder.Services.AddScoped<IUsuarioActual, UsuarioActualHttp>();
 builder.Services.AgregarCasosDeUsoDeVentasPorCategoria().AgregarInfraestructuraDeVentasPorCategoria();
+builder.Services.AgregarCasosDeUsoDeListadoVentas().AgregarInfraestructuraDeListadoVentas();
 
 var app = builder.Build();
 
