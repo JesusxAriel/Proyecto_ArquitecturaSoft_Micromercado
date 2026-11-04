@@ -95,7 +95,8 @@ public class JwtEmisorTokenTests
         var opciones = CrearOpciones();
         opciones.Key = key;
 
-        Assert.Throws<InvalidOperationException>(() => new JwtEmisorToken(opciones, new RelojFijo()));
+        Assert.Throws<InvalidOperationException>(() =>
+            new JwtEmisorToken(opciones, new RelojFijo()));
     }
 
     [Fact]
@@ -104,7 +105,8 @@ public class JwtEmisorTokenTests
         var opciones = CrearOpciones();
         opciones.ExpireMinutes = 0;
 
-        Assert.Throws<InvalidOperationException>(() => new JwtEmisorToken(opciones, new RelojFijo()));
+        Assert.Throws<InvalidOperationException>(() =>
+            new JwtEmisorToken(opciones, new RelojFijo()));
     }
 
     private static JwtEmisorToken CrearEmisor(int expireMinutes = 60) =>
