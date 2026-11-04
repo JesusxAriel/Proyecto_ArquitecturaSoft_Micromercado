@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\PuntoMarket.Usuarios.Api\PuntoMarket.Usuarios.Api.csproj" />
     <ProjectReference Include="..\..\src\PuntoMarket.Usuarios.Domain\PuntoMarket.Usuarios.Domain.csproj" />
     <ProjectReference Include="..\..\src\PuntoMarket.Usuarios.Application\PuntoMarket.Usuarios.Application.csproj" />
     <ProjectReference Include="..\..\src\PuntoMarket.Usuarios.Infrastructure\PuntoMarket.Usuarios.Infrastructure.csproj" />
