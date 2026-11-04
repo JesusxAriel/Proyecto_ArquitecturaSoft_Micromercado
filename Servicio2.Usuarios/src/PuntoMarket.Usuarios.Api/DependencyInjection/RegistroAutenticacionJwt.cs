@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using PuntoMarket.Usuarios.Api.Security;
+using PuntoMarket.Usuarios.Application.Ports.Comunes;
 using PuntoMarket.Usuarios.Infrastructure.DependencyInjection;
 using PuntoMarket.Usuarios.Infrastructure.Security;
 
@@ -23,6 +25,8 @@ public static class RegistroAutenticacionJwt
         opciones.Validar();
 
         servicios.AgregarInfraestructuraAutenticacion(configuracion);
+        servicios.AddHttpContextAccessor();
+        servicios.AddScoped<IUsuarioActual, UsuarioActualHttp>();
         servicios
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(opcionesJwt =>
