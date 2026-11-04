@@ -150,8 +150,8 @@ public class ListadoVentasDocumento : IDocument
         var totales = _reporte.Totales;
         texto.Span($"Ventas completadas: {FormatosDeTexto.Entero(totales.CantidadDeCompletadas)}   |   ");
         texto.Span($"Ventas anuladas: {FormatosDeTexto.Entero(totales.CantidadDeAnuladas)}   |   ");
-        texto.Span($"Monto total: Bs {FormatosDeTexto.Moneda(totales.MontoTotalDeCompletadas)}   |   ");
-        texto.Span($"Promedio por venta: Bs {FormatosDeTexto.Moneda(totales.PromedioPorVenta)}");
+        texto.Span($"Monto total de las completadas: Bs {FormatosDeTexto.Moneda(totales.MontoTotalDeCompletadas)}   |   ");
+        texto.Span($"Promedio por venta completada: Bs {FormatosDeTexto.Moneda(totales.PromedioPorVenta)}");
     }
 
     private static void ComponerNumeroDePagina(TextDescriptor texto)

@@ -116,7 +116,7 @@ public class ListadoVentasExcel : IExportadorDeReporte<ReporteListadoVentas>
         EscribirLinea(
             hoja,
             filaDeTotales,
-            "Monto total de las ventas completadas",
+            "Monto total de las completadas",
             SumaDeCompletadas(primeraFila, ultimaFila),
             FormatoDeMoneda);
 
