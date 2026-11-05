@@ -35,6 +35,41 @@ public class ResumenCategoriasModelTests
         };
 
     [Fact]
+    public async Task Los_indicadores_resumen_monto_unidades_categorias_y_lider_con_su_participacion()
+    {
+        var cliente = new ClienteDeReportesFalso
+        {
+            Respuesta = new RespuestaVentasPorCategoriaDto(
+                [
+                    new FilaVentasPorCategoriaDto(1, "Lácteos", 5, 75m),
+                    new FilaVentasPorCategoriaDto(2, "Bebidas", 8, 25m)
+                ],
+                new TotalesVentasPorCategoriaDto(13, 100m, "Lácteos"),
+                new DateTime(2026, 5, 20, 14, 30, 0),
+                "admin")
+        };
+        var pagina = await CrearPaginaAsync(cliente);
+
+        await pagina.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(["Monto total", "Unidades vendidas", "Categorías", "Categoría líder"], pagina.Indicadores.Select(i => i.Etiqueta));
+        Assert.Equal("2", pagina.Indicadores[2].Valor);
+        Assert.Equal("Lácteos", pagina.Indicadores[3].Valor);
+        Assert.Contains("75", pagina.Indicadores[3].Detalle);
+        Assert.Contains("%", pagina.Indicadores[3].Detalle);
+    }
+
+    [Fact]
+    public async Task Sin_resultado_no_hay_indicadores()
+    {
+        var pagina = await CrearPaginaAsync(new ClienteDeReportesFalso(), consultar: false);
+
+        await pagina.OnGetAsync(CancellationToken.None);
+
+        Assert.Empty(pagina.Indicadores);
+    }
+
+    [Fact]
     public void La_pagina_solo_se_autoriza_al_administrador()
     {
         var atributo = Assert.Single(typeof(ResumenCategoriasModel).GetCustomAttributes<AuthorizeAttribute>());

@@ -33,6 +33,25 @@ public sealed class ResumenCategoriasModel(
 
     public string? MensajeDeError { get; private set; }
 
+    public IReadOnlyList<IndicadorDePantalla> Indicadores => Resultado is null
+        ? []
+        :
+        [
+            new("Monto total", $"Bs {Resultado.Totales.TotalMonto:N2}"),
+            new("Unidades vendidas", Resultado.Totales.TotalUnidades.ToString("N0")),
+            new("Categorías", Resultado.Filas.Count.ToString("N0")),
+            new("Categoría líder", Resultado.Totales.CategoriaLider ?? "No aplica", DetalleDelLider())
+        ];
+
+    private string? DetalleDelLider()
+    {
+        var lider = Resultado!.Filas.MaxBy(f => f.MontoVendido);
+        if (lider is null || Resultado.Totales.TotalMonto == 0m)
+            return null;
+
+        return $"Bs {lider.MontoVendido:N2} ({lider.MontoVendido / Resultado.Totales.TotalMonto:P1})";
+    }
+
     public string DescripcionDelGrafico => Resultado is null
         ? string.Empty
         : "Gráfico de barras horizontales del monto vendido por categoría: " +

@@ -28,6 +28,17 @@ public sealed class VentasListadoModel(IReportesApiClient reportes) : PageModel
 
     public string? MensajeDeError { get; private set; }
 
+    public IReadOnlyList<IndicadorDePantalla> Indicadores => Resultado is null
+        ? []
+        :
+        [
+            new("Ventas completadas", Resultado.Totales.VentasCompletadas.ToString("N0")),
+            new("Monto total", $"Bs {Resultado.Totales.MontoTotalDeCompletadas:N2}"),
+            new("Promedio por venta", $"Bs {Resultado.Totales.PromedioPorVenta:N2}"),
+            new("Venta más alta", $"Bs {Resultado.Totales.VentaMasAlta:N2}"),
+            new("Ventas anuladas", Resultado.Totales.VentasAnuladas.ToString("N0"))
+        ];
+
     public IReadOnlyList<SelectListItem> Estados { get; } =
     [
         new("Completada", "COMPLETADA"),

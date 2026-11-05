@@ -1,0 +1,15 @@
+@model IReadOnlyList<Proyecto_Arquitectura_Micromercado.Pages.Reportes.IndicadorDePantalla>
+
+<ul class="indicadores-reporte" role="list" aria-label="Indicadores principales del reporte">
+    @foreach (var indicador in Model)
+    {
+        <li class="indicador-reporte">
+            <span class="indicador-reporte__etiqueta">@indicador.Etiqueta</span>
+            <strong class="indicador-reporte__valor">@indicador.Valor</strong>
+            @if (indicador.Detalle is not null)
+            {
+                <span class="indicador-reporte__detalle">@indicador.Detalle</span>
+            }
+        </li>
+    }
+</ul>

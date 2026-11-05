@@ -22,6 +22,50 @@ public class VentasListadoModelTests
         };
 
     [Fact]
+    public async Task Los_indicadores_resumen_las_ventas_completadas_el_monto_el_promedio_la_mas_alta_y_las_anuladas()
+    {
+        var cliente = new ClienteDeReportesFalso
+        {
+            RespuestaDeListado = new RespuestaListadoVentasDto(
+                [],
+                new TotalesListadoVentasDto(4, 2, 400m, 100m, 180m),
+                new DateTime(2026, 11, 3, 9, 15, 0),
+                "admin")
+        };
+        var pagina = CrearPagina(cliente);
+
+        await pagina.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(
+            ["Ventas completadas", "Monto total", "Promedio por venta", "Venta más alta", "Ventas anuladas"],
+            pagina.Indicadores.Select(i => i.Etiqueta));
+        Assert.Equal("4", pagina.Indicadores[0].Valor);
+        Assert.Contains("400", pagina.Indicadores[1].Valor);
+        Assert.Contains("180", pagina.Indicadores[3].Valor);
+        Assert.Equal("2", pagina.Indicadores[4].Valor);
+    }
+
+    [Fact]
+    public void Sin_resultado_no_hay_indicadores()
+    {
+        var pagina = CrearPagina(new ClienteDeReportesFalso(), consultar: false);
+
+        Assert.Empty(pagina.Indicadores);
+    }
+
+    [Fact]
+    public void El_contrato_acepta_respuestas_sin_la_venta_mas_alta()
+    {
+        const string json = """{"filas":[],"totales":{"ventasCompletadas":1,"ventasAnuladas":0,"montoTotalDeCompletadas":10,"promedioPorVenta":10},"generadoEn":"2026-11-03T09:15:00","generadoPor":"admin"}""";
+
+        var respuesta = System.Text.Json.JsonSerializer.Deserialize<RespuestaListadoVentasDto>(
+            json,
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+
+        Assert.Equal(0m, respuesta!.Totales.VentaMasAlta);
+    }
+
+    [Fact]
     public void La_pagina_solo_se_autoriza_al_administrador()
     {
         var atributo = Assert.Single(typeof(VentasListadoModel).GetCustomAttributes<AuthorizeAttribute>());

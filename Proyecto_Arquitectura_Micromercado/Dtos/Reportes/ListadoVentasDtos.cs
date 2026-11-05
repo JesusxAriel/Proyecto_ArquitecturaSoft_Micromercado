@@ -21,7 +21,8 @@ public sealed record TotalesListadoVentasDto(
     int VentasCompletadas,
     int VentasAnuladas,
     decimal MontoTotalDeCompletadas,
-    decimal PromedioPorVenta);
+    decimal PromedioPorVenta,
+    decimal VentaMasAlta = 0m);
 
 public sealed record RespuestaListadoVentasDto(
     IReadOnlyList<FilaListadoVentasDto> Filas,

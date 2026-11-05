@@ -16,7 +16,8 @@ public sealed record TotalesDeVentasDto(
     int VentasCompletadas,
     int VentasAnuladas,
     decimal MontoTotalDeCompletadas,
-    decimal PromedioPorVenta);
+    decimal PromedioPorVenta,
+    decimal VentaMasAlta);
 
 public sealed record FiltrosDeVentasDto(DateOnly? Desde, DateOnly? Hasta, string? Estado, string? Cliente, int? Tope);
 
@@ -51,7 +52,8 @@ public sealed record RespuestaListadoVentas(
             totales.CantidadDeCompletadas,
             totales.CantidadDeAnuladas,
             totales.MontoTotalDeCompletadas,
-            totales.PromedioPorVenta);
+            totales.PromedioPorVenta,
+            totales.VentaMasAlta);
 
     private static FiltrosDeVentasDto ConvertirFiltros(FiltrosDeListadoVentas filtros) =>
         new(
