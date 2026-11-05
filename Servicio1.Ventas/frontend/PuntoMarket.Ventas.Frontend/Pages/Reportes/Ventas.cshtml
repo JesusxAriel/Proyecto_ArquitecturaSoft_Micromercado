@@ -1,31 +1,118 @@
 @page
 @model PuntoMarket.Ventas.Frontend.Pages.Reportes.VentasModel
-@{ ViewData["Title"] = "Reportes de ventas"; }
-<h1>Reportes de ventas</h1>
-<nav class="mb-3" aria-label="Tipos de reporte"><a asp-page="/Reportes/Ventas" class="btn btn-primary">Listado de ventas</a> <a asp-page="/Reportes/Categorias" class="btn btn-outline-primary">Ventas por categoría</a></nav>
-<form method="get" class="card card-body mb-3">
-    <div asp-validation-summary="All" class="text-danger"></div>
-    <div class="row g-3">
-        <div class="col-md-3"><label asp-for="Filtro.Desde">Desde</label><input asp-for="Filtro.Desde" type="date" class="form-control" /></div>
-        <div class="col-md-3"><label asp-for="Filtro.Hasta">Hasta</label><input asp-for="Filtro.Hasta" type="date" class="form-control" /></div>
-        <div class="col-md-3"><label asp-for="Filtro.Estado">Estado</label><select asp-for="Filtro.Estado" class="form-select"><option value="">Todos</option><option>COMPLETADA</option><option>ANULADA</option></select></div>
-        <div class="col-md-3"><label asp-for="Filtro.Tope">Máximo de filas</label><input asp-for="Filtro.Tope" class="form-control" min="1" max="1000" /></div>
-        <div class="col-md-6"><label asp-for="Filtro.Cliente">CI/NIT o razón social (opcional)</label><input asp-for="Filtro.Cliente" class="form-control" minlength="2" maxlength="150" /></div>
+@{ ViewData["Title"] = "Listado de ventas"; }
+
+<header class="mb-4">
+    <h1 class="page-heading mb-1">Listado de ventas</h1>
+    <p class="text-muted mb-0">Consulte las ventas de un período, ordenadas de la más reciente a la más antigua.</p>
+</header>
+
+@if (Model.ErrorReporte is not null)
+{
+    <div class="alert alert-danger shadow-sm" role="alert">@Model.ErrorReporte</div>
+}
+
+<section class="card shadow-sm mb-4" aria-labelledby="filtrosTitulo">
+    <div class="card-body">
+        <h2 class="h5 card-title mb-3" id="filtrosTitulo">Filtros</h2>
+        <form id="filtrosReporte" method="get">
+            <div asp-validation-summary="All" class="text-danger"></div>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label asp-for="Filtro.Desde" class="form-label">Desde</label>
+                    <input asp-for="Filtro.Desde" type="date" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Filtro.Hasta" class="form-label">Hasta</label>
+                    <input asp-for="Filtro.Hasta" type="date" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Filtro.Estado" class="form-label">Estado</label>
+                    <select asp-for="Filtro.Estado" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="COMPLETADA">Completada</option>
+                        <option value="ANULADA">Anulada</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Filtro.Tope" class="form-label">Máximo de filas</label>
+                    <input asp-for="Filtro.Tope" type="number" class="form-control" min="1" max="1000" inputmode="numeric" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Filtro.Cliente" class="form-label">CI/NIT o razón social (opcional)</label>
+                    <input asp-for="Filtro.Cliente" class="form-control" minlength="2" maxlength="150" placeholder="CI/NIT o razón social" />
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-warning fw-semibold">
+                        <i class="bi bi-search" aria-hidden="true"></i> Consultar
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
-    <div class="mt-3"><button type="submit" class="btn btn-primary">Consultar</button> <button type="submit" name="handler" value="Pdf" class="btn btn-outline-secondary">Descargar PDF</button> <button type="submit" name="handler" value="Excel" class="btn btn-outline-secondary">Descargar Excel</button></div>
-</form>
-@if (Model.ErrorReporte is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorReporte</div> }
+</section>
+
 @if (Model.Reporte is { } reporte)
 {
-    <p>Generado por @reporte.GeneradoPor · @reporte.GeneradoEn.ToString("dd/MM/yyyy HH:mm")</p>
-    <p>Completadas: <strong>@reporte.Totales.VentasCompletadas</strong> · Anuladas: <strong>@reporte.Totales.VentasAnuladas</strong> · Total completadas: <strong>Bs @reporte.Totales.MontoTotalDeCompletadas.ToString("N2")</strong> · Promedio: <strong>Bs @reporte.Totales.PromedioPorVenta.ToString("N2")</strong></p>
-    <section data-resultados-reporte aria-label="Resultados del reporte">
-    <div class="table-responsive"><table class="table table-striped"><thead><tr><th>Comprobante</th><th>Fecha</th><th>CI/NIT</th><th>Cliente</th><th>Cajero</th><th>Estado</th><th class="text-end">Monto (Bs)</th></tr></thead><tbody>
-    @foreach (var fila in reporte.Filas) { <tr><td>@fila.Comprobante</td><td>@fila.Fecha.ToString("dd/MM/yyyy HH:mm")</td><td>@fila.NitCi</td><td>@fila.RazonSocial</td><td>@fila.Cajero</td><td>@fila.Estado</td><td class="text-end">@fila.Monto.ToString("N2")</td></tr> }
-    </tbody></table></div>
-    <partial name="_PaginacionReportes" />
+    <section class="card shadow-sm mb-4" aria-labelledby="resultadoTitulo">
+        <div class="card-body">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <h2 class="h5 mb-0" id="resultadoTitulo">Resultado</h2>
+                @if (reporte.Filas.Count > 0)
+                {
+                    <div class="ms-auto d-flex flex-wrap gap-2">
+                        <button type="submit" form="filtrosReporte" name="handler" value="Pdf" class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> Descargar PDF
+                        </button>
+                        <button type="submit" form="filtrosReporte" name="handler" value="Excel" class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-file-earmark-excel" aria-hidden="true"></i> Descargar Excel
+                        </button>
+                    </div>
+                }
+            </div>
+
+            @if (reporte.Filas.Count == 0)
+            {
+                <p class="text-center text-muted py-4 mb-0" role="status">Sin resultados para los filtros seleccionados</p>
+            }
+            else
+            {
+                <section data-resultados-reporte aria-label="Resultados del reporte">
+                    <div class="table-responsive rounded-3 border">
+                        <table class="table table-hover align-middle mb-0" aria-labelledby="resultadoTitulo">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">Comprobante</th>
+                                    <th scope="col" class="text-nowrap">Fecha y hora</th>
+                                    <th scope="col">NIT/CI</th>
+                                    <th scope="col">Razón social</th>
+                                    <th scope="col">Cajero</th>
+                                    <th scope="col">Estado</th>
+                                    <th scope="col" class="text-end text-nowrap">Monto (Bs)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var fila in reporte.Filas)
+                                {
+                                    var anulada = fila.Estado == "ANULADA";
+                                    <tr>
+                                        <th scope="row" class="fw-normal">@fila.Comprobante</th>
+                                        <td class="text-nowrap">@fila.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>@fila.NitCi</td>
+                                        <td>@fila.RazonSocial</td>
+                                        <td>@fila.Cajero</td>
+                                        <td><span class="badge @(anulada ? "text-bg-danger" : "text-bg-success")">@(anulada ? "Anulada" : "Completada")</span></td>
+                                        <td class="text-end">@fila.Monto.ToString("N2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <partial name="_PaginacionReportes" />
+                </section>
+            }
+        </div>
     </section>
-    @if (reporte.Filas.Count == 0) { <p>No hay ventas para los filtros indicados.</p> }
 }
 
 @section Scripts {

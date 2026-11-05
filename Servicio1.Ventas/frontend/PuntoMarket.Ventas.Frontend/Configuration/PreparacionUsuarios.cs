@@ -32,6 +32,9 @@ public static class PreparacionUsuarios
             c.BaseAddress = usuariosUri; c.Timeout = TimeSpan.FromSeconds(15);
             c.MaxResponseContentBufferSize = 4 * 1024 * 1024;
         }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false, UseProxy = false }).RemoveAllLoggers();
+        servicios.AddHttpClient<IUsuariosCuentaApiClient, UsuariosCuentaApiClient>(c => {
+            c.BaseAddress = usuariosUri; c.Timeout = TimeSpan.FromSeconds(15); c.MaxResponseContentBufferSize = 65536;
+        }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false, UseProxy = false }).RemoveAllLoggers();
         servicios.AddHttpClient<IActivacionApiClient, ActivacionApiClient>(c => {
             c.BaseAddress = usuariosUri; c.Timeout = TimeSpan.FromSeconds(15); c.MaxResponseContentBufferSize = 65536;
         }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false, UseProxy = false }).RemoveAllLoggers();

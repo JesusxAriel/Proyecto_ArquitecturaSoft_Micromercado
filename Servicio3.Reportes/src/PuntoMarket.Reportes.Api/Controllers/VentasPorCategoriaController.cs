@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using PuntoMarket.Reportes.Api.Contracts.VentasPorCategoria;
 using PuntoMarket.Reportes.Application.Common;
 using PuntoMarket.Reportes.Application.UseCases.VentasPorCategoria.GenerarVentasPorCategoria;
+using PuntoMarket.Reportes.Application.UseCases.VentasPorCategoria.ListarCategorias;
 using PuntoMarket.Reportes.Domain.Exceptions;
 
 namespace PuntoMarket.Reportes.Api.Controllers;
@@ -14,10 +15,19 @@ public class VentasPorCategoriaController : ControllerBase
 {
     private readonly GenerarVentasPorCategoriaCasoDeUso _casoDeUso;
 
-    public VentasPorCategoriaController(GenerarVentasPorCategoriaCasoDeUso casoDeUso)
+    private readonly ListarCategoriasCasoDeUso _listarCategorias;
+
+    public VentasPorCategoriaController(
+        GenerarVentasPorCategoriaCasoDeUso casoDeUso,
+        ListarCategoriasCasoDeUso listarCategorias)
     {
         _casoDeUso = casoDeUso;
+        _listarCategorias = listarCategorias;
     }
+
+    [HttpGet("categorias")]
+    public async Task<IActionResult> ListarCategorias(CancellationToken cancelacion) =>
+        Ok(await _listarCategorias.EjecutarAsync(cancelacion));
 
     [HttpGet]
     public async Task<IActionResult> Obtener([FromQuery] PeticionVentasPorCategoria peticion, CancellationToken cancelacion)

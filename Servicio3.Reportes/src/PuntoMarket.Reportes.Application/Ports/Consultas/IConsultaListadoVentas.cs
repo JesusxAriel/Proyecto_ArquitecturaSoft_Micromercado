@@ -13,5 +13,4 @@ public interface IConsultaListadoVentas
         CancellationToken cancelacion);
 }
 
-// Filas respeta el límite; Totales incluye todas las coincidencias de los filtros, sin límite.
 public sealed record ResultadoListadoVentas(IReadOnlyList<FilaDeVenta> Filas, TotalesListadoVentas Totales);

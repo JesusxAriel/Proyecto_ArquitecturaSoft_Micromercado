@@ -1,0 +1,18 @@
+@page
+@model PuntoMarket.Ventas.Frontend.Pages.Account.PerfilModel
+@{ ViewData["Title"] = "Mi perfil"; }
+<section class="card sale-panel mx-auto" style="max-width:560px"><div class="card-body p-4">
+<h1 class="h3 mb-4">Mi perfil</h1>
+<dl class="row mb-4">
+    <dt class="col-sm-5">Nombre de usuario</dt>
+    <dd class="col-sm-7">@Model.NombreDeUsuario</dd>
+    <dt class="col-sm-5">Rol</dt>
+    <dd class="col-sm-7">@Model.Rol</dd>
+    @if (Model.InicioDeSesion is { } inicio)
+    {
+        <dt class="col-sm-5">Inicio de sesión</dt>
+        <dd class="col-sm-7">@inicio.ToString("dd/MM/yyyy HH:mm")</dd>
+    }
+</dl>
+<a asp-page="/Account/CambiarPassword" class="btn btn-primary w-100">Cambiar contraseña</a>
+</div></section>

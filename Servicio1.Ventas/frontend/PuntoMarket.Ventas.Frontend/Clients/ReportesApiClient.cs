@@ -22,6 +22,8 @@ public sealed class ReportesApiClient(HttpClient http, ResolucionSesion resoluci
     private static Dictionary<string,string?> Filtros(FiltroCategoriasReporte f) { var d = Fechas(f); d["idCategoria"] = f.IdCategoria?.ToString(System.Globalization.CultureInfo.InvariantCulture); d["top"] = f.Top?.ToString(System.Globalization.CultureInfo.InvariantCulture); return d; }
     public Task<ListadoVentasReporte> Listado(FiltroListadoReporte f, CancellationToken ct) => Consultar<ListadoVentasReporte>("ventas", Filtros(f), ct);
     public Task<CategoriasReporte> Categorias(FiltroCategoriasReporte f, CancellationToken ct) => Consultar<CategoriasReporte>("ventas-por-categoria", Filtros(f), ct);
+    public Task<IReadOnlyList<CategoriaReporte>> ListarCategorias(CancellationToken ct) => ConsultarLista("ventas-por-categoria/categorias", ct);
+    public async Task<IReadOnlyList<CategoriaReporte>> ConsultarLista(string reporte, CancellationToken ct) => await Consultar<List<CategoriaReporte>>(reporte, [], ct);
     public Task<ArchivoReporte> DescargarListado(FiltroListadoReporte f, string formato, CancellationToken ct) => Descargar("ventas", Filtros(f), formato, ct);
     public Task<ArchivoReporte> DescargarCategorias(FiltroCategoriasReporte f, string formato, CancellationToken ct) => Descargar("ventas-por-categoria", Filtros(f), formato, ct);
     public async Task<T> Consultar<T>(string reporte, Dictionary<string,string?> filtros, CancellationToken ct)
@@ -32,7 +34,7 @@ public sealed class ReportesApiClient(HttpClient http, ResolucionSesion resoluci
     }
     public async Task<ArchivoReporte> Descargar(string reporte, Dictionary<string,string?> filtros, string formato, CancellationToken ct)
     {
-        if (reporte is not ("ventas" or "ventas-por-categoria") || formato is not ("json" or "pdf" or "xlsx")) throw new ReportesApiException(400);
+        if (reporte is not ("ventas" or "ventas-por-categoria" or "ventas-por-categoria/categorias") || formato is not ("json" or "pdf" or "xlsx")) throw new ReportesApiException(400);
         var token = resolucion.ObtenerToken() ?? throw new ReportesApiException(401);
         var parametros = new Dictionary<string,string?>(filtros) { ["formato"] = formato };
         using var solicitud = new HttpRequestMessage(HttpMethod.Get, QueryHelpers.AddQueryString("api/reportes/" + reporte, parametros));
@@ -57,6 +59,7 @@ public interface IReportesApiClient
 {
     Task<ListadoVentasReporte> Listado(FiltroListadoReporte filtro, CancellationToken ct);
     Task<CategoriasReporte> Categorias(FiltroCategoriasReporte filtro, CancellationToken ct);
+    Task<IReadOnlyList<CategoriaReporte>> ListarCategorias(CancellationToken ct);
     Task<ArchivoReporte> DescargarListado(FiltroListadoReporte filtro, string formato, CancellationToken ct);
     Task<ArchivoReporte> DescargarCategorias(FiltroCategoriasReporte filtro, string formato, CancellationToken ct);
 }

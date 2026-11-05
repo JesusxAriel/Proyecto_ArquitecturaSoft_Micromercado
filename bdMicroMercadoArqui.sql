@@ -829,13 +829,13 @@ INSERT INTO `CATEGORIAS` (`id`, `nombre`, `descripcion`, `codigo`, `pasilloUbica
 (8, 'Panadería y Repostería', 'Pan fresco, kekes, tostadas y harinas', 'CAT-PAN', 'Pasillo 8', 1);
 
 INSERT INTO `PROVEEDOR` (`id`, `nombreEmpresa`, `numeroEmpresa`, `correoReferencia`, `esAutogestionado`, `idUsuarioAdmin`) VALUES
-(1, 'Proveedor Demo 1', '00000001', 'proveedor1@example.invalid', 0, 1),
-(2, 'Proveedor Demo 2', '00000002', 'proveedor2@example.invalid', 0, 1),
-(3, 'Proveedor Demo 3', '00000003', 'proveedor3@example.invalid', 1, 1),
-(4, 'Proveedor Demo 4', '00000004', 'proveedor4@example.invalid', 0, 1),
-(5, 'Proveedor Demo 5', '00000005', 'proveedor5@example.invalid', 0, 1),
-(6, 'Proveedor Demo 6', '00000006', 'proveedor6@example.invalid', 0, 1),
-(7, 'Proveedor Demo 7', '00000007', 'proveedor7@example.invalid', 0, 1);
+(1, 'PIL Andina S.A.', '44112233', 'ventas.cbba@pilandina.com.bo', 0, 1),
+(2, 'EMBOL S.A. (Coca-Cola)', '44556677', 'pedidos.cbba@embol.com.bo', 0, 1),
+(3, 'Sofía SHE S.A.', '44889900', 'contacto.cbba@sofia.com.bo', 1, 1),
+(4, 'CBN (Cervecería Boliviana Nacional)', '44224466', 'distribucion@cbn.com.bo', 0, 1),
+(5, 'Unilever Bolivia', '44335577', 'atencion@unilever.com', 0, 1),
+(6, 'Industrias Venado S.A. (Kris)', '44118899', 'ventas@venado.com.bo', 0, 1),
+(7, 'Arcor Bolivia', '44778811', 'pedidos@arcor.com.bo', 0, 1);
 
 INSERT INTO `EMPAQUE` (`id`, `nombre`, `idUsuarioAdmin`) VALUES
 (1, 'Bolsa', 1),
@@ -849,27 +849,27 @@ INSERT INTO `EMPAQUE` (`id`, `nombre`, `idUsuarioAdmin`) VALUES
 (9, 'Lata', 1);
 
 INSERT INTO `PRODUCTO` (`id`, `nombre`, `idEmpaque`, `idCategoria`, `precioVenta`, `precioCosto`, `stockMinimo`, `idProveedor`, `idUsuarioAdmin`) VALUES
-(1, 'Leche Demo', 1, 1, 6.50, 5.20, 20, 1, 1),
-(2, 'Producto Demo 2', 2, 1, 12.00, 9.50, 10, 1, 1),
-(3, 'Producto Demo 3', 3, 1, 14.50, 11.80, 5, 1, 1),
-(4, 'Producto Demo 4', 2, 2, 11.00, 9.00, 25, 2, 1),
-(5, 'Producto Demo 5', 2, 2, 10.50, 8.50, 15, 2, 1),
-(6, 'Producto Demo 6', 2, 2, 6.00, 4.50, 30, 2, 1),
-(7, 'Producto Demo 7', 4, 2, 12.00, 9.80, 40, 4, 1),
-(8, 'Producto Demo 8', 1, 3, 14.00, 11.20, 12, 6, 1),
-(9, 'Producto Demo 9', 1, 3, 12.50, 10.00, 10, 6, 1),
-(10, 'Producto Demo 10', 1, 3, 8.00, 6.20, 15, 6, 1),
-(11, 'Producto Demo 11', 5, 4, 28.50, 23.50, 8, 3, 1),
-(12, 'Producto Demo 12', 6, 4, 18.00, 14.50, 10, 3, 1),
-(13, 'Producto Demo 13', 5, 4, 16.50, 13.00, 10, 3, 1),
-(14, 'Producto Demo 14', 5, 5, 4.50, 3.20, 20, 7, 1),
-(15, 'Producto Demo 15', 5, 5, 27.00, 21.50, 5, 7, 1),
-(16, 'Producto Demo 16', 1, 6, 15.00, 12.00, 15, 5, 1),
-(17, 'Producto Demo 17', 2, 6, 8.50, 6.80, 10, 5, 1),
-(18, 'Producto Demo 18', 7, 7, 5.50, 4.10, 20, 5, 1),
-(19, 'Producto Demo 19', 8, 7, 9.00, 7.00, 15, 5, 1),
-(20, 'Producto Demo 20', 1, 8, 7.50, 5.80, 10, 1, 1),
-(21, 'Producto Demo 21', 9, 8, 6.00, 4.50, 15, 6, 1);
+(1,  'Leche Entera PIL 1L', 1, 1, 6.50, 5.20, 20, 1, 1),
+(2,  'Yogurt Frutado PIL 1kg', 2, 1, 12.00, 9.50, 10, 1, 1),
+(3,  'Mantequilla con Sal PIL 200g', 3, 1, 14.50, 11.80, 5, 1, 1),
+(4,  'Coca-Cola Sabor Original 2L', 2, 2, 11.00, 9.00, 25, 2, 1),
+(5,  'Fanta Naranja 2L', 2, 2, 10.50, 8.50, 15, 2, 1),
+(6,  'Agua Vital Sin Gas 2L', 2, 2, 6.00, 4.50, 30, 2, 1),
+(7,  'Cerveza Paceña 620ml', 4, 2, 12.00, 9.80, 40, 4, 1),
+(8,  'Mayonesa Kris 500g', 1, 3, 14.00, 11.20, 12, 6, 1),
+(9,  'Ketchup Kris 500g', 1, 3, 12.50, 10.00, 10, 6, 1),
+(10, 'Salsa de Tomate Kris 400g', 1, 3, 8.00, 6.20, 15, 6, 1),
+(11, 'Chorizo Parrillero Sofía 500g', 5, 4, 28.50, 23.50, 8, 3, 1),
+(12, 'Jamón Premium Sofía 200g', 6, 4, 18.00, 14.50, 10, 3, 1),
+(13, 'Salchicha de Pollo Sofía 500g', 5, 4, 16.50, 13.00, 10, 3, 1),
+(14, 'Galletas Moka Arcor 110g', 5, 5, 4.50, 3.20, 20, 7, 1),
+(15, 'Bon o Bon Leche Display x18', 5, 5, 27.00, 21.50, 5, 7, 1),
+(16, 'Detergente OMO Multiacción 800g', 1, 6, 15.00, 12.00, 15, 5, 1),
+(17, 'Lavavajillas Ola Limón 500ml', 2, 6, 8.50, 6.80, 10, 5, 1),
+(18, 'Jabón Lux Suave 125g', 7, 7, 5.50, 4.10, 20, 5, 1),
+(19, 'Crema Dental Colgate Triple Acción 90g', 8, 7, 9.00, 7.00, 15, 5, 1),
+(20, 'Tostadas Trigo PIL 200g', 1, 8, 7.50, 5.80, 10, 1, 1),
+(21, 'Royal Polvo de Hornear 100g', 9, 8, 6.00, 4.50, 15, 6, 1);
 
 INSERT INTO `LOTE` (`id`, `idProducto`, `codigoLote`, `cantidadInicial`, `cantidadDisponible`, `fechaVencimiento`, `idUsuarioAdmin`) VALUES
 (1, 1, 'LOT-PIL-A', 70, 70, DATE_ADD(CURDATE(), INTERVAL 7 DAY), 1),
@@ -903,14 +903,14 @@ SET p.`stockActual` = (SELECT COALESCE(SUM(l.`cantidadDisponible`), 0)
 WHERE p.`id` > 0;
 
 INSERT INTO `HISTORIAL_PRECIO` (`idProducto`, `precioVentaAnterior`, `precioVentaNuevo`, `precioCostoAnterior`, `precioCostoNuevo`, `motivoCambio`, `idUsuario`, `fechaCambio`) VALUES
-(1, 6.00, 6.50, 5.00, 5.20, 'Ajuste sintetico de demostracion', 1, '2026-01-15 08:30:00'),
-(4, 10.50, 11.00, 8.50, 9.00, 'Ajuste sintetico de demostracion', 1, '2026-02-01 10:00:00'),
-(11, 26.00, 28.50, 21.00, 23.50, 'Ajuste sintetico de demostracion', 1, '2026-03-10 14:15:00');
+(1,  6.00, 6.50, 5.00, 5.20, 'Ajuste de precio del proveedor PIL', 1, '2026-01-15 08:30:00'),
+(4, 10.50, 11.00, 8.50, 9.00, 'Incremento de tarifa de EMBOL', 1, '2026-02-01 10:00:00'),
+(11, 26.00, 28.50, 21.00, 23.50, 'Ajuste de precio por temporada Sofía', 1, '2026-03-10 14:15:00');
 
 INSERT INTO `CLIENTE` (`id`, `nitCi`, `razonSocial`, `correo`, `telefono`, `idUsuarioCreacion`) VALUES
-(1, 'DEMO1', 'CLIENTE DEMO 1', 'cliente1@example.invalid', NULL, 1),
-(2, 'DEMO2', 'CLIENTE DEMO 2', 'cliente2@example.invalid', NULL, 2),
-(3, 'DEMO3', 'CLIENTE DEMO 3', 'cliente3@example.invalid', NULL, 2);
+(1, '0', 'Sin Nombre / Cliente Genérico', NULL, NULL, 1),
+(2, '4545451226', 'JUAN PEREZ VARGAS', 'jperez@gmail.com', '77123456', 2),
+(3, '1020304050', 'MARIA ROJAS LOPEZ', 'mrojas@gmail.com', '70711223', 2);
 
 SELECT * FROM `vw_resumen_ventas`;
 

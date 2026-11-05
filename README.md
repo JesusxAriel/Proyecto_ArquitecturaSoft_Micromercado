@@ -12,6 +12,8 @@ PuntoMarket integra ventas, gestión de usuarios y reportes mediante tres APIs R
 
 Reportes consulta MySQL directamente, con JOIN SQL y cuenta SELECT independiente. No consume la API de Ventas. Temporalmente los tres servicios comparten la base Demo, con cuentas separadas.
 
+Repositorio: https://github.com/JesusxAriel/Proyecto_ArquitecturaSoft_Micromercado
+
 ## Requisitos
 
 - Windows y **PowerShell 7.6** para los scripts locales con ACL y secretos privados.
@@ -40,6 +42,14 @@ La ejecución local documentada no necesita Redis. El despliegue antiguo del mon
       compatibilidad-usuarios/  integracion/  despliegue/  historico/
 
 La solución raíz incluye los proyectos actuales, las pruebas, lanzadores y utilitarios. Los documentos de historico son evidencias anteriores, no instrucciones de arranque.
+
+## Organización del repositorio
+
+- **Rama principal:** `main`. Solo recibe cambios mediante Pull Requests revisados; no se trabaja directamente sobre ella.
+- **Ramas de trabajo:** una por tema, con prefijo según el tipo de cambio: `feat/` (funcionalidad nueva), `fix/` (corrección), `refactor/` (reorganización sin cambiar el comportamiento) y `chore/` (configuración, herramientas y soluciones). Ejemplos: `feat/usuarios-gestion`, `feat/reportes-listado-ventas`, `fix/ajustes-finales`, `chore/solucion-reportes`.
+- **Pull Requests:** cada rama se fusiona a `main` mediante un Pull Request que se revisa antes de fusionar. Las ramas ya fusionadas se eliminan.
+- **Commits:** en español, pequeños y de un solo tema, con prefijo convencional: `feat:`, `fix:`, `refactor:`, `test:`, `docs:` o `chore:`. Ejemplo: `fix: mostrar los estados de usuario como Pendiente, Activo, Inactivo y Vencido`.
+- **Carpetas:** `Servicio1.Ventas` (API de Ventas y frontend), `Servicio2.Usuarios` (Usuarios) y `Servicio3.Reportes` (Reportes). Cada servicio tiene su propia solución y sus pruebas; `PuntoMarket.slnx` agrupa todo.
 
 ## 1. Restaurar y compilar
 
@@ -271,6 +281,83 @@ Hoy está preparada la ejecución local de las tres APIs y Razor con MySQL en Do
 En una futura contenerización, UsuariosApi__BaseUrl debe usar el DNS del servicio y su puerto INTERNO, por ejemplo http://usuarios:8080/ si ese es el servicio realmente definido. No usar localhost para comunicar contenedores. Ventas/Reportes y sus validaciones actuales de URL, el montaje privado de la clave, TLS, HTTPS/proxy y las sesiones requieren revisión específica antes de afirmar que el despliegue completo funciona.
 
 Las sesiones reales y la activación usan memoria del proceso y Data Protection temporal. Múltiples réplicas requieren afinidad o una solución de estado/claves compartidos revisada; no balancearlas con el nginx histórico sin adaptar el despliegue. No persistir tokens en claro.
+
+## Ejecución con Docker
+
+Es un camino adicional a la ejecución local con los lanzadores DemoLocal: levanta MySQL, las tres APIs y el frontend con un solo comando, sin cuatro terminales ni PowerShell 7. No modifica los lanzadores ni el compose de demostración de `Servicio1.Ventas/database/demo-env`.
+
+### Requisitos
+
+- Docker Desktop iniciado, con Docker Compose v2 y contenedores Linux. No hace falta instalar .NET, MySQL ni Node.js.
+
+### Preparar el archivo .env
+
+1. Copiar el archivo de ejemplo a `.env` en la raíz del repositorio. El archivo `.env` no se versiona.
+
+~~~powershell
+Copy-Item .env.example .env
+~~~
+
+2. Generar una clave JWT aleatoria y cuatro contraseñas de base de datos. Cada ejecución del comando imprime un valor nuevo, compuesto solo por letras y números. Ejecutarlo cinco veces y pegar cada resultado en `JWT_KEY`, `MYSQL_ROOT_PASSWORD`, `VENTAS_DB_PASSWORD`, `USUARIOS_DB_PASSWORD` y `REPORTES_DB_PASSWORD`.
+
+~~~powershell
+docker run --rm alpine:3 sh -c "head -c 48 /dev/urandom | base64 | tr -d '+/=\n'; echo"
+~~~
+
+3. Generar los hashes BCrypt de las contraseñas de `admin` y `cajero1`. Cada contraseña debe tener al menos 8 caracteres, con mayúscula, minúscula, número y carácter especial, y no debe contener comillas simples. Reemplazar el texto entre comillas por la contraseña elegida y pegar la línea resultante en `.env`.
+
+~~~powershell
+$h = (docker run --rm httpd:2.4-alpine htpasswd -nbBC 11 x 'CambiarPorLaClaveDeAdmin1!' | Out-String).Trim()
+"ADMIN_PASSWORD_HASH='" + $h.Substring(2) + "'"
+
+$h = (docker run --rm httpd:2.4-alpine htpasswd -nbBC 11 x 'CambiarPorLaClaveDeCajero1!' | Out-String).Trim()
+"CAJERO_PASSWORD_HASH='" + $h.Substring(2) + "'"
+~~~
+
+Los hashes deben quedar entre comillas simples en `.env`, porque contienen el carácter `$`. Las contraseñas en claro no se guardan en ningún archivo.
+
+4. Dejar `JWT_ISSUER` y `JWT_AUDIENCE` con los valores del ejemplo: el frontend valida el token con esos mismos valores.
+5. Los puertos publicados y los datos de correo son opcionales. Sin `SMTP_*` el inicio de sesión funciona, pero no se pueden crear usuarios por correo. Para que los enlaces de activación apunten al frontend, ajustar `ACTIVACION_BASE_URL` si se cambia el puerto del frontend.
+
+### Comandos
+
+~~~powershell
+docker compose up -d --build
+docker compose ps
+docker compose down
+docker compose down -v
+~~~
+
+- `docker compose up -d --build` construye las imágenes y levanta los cinco servicios en orden: MySQL, luego Usuarios, Ventas y Reportes, y por último el frontend. La primera vez tarda varios minutos.
+- `docker compose down` detiene y elimina los contenedores, pero conserva la base de datos en el volumen `mysql-data`.
+- `docker compose down -v` también elimina el volumen: **borra la base de datos**. Al volver a levantar, se crea de nuevo con los datos de ejemplo y las contraseñas del `.env` vigente.
+
+Las contraseñas de las cuentas MySQL y los hashes de `admin` y `cajero1` se aplican solo cuando se crea la base por primera vez. Si se modifican en `.env` después, es necesario ejecutar `docker compose down -v` para que tengan efecto.
+
+### Puertos
+
+| Servicio | Dirección | Variable |
+|---|---|---|
+| Frontend | http://localhost:5100 | `FRONTEND_PUBLISHED_PORT` |
+| Ventas | http://localhost:5002 | `VENTAS_PUBLISHED_PORT` |
+| Usuarios | http://localhost:5003 | `USUARIOS_PUBLISHED_PORT` |
+| Reportes | http://localhost:5012 | `REPORTES_PUBLISHED_PORT` |
+| MySQL | 127.0.0.1:3308 | `MYSQL_PUBLISHED_PORT` |
+
+Todos los puertos se publican solo en el equipo local. Entre contenedores los servicios se comunican por su nombre dentro de la red interna de Docker. Para levantar otra copia sin choques, usar otro `.env` y otro nombre de proyecto, por ejemplo `docker compose -p copia --env-file otro.env up -d --build`, con puertos distintos.
+
+Los contenedores, la red y el volumen se llaman `puntomarket-*` (por ejemplo `puntomarket-mysql-1` y el volumen `puntomarket_mysql-data`), sin depender del nombre de la carpeta.
+
+### Usuarios de prueba
+
+| Usuario | Correo | Rol | Contraseña |
+|---|---|---|---|
+| admin | admin@example.invalid | Administrador | La usada para generar `ADMIN_PASSWORD_HASH` |
+| cajero1 | cajero@example.invalid | Cajero | La usada para generar `CAJERO_PASSWORD_HASH` |
+
+Abrir http://localhost:5100/Account/Login e iniciar sesión. El Administrador ve Usuarios y Reportes; el Cajero solo ve las pantallas de ventas.
+
+Las sesiones y la activación por correo viven en la memoria del frontend: al reiniciarlo, las sesiones abiertas se cierran y hay que iniciar sesión de nuevo.
 
 ## Problemas frecuentes
 

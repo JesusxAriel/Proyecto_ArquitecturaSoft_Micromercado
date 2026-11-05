@@ -42,6 +42,22 @@ public class VentasPorCategoriaEndpointTests : IDisposable
     }
 
     [Fact]
+    public async Task El_listado_de_categorias_sin_token_responde_401()
+    {
+        var respuesta = await CrearCliente(null).GetAsync(Ruta + "/categorias");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, respuesta.StatusCode);
+    }
+
+    [Fact]
+    public async Task El_listado_de_categorias_con_un_rol_distinto_de_administrador_responde_403()
+    {
+        var respuesta = await CrearCliente("Vendedor").GetAsync(Ruta + "/categorias");
+
+        Assert.Equal(HttpStatusCode.Forbidden, respuesta.StatusCode);
+    }
+
+    [Fact]
     public async Task Con_un_rol_distinto_de_administrador_responde_403()
     {
         var respuesta = await CrearCliente("Vendedor").GetAsync(Ruta);

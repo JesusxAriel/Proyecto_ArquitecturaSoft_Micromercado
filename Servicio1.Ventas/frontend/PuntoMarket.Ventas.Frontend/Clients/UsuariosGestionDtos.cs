@@ -5,7 +5,13 @@ public sealed record UsuarioGestion(int Id, string Nombre, string Apellido, stri
 {
     // La API presenta como Expirado un PENDIENTE cuyo enlace venció; no es un estado SQL nuevo.
     [JsonIgnore] public bool EsPendiente => Estado == "PENDIENTE" || (Estado == "Expirado" && EstaExpirado);
-    [JsonIgnore] public string EstadoVisible => EsPendiente && EstaExpirado ? "PENDIENTE (activación expirada)" : Estado;
+    [JsonIgnore] public string EstadoVisible => EsPendiente && EstaExpirado ? "Vencido" : Estado switch
+    {
+        "PENDIENTE" => "Pendiente",
+        "ACTIVO" => "Activo",
+        "INACTIVO" => "Inactivo",
+        _ => Estado
+    };
 }
 public sealed record ListadoUsuariosGestion(IReadOnlyList<UsuarioGestion> Usuarios);
 public sealed record RolUsuarioGestion(int Id, string Nombre);

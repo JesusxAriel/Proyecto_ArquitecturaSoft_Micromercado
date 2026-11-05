@@ -9,14 +9,13 @@
     <p class="lead text-body-secondary mb-4">Registra ventas, consulta el historial y revisa los comprobantes de tu negocio.</p>
     <a class="btn btn-warning fw-semibold px-4" asp-page="/Sales/Index">Ver Registro de Ventas <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></a>
 </section>
-<partial name="_EstadoPresentacion" />
 <div class="row g-4">
     <div class="col-md-6">
         <section class="card sale-panel h-100">
             <div class="card-body p-4">
                 <div class="inicio-icono mb-3"><i class="bi bi-cart3" aria-hidden="true"></i></div>
                 <h2 class="h4">Registrar Venta</h2>
-                <p class="text-body-secondary">Revisa la búsqueda de productos, selección de cliente, detalle y resumen de una venta.</p>
+                <p class="text-body-secondary">Busca productos, selecciona al cliente y registra la venta con su detalle y total.</p>
                 <a asp-page="/Sales/Index" class="btn btn-outline-primary">Abrir registro</a>
             </div>
         </section>
@@ -26,7 +25,7 @@
             <div class="card-body p-4">
                 <div class="inicio-icono mb-3"><i class="bi bi-receipt" aria-hidden="true"></i></div>
                 <h2 class="h4">Historial de Ventas</h2>
-                <p class="text-body-secondary">Visualiza la estructura del historial y sus opciones de detalle, comprobantes y anulación.</p>
+                <p class="text-body-secondary">Consulta las ventas registradas, su detalle y sus comprobantes, y anula ventas cuando tu rol lo permite.</p>
                 <a asp-page="/Sales/Historial" class="btn btn-outline-primary">Abrir historial</a>
             </div>
         </section>

@@ -30,7 +30,7 @@ public sealed class OpenApiTests
         var root = json.RootElement;
         Assert.Equal("bearer", root.GetProperty("components").GetProperty("securitySchemes").GetProperty("Bearer").GetProperty("scheme").GetString());
         var paths = root.GetProperty("paths");
-        Assert.Equal(4, paths.EnumerateObject().Count());
+        Assert.Equal(5, paths.EnumerateObject().Count());
         Assert.Equal(0, paths.GetProperty("/api/salud").GetProperty("get").GetProperty("security").GetArrayLength());
         foreach (var (ruta, filtros) in new[] {
             ("/api/reportes/ventas", new[] {"desde","hasta","estado","cliente","tope","formato"}),

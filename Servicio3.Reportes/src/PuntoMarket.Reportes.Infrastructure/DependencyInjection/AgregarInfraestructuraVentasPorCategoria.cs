@@ -12,6 +12,7 @@ public static class AgregarInfraestructuraVentasPorCategoria
     public static IServiceCollection AgregarInfraestructuraDeVentasPorCategoria(this IServiceCollection servicios) =>
         servicios
             .AddScoped<IConsultaVentasPorCategoria, MySqlConsultaVentasPorCategoria>()
+            .AddScoped<IConsultaCategorias, MySqlConsultaCategorias>()
             .AddScoped<IConsultaTendenciaDeVentas, MySqlConsultaTendenciaDeVentas>()
             .AddScoped<IConsultaProductosMasVendidos, MySqlConsultaProductosMasVendidos>()
             .AddSingleton<GeneradorDeGrafico>()

@@ -15,7 +15,6 @@
     </div>
 </header>
 @Html.AntiForgeryToken()
-<div class="alert alert-info" role="status"><strong>Ventas reales.</strong> Puede buscar productos y clientes, crear clientes y registrar ventas.</div>
 
 <div class="row g-4 align-items-start">
     <div class="col-12 col-lg-8">
@@ -30,7 +29,7 @@
                     <input asp-for="Input.BusquedaProducto" class="form-control" placeholder="Nombre o presentación (mínimo 2 caracteres)"
                            autocomplete="off" maxlength="150" />
                 </div>
-                <p id="estadoBusquedaProductos" class="small text-body-secondary mt-2 mb-0" role="status" aria-live="polite">Escriba para consultar el catálogo real.</p>
+                <p id="estadoBusquedaProductos" class="small text-body-secondary mt-2 mb-0" role="status" aria-live="polite">Escriba el nombre o la presentación del producto.</p>
                 <ul id="resultadosProductos" class="resultados-lista list-unstyled mt-2 mb-0" aria-label="Resultados de productos" aria-busy="false"></ul>
                 <p id="avisoDetalle" class="small mt-2 mb-0" role="status" aria-live="polite"></p>
                 <noscript><p class="text-danger mt-3 mb-0">Active JavaScript para consultar productos y clientes.</p></noscript>
@@ -46,7 +45,6 @@
                             <tr>
                                 <th scope="col">Producto</th>
                                 <th scope="col" class="text-end">Precio (Bs)</th>
-                                <th scope="col" class="columna-cantidad">Stock disponible</th>
                                 <th scope="col" class="columna-cantidad">Cantidad</th>
                                 <th scope="col" class="text-end">Estado</th>
                                 <th scope="col"><span class="visually-hidden">Quitar</span></th>
@@ -54,7 +52,7 @@
                         </thead>
                         <tbody id="detalleTemporal">
                             <tr>
-                                <td colspan="6" class="text-center text-body-secondary py-4">Seleccione un producto para consultar su precio y stock vigentes.</td>
+                                <td colspan="5" class="text-center text-body-secondary py-4">Seleccione un producto para consultar su precio y stock vigentes.</td>
                             </tr>
                         </tbody>
                     </table>

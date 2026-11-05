@@ -20,7 +20,6 @@ public static class UsuariosBootstrap
         builder.Services.AddAuthorization();
         if (documentar) builder.Services.AgregarDocumentacionUsuarios();
         var app = builder.Build();
-        // LocalDemo solo escucha loopback HTTP; otros entornos conservan HTTPS.
         if (!localDemo) app.UseHttpsRedirection();
         if (documentar)
         {

@@ -1,5 +1,6 @@
 @{
     var actual = ViewContext.RouteData.Values["page"]?.ToString() ?? "";
+    var minimo = ViewData["LayoutMinimo"] is true;
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -13,8 +14,10 @@
     <link rel="stylesheet" href="~/css/presentacion.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
-<body data-presentation-only="true">
+<body data-presentation-only="true" class="@(minimo ? "pagina-minima" : null)">
     <a class="visually-hidden-focusable skip-link" href="#contenido">Ir al contenido</a>
+    @if (!minimo)
+    {
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark bg-navy fixed-top shadow-sm py-3" aria-label="Navegación principal">
             <div class="container-fluid px-4 navbar-main-grid">
@@ -33,25 +36,49 @@
                         @if (User.IsInRole("Administrador"))
                         {
                             <li class="nav-item"><a class="nav-link @(actual.StartsWith("/Users") ? "active" : "")" asp-page="/Users/Index">Usuarios</a></li>
-                            <li class="nav-item"><a class="nav-link @(actual.StartsWith("/Reportes") ? "active" : "")" asp-page="/Reportes/Ventas">Reportes</a></li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle @(actual.StartsWith("/Reportes") ? "active" : "")" href="#" id="reportesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Reportes</a>
+                                <ul class="dropdown-menu" aria-labelledby="reportesDropdown">
+                                    <li><a class="dropdown-item" asp-page="/Reportes/Ventas">Listado de ventas</a></li>
+                                    <li><a class="dropdown-item" asp-page="/Reportes/Categorias">Ventas por categoría</a></li>
+                                </ul>
+                            </li>
                         }
                     </ul>
                 </div>
                 <div class="navbar-user">
                 @if (User.Identity?.IsAuthenticated == true) {
-                    <span class="badge rounded-pill text-bg-secondary">@User.Identity.Name · @User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value · Usuarios</span>
-                    <form method="post" asp-page="/Account/Logout" class="d-inline"><button type="submit" class="btn btn-outline-light btn-sm ms-2">Salir</button></form>
+                    var nombreUsuario = User.Identity.Name ?? "";
+                    var rolUsuario = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+                    var iniciales = nombreUsuario.Length == 0 ? "" : nombreUsuario[..1].ToUpperInvariant();
+                    <div class="dropdown">
+                        <button type="button" id="userDropdown" class="btn btn-link text-white text-decoration-none dropdown-toggle user-profile-dropdown d-flex align-items-center gap-2" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="user-avatar" aria-hidden="true">@iniciales</span>
+                            <span class="d-none d-md-inline user-summary"><span class="fw-semibold user-name">@nombreUsuario</span> <small class="user-role">@rolUsuario</small></span>
+                            <span class="visually-hidden d-md-none">Menú de usuario: @nombreUsuario</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" asp-page="/Account/Perfil"><i class="bi bi-person" aria-hidden="true"></i> Mi perfil</a></li>
+                            <li><a class="dropdown-item" asp-page="/Account/CambiarPassword"><i class="bi bi-key" aria-hidden="true"></i> Cambiar contraseña</a></li>
+                            <li><hr class="dropdown-divider" /></li>
+                            <li><form method="post" asp-page="/Account/Logout"><button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión</button></form></li>
+                        </ul>
+                    </div>
                 } else { <a class="btn btn-outline-light btn-sm" asp-page="/Account/Login">Iniciar sesión</a> }
                 </div>
             </div>
         </nav>
     </header>
-    <main id="contenido" class="container pt-4 pb-5" tabindex="-1">
+    }
+    <main id="contenido" class="container @(minimo ? "py-4" : "pt-4 pb-5")" tabindex="-1">
         @RenderBody()
     </main>
+    @if (!minimo)
+    {
     <footer class="presentacion-footer border-top text-muted">
-        <div class="container py-3">&copy; @DateTime.Now.Year PuntoMarket <span class="mx-2">·</span> Tercer entregable <span class="mx-2">·</span> Demostración local · Consultas</div>
+        <div class="container py-3">&copy; @DateTime.Now.Year - PuntoMarket <span class="mx-2">&middot;</span> <a asp-page="/Privacy" class="text-muted">Política de Privacidad</a></div>
     </footer>
+    }
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)

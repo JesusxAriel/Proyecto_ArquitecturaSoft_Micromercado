@@ -49,3 +49,7 @@ doc/historico
 **/.env
 **/.env.*
 !**/.env.example
+
+guias
+.claude
+**/tests

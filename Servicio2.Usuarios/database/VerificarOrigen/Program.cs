@@ -1,5 +1,4 @@
 using MySql.Data.MySqlClient;
-// Únicamente SELECT y SHOW por TCP Windows. Nunca ejecuta Preparar-CuentaDemo.sql.
 try
 {
     var raiz = new DirectoryInfo(AppContext.BaseDirectory);

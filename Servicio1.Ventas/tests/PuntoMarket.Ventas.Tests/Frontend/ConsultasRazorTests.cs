@@ -36,10 +36,12 @@ public sealed class ConsultasRazorTests
         await Login(admin, administrador: true);
         var paginaAdmin = await admin.GetStringAsync("/Sales/Historial");
         Assert.Contains("anularVentaModal", paginaAdmin);
-        Assert.Contains("admin · Administrador · Usuarios", paginaAdmin);
+        Assert.Contains("user-name\">admin</span>", paginaAdmin);
+        Assert.Contains("user-role\">Administrador</small>", paginaAdmin);
         var paginaCajero = await cajero.GetStringAsync("/Sales/Historial");
         Assert.DoesNotContain("anularVentaModal", paginaCajero);
-        Assert.Contains("cajero1 · Cajero · Usuarios", paginaCajero);
+        Assert.Contains("user-name\">cajero1</span>", paginaCajero);
+        Assert.Contains("user-role\">Cajero</small>", paginaCajero);
         foreach (var html in new[] { paginaAdmin, paginaCajero })
         {
             Assert.DoesNotContain("Bearer ", html);
