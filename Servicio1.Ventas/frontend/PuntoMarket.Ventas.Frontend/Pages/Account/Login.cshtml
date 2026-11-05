@@ -1,7 +1,10 @@
 @page
 @model PuntoMarket.Ventas.Frontend.Pages.Account.LoginModel
-@{ ViewData["Title"] = "Iniciar sesión"; }
-<section class="card sale-panel mx-auto" style="max-width:640px"><div class="card-body p-4">
+@{
+    ViewData["Title"] = "Iniciar sesión";
+    ViewData["LayoutMinimo"] = true;
+}
+<section class="card sale-panel login-minimo mx-auto"><div class="card-body p-4">
 <h1 class="h3">Iniciar sesión</h1>
 <p>Ingrese sus credenciales para acceder a PuntoMarket.</p>
 @if (Model.UsuarioPreparado is not null) {

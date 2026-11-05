@@ -15,3 +15,6 @@ main { flex: 1; }
     .inicio-hero { padding: 1.5rem; }
     .sale-date { font-size: .8rem; }
 }
+body.pagina-minima { padding-top: 0; justify-content: center; }
+body.pagina-minima main { flex: 0 1 auto; width: 100%; }
+.login-minimo { max-width: 460px; }

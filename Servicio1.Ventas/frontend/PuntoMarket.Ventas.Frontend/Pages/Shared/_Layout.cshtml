@@ -1,5 +1,6 @@
 @{
     var actual = ViewContext.RouteData.Values["page"]?.ToString() ?? "";
+    var minimo = ViewData["LayoutMinimo"] is true;
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -13,8 +14,10 @@
     <link rel="stylesheet" href="~/css/presentacion.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
-<body data-presentation-only="true">
+<body data-presentation-only="true" class="@(minimo ? "pagina-minima" : null)">
     <a class="visually-hidden-focusable skip-link" href="#contenido">Ir al contenido</a>
+    @if (!minimo)
+    {
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark bg-navy fixed-top shadow-sm py-3" aria-label="Navegación principal">
             <div class="container-fluid px-4 navbar-main-grid">
@@ -66,12 +69,16 @@
             </div>
         </nav>
     </header>
-    <main id="contenido" class="container pt-4 pb-5" tabindex="-1">
+    }
+    <main id="contenido" class="container @(minimo ? "py-4" : "pt-4 pb-5")" tabindex="-1">
         @RenderBody()
     </main>
+    @if (!minimo)
+    {
     <footer class="presentacion-footer border-top text-muted">
         <div class="container py-3">&copy; @DateTime.Now.Year PuntoMarket</div>
     </footer>
+    }
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
