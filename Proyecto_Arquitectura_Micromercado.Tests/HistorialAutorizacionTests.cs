@@ -158,7 +158,7 @@ public class HistorialAutorizacionTests
     public void El_menu_ofrece_el_historial_a_todos_los_roles_y_ya_no_dice_proximamente()
     {
         var layout = File.ReadAllText(Path.Combine(RaizDelProyecto(), "Pages", "Shared", "_Layout.cshtml"));
-        var inicio = layout.IndexOf("Caja y Ventas", StringComparison.Ordinal);
+        var inicio = layout.IndexOf("Caja y ventas", StringComparison.Ordinal);
         var menu = layout[inicio..];
 
         var enlace = menu.IndexOf("asp-page=\"/Sales/Historial\"", StringComparison.Ordinal);

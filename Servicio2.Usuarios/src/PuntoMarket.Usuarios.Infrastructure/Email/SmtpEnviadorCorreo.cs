@@ -53,7 +53,7 @@ public sealed class SmtpEnviadorCorreo(SmtpEnviadorCorreoOpciones opciones) : IE
         using var mensaje = new MailMessage
         {
             From = new MailAddress(opciones.FromAddress, opciones.FromName),
-            Subject = "Activa tu cuenta de PuntoMarket",
+            Subject = "Active su cuenta de PuntoMarket",
             SubjectEncoding = Encoding.UTF8,
             BodyEncoding = Encoding.UTF8,
             IsBodyHtml = true,

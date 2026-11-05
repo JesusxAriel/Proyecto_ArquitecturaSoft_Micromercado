@@ -23,6 +23,15 @@ public class IndexModel(UsuariosApiClient usuariosApi) : PageModel
     [TempData]
     public int? UsuarioCreadoId { get; set; }
 
+    public static string NombreDelEstado(string estado) => estado switch
+    {
+        "PENDIENTE" => "Pendiente",
+        "ACTIVO" => "Activo",
+        "INACTIVO" => "Inactivo",
+        "Expirado" => "Vencido",
+        _ => estado
+    };
+
     public string? UsernameGenerado { get; private set; }
     public string? ErrorMessage { get; private set; }
 

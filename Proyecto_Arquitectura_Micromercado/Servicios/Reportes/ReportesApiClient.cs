@@ -19,7 +19,7 @@ public sealed class ReportesApiClient(HttpClient http, ITokenDeAcceso tokenDeAcc
         "Su sesión con el servicio de reportes no es válida o venció. Inicie sesión nuevamente.";
     private const string MensajePermisos = "No tiene permisos para consultar este reporte.";
     private const string MensajeFiltros =
-        "Los filtros indicados no son válidos. Revise las fechas y el valor de «Top».";
+        "Los filtros indicados no son válidos. Revise las fechas y el valor de «Máximo de categorías».";
     private const string MensajeGeneracion =
         "El servicio de reportes no pudo generar el reporte. Intente nuevamente.";
     private const string NombreDeArchivoPorDefecto = "ventas-por-categoria";

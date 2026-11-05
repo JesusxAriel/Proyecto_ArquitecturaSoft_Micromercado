@@ -98,10 +98,10 @@
                         <td>@usuario.Username</td>
                         <td>@usuario.Rol</td>
                         <td>
-                            @usuario.Estado
+                            @IndexModel.NombreDelEstado(usuario.Estado)
                             @if (usuario.EstaExpirado)
                             {
-                                <span class="badge bg-danger">Expirado</span>
+                                <span class="badge bg-danger">Vencido</span>
                             }
                         </td>
                         <td>@usuario.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</td>

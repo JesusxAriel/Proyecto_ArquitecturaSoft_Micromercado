@@ -10,7 +10,7 @@
     var avisoRango = document.getElementById('errorRangoFechas');
     var avisoTop = document.querySelector('[data-valmsg-for="Filtros.Top"]');
     var mensajeRango = 'La fecha «Desde» no puede ser posterior a la fecha «Hasta».';
-    var mensajeTop = 'El valor de «Top» debe ser un número entero entre 1 y 100.';
+    var mensajeTop = 'El valor de «Máximo de categorías» debe ser un número entero entre 1 y 100.';
 
     function rangoInvertido() {
         return desde.value !== '' && hasta.value !== '' && desde.value > hasta.value;

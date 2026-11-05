@@ -96,7 +96,7 @@ public class ResumenCategoriasModelTests
     {
         var cliente = new ClienteDeReportesFalso();
         var pagina = await CrearPaginaAsync(cliente, new FiltrosDeResumen { Top = 0 });
-        pagina.ModelState.AddModelError("Filtros.Top", "El valor de «Top» debe ser un número entero entre 1 y 100.");
+        pagina.ModelState.AddModelError("Filtros.Top", "El valor de «Máximo de categorías» debe ser un número entero entre 1 y 100.");
 
         await pagina.OnGetAsync(CancellationToken.None);
 

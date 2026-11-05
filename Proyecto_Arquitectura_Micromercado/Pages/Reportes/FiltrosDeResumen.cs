@@ -16,8 +16,8 @@ public sealed class FiltrosDeResumen
     [Display(Name = "Categoría")]
     public int? IdCategoria { get; set; }
 
-    [Display(Name = "Top (opcional)")]
-    [Range(1, TopMaximo, ErrorMessage = "El valor de «Top» debe ser un número entero entre 1 y 100.")]
+    [Display(Name = "Máximo de categorías (opcional)")]
+    [Range(1, TopMaximo, ErrorMessage = "El valor de «Máximo de categorías» debe ser un número entero entre 1 y 100.")]
     public int? Top { get; set; }
 
     public FiltrosVentasPorCategoriaDto ADto() => new(Desde, Hasta, IdCategoria, Top);

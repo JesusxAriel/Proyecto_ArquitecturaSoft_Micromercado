@@ -47,7 +47,7 @@ public sealed class UsuariosApiClient(HttpClient httpClient)
                 {
                     HttpStatusCode.BadRequest => await LeerMensajeCambioPasswordAsync(
                         respuesta, cancellationToken),
-                    HttpStatusCode.Unauthorized => "La sesión con Servicio 2 venció. Inicie sesión nuevamente.",
+                    HttpStatusCode.Unauthorized => "La sesión con el servicio de usuarios venció. Inicie sesión nuevamente.",
                     HttpStatusCode.Forbidden => "La cuenta ya no está activa. Contacte al administrador.",
                     _ => "No se pudo completar el cambio de contraseña con el servicio de usuarios. Intente nuevamente."
                 };

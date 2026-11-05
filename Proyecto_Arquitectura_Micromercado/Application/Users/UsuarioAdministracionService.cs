@@ -90,7 +90,7 @@ public sealed class UsuarioAdministracionService(
         var letrasNombre = Letras(nombre);
         var primerApellido = Letras(apellido.Split(' ')[0]);
         if (letrasNombre.Length == 0 || primerApellido.Length == 0)
-            throw new ArgumentException("Nombre y primer apellido deben contener letras latinas para generar el username.");
+            throw new ArgumentException("Nombre y primer apellido deben contener letras latinas para generar el nombre de usuario.");
         var baseUsername = letrasNombre[..1] + primerApellido;
         var hash = HashDeContrasenaDescartable();
         var tokenActivacion = GenerarTokenActivacion();

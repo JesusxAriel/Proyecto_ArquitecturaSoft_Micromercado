@@ -38,7 +38,7 @@ public class FormularioResumenCategoriasTests
         Assert.DoesNotContain("checkValidity", script);
         Assert.DoesNotContain("reportValidity", script);
         Assert.DoesNotContain(":invalid", script);
-        Assert.Contains("El valor de «Top» debe ser un número entero entre 1 y 100.", script);
+        Assert.Contains("El valor de «Máximo de categorías» debe ser un número entero entre 1 y 100.", script);
         Assert.Contains("La fecha «Desde» no puede ser posterior a la fecha «Hasta».", script);
     }
 

@@ -95,7 +95,7 @@ public class ReportesApiClientTests
     [Theory]
     [InlineData(HttpStatusCode.Unauthorized, "Su sesión con el servicio de reportes no es válida o venció. Inicie sesión nuevamente.")]
     [InlineData(HttpStatusCode.Forbidden, "No tiene permisos para consultar este reporte.")]
-    [InlineData(HttpStatusCode.BadRequest, "Los filtros indicados no son válidos. Revise las fechas y el valor de «Top».")]
+    [InlineData(HttpStatusCode.BadRequest, "Los filtros indicados no son válidos. Revise las fechas y el valor de «Máximo de categorías».")]
     [InlineData(HttpStatusCode.ServiceUnavailable, "El servicio de reportes no está disponible. Intente nuevamente en unos minutos.")]
     [InlineData(HttpStatusCode.InternalServerError, "El servicio de reportes no pudo generar el reporte. Intente nuevamente.")]
     public async Task Traduce_los_errores_http_a_mensajes_claros_sin_filtrar_detalles(HttpStatusCode estado, string mensaje)

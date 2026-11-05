@@ -56,9 +56,9 @@
                                href="#" role="button">Inventario</a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" asp-page="/Products/Index">Lista de productos</a></li>
-                                <li><a class="dropdown-item" asp-page="/Products/History">Historial de Cambios</a></li>
+                                <li><a class="dropdown-item" asp-page="/Products/History">Historial de cambios</a></li>
                                 <li><hr class="dropdown-divider" /></li>
-                                <li><a class="dropdown-item" asp-page="/Categories/Index">Listado de Categorías</a></li>
+                                <li><a class="dropdown-item" asp-page="/Categories/Index">Listado de categorías</a></li>
                                     <li>
                                         <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
                                             Distribución por Pasillos <span class="badge bg-secondary ms-1">Próximamente</span>
@@ -70,7 +70,7 @@
                             <a class="nav-link dropdown-toggle @(currentPage.StartsWith("/Suppliers", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)"
                                href="#" role="button">Proveedores</a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" asp-page="/Suppliers/Index">Directorio de Proveedores</a></li>
+                                <li><a class="dropdown-item" asp-page="/Suppliers/Index">Directorio de proveedores</a></li>
                                     <li>
                                         <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1">
                                             Productos por Proveedor <span class="badge bg-secondary ms-1">Próximamente</span>
@@ -90,11 +90,11 @@
                         @if (permisosNavegacion.PuedeAccederCajaVentas)
                         {
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button">Caja y Ventas</a>
+                            <a class="nav-link dropdown-toggle" href="#" role="button">Caja y ventas</a>
                             <ul class="dropdown-menu">
                                     <li>
                                         <a class="dropdown-item" asp-page="/Sales/Index">
-                                            Registro de Ventas
+                                            Registro de ventas
                                         </a>
                                     </li>
                                     <li>
@@ -151,7 +151,7 @@
     <footer class="footer border-top text-muted">
         <div class="container">
             &copy; @DateTime.Now.Year - PuntoMarket &middot;
-            <a asp-page="/Privacy" class="text-muted">Política de Privacidad</a>
+            <a asp-page="/Privacy" class="text-muted">Política de privacidad</a>
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

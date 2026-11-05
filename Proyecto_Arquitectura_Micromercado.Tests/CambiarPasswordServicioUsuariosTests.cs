@@ -51,7 +51,7 @@ public sealed class CambiarPasswordServicioUsuariosTests
     [InlineData(HttpStatusCode.Forbidden, """{"title":"La cuenta no está activa."}""",
         "La cuenta ya no está activa. Contacte al administrador.")]
     [InlineData(HttpStatusCode.Unauthorized, """{"title":"JWT inválido"}""",
-        "La sesión con Servicio 2 venció. Inicie sesión nuevamente.")]
+        "La sesión con el servicio de usuarios venció. Inicie sesión nuevamente.")]
     public async Task Cliente_traduce_errores_http_sin_exponer_el_detalle_remoto(
         HttpStatusCode status,
         string contenido,
@@ -95,7 +95,7 @@ public sealed class CambiarPasswordServicioUsuariosTests
 
         Assert.Equal("/Index", Assert.IsType<RedirectToPageResult>(resultado).PageName);
         Assert.Equal(
-            "Tu nueva contraseña se usará en tu próximo inicio de sesión.",
+            "Su nueva contraseña se usará en su próximo inicio de sesión.",
             model.TempData["MensajeCambioPassword"]);
     }
 

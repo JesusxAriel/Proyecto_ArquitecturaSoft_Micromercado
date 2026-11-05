@@ -22,6 +22,9 @@ public sealed class CambiarPasswordModel(UsuariosApiClient usuariosApi) : PageMo
 
     public string? MensajeDeError { get; private set; }
 
+    public bool EsObligatorio =>
+        User.FindFirst(ClaimsDeIdentidad.DebeCambiarPassword)?.Value == bool.TrueString;
+
     public IActionResult OnGet() => Page();
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
@@ -86,7 +89,7 @@ public sealed class CambiarPasswordModel(UsuariosApiClient usuariosApi) : PageMo
             CookieAuthenticationDefaults.AuthenticationScheme,
             new ClaimsPrincipal(identidad));
 
-        TempData["MensajeCambioPassword"] = "Tu nueva contraseña se usará en tu próximo inicio de sesión.";
+        TempData["MensajeCambioPassword"] = "Su nueva contraseña se usará en su próximo inicio de sesión.";
         return RedirectToPage("/Index");
     }
 
