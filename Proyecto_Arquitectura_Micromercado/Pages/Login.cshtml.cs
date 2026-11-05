@@ -32,6 +32,9 @@ public sealed class LoginModel(
 
     public string? MensajeDeError { get; private set; }
 
+    [TempData(Key = MensajeInformativoDelLogin.Clave)]
+    public string? MensajeInformativo { get; set; }
+
     public IActionResult OnGet() =>
         User.Identity?.IsAuthenticated == true ? RedirectToPage("/Index") : Page();
 

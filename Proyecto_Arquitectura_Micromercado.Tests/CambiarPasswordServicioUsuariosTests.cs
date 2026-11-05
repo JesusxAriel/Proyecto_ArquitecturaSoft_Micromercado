@@ -85,18 +85,24 @@ public sealed class CambiarPasswordServicioUsuariosTests
     }
 
     [Fact]
-    public async Task Formulario_muestra_mensaje_temporal_tras_cambio_exitoso_y_redirige_al_inicio()
+    public async Task Tras_un_cambio_exitoso_cierra_la_sesion_y_redirige_al_login_con_mensaje()
     {
         var handler = new HttpHandler(HttpStatusCode.OK, """{"cambiada":true}""");
         using var clienteHttp = CrearHttpClient(handler);
-        var model = CrearModelo(new UsuariosApiClient(clienteHttp), new AutenticacionGrabada());
+        var autenticacion = new AutenticacionGrabada();
+        var session = new SesionPrueba();
+        session.Set(VariablesDeSesion.Jwt, Encoding.UTF8.GetBytes("token-de-sesion"));
+        var model = CrearModelo(new UsuariosApiClient(clienteHttp), autenticacion, session);
 
         var resultado = await model.OnPostAsync(default);
 
-        Assert.Equal("/Index", Assert.IsType<RedirectToPageResult>(resultado).PageName);
+        Assert.Equal("/Login", Assert.IsType<RedirectToPageResult>(resultado).PageName);
+        Assert.True(autenticacion.CerroSesionAnterior);
+        Assert.Null(autenticacion.Principal);
+        Assert.Empty(session.Keys);
         Assert.Equal(
-            "Su nueva contraseña se usará en su próximo inicio de sesión.",
-            model.TempData["MensajeCambioPassword"]);
+            "Su contraseña fue actualizada. Inicie sesión con su nueva contraseña.",
+            model.TempData[MensajeInformativoDelLogin.Clave]);
     }
 
     [Fact]
@@ -109,27 +115,23 @@ public sealed class CambiarPasswordServicioUsuariosTests
         var resultado = await model.OnPostAsync(default);
 
         Assert.IsType<PageResult>(resultado);
-        Assert.Null(model.TempData["MensajeCambioPassword"]);
+        Assert.Null(model.TempData[MensajeInformativoDelLogin.Clave]);
     }
 
-    [Fact]
-    public async Task Formulario_actualiza_claim_preservando_demas_claims_y_expiracion_jwt()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void El_cambio_es_obligatorio_solo_si_la_claim_lo_indica(bool obligatorio)
     {
-        var handler = new HttpHandler(HttpStatusCode.OK, """{"cambiada":true}""");
-        using var clienteHttp = CrearHttpClient(handler);
-        var autenticacion = new AutenticacionGrabada();
-        var model = CrearModelo(new UsuariosApiClient(clienteHttp), autenticacion);
+        var model = CrearModelo(
+            new UsuariosApiClient(CrearHttpClient(new HttpHandler(HttpStatusCode.OK, "{}"))),
+            new AutenticacionGrabada());
+        var identidad = new ClaimsIdentity(
+            [new Claim(ClaimsDeIdentidad.DebeCambiarPassword, obligatorio.ToString())],
+            CookieAuthenticationDefaults.AuthenticationScheme);
+        model.PageContext.HttpContext.User = new ClaimsPrincipal(identidad);
 
-        var resultado = await model.OnPostAsync(default);
-
-        Assert.Equal("/Index", Assert.IsType<RedirectToPageResult>(resultado).PageName);
-        var principal = Assert.IsType<ClaimsPrincipal>(autenticacion.Principal);
-        Assert.Equal("42", principal.FindFirstValue(ClaimTypes.NameIdentifier));
-        Assert.Equal("ana", principal.FindFirstValue(ClaimTypes.Name));
-        Assert.Equal("Administrador", principal.FindFirstValue(ClaimTypes.Role));
-        Assert.Equal("preservar", principal.FindFirstValue("otro-claim"));
-        Assert.Equal("1799999999", principal.FindFirstValue(ClaimsDeIdentidad.ExpiracionJwt));
-        Assert.Equal(bool.FalseString, principal.FindFirstValue(ClaimsDeIdentidad.DebeCambiarPassword));
+        Assert.Equal(obligatorio, model.EsObligatorio);
     }
 
     [Fact]

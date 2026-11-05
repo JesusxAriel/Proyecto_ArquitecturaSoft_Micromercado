@@ -75,22 +75,11 @@ public sealed class CambiarPasswordModel(UsuariosApiClient usuariosApi) : PageMo
             return Page();
         }
 
-        if (User.Identity is not ClaimsIdentity identidad)
-        {
-            return RedirectToPage("/Login");
-        }
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        HttpContext.Session.Clear();
 
-        var claimCambioPassword = identidad.FindFirst(ClaimsDeIdentidad.DebeCambiarPassword);
-        if (claimCambioPassword is not null)
-            identidad.RemoveClaim(claimCambioPassword);
-
-        identidad.AddClaim(new Claim(ClaimsDeIdentidad.DebeCambiarPassword, bool.FalseString));
-        await HttpContext.SignInAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme,
-            new ClaimsPrincipal(identidad));
-
-        TempData["MensajeCambioPassword"] = "Su nueva contraseña se usará en su próximo inicio de sesión.";
-        return RedirectToPage("/Index");
+        TempData[MensajeInformativoDelLogin.Clave] = MensajeInformativoDelLogin.PasswordActualizada;
+        return RedirectToPage("/Login");
     }
 
     private void LimpiarContrasenas()

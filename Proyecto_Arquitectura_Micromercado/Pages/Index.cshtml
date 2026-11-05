@@ -12,11 +12,6 @@
     </div>
 </div>
 
-@if (TempData["MensajeCambioPassword"] is string mensajeCambioPassword)
-{
-    <div class="alert alert-success shadow-sm" role="status">@mensajeCambioPassword</div>
-}
-
 @if (Model.DatabaseWarning is not null)
 {
     <div class="alert alert-warning shadow-sm" role="alert">@Model.DatabaseWarning</div>
