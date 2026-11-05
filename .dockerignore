@@ -10,3 +10,6 @@
 Proyecto_Arquitectura_Micromercado.Tests
 *.md
 doc
+guias
+.claude
+Servicio3.Reportes/tests
