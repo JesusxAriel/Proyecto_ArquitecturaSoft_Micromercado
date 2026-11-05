@@ -8,7 +8,6 @@ namespace PuntoMarket.Reportes.Infrastructure.Persistence;
 
 public class MySqlConsultaVentasPorCategoria : IConsultaVentasPorCategoria
 {
-    // MySQL 8+: las ventanas se evalúan antes de LIMIT, en el mismo SELECT y snapshot.
     private const string Seleccion = """
         SELECT c.id, c.nombre, SUM(d.cantidad) AS unidades, SUM(d.subtotal) AS monto,
                SUM(SUM(d.cantidad)) OVER () AS totalUnidades,
@@ -51,7 +50,6 @@ public class MySqlConsultaVentasPorCategoria : IConsultaVentasPorCategoria
             }
             filas.Add(MapearFila(lector));
         }
-        // ORDER BY monto DESC conserva la líder incluso cuando se aplica top.
         return new(filas, new TotalesPorCategoria(unidades, monto, filas.FirstOrDefault()));
     }
 

@@ -8,7 +8,6 @@ namespace PuntoMarket.Reportes.Infrastructure.Persistence;
 
 public class MySqlConsultaListadoVentas : IConsultaListadoVentas
 {
-    // MySQL 8+: las ventanas se evalúan antes de LIMIT, en el mismo SELECT y snapshot.
     private const string Seleccion = """
         SELECT v.id, v.nroComprobante, v.fechaVenta, c.nitCi, c.razonSocial, u.username, v.estado, v.montoTotal,
                SUM(CASE WHEN v.estado = 'COMPLETADA' THEN 1 ELSE 0 END) OVER () AS completadas,

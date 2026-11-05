@@ -3,7 +3,6 @@ using System.Net.NetworkInformation;
 using MySql.Data.MySqlClient;
 using PuntoMarket.Reportes.Api;
 
-// Solo consume archivos externos existentes. No crea claves, cuentas ni configuración privada.
 WebApplication? app = null;
 try
 {
@@ -29,7 +28,6 @@ try
     await using (var conexion = new MySqlConnection(cadena.ConnectionString))
     {
         await conexion.OpenAsync();
-        // SHOW GRANTS es inspección, no administra permisos. Rechaza roles o privilegios de escritura.
         await using var comando = new MySqlCommand("SHOW GRANTS FOR CURRENT_USER", conexion);
         await using var lector = await comando.ExecuteReaderAsync();
         var select = false;

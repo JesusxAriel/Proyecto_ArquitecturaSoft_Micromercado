@@ -27,7 +27,6 @@ public static class DocumentacionReportes
     }
 }
 
-// Solo metadatos OpenAPI: no modifica filtros, autorización ni respuestas del controlador.
 public sealed class OperacionesReportesFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)

@@ -12,5 +12,4 @@ public interface IConsultaVentasPorCategoria
         CancellationToken cancelacion);
 }
 
-// Filas respeta el límite; Totales incluye todas las coincidencias de los filtros, sin límite.
 public sealed record ResultadoVentasPorCategoria(IReadOnlyList<FilaDeCategoria> Filas, TotalesPorCategoria Totales);
