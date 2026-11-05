@@ -21,6 +21,7 @@
     let seleccion = 0;
     const detalle = [];
     let registrando = false;
+    const lineasInvalidas = new Set();
     const estadoStock = texto("div", "", "small mt-2");
     estadoStock.setAttribute("role", "status");
     document.getElementById("estadoVenta").after(estadoStock);
@@ -56,9 +57,10 @@
         document.getElementById("totalGeneral").textContent = detalle.length ? moneda.format(total.totalCentavos / 100) : "—";
         document.getElementById("unidadesTotales").textContent = detalle.length ? String(total.unidades) : "—";
         const pagoValido = actualizarPago(total.totalCentavos);
-        document.getElementById("confirmarVenta").disabled = registrando || !detalle.length || !Number(document.getElementById("Input_IdCliente").value) || !pagoValido;
+        document.getElementById("confirmarVenta").disabled = registrando || !detalle.length || !Number(document.getElementById("Input_IdCliente").value) || !pagoValido || lineasInvalidas.size > 0;
     }
     function renderizarDetalle() {
+        lineasInvalidas.clear();
         const cuerpo = document.getElementById("detalleTemporal");
         if (!detalle.length) {
             const fila = document.createElement("tr");
@@ -71,17 +73,31 @@
         }
         cuerpo.replaceChildren(...detalle.map(item => {
             const fila = document.createElement("tr");
-            fila.append(texto("td", `${item.nombre} · ${item.presentacion}`));
+            const celdaProducto = texto("td", `${item.nombre} · ${item.presentacion}`, "text-break");
+            fila.append(celdaProducto);
             fila.append(texto("td", moneda.format(item.precioUnitario), "text-end"));
             fila.append(texto("td", String(item.stockDisponible), "columna-cantidad"));
             const cantidad = document.createElement("input");
             cantidad.type = "number"; cantidad.min = "1"; cantidad.max = String(item.stockDisponible); cantidad.value = String(item.cantidad);
             cantidad.className = "form-control form-control-sm"; cantidad.setAttribute("aria-label", `Cantidad de ${item.nombre}`);
-            cantidad.addEventListener("change", () => {
+            const errorCantidad = texto("div", "", "text-danger small mt-1");
+            errorCantidad.setAttribute("role", "alert");
+            errorCantidad.hidden = true;
+            celdaProducto.append(errorCantidad);
+            const validarCantidad = () => {
+                if (cantidad.value.trim() === "") { lineasInvalidas.add(item); mostrarErrorCantidad(""); return; }
                 const resultado = VentasReglas.cambiarCantidad(detalle, item, cantidad.value);
-                if (resultado.error) { cantidad.value = String(item.cantidad); mostrarEstado(resultado.error, "danger"); }
-                renderizarDetalle();
-            });
+                if (resultado.error) lineasInvalidas.add(item); else lineasInvalidas.delete(item);
+                mostrarErrorCantidad(resultado.error || "");
+                actualizarEstado();
+            };
+            const mostrarErrorCantidad = mensaje => {
+                errorCantidad.textContent = mensaje;
+                errorCantidad.hidden = !mensaje;
+                cantidad.classList.toggle("is-invalid", Boolean(mensaje));
+            };
+            cantidad.addEventListener("input", validarCantidad);
+            cantidad.addEventListener("change", validarCantidad);
             const cantidadCelda = document.createElement("td"); cantidadCelda.className = "columna-cantidad"; cantidadCelda.append(cantidad); fila.append(cantidadCelda);
             fila.append(texto("td", "Listo", "text-end"));
             const quitar = texto("button", "Quitar", "btn btn-sm btn-outline-secondary");
