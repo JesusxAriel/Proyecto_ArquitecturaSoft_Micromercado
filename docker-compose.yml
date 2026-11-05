@@ -1,0 +1,133 @@
+name: puntomarket-docker
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: bdMicroMercadoArqui
+      MYSQL_ROOT_HOST: localhost
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Defina MYSQL_ROOT_PASSWORD en el archivo .env}
+      VENTAS_DB_PASSWORD: ${VENTAS_DB_PASSWORD:?Defina VENTAS_DB_PASSWORD en el archivo .env}
+      USUARIOS_DB_PASSWORD: ${USUARIOS_DB_PASSWORD:?Defina USUARIOS_DB_PASSWORD en el archivo .env}
+      REPORTES_DB_PASSWORD: ${REPORTES_DB_PASSWORD:?Defina REPORTES_DB_PASSWORD en el archivo .env}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:?Defina ADMIN_PASSWORD_HASH en el archivo .env}
+      CAJERO_PASSWORD_HASH: ${CAJERO_PASSWORD_HASH:?Defina CAJERO_PASSWORD_HASH en el archivo .env}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=-04:00
+      - --log-bin-trust-function-creators=1
+    ports:
+      - "127.0.0.1:${MYSQL_PUBLISHED_PORT:-3308}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./bdMicroMercadoArqui.sql:/sql/bdMicroMercadoArqui.sql:ro
+      - ./docker/mysql/01-inicializar.sh:/docker-entrypoint-initdb.d/01-inicializar.sh:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "--host=127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 60s
+
+  usuarios:
+    build:
+      context: .
+      dockerfile: Servicio2.Usuarios/Dockerfile
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__MySqlConnection: "Server=mysql;Port=3306;Database=bdMicroMercadoArqui;User ID=usuarios_demo;Password=${USUARIOS_DB_PASSWORD:?Defina USUARIOS_DB_PASSWORD en el archivo .env};SslMode=Required;Connection Timeout=10"
+      Jwt__Key: ${JWT_KEY:?Defina JWT_KEY en el archivo .env}
+      Jwt__Issuer: ${JWT_ISSUER:?Defina JWT_ISSUER en el archivo .env}
+      Jwt__Audience: ${JWT_AUDIENCE:?Defina JWT_AUDIENCE en el archivo .env}
+      Smtp__Host: ${SMTP_HOST:-}
+      Smtp__Port: ${SMTP_PORT:-587}
+      Smtp__EnableSsl: ${SMTP_ENABLE_SSL:-true}
+      Smtp__FromAddress: ${SMTP_FROM_ADDRESS:-}
+      Smtp__FromName: ${SMTP_FROM_NAME:-PuntoMarket}
+      Smtp__UserName: ${SMTP_USER_NAME:-}
+      Smtp__Password: ${SMTP_PASSWORD:-}
+      Activacion__BaseUrl: ${ACTIVACION_BASE_URL:-http://localhost:5100}
+    ports:
+      - "127.0.0.1:${USUARIOS_PUBLISHED_PORT:-5003}:8080"
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080; printf 'GET / HTTP/1.0\r\n\r\n' >&3; read -r linea <&3; case \"$$linea\" in HTTP/*) exit 0;; esac; exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+  ventas:
+    build:
+      context: .
+      dockerfile: docker/ventas.Dockerfile
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Ventas: "Server=mysql;Port=3306;Database=bdMicroMercadoArqui;User ID=ventas_demo;Password=${VENTAS_DB_PASSWORD:?Defina VENTAS_DB_PASSWORD en el archivo .env};SslMode=Required;Connection Timeout=10"
+      Jwt__Key: ${JWT_KEY:?Defina JWT_KEY en el archivo .env}
+      Jwt__Issuer: ${JWT_ISSUER:?Defina JWT_ISSUER en el archivo .env}
+      Jwt__Audience: ${JWT_AUDIENCE:?Defina JWT_AUDIENCE en el archivo .env}
+    ports:
+      - "127.0.0.1:${VENTAS_PUBLISHED_PORT:-5002}:8080"
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080; printf 'GET /health HTTP/1.0\r\n\r\n' >&3; read -r linea <&3; case \"$$linea\" in *' 200 '*) exit 0;; esac; exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+  reportes:
+    build:
+      context: .
+      dockerfile: docker/reportes.Dockerfile
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__MySql: "Server=mysql;Port=3306;Database=bdMicroMercadoArqui;User ID=reportes_demo;Password=${REPORTES_DB_PASSWORD:?Defina REPORTES_DB_PASSWORD en el archivo .env};SslMode=Required;Connection Timeout=10"
+      Jwt__Key: ${JWT_KEY:?Defina JWT_KEY en el archivo .env}
+      Jwt__Issuer: ${JWT_ISSUER:?Defina JWT_ISSUER en el archivo .env}
+      Jwt__Audience: ${JWT_AUDIENCE:?Defina JWT_AUDIENCE en el archivo .env}
+    ports:
+      - "127.0.0.1:${REPORTES_PUBLISHED_PORT:-5012}:8080"
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080; printf 'GET /api/salud HTTP/1.0\r\n\r\n' >&3; read -r linea <&3; case \"$$linea\" in *' 200 '*) exit 0;; esac; exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    init: true
+    depends_on:
+      usuarios:
+        condition: service_healthy
+      ventas:
+        condition: service_healthy
+      reportes:
+        condition: service_healthy
+    environment:
+      JWT_KEY: ${JWT_KEY:?Defina JWT_KEY en el archivo .env}
+      UsuariosApi__BaseUrl: http://usuarios:8080/
+      VentasApi__BaseUrl: http://localhost:5002/
+      ReportesApi__BaseUrl: http://localhost:5012/
+      VENTAS_DESTINO: ventas:8080
+      REPORTES_DESTINO: reportes:8080
+    ports:
+      - "127.0.0.1:${FRONTEND_PUBLISHED_PORT:-5100}:8080"
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080; printf 'GET / HTTP/1.0\r\n\r\n' >&3; read -r linea <&3; case \"$$linea\" in *' 200 '*|*' 302 '*) exit 0;; esac; exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+volumes:
+  mysql-data: {}
