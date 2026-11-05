@@ -45,8 +45,16 @@ public sealed class CambiarPasswordCasoDeUso(
                 nameof(entrada.ContrasenaActual));
         }
 
+        if (hasheador.Verify(entrada.NuevaContrasena, usuario.PasswordHash))
+        {
+            throw new ArgumentException(
+                "La nueva contraseña no puede ser igual a la contraseña actual.",
+                "NuevaContrasenaIgualActual");
+        }
+
         var nuevoHash = hasheador.Hash(entrada.NuevaContrasena);
         if (!await repositorio.ActualizarPasswordAsync(
+                usuarioId,
                 usuarioId,
                 usuario.PasswordHash,
                 nuevoHash,

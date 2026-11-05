@@ -23,10 +23,11 @@ public sealed class CambiarPasswordCasoDeUsoTests
 
         Assert.True(salida.Cambiada);
         Assert.Equal(42, repositorio.UsuarioIdActualizado);
+        Assert.Equal(42, repositorio.IdUsuarioActualizacion);
         Assert.Equal("hash-de-NuevaSegura2!", repositorio.HashActualizado);
         Assert.Equal(HashActual, repositorio.HashAnterior);
         Assert.False(repositorio.Usuario!.DebeCambiarPassword);
-        Assert.Equal((PasswordActual, HashActual), hasheador.ArgumentosVerificados);
+        Assert.Contains((PasswordActual, HashActual), hasheador.Verificaciones);
     }
 
     [Fact]
@@ -40,6 +41,24 @@ public sealed class CambiarPasswordCasoDeUsoTests
                 .EjecutarAsync(new(PasswordActual, PasswordNueva)));
 
         Assert.Equal("ContrasenaActual", exception.ParamName);
+        Assert.Null(repositorio.HashActualizado);
+    }
+
+    [Fact]
+    public async Task Rechaza_reutilizar_contrasena_actual_antes_de_generar_nuevo_hash()
+    {
+        var repositorio = new RepositorioStub(UsuarioValido());
+        var hasheador = new HasheadorStub { NuevaCoincideConActual = true };
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(
+            () => CrearCaso(repositorio, hasheador)
+                .EjecutarAsync(new(PasswordActual, PasswordNueva)));
+
+        Assert.Equal("NuevaContrasenaIgualActual", exception.ParamName);
+        Assert.StartsWith(
+            "La nueva contraseña no puede ser igual a la contraseña actual.",
+            exception.Message);
+        Assert.Equal(0, hasheador.CantidadHashGenerados);
         Assert.Null(repositorio.HashActualizado);
     }
 
@@ -147,6 +166,7 @@ public sealed class CambiarPasswordCasoDeUsoTests
         public UsuarioAutenticacionDto? Usuario { get; private set; }
         public int? UsuarioIdConsultado { get; private set; }
         public int? UsuarioIdActualizado { get; private set; }
+        public int? IdUsuarioActualizacion { get; private set; }
         public string? HashAnterior { get; private set; }
         public string? HashActualizado { get; private set; }
 
@@ -165,11 +185,13 @@ public sealed class CambiarPasswordCasoDeUsoTests
 
         public Task<bool> ActualizarPasswordAsync(
             int usuarioId,
+            int idUsuarioActualizacion,
             string passwordHashActual,
             string passwordHash,
             CancellationToken cancellationToken = default)
         {
             UsuarioIdActualizado = usuarioId;
+            IdUsuarioActualizacion = idUsuarioActualizacion;
             HashAnterior = passwordHashActual;
             HashActualizado = passwordHash;
             if (Usuario is null ||
@@ -185,14 +207,24 @@ public sealed class CambiarPasswordCasoDeUsoTests
     private sealed class HasheadorStub : IHasheadorPassword
     {
         public bool VerificacionCorrecta { get; init; } = true;
-        public (string Contrasena, string Hash)? ArgumentosVerificados { get; private set; }
+        public bool NuevaCoincideConActual { get; init; }
+        public int CantidadHashGenerados { get; private set; }
+        public List<(string Contrasena, string Hash)> Verificaciones { get; } = [];
 
-        public string Hash(string contrasena) => $"hash-de-{contrasena}";
+        public string Hash(string contrasena)
+        {
+            CantidadHashGenerados++;
+            return $"hash-de-{contrasena}";
+        }
 
         public bool Verify(string contrasena, string hash)
         {
-            ArgumentosVerificados = (contrasena, hash);
-            return VerificacionCorrecta;
+            Verificaciones.Add((contrasena, hash));
+            if (contrasena == PasswordActual && hash == HashActual)
+                return VerificacionCorrecta;
+            return NuevaCoincideConActual &&
+                contrasena == PasswordNueva &&
+                hash == HashActual;
         }
     }
 

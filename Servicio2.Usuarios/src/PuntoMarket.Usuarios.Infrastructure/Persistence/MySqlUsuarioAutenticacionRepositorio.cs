@@ -75,6 +75,7 @@ public sealed class MySqlUsuarioAutenticacionRepositorio(ConexionMySql conexionM
 
     public async Task<bool> ActualizarPasswordAsync(
         int usuarioId,
+        int idUsuarioActualizacion,
         string passwordHashActual,
         string passwordHash,
         CancellationToken cancellationToken = default)
@@ -83,6 +84,7 @@ public sealed class MySqlUsuarioAutenticacionRepositorio(ConexionMySql conexionM
             UPDATE USUARIO
             SET passwordHash = @passwordHash,
                 debeCambiarPassword = 0,
+                idUsuarioActualizacion = @idUsuarioActualizacion,
                 fechaActualizacion = CURRENT_TIMESTAMP
             WHERE id = @usuarioId
               AND passwordHash = @passwordHashActual
@@ -98,6 +100,7 @@ public sealed class MySqlUsuarioAutenticacionRepositorio(ConexionMySql conexionM
         await conexion.OpenAsync(cancellationToken);
         await using var command = new MySqlCommand(sql, conexion);
         command.Parameters.AddWithValue("@passwordHash", passwordHash);
+        command.Parameters.AddWithValue("@idUsuarioActualizacion", idUsuarioActualizacion);
         command.Parameters.AddWithValue("@passwordHashActual", passwordHashActual);
         command.Parameters.AddWithValue("@usuarioId", usuarioId);
         return await command.ExecuteNonQueryAsync(cancellationToken) == 1;

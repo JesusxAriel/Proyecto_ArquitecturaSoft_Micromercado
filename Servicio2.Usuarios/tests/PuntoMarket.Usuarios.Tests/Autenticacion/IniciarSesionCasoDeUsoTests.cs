@@ -144,6 +144,7 @@ public class IniciarSesionCasoDeUsoTests
 
         public Task<bool> ActualizarPasswordAsync(
             int usuarioId,
+            int idUsuarioActualizacion,
             string passwordHashActual,
             string passwordHash,
             CancellationToken cancellationToken = default) =>

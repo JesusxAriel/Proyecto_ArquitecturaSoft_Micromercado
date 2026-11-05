@@ -147,6 +147,27 @@ public class AutenticacionControllerTests
     }
 
     [Fact]
+    public async Task Cambio_password_rechaza_reutilizar_contrasena_actual_con_400()
+    {
+        var controlador = CrearControlador();
+
+        var resultado = await controlador.CambiarPassword(
+            new CambiarPasswordSolicitud
+            {
+                ContrasenaActual = "Segura1!",
+                NuevaContrasena = "Segura1!"
+            },
+            CancellationToken.None);
+
+        var invalido = Assert.IsType<BadRequestObjectResult>(resultado.Result);
+        var problema = Assert.IsType<ProblemDetails>(invalido.Value);
+        Assert.Equal(StatusCodes.Status400BadRequest, problema.Status);
+        Assert.Equal(
+            "La nueva contraseña no puede ser igual a la contraseña actual.",
+            problema.Title);
+    }
+
+    [Fact]
     public async Task Cambio_password_devuelve_mensaje_correcto_si_falta_contrasena_actual()
     {
         var controlador = CrearControlador();
@@ -252,6 +273,7 @@ public class AutenticacionControllerTests
 
         public Task<bool> ActualizarPasswordAsync(
             int usuarioId,
+            int idUsuarioActualizacion,
             string passwordHashActual,
             string passwordHash,
             CancellationToken cancellationToken = default) =>
@@ -261,7 +283,8 @@ public class AutenticacionControllerTests
     private sealed class HasheadorStub(bool contrasenaActualCorrecta = true) : IHasheadorPassword
     {
         public string Hash(string contrasena) => "hash-nuevo-no-sensible";
-        public bool Verify(string contrasena, string hash) => contrasenaActualCorrecta;
+        public bool Verify(string contrasena, string hash) =>
+            contrasenaActualCorrecta && contrasena == "Segura1!";
     }
 
     private sealed class EmisorStub : IEmisorToken

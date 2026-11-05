@@ -12,6 +12,7 @@ public interface IUsuarioAutenticacionRepositorio
 
     Task<bool> ActualizarPasswordAsync(
         int usuarioId,
+        int idUsuarioActualizacion,
         string passwordHashActual,
         string passwordHash,
         CancellationToken cancellationToken = default);

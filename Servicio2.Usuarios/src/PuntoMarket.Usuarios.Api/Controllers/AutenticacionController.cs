@@ -89,20 +89,10 @@ public sealed class AutenticacionController(
         }
         catch (ArgumentException exception)
         {
-            var mensaje = exception.ParamName switch
-            {
-                nameof(CambiarPasswordEntrada.ContrasenaActual) =>
-                    string.IsNullOrWhiteSpace(solicitud.ContrasenaActual)
-                        ? "La contraseña actual es obligatoria."
-                        : "La contraseña actual es incorrecta.",
-                nameof(CambiarPasswordEntrada.NuevaContrasena) =>
-                    "La nueva contraseña no cumple con los requisitos de seguridad.",
-                _ => "La solicitud de cambio de contraseña no es válida."
-            };
             return BadRequest(new ProblemDetails
             {
                 Status = StatusCodes.Status400BadRequest,
-                Title = mensaje
+                Title = ObtenerMensajeValidacion(exception)
             });
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -118,5 +108,14 @@ public sealed class AutenticacionController(
                 Title = "No se pudo completar el cambio de contraseña."
             });
         }
+    }
+
+    private static string ObtenerMensajeValidacion(ArgumentException exception)
+    {
+        const string sufijoParametro = " (Parameter '";
+        var indiceSufijo = exception.Message.IndexOf(sufijoParametro, StringComparison.Ordinal);
+        return indiceSufijo >= 0
+            ? exception.Message[..indiceSufijo]
+            : exception.Message;
     }
 }
