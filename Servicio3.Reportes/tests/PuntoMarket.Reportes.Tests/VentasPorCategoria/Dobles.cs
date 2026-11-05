@@ -38,6 +38,55 @@ public class ConsultaFalsa : IConsultaVentasPorCategoria
     }
 }
 
+public class ConsultaDeTendenciaFalsa : IConsultaTendenciaDeVentas
+{
+    private readonly IReadOnlyList<PuntoDeTendencia> _puntos;
+
+    public ConsultaDeTendenciaFalsa(params PuntoDeTendencia[] puntos)
+    {
+        _puntos = puntos;
+    }
+
+    public int Llamadas { get; private set; }
+
+    public IReadOnlyList<int>? CategoriasRecibidas { get; private set; }
+
+    public Task<IReadOnlyList<PuntoDeTendencia>> ConsultarAsync(
+        RangoDeFechas rango,
+        IReadOnlyList<int> idsDeCategorias,
+        CancellationToken cancelacion)
+    {
+        Llamadas++;
+        CategoriasRecibidas = idsDeCategorias;
+        return Task.FromResult(_puntos);
+    }
+}
+
+public class ConsultaDeProductosFalsa : IConsultaProductosMasVendidos
+{
+    private readonly IReadOnlyList<FilaDeProducto> _filas;
+
+    public ConsultaDeProductosFalsa(params FilaDeProducto[] filas)
+    {
+        _filas = filas;
+    }
+
+    public int Llamadas { get; private set; }
+
+    public int? LimiteRecibido { get; private set; }
+
+    public Task<IReadOnlyList<FilaDeProducto>> ConsultarAsync(
+        RangoDeFechas rango,
+        IReadOnlyList<int> idsDeCategorias,
+        int limite,
+        CancellationToken cancelacion)
+    {
+        Llamadas++;
+        LimiteRecibido = limite;
+        return Task.FromResult(_filas);
+    }
+}
+
 public class RelojFalso : IReloj
 {
     public static readonly DateTime Momento = new(2026, 5, 20, 14, 30, 0);

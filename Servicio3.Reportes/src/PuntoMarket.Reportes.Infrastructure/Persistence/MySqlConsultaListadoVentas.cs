@@ -13,7 +13,8 @@ public class MySqlConsultaListadoVentas : IConsultaListadoVentas
         SELECT v.id, v.nroComprobante, v.fechaVenta, c.nitCi, c.razonSocial, u.username, v.estado, v.montoTotal,
                SUM(CASE WHEN v.estado = 'COMPLETADA' THEN 1 ELSE 0 END) OVER () AS completadas,
                SUM(CASE WHEN v.estado = 'ANULADA' THEN 1 ELSE 0 END) OVER () AS anuladas,
-               SUM(CASE WHEN v.estado = 'COMPLETADA' THEN v.montoTotal ELSE 0 END) OVER () AS montoCompleto
+               SUM(CASE WHEN v.estado = 'COMPLETADA' THEN v.montoTotal ELSE 0 END) OVER () AS montoCompleto,
+               MAX(CASE WHEN v.estado = 'COMPLETADA' THEN v.montoTotal END) OVER () AS ventaMasAlta
         FROM VENTA v
         INNER JOIN CLIENTE c ON c.id = v.idCliente
         INNER JOIN USUARIO u ON u.id = v.idUsuario
@@ -48,7 +49,8 @@ public class MySqlConsultaListadoVentas : IConsultaListadoVentas
                 var completadas = Convert.ToInt32(lector.GetValue(8));
                 var monto = lector.GetDecimal(10);
                 totales = new(completadas, Convert.ToInt32(lector.GetValue(9)), monto,
-                    completadas == 0 ? 0m : decimal.Round(monto / completadas, 2, MidpointRounding.AwayFromZero));
+                    completadas == 0 ? 0m : decimal.Round(monto / completadas, 2, MidpointRounding.AwayFromZero),
+                    lector.IsDBNull(11) ? 0m : lector.GetDecimal(11));
             }
             filas.Add(MapearFila(lector));
         }

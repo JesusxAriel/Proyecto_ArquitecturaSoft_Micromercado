@@ -1,6 +1,7 @@
 using PuntoMarket.Usuarios.Application.Ports.Comunes;
 using PuntoMarket.Usuarios.Application.Ports.Gestion;
 using PuntoMarket.Usuarios.Domain.Enums;
+using PuntoMarket.Usuarios.Domain.Services;
 
 namespace PuntoMarket.Usuarios.Application.UseCases.Gestion.ListarUsuarios;
 
@@ -20,12 +21,12 @@ public sealed class ListarUsuariosCasoDeUso(
         cancellationToken.ThrowIfCancellationRequested();
 
         var usuarios = await repositorio.ListarAsync(cancellationToken);
-        var ahoraUtc = reloj.UtcNow.UtcDateTime;
+        var ahoraLocal = ZonaHorariaDeLaPaz.ALocal(reloj.UtcNow.UtcDateTime);
         var salida = usuarios.Select(usuario =>
         {
             var estaExpirado = usuario.TokenActivacionExpira is DateTime vence &&
                 string.Equals(usuario.Estado, nameof(EstadoUsuario.PENDIENTE), StringComparison.OrdinalIgnoreCase) &&
-                vence <= ahoraUtc;
+                vence <= ahoraLocal;
 
             return new UsuarioListadoSalida(
                 usuario.Id,

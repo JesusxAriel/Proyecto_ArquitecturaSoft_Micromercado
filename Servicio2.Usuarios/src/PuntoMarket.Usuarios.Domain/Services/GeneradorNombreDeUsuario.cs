@@ -14,7 +14,7 @@ public static class GeneradorNombreDeUsuario
         var letrasNombre = Letras(nombreNormalizado);
         var primerApellido = Letras(apellidoNormalizado.Split(' ')[0]);
         if (letrasNombre.Length == 0 || primerApellido.Length == 0)
-            throw new ArgumentException("Nombre y primer apellido deben contener letras latinas para generar el username.");
+            throw new ArgumentException("Nombre y primer apellido deben contener letras latinas para generar el nombre de usuario.");
 
         return letrasNombre[..1] + primerApellido;
     }

@@ -3,186 +3,188 @@ using PuntoMarket.Reportes.Application.Common;
 using PuntoMarket.Reportes.Application.Ports.Exportacion;
 using PuntoMarket.Reportes.Domain.ListadoVentas;
 using PuntoMarket.Reportes.Infrastructure.Exportacion.Comunes;
+using PuntoMarket.Reportes.Infrastructure.Exportacion.VentasPorCategoria;
 
 namespace PuntoMarket.Reportes.Infrastructure.Exportacion.ListadoVentas;
 
 public class ListadoVentasExcel : IExportadorDeReporte<ReporteListadoVentas>
 {
     private const string TipoXlsx = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-    private const string NombreDeHoja = "Listado de ventas";
+    private const string HojaResumen = "Resumen";
+    private const string HojaListado = "Listado";
+    private const string TextoCompletada = "Completada";
+    private const string TextoAnulada = "Anulada";
     private const string FormatoDeMoneda = "\"Bs\" #,##0.00";
-    private const string FormatoDeEntero = "#,##0";
-    private const string FormatoDeFecha = "dd/mm/yyyy hh:mm";
-    private const int FilaDeEncabezado = 8;
+    private const string FormatoDeFechaYHora = "dd/MM/yyyy HH:mm";
+    private const int ColumnaDelLogo = 4;
+    private const int FilaDeTarjetas = 8;
     private const int Columnas = 8;
     private const int ColumnaDelEstado = 7;
     private const int ColumnaDelMonto = 8;
+
+    private readonly GeneradorDeGrafico _generadorDeGrafico;
+
+    public ListadoVentasExcel(GeneradorDeGrafico generadorDeGrafico)
+    {
+        _generadorDeGrafico = generadorDeGrafico;
+    }
 
     public FormatoDeExportacion Formato => FormatoDeExportacion.Xlsx;
 
     public ArchivoGenerado Exportar(ReporteListadoVentas reporte)
     {
         using var libro = new XLWorkbook();
-        var hoja = libro.Worksheets.Add(NombreDeHoja);
-
-        EscribirTitulo(hoja, reporte);
-        EscribirEncabezados(hoja);
-        EscribirCuerpo(hoja, reporte);
-        DefinirAnchos(hoja);
-        hoja.SheetView.FreezeRows(FilaDeEncabezado);
+        EscribirResumen(libro.Worksheets.Add(HojaResumen), reporte);
+        if (reporte.Filas.Count > 0)
+            EscribirListado(libro.Worksheets.Add(HojaListado), reporte);
 
         using var memoria = new MemoryStream();
         libro.SaveAs(memoria);
         return new ArchivoGenerado(memoria.ToArray(), TipoXlsx, NombreDeArchivo(reporte));
     }
 
-    private static void EscribirTitulo(IXLWorksheet hoja, ReporteListadoVentas reporte)
+    private void EscribirResumen(IXLWorksheet hoja, ReporteListadoVentas reporte)
     {
-        hoja.Cell(1, 1).Value = TextosDelListadoVentas.Titulo;
-        hoja.Cell(1, 1).Style.Font.SetBold().Font.SetFontSize(18).Font.SetFontColor(XLColor.FromHtml(EstilosDeReporte.AzulOscuro));
-        hoja.Cell(2, 1).Value = $"Período: {FormatosDeTexto.Periodo(reporte.Filtros.Rango)}";
-        hoja.Cell(3, 1).Value = $"Estado: {TextosDelListadoVentas.EstadoFiltrado(reporte.Filtros)}";
-        hoja.Cell(4, 1).Value = $"Cliente: {TextosDelListadoVentas.ClienteFiltrado(reporte.Filtros)}";
-        hoja.Cell(5, 1).Value = $"Cantidad de ventas: {TextosDelListadoVentas.Limite(reporte.Filtros)}";
-        hoja.Cell(6, 1).Value =
-            $"Generado el {FormatosDeTexto.FechaYHora(reporte.GeneradoEn)} por {reporte.GeneradoPor}";
+        DefinirAnchosDelResumen(hoja);
+        ComponentesDeExcel.EscribirTitulo(hoja, TextosDelListadoVentas.Titulo, LineasDeEncabezado(reporte), ColumnaDelLogo);
+        if (reporte.Filas.Count == 0)
+        {
+            hoja.Cell(FilaDeTarjetas, 1).Value = FormatosDeTexto.SinResultados;
+            hoja.Cell(FilaDeTarjetas, 1).Style.Font.SetItalic();
+            return;
+        }
+
+        var fila = ComponentesDeExcel.EscribirTarjetas(hoja, FilaDeTarjetas, CrearTarjetas(reporte.Totales));
+        InsertarGraficos(hoja, reporte, fila + 1);
+    }
+
+    private static IReadOnlyList<string> LineasDeEncabezado(ReporteListadoVentas reporte) =>
+    [
+        $"Período: {FormatosDeTexto.Periodo(reporte.Filtros.Rango)}",
+        $"Estado: {TextosDelListadoVentas.EstadoFiltrado(reporte.Filtros)}",
+        $"Cliente: {TextosDelListadoVentas.ClienteFiltrado(reporte.Filtros)}",
+        $"Cantidad de ventas: {TextosDelListadoVentas.Limite(reporte.Filtros)}",
+        FormatosDeTexto.ReporteGenerado(reporte.GeneradoPor, reporte.GeneradoEn)
+    ];
+
+    private static IReadOnlyList<(Indicador Indicador, int ColumnaInicial, int ColumnaFinal)> CrearTarjetas(
+        TotalesListadoVentas totales) =>
+    [
+        (new Indicador("VENTAS COMPLETADAS", FormatosDeTexto.Entero(totales.CantidadDeCompletadas)), 1, 1),
+        (new Indicador("MONTO TOTAL", FormatosDeTexto.Bolivianos(totales.MontoTotalDeCompletadas)), 2, 2),
+        (new Indicador("PROMEDIO POR VENTA", FormatosDeTexto.Bolivianos(totales.PromedioPorVenta)), 3, 3),
+        (new Indicador("VENTA MÁS ALTA", FormatosDeTexto.Bolivianos(totales.VentaMasAlta)), 4, 4),
+        (new Indicador("VENTAS ANULADAS", FormatosDeTexto.Entero(totales.CantidadDeAnuladas)), 5, 5)
+    ];
+
+    private void InsertarGraficos(IXLWorksheet hoja, ReporteListadoVentas reporte, int filaInicial)
+    {
+        var graficos = GraficosDeListadoVentas.Crear(_generadorDeGrafico, reporte);
+        if (graficos is null)
+            return;
+
+        var fila = filaInicial;
+        foreach (var grafico in new[] { graficos.MontoPorPeriodo, graficos.ParticipacionPorCliente })
+        {
+            hoja.Cell(fila, 1).Value = grafico.Titulo;
+            hoja.Cell(fila, 1).Style.Font.SetBold().Font.SetFontColor(ComponentesDeExcel.Color(EstilosDeReporte.AmbarOscuro));
+            fila += 1 + ComponentesDeExcel.InsertarImagen(hoja, grafico, fila + 1, 1);
+        }
+    }
+
+    private static void EscribirListado(IXLWorksheet hoja, ReporteListadoVentas reporte)
+    {
+        var ultimaFila = reporte.Filas.Count + 1;
+
+        EscribirEncabezados(hoja);
+        for (var indice = 0; indice < reporte.Filas.Count; indice++)
+            EscribirFila(hoja, indice + 2, indice, reporte.Filas[indice]);
+
+        ComponentesDeExcel.AlternarFilas(hoja, 2, ultimaFila, 1, Columnas);
+        AtenuarAnuladas(hoja, reporte, 2);
+        EscribirTotales(hoja, ultimaFila + 2, 2, ultimaFila);
+        hoja.Range(1, 1, ultimaFila, Columnas).SetAutoFilter();
+        hoja.SheetView.FreezeRows(1);
+        DefinirAnchosDelListado(hoja);
     }
 
     private static void EscribirEncabezados(IXLWorksheet hoja)
     {
-        string[] encabezados =
-            ["N.º", "Comprobante", "Fecha y hora", "NIT/CI", "Razón social", "Cajero", "Estado", "Monto (Bs)"];
+        string[] encabezados = ["N.º", "Comprobante", "Fecha y hora", "NIT/CI", "Cliente", "Usuario", "Estado", "Monto (Bs)"];
         for (var columna = 0; columna < encabezados.Length; columna++)
-            hoja.Cell(FilaDeEncabezado, columna + 1).Value = encabezados[columna];
+            hoja.Cell(1, columna + 1).Value = encabezados[columna];
 
-        var rango = hoja.Range(FilaDeEncabezado, 1, FilaDeEncabezado, Columnas);
-        rango.Style.Font.SetBold().Font.SetFontColor(XLColor.White);
-        rango.Style.Fill.SetBackgroundColor(XLColor.FromHtml(EstilosDeReporte.AzulOscuro));
-        rango.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+        ComponentesDeExcel.EstilizarEncabezadoDeTabla(hoja.Range(1, 1, 1, Columnas));
     }
 
-    private static void EscribirCuerpo(IXLWorksheet hoja, ReporteListadoVentas reporte)
+    private static void EscribirFila(IXLWorksheet hoja, int fila, int indice, FilaDeVenta venta)
     {
-        if (reporte.Filas.Count == 0)
-        {
-            EscribirSinResultados(hoja);
-            return;
-        }
-
-        var primeraFila = FilaDeEncabezado + 1;
-        var ultimaFila = primeraFila + reporte.Filas.Count - 1;
-        var filaDeTotales = ultimaFila + 1;
-
-        EscribirFilas(hoja, reporte, primeraFila);
-        FormatearColumnas(hoja, primeraFila, ultimaFila);
-        EscribirTotales(hoja, primeraFila, ultimaFila, filaDeTotales);
-        EscribirSumariados(hoja, primeraFila, ultimaFila, filaDeTotales + 2);
+        hoja.Cell(fila, 1).Value = indice + 1;
+        hoja.Cell(fila, 2).Value = venta.NroComprobante;
+        hoja.Cell(fila, 3).Value = venta.FechaVenta;
+        hoja.Cell(fila, 3).Style.DateFormat.Format = FormatoDeFechaYHora;
+        hoja.Cell(fila, 4).Value = venta.NitCi;
+        hoja.Cell(fila, 5).Value = venta.RazonSocial;
+        hoja.Cell(fila, 6).Value = venta.Cajero;
+        hoja.Cell(fila, ColumnaDelEstado).Value = TextosDelListadoVentas.Estado(venta.Estado);
+        hoja.Cell(fila, ColumnaDelMonto).Value = venta.MontoTotal;
+        hoja.Cell(fila, ColumnaDelMonto).Style.NumberFormat.Format = FormatoDeMoneda;
+        hoja.Cell(fila, 1).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
     }
 
-    private static void EscribirSinResultados(IXLWorksheet hoja)
-    {
-        var celda = hoja.Range(FilaDeEncabezado + 1, 1, FilaDeEncabezado + 1, Columnas).Merge();
-        celda.Value = FormatosDeTexto.SinResultados;
-        celda.Style.Font.SetItalic();
-        celda.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
-    }
-
-    private static void EscribirFilas(IXLWorksheet hoja, ReporteListadoVentas reporte, int primeraFila)
+    private static void AtenuarAnuladas(IXLWorksheet hoja, ReporteListadoVentas reporte, int primeraFila)
     {
         for (var indice = 0; indice < reporte.Filas.Count; indice++)
-        {
-            var fila = primeraFila + indice;
-            var datos = reporte.Filas[indice];
-            hoja.Cell(fila, 1).Value = indice + 1;
-            hoja.Cell(fila, 2).Value = datos.NroComprobante;
-            hoja.Cell(fila, 3).Value = datos.FechaVenta;
-            hoja.Cell(fila, 4).Value = datos.NitCi;
-            hoja.Cell(fila, 5).Value = datos.RazonSocial;
-            hoja.Cell(fila, 6).Value = datos.Cajero;
-            hoja.Cell(fila, ColumnaDelEstado).Value = TextosDelListadoVentas.Estado(datos.Estado);
-            hoja.Cell(fila, ColumnaDelMonto).Value = datos.MontoTotal;
-        }
+            if (reporte.Filas[indice].Estado == EstadoDeVenta.Anulada)
+                AtenuarFila(hoja.Range(primeraFila + indice, 1, primeraFila + indice, Columnas));
     }
 
-    private static void FormatearColumnas(IXLWorksheet hoja, int primeraFila, int ultimaFila)
+    private static void AtenuarFila(IXLRange fila)
     {
-        hoja.Range(primeraFila, 3, ultimaFila, 3).Style.NumberFormat.Format = FormatoDeFecha;
-        hoja.Range(primeraFila, ColumnaDelMonto, ultimaFila, ColumnaDelMonto).Style.NumberFormat.Format = FormatoDeMoneda;
-        hoja.Range(primeraFila, 1, ultimaFila, 1).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+        fila.Style.Font.SetItalic();
+        fila.Style.Font.SetStrikethrough();
+        fila.Style.Font.SetFontColor(ComponentesDeExcel.Color(EstilosDeReporte.TextoAtenuado));
     }
 
-    private static void EscribirTotales(IXLWorksheet hoja, int primeraFila, int ultimaFila, int filaDeTotales)
+    private static void EscribirTotales(IXLWorksheet hoja, int fila, int primeraFila, int ultimaFila)
     {
-        EscribirLinea(
-            hoja,
-            filaDeTotales,
-            "Monto total de las completadas",
-            SumaDeCompletadas(primeraFila, ultimaFila),
-            FormatoDeMoneda);
+        var estados = $"{Columna(ColumnaDelEstado)}{primeraFila}:{Columna(ColumnaDelEstado)}{ultimaFila}";
+        var montos = $"{Columna(ColumnaDelMonto)}{primeraFila}:{Columna(ColumnaDelMonto)}{ultimaFila}";
 
-        var rango = hoja.Range(filaDeTotales, 1, filaDeTotales, Columnas);
-        rango.Style.Fill.SetBackgroundColor(XLColor.FromHtml(EstilosDeReporte.Ambar));
-        rango.Style.Border.SetTopBorder(XLBorderStyleValues.Medium);
-    }
-
-    private static void EscribirSumariados(IXLWorksheet hoja, int primeraFila, int ultimaFila, int primeraFilaDelPie)
-    {
-        EscribirLinea(
+        EscribirTotal(hoja, fila, "Monto total de las completadas", $"SUMIF({estados},\"{TextoCompletada}\",{montos})", FormatoDeMoneda);
+        EscribirTotal(hoja, fila + 1, "Ventas completadas", $"COUNTIF({estados},\"{TextoCompletada}\")", "#,##0");
+        EscribirTotal(hoja, fila + 2, "Ventas anuladas", $"COUNTIF({estados},\"{TextoAnulada}\")", "#,##0");
+        EscribirTotal(
             hoja,
-            primeraFilaDelPie,
-            "Ventas completadas",
-            Conteo(EstadoDeVenta.Completada, primeraFila, ultimaFila),
-            FormatoDeEntero);
-        EscribirLinea(
-            hoja,
-            primeraFilaDelPie + 1,
-            "Ventas anuladas",
-            Conteo(EstadoDeVenta.Anulada, primeraFila, ultimaFila),
-            FormatoDeEntero);
-        EscribirLinea(
-            hoja,
-            primeraFilaDelPie + 2,
+            fila + 3,
             "Promedio por venta completada",
-            PromedioDeCompletadas(primeraFila, ultimaFila),
+            $"IFERROR(SUMIF({estados},\"{TextoCompletada}\",{montos})/COUNTIF({estados},\"{TextoCompletada}\"),0)",
             FormatoDeMoneda);
     }
 
-    private static void EscribirLinea(IXLWorksheet hoja, int fila, string etiqueta, string formula, string formato)
+    private static void EscribirTotal(IXLWorksheet hoja, int fila, string etiqueta, string formula, string formato)
     {
-        var celdaDeEtiqueta = hoja.Range(fila, 1, fila, Columnas - 1).Merge();
-        celdaDeEtiqueta.Value = etiqueta;
-        celdaDeEtiqueta.Style.Font.SetBold();
-        celdaDeEtiqueta.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right);
-
-        var celdaDelValor = hoja.Cell(fila, ColumnaDelMonto);
-        celdaDelValor.FormulaA1 = formula;
-        celdaDelValor.Style.Font.SetBold();
-        celdaDelValor.Style.NumberFormat.Format = formato;
+        hoja.Cell(fila, 1).Value = etiqueta;
+        hoja.Cell(fila, ColumnaDelMonto).FormulaA1 = formula;
+        hoja.Cell(fila, ColumnaDelMonto).Style.NumberFormat.Format = formato;
+        ComponentesDeExcel.EstilizarTotales(hoja.Range(fila, 1, fila, Columnas));
     }
 
-    private static string Conteo(EstadoDeVenta estado, int primeraFila, int ultimaFila) =>
-        $"COUNTIF({RangoDeEstados(primeraFila, ultimaFila)},\"{TextosDelListadoVentas.Estado(estado)}\")";
+    private static string Columna(int indice) => ((char)('A' + indice - 1)).ToString();
 
-    private static string SumaDeCompletadas(int primeraFila, int ultimaFila) =>
-        $"SUMIF({RangoDeEstados(primeraFila, ultimaFila)}," +
-        $"\"{TextosDelListadoVentas.Estado(EstadoDeVenta.Completada)}\"," +
-        $"{RangoDeMontos(primeraFila, ultimaFila)})";
-
-    private static string PromedioDeCompletadas(int primeraFila, int ultimaFila) =>
-        $"IFERROR({SumaDeCompletadas(primeraFila, ultimaFila)}/" +
-        $"{Conteo(EstadoDeVenta.Completada, primeraFila, ultimaFila)},0)";
-
-    private static string RangoDeEstados(int primeraFila, int ultimaFila) => $"G{primeraFila}:G{ultimaFila}";
-
-    private static string RangoDeMontos(int primeraFila, int ultimaFila) => $"H{primeraFila}:H{ultimaFila}";
-
-    private static void DefinirAnchos(IXLWorksheet hoja)
+    private static void DefinirAnchosDelResumen(IXLWorksheet hoja)
     {
-        hoja.Column(1).Width = 6;
+        for (var columna = 1; columna <= 6; columna++)
+            hoja.Column(columna).Width = 24;
+    }
+
+    private static void DefinirAnchosDelListado(IXLWorksheet hoja)
+    {
+        hoja.Column(1).Width = 8;
         hoja.Column(2).Width = 18;
-        hoja.Column(3).Width = 18;
+        hoja.Column(3).Width = 20;
         hoja.Column(4).Width = 16;
-        hoja.Column(5).Width = 34;
+        hoja.Column(5).Width = 38;
         hoja.Column(6).Width = 16;
         hoja.Column(ColumnaDelEstado).Width = 14;
         hoja.Column(ColumnaDelMonto).Width = 18;

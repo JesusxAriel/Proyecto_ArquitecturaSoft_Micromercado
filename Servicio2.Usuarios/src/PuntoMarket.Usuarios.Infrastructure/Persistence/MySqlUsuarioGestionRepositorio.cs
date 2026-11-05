@@ -2,6 +2,7 @@ using MySql.Data.MySqlClient;
 using PuntoMarket.Usuarios.Application.Ports.Gestion;
 using PuntoMarket.Usuarios.Domain.Enums;
 using PuntoMarket.Usuarios.Domain.Exceptions;
+using PuntoMarket.Usuarios.Domain.Services;
 
 namespace PuntoMarket.Usuarios.Infrastructure.Persistence;
 
@@ -91,7 +92,7 @@ public sealed class MySqlUsuarioGestionRepositorio(ConexionMySql conexionMySql)
         command.Parameters.AddWithValue("@hash", usuario.HashContrasena);
         command.Parameters.AddWithValue("@creador", usuario.IdUsuarioCreacion);
         command.Parameters.AddWithValue("@tokenHash", usuario.TokenActivacionHash);
-        command.Parameters.AddWithValue("@tokenExpira", usuario.TokenActivacionExpira);
+        command.Parameters.AddWithValue("@tokenExpira", ZonaHorariaDeLaPaz.ALocal(usuario.TokenActivacionExpira));
         try
         {
             if (await command.ExecuteNonQueryAsync(cancellationToken) != 1)
@@ -157,7 +158,7 @@ public sealed class MySqlUsuarioGestionRepositorio(ConexionMySql conexionMySql)
         {
             command.Parameters.AddWithValue("@id", usuarioId);
             command.Parameters.AddWithValue("@tokenHash", tokenHash);
-            command.Parameters.AddWithValue("@tokenExpira", tokenExpiraUtc);
+            command.Parameters.AddWithValue("@tokenExpira", ZonaHorariaDeLaPaz.ALocal(tokenExpiraUtc));
             command.Parameters.AddWithValue("@idUsuarioActualizacion", idUsuarioActualizacion);
             if (await command.ExecuteNonQueryAsync(cancellationToken) != 1)
                 return null;
@@ -183,7 +184,7 @@ public sealed class MySqlUsuarioGestionRepositorio(ConexionMySql conexionMySql)
             SELECT EXISTS(
                 SELECT 1 FROM USUARIO
                 WHERE tokenActivacionHash = @tokenHash
-                  AND tokenActivacionExpira > @ahoraUtc
+                  AND tokenActivacionExpira > @ahora
                   AND estado = 'PENDIENTE'
                   AND estaActivo = 0);
             """;
@@ -191,7 +192,7 @@ public sealed class MySqlUsuarioGestionRepositorio(ConexionMySql conexionMySql)
         await conexion.OpenAsync(cancellationToken);
         await using var command = new MySqlCommand(sql, conexion);
         command.Parameters.AddWithValue("@tokenHash", tokenHash);
-        command.Parameters.AddWithValue("@ahoraUtc", ahoraUtc);
+        command.Parameters.AddWithValue("@ahora", ZonaHorariaDeLaPaz.ALocal(ahoraUtc));
         return Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken)) == 1;
     }
 
@@ -207,13 +208,13 @@ public sealed class MySqlUsuarioGestionRepositorio(ConexionMySql conexionMySql)
                 estado = 'ACTIVO',
                 estaActivo = 1,
                 debeCambiarPassword = 0,
-                fechaActivacion = @ahoraUtc,
+                fechaActivacion = @ahora,
                 tokenActivacionHash = NULL,
                 tokenActivacionExpira = NULL,
-                idUsuarioActualizacion = NULL,
+                idUsuarioActualizacion = id,
                 fechaActualizacion = CURRENT_TIMESTAMP
             WHERE tokenActivacionHash = @tokenHash
-              AND tokenActivacionExpira > @ahoraUtc
+              AND tokenActivacionExpira > @ahora
               AND estado = 'PENDIENTE'
               AND estaActivo = 0;
             """;
@@ -222,7 +223,7 @@ public sealed class MySqlUsuarioGestionRepositorio(ConexionMySql conexionMySql)
         await using var command = new MySqlCommand(sql, conexion);
         command.Parameters.AddWithValue("@passwordHash", passwordHash);
         command.Parameters.AddWithValue("@tokenHash", tokenHash);
-        command.Parameters.AddWithValue("@ahoraUtc", ahoraUtc);
+        command.Parameters.AddWithValue("@ahora", ZonaHorariaDeLaPaz.ALocal(ahoraUtc));
         return await command.ExecuteNonQueryAsync(cancellationToken) == 1;
     }
 

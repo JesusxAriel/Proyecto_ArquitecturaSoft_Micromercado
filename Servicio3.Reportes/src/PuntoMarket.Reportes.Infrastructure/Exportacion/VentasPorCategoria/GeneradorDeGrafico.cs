@@ -1,58 +1,58 @@
+using PuntoMarket.Reportes.Domain.Tendencias;
+using PuntoMarket.Reportes.Domain.ValueObjects;
 using PuntoMarket.Reportes.Domain.VentasPorCategoria;
 using PuntoMarket.Reportes.Infrastructure.Exportacion.Comunes;
-using ScottPlot;
-using ScottPlot.TickGenerators;
+using PuntoMarket.Reportes.Infrastructure.Exportacion.Graficos;
 
 namespace PuntoMarket.Reportes.Infrastructure.Exportacion.VentasPorCategoria;
 
 public class GeneradorDeGrafico
 {
-    private const int Ancho = 900;
-    private const int AltoMinimo = 260;
-    private const int AltoPorCategoria = 42;
-    private const int AltoFijo = 120;
+    public const int MaximoDeCategoriasEnBarras = 10;
+    public const int MaximoDePartesEnDona = 5;
 
-    public byte[] GenerarBarras(IReadOnlyList<FilaDeCategoria> filas)
+    public byte[] GenerarBarras(IReadOnlyList<FilaDeCategoria> filas) => MontoPorCategoria(filas).Contenido;
+
+    public ImagenDeGrafico MontoPorCategoria(IReadOnlyList<FilaDeCategoria> filas)
     {
-        var grafico = new Plot();
-        var barras = CrearBarras(filas);
+        var partes = ParteDelTotal.TopConOtros(AParteDelTotal(filas), MaximoDeCategoriasEnBarras);
+        var datos = partes.Select(p => (p.Nombre, p.Monto)).ToList();
 
-        ConfigurarBarras(grafico.Add.Bars(barras));
-        ConfigurarEjes(grafico, filas);
-
-        return grafico.GetImageBytes(Ancho, CalcularAlto(filas.Count), ImageFormat.Png);
+        return GraficoDeBarrasHorizontales.Generar("Monto vendido por categoría", "Monto vendido (Bs)", datos);
     }
 
-    private static Bar[] CrearBarras(IReadOnlyList<FilaDeCategoria> filas) =>
+    public ImagenDeGrafico ParticipacionPorCategoria(IReadOnlyList<FilaDeCategoria> filas) =>
+        GraficoDeDona.Generar(
+            "Participación por categoría",
+            ParteDelTotal.TopConOtros(AParteDelTotal(filas), MaximoDePartesEnDona));
+
+    public ImagenDeGrafico TendenciaDelMonto(TendenciaDeVentas tendencia)
+    {
+        var titulo = tendencia.Agrupacion == AgrupacionDeTendencia.Diaria
+            ? "Tendencia del monto vendido por día"
+            : "Tendencia del monto vendido por semana";
+
+        return GraficoDeTendencia.Generar(titulo, tendencia);
+    }
+
+    public ImagenDeGrafico ProductosMasVendidos(IReadOnlyList<FilaDeProducto> productos)
+    {
+        var datos = productos.Select(p => (p.NombreProducto, p.MontoVendido)).ToList();
+
+        return GraficoDeBarrasHorizontales.Generar("Los 5 productos más vendidos", "Monto vendido (Bs)", datos, EstiloDeGrafico.AnchoCompleto);
+    }
+
+    public ImagenDeGrafico MontoPorPeriodo(TendenciaDeVentas tendencia) =>
+        tendencia.Agrupacion == AgrupacionDeTendencia.Diaria
+            ? GraficoDeColumnas.Generar("Monto de ventas por día", "Día", tendencia.Puntos)
+            : GraficoDeColumnas.Generar("Monto de ventas por semana", "Semana (inicio en lunes)", tendencia.Puntos);
+
+    public ImagenDeGrafico ParticipacionPorCliente(IReadOnlyList<ParteDelTotal> partes) =>
+        GraficoDeDona.GenerarConLeyendaLateral("Participación por cliente", partes);
+
+    private static IReadOnlyList<ParteDelTotal> AParteDelTotal(IReadOnlyList<FilaDeCategoria> filas) =>
         filas
-            .Select((fila, indice) => new Bar
-            {
-                Position = filas.Count - 1 - indice,
-                Value = (double)fila.MontoVendido,
-                FillColor = Color.FromHex(EstilosDeReporte.Ambar),
-                Size = 0.6
-            })
-            .ToArray();
-
-    private static void ConfigurarBarras(ScottPlot.Plottables.BarPlot barras)
-    {
-        barras.Horizontal = true;
-    }
-
-    private static void ConfigurarEjes(Plot grafico, IReadOnlyList<FilaDeCategoria> filas)
-    {
-        grafico.Axes.Left.TickGenerator = new NumericManual(CrearEtiquetas(filas));
-        grafico.Axes.Margins(left: 0, right: 0.12);
-        grafico.Title("Monto vendido por categoría");
-        grafico.XLabel("Monto vendido (Bs)");
-        grafico.FigureBackground.Color = Color.FromHex(EstilosDeReporte.Blanco);
-    }
-
-    private static Tick[] CrearEtiquetas(IReadOnlyList<FilaDeCategoria> filas) =>
-        filas
-            .Select((fila, indice) => new Tick(filas.Count - 1 - indice, fila.NombreCategoria))
-            .ToArray();
-
-    private static int CalcularAlto(int cantidadDeCategorias) =>
-        Math.Max(AltoMinimo, AltoFijo + AltoPorCategoria * cantidadDeCategorias);
+            .OrderByDescending(f => f.MontoVendido)
+            .Select(f => new ParteDelTotal(f.NombreCategoria, f.MontoVendido))
+            .ToList();
 }

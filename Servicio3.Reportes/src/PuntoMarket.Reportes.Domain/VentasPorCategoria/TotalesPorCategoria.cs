@@ -7,4 +7,10 @@ public sealed record TotalesPorCategoria(long TotalUnidades, decimal TotalMonto,
             filas.Sum(f => f.UnidadesVendidas),
             filas.Sum(f => f.MontoVendido),
             filas.MaxBy(f => f.MontoVendido));
+
+    public decimal Participacion(FilaDeCategoria fila) =>
+        TotalMonto == 0m ? 0m : fila.MontoVendido / TotalMonto;
+
+    public decimal ParticipacionDelLider =>
+        CategoriaLider is { } lider ? Participacion(lider) : 0m;
 }

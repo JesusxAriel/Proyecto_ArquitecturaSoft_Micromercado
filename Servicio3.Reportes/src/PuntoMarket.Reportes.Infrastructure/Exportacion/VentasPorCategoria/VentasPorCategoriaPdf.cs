@@ -22,13 +22,13 @@ public class VentasPorCategoriaPdf : IExportadorDeReporte<ReporteVentasPorCatego
 
     public ArchivoGenerado Exportar(ReporteVentasPorCategoria reporte)
     {
-        var documento = new VentasPorCategoriaDocumento(reporte, GenerarGrafico(reporte), LogoDelReporte.Obtener());
+        var documento = new VentasPorCategoriaDocumento(reporte, CrearGraficos(reporte), LogoDelReporte.Obtener());
 
         return new ArchivoGenerado(documento.GeneratePdf(), TipoPdf, NombreDeArchivo(reporte));
     }
 
-    private byte[]? GenerarGrafico(ReporteVentasPorCategoria reporte) =>
-        reporte.Filas.Count == 0 ? null : _generadorDeGrafico.GenerarBarras(reporte.Filas);
+    private GraficosDeVentasPorCategoria? CrearGraficos(ReporteVentasPorCategoria reporte) =>
+        reporte.Filas.Count == 0 ? null : GraficosDeVentasPorCategoria.Crear(_generadorDeGrafico, reporte);
 
     private static string NombreDeArchivo(ReporteVentasPorCategoria reporte) =>
         $"ventas-por-categoria-{reporte.GeneradoEn:yyyyMMdd-HHmmss}.pdf";
