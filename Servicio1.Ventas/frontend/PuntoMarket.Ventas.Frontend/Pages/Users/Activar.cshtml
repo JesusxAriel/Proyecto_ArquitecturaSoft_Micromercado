@@ -1,0 +1,19 @@
+@page
+@model PuntoMarket.Ventas.Frontend.Pages.Users.ActivarModel
+@{ ViewData["Title"] = "Activar cuenta"; }
+<section class="card sale-panel mx-auto" style="max-width:640px"><div class="card-body p-4">
+    <h1 class="h3">Activar cuenta</h1>
+    @if (Model.Completada) {
+        <p class="alert alert-success" role="status">Su cuenta se activó correctamente. Ya puede iniciar sesión.</p>
+        <a asp-page="/Account/Login" class="btn btn-primary">Iniciar sesión</a>
+    }
+    @if (Model.ErrorActivacion is not null) { <p class="alert alert-danger" role="alert">@Model.ErrorActivacion</p> }
+    @if (Model.PuedeActivar) {
+        <p>Defina su contraseña: al menos 8 caracteres, mayúscula, minúscula, número y un carácter no alfanumérico.</p>
+        <form method="post" asp-page="/Users/Activar">
+            <div class="mb-3"><label for="NuevaContrasena">Nueva contraseña</label><input id="NuevaContrasena" name="NuevaContrasena" type="password" autocomplete="new-password" class="form-control" minlength="8" required /></div>
+            <div class="mb-3"><label for="ConfirmarContrasena">Confirmar contraseña</label><input id="ConfirmarContrasena" name="ConfirmarContrasena" type="password" autocomplete="new-password" class="form-control" required /></div>
+            <button type="submit" class="btn btn-primary">Activar cuenta</button>
+        </form>
+    }
+</div></section>

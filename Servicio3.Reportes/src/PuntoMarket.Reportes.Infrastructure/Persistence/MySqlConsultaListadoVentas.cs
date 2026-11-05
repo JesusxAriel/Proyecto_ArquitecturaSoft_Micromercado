@@ -8,8 +8,12 @@ namespace PuntoMarket.Reportes.Infrastructure.Persistence;
 
 public class MySqlConsultaListadoVentas : IConsultaListadoVentas
 {
+    // MySQL 8+: las ventanas se evalúan antes de LIMIT, en el mismo SELECT y snapshot.
     private const string Seleccion = """
-        SELECT v.id, v.nroComprobante, v.fechaVenta, c.nitCi, c.razonSocial, u.username, v.estado, v.montoTotal
+        SELECT v.id, v.nroComprobante, v.fechaVenta, c.nitCi, c.razonSocial, u.username, v.estado, v.montoTotal,
+               SUM(CASE WHEN v.estado = 'COMPLETADA' THEN 1 ELSE 0 END) OVER () AS completadas,
+               SUM(CASE WHEN v.estado = 'ANULADA' THEN 1 ELSE 0 END) OVER () AS anuladas,
+               SUM(CASE WHEN v.estado = 'COMPLETADA' THEN v.montoTotal ELSE 0 END) OVER () AS montoCompleto
         FROM VENTA v
         INNER JOIN CLIENTE c ON c.id = v.idCliente
         INNER JOIN USUARIO u ON u.id = v.idUsuario
@@ -24,7 +28,7 @@ public class MySqlConsultaListadoVentas : IConsultaListadoVentas
         _conexion = conexion;
     }
 
-    public async Task<IReadOnlyList<FilaDeVenta>> ConsultarAsync(
+    public async Task<ResultadoListadoVentas> ConsultarAsync(
         RangoDeFechas rango,
         EstadoDeVenta? estado,
         string? cliente,
@@ -35,7 +39,20 @@ public class MySqlConsultaListadoVentas : IConsultaListadoVentas
         using var comando = CrearComando(conexion, rango, estado, cliente, tope);
         using var lector = await comando.ExecuteReaderAsync(cancelacion);
 
-        return await LeerFilasAsync(lector, cancelacion);
+        var filas = new List<FilaDeVenta>();
+        var totales = new TotalesListadoVentas(0, 0, 0m, 0m);
+        while (await lector.ReadAsync(cancelacion))
+        {
+            if (filas.Count == 0)
+            {
+                var completadas = Convert.ToInt32(lector.GetValue(8));
+                var monto = lector.GetDecimal(10);
+                totales = new(completadas, Convert.ToInt32(lector.GetValue(9)), monto,
+                    completadas == 0 ? 0m : decimal.Round(monto / completadas, 2, MidpointRounding.AwayFromZero));
+            }
+            filas.Add(MapearFila(lector));
+        }
+        return new(filas, totales);
     }
 
     private static MySqlCommand CrearComando(
@@ -106,17 +123,6 @@ public class MySqlConsultaListadoVentas : IConsultaListadoVentas
 
     private static string PatronDeBusqueda(string cliente) =>
         $"%{cliente.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_")}%";
-
-    private static async Task<IReadOnlyList<FilaDeVenta>> LeerFilasAsync(
-        System.Data.Common.DbDataReader lector,
-        CancellationToken cancelacion)
-    {
-        var filas = new List<FilaDeVenta>();
-        while (await lector.ReadAsync(cancelacion))
-            filas.Add(MapearFila(lector));
-
-        return filas;
-    }
 
     private static FilaDeVenta MapearFila(System.Data.Common.DbDataReader lector) =>
         new(

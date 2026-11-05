@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PuntoMarket.Ventas.Domain/PuntoMarket.Ventas.Domain.csproj" />
+    <Project Path="src/PuntoMarket.Ventas.Application/PuntoMarket.Ventas.Application.csproj" />
+    <Project Path="src/PuntoMarket.Ventas.Infrastructure/PuntoMarket.Ventas.Infrastructure.csproj" />
+    <Project Path="src/PuntoMarket.Ventas.Api/PuntoMarket.Ventas.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PuntoMarket.Ventas.Tests/PuntoMarket.Ventas.Tests.csproj" />
+  </Folder>
+</Solution>

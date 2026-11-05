@@ -1,0 +1,6 @@
+.env
+.env.*
+!.env.example
+.secrets/
+*.local.env
+.runtime-validation/

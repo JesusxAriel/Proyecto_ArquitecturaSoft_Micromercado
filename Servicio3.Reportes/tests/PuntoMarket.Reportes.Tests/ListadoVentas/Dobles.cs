@@ -26,7 +26,7 @@ public class ConsultaFalsa : IConsultaListadoVentas
 
     public int? TopeRecibido { get; private set; }
 
-    public Task<IReadOnlyList<FilaDeVenta>> ConsultarAsync(
+    public Task<ResultadoListadoVentas> ConsultarAsync(
         RangoDeFechas rango,
         EstadoDeVenta? estado,
         string? cliente,
@@ -38,7 +38,7 @@ public class ConsultaFalsa : IConsultaListadoVentas
         EstadoRecibido = estado;
         ClienteRecibido = cliente;
         TopeRecibido = tope;
-        return Task.FromResult(_filas);
+        return Task.FromResult(new ResultadoListadoVentas(_filas.Take(tope ?? int.MaxValue).ToArray(), TotalesListadoVentas.Calcular(_filas)));
     }
 }
 

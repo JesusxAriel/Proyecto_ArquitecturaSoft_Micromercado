@@ -1,0 +1,14 @@
+namespace PuntoMarket.Ventas.Application.Sales;
+
+public sealed record NuevaVentaDto(
+    int IdCliente,
+    IReadOnlyList<LineaVentaDto> Lineas);
+
+public sealed record LineaVentaDto(
+    int IdProducto,
+    int Cantidad,
+    decimal? PrecioEsperado = null);
+
+public sealed record ResultadoVentaDto(
+    int IdVenta,
+    decimal Total);
