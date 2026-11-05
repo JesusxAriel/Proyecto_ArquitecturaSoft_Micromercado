@@ -94,6 +94,24 @@ public sealed class CambiarPasswordCasoDeUsoTests
         Assert.Null(repositorio.HashActualizado);
     }
 
+    [Fact]
+    public async Task Rechaza_usuario_pendiente_sin_actualizar_repositorio_ni_generar_hash()
+    {
+        var repositorio = new RepositorioStub(UsuarioValido() with
+        {
+            Estado = EstadoUsuario.PENDIENTE
+        });
+        var hasheador = new HasheadorStub();
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => CrearCaso(repositorio, hasheador)
+                .EjecutarAsync(new(PasswordActual, PasswordNueva)));
+
+        Assert.Null(repositorio.UsuarioIdActualizado);
+        Assert.Null(repositorio.HashActualizado);
+        Assert.Equal(0, hasheador.CantidadHashGenerados);
+    }
+
     [Theory]
     [InlineData(EstadoUsuario.INACTIVO, true)]
     [InlineData(EstadoUsuario.ACTIVO, false)]

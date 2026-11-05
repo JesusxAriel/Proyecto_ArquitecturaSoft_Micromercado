@@ -1,7 +1,10 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -9,19 +12,12 @@ using Microsoft.IdentityModel.Tokens;
 using PuntoMarket.Usuarios.Api.Controllers;
 using PuntoMarket.Usuarios.Api.DependencyInjection;
 using PuntoMarket.Usuarios.Application.Ports.Autenticacion;
-using PuntoMarket.Usuarios.Application.Ports.Comunes;
-using PuntoMarket.Usuarios.Infrastructure.Security;
 using Xunit;
 
 namespace PuntoMarket.Usuarios.Tests.Autenticacion;
 
 public class ConfiguracionJwtApiTests
 {
-    private const string Clave =
-        "7f4e2a9c1b6d8e3f0a5c9d2e6b1f8a4c";
-    private const string OtraClave =
-        "6a3d8f1c5b9e2a7d4c0f6b3e8a1d5c9f";
-
     [Fact]
     public void Registra_bearer_y_configura_validacion_de_tokens_y_claims()
     {
@@ -40,9 +36,9 @@ public class ConfiguracionJwtApiTests
         Assert.False(bearer.MapInboundClaims);
         Assert.True(validacion.ValidateIssuerSigningKey);
         Assert.True(validacion.ValidateIssuer);
-        Assert.Equal("PuntoMarket.Usuarios", validacion.ValidIssuer);
+        Assert.Equal(JwtTokenPruebaFactory.Emisor, validacion.ValidIssuer);
         Assert.True(validacion.ValidateAudience);
-        Assert.Equal("PuntoMarket", validacion.ValidAudience);
+        Assert.Equal(JwtTokenPruebaFactory.Audiencia, validacion.ValidAudience);
         Assert.True(validacion.ValidateLifetime);
         Assert.True(validacion.RequireExpirationTime);
         Assert.Equal(TimeSpan.FromMinutes(1), validacion.ClockSkew);
@@ -50,22 +46,32 @@ public class ConfiguracionJwtApiTests
         Assert.Equal("unique_name", validacion.NameClaimType);
         Assert.Equal([SecurityAlgorithms.HmacSha256], validacion.ValidAlgorithms);
         Assert.Equal(
-            Clave,
+            JwtTokenPruebaFactory.Clave,
             System.Text.Encoding.UTF8.GetString(
                 Assert.IsType<SymmetricSecurityKey>(validacion.IssuerSigningKey).Key));
     }
 
     [Fact]
-    public void Opciones_registradas_validan_tokens_reales_y_rechazan_firma_o_issuer_invalidos()
+    public async Task Opciones_registradas_validan_tokens_reales_y_rechazan_firma_o_issuer_invalidos()
     {
         var servicios = new ServiceCollection();
+        servicios.AddLogging();
+        servicios.AddRouting();
         servicios.AgregarAutenticacionJwt(CrearConfiguracion());
+        servicios.AddAuthorization();
 
         using var proveedor = servicios.BuildServiceProvider();
         var bearer = proveedor.GetRequiredService<IOptionsMonitor<JwtBearerOptions>>()
             .Get(JwtBearerDefaults.AuthenticationScheme);
         var emisor = proveedor.GetRequiredService<IEmisorToken>();
         var handler = new JwtSecurityTokenHandler { MapInboundClaims = false };
+        var claims = new[]
+        {
+            new Claim("unique_name", "ana"),
+            new Claim("nombre", "Ana Pérez"),
+            new Claim("role", "Administrador"),
+            new Claim("debeCambiarPassword", "false")
+        };
         var tokenValido = emisor.Emitir(42, "ana", "Ana Pérez", "Administrador", false);
 
         var principal = handler.ValidateToken(
@@ -75,27 +81,54 @@ public class ConfiguracionJwtApiTests
 
         Assert.Equal("42", principal.FindFirst("sub")?.Value);
         Assert.Equal("Administrador", principal.FindFirst("role")?.Value);
+        Assert.Equal(StatusCodes.Status200OK, await EjecutarEndpointProtegidoAsync(proveedor, tokenValido));
 
-        var reloj = proveedor.GetRequiredService<IReloj>();
-        var tokenConOtraClave = CrearEmisor(
-            "PuntoMarket.Usuarios",
-            OtraClave,
-            reloj).Emitir(42, "ana", "Ana Pérez", "Administrador", false);
+        var tokenConOtraClave = JwtTokenPruebaFactory.CrearTokenFirmado(
+            claims,
+            key: JwtTokenPruebaFactory.ClaveAlternativa);
         Assert.ThrowsAny<SecurityTokenException>(() =>
             handler.ValidateToken(
                 tokenConOtraClave,
                 bearer.TokenValidationParameters,
                 out _));
 
-        var tokenConOtroIssuer = CrearEmisor(
-            "Otro.Emisor",
-            Clave,
-            reloj).Emitir(42, "ana", "Ana Pérez", "Administrador", false);
+        var tokenConOtroIssuer = JwtTokenPruebaFactory.CrearTokenFirmado(
+            claims,
+            issuer: "Otro.Emisor");
         Assert.Throws<SecurityTokenInvalidIssuerException>(() =>
             handler.ValidateToken(
                 tokenConOtroIssuer,
                 bearer.TokenValidationParameters,
                 out _));
+    }
+
+    private static async Task<int> EjecutarEndpointProtegidoAsync(
+        IServiceProvider proveedor,
+        string token)
+    {
+        var pipeline = new ApplicationBuilder(proveedor);
+        pipeline.UseAuthentication();
+        pipeline.UseAuthorization();
+        pipeline.Run(context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status200OK;
+            return Task.CompletedTask;
+        });
+        var aplicacion = pipeline.Build();
+
+        await using var scope = proveedor.CreateAsyncScope();
+        var contexto = new DefaultHttpContext
+        {
+            RequestServices = scope.ServiceProvider
+        };
+        contexto.Request.Headers.Authorization = $"Bearer {token}";
+        contexto.SetEndpoint(new Endpoint(
+            _ => Task.CompletedTask,
+            new EndpointMetadataCollection(new AuthorizeAttribute { Roles = "Administrador" }),
+            "Endpoint protegido"));
+
+        await aplicacion(contexto);
+        return contexto.Response.StatusCode;
     }
 
     [Fact]
@@ -133,17 +166,8 @@ public class ConfiguracionJwtApiTests
             {
                 ["Jwt:Issuer"] = "PuntoMarket.Usuarios",
                 ["Jwt:Audience"] = "PuntoMarket",
-                ["Jwt:Key"] = Clave,
+                ["Jwt:Key"] = JwtTokenPruebaFactory.Clave,
                 ["Jwt:ExpireMinutes"] = "60"
             })
             .Build();
-
-    private static JwtEmisorToken CrearEmisor(string issuer, string key, IReloj reloj) =>
-        new(new JwtEmisorTokenOpciones
-        {
-            Issuer = issuer,
-            Audience = "PuntoMarket",
-            Key = key,
-            ExpireMinutes = 60
-        }, reloj);
 }

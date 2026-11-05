@@ -105,6 +105,13 @@
                             </ul>
                         </li>
                         }
+                        @if (autenticado && permisosNavegacion.PuedeAccederCajaVentas)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link @(currentPage.Equals("/Users/CambiarPassword", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)"
+                                   asp-page="/Users/CambiarPassword">Cambiar contraseña</a>
+                            </li>
+                        }
                     </ul>
                 </div>
                 @if (autenticado)

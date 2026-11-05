@@ -86,6 +86,7 @@ public sealed class CambiarPasswordModel(UsuariosApiClient usuariosApi) : PageMo
             CookieAuthenticationDefaults.AuthenticationScheme,
             new ClaimsPrincipal(identidad));
 
+        TempData["MensajeCambioPassword"] = "Tu nueva contraseña se usará en tu próximo inicio de sesión.";
         return RedirectToPage("/Index");
     }
 

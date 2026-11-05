@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Proyecto_Arquitectura_Micromercado.Application.Security;
 using Proyecto_Arquitectura_Micromercado.Dtos.Usuarios;
 using Proyecto_Arquitectura_Micromercado.Pages.Shared;
@@ -84,6 +85,34 @@ public sealed class CambiarPasswordServicioUsuariosTests
     }
 
     [Fact]
+    public async Task Formulario_muestra_mensaje_temporal_tras_cambio_exitoso_y_redirige_al_inicio()
+    {
+        var handler = new HttpHandler(HttpStatusCode.OK, """{"cambiada":true}""");
+        using var clienteHttp = CrearHttpClient(handler);
+        var model = CrearModelo(new UsuariosApiClient(clienteHttp), new AutenticacionGrabada());
+
+        var resultado = await model.OnPostAsync(default);
+
+        Assert.Equal("/Index", Assert.IsType<RedirectToPageResult>(resultado).PageName);
+        Assert.Equal(
+            "Tu nueva contraseña se usará en tu próximo inicio de sesión.",
+            model.TempData["MensajeCambioPassword"]);
+    }
+
+    [Fact]
+    public async Task Formulario_no_muestra_mensaje_temporal_si_el_cambio_falla()
+    {
+        var handler = new HttpHandler(HttpStatusCode.BadRequest, """{"title":"La contraseña actual es incorrecta."}""");
+        using var clienteHttp = CrearHttpClient(handler);
+        var model = CrearModelo(new UsuariosApiClient(clienteHttp), new AutenticacionGrabada());
+
+        var resultado = await model.OnPostAsync(default);
+
+        Assert.IsType<PageResult>(resultado);
+        Assert.Null(model.TempData["MensajeCambioPassword"]);
+    }
+
+    [Fact]
     public async Task Formulario_actualiza_claim_preservando_demas_claims_y_expiracion_jwt()
     {
         var handler = new HttpHandler(HttpStatusCode.OK, """{"cambiada":true}""");
@@ -150,7 +179,7 @@ public sealed class CambiarPasswordServicioUsuariosTests
         contexto.Features.Set<ISessionFeature>(
             new SessionFeature { Session = session ?? new SesionPrueba() });
         var actionContext = new ActionContext(contexto, new RouteData(), new PageActionDescriptor());
-        return new CambiarPasswordModel(cliente)
+        var model = new CambiarPasswordModel(cliente)
         {
             PageContext = new PageContext(actionContext),
             Url = new UrlHelper(actionContext),
@@ -161,6 +190,17 @@ public sealed class CambiarPasswordServicioUsuariosTests
                 ConfirmarContrasena = "NuevaSegura2!"
             }
         };
+        model.TempData = new TempDataDictionary(contexto, new TempDataProviderStub());
+        return model;
+    }
+
+    private sealed class TempDataProviderStub : ITempDataProvider
+    {
+        public IDictionary<string, object> LoadTempData(HttpContext context) => new Dictionary<string, object>();
+
+        public void SaveTempData(HttpContext context, IDictionary<string, object> values)
+        {
+        }
     }
 
     private sealed class HttpHandler(HttpStatusCode status, string contenido) : HttpMessageHandler
