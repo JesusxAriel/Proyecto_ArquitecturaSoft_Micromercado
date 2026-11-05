@@ -50,11 +50,11 @@ public class ExportadoresVentasPorCategoriaTests
         var hoja = libro.Worksheet(1);
         Assert.StartsWith("Reporte generado: ", hoja.Cell(5, 1).GetString());
         Assert.Matches(@" - \d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2}$", hoja.Cell(5, 1).GetString());
-        Assert.Equal("Bebidas", hoja.Cell(8, 2).GetString());
-        Assert.Equal("Lácteos", hoja.Cell(9, 2).GetString());
-        Assert.Equal("Totales", hoja.Cell(10, 2).GetString());
-        Assert.Equal("SUM(D8:D9)", hoja.Cell(10, 4).FormulaA1);
-        Assert.Equal(2, hoja.Pictures.Count);
+        Assert.Equal("Bebidas", hoja.Cell(12, 2).GetString());
+        Assert.Equal("Lácteos", hoja.Cell(13, 2).GetString());
+        Assert.Equal("Totales", hoja.Cell(14, 2).GetString());
+        Assert.Equal("SUM(D12:D13)", hoja.Cell(14, 4).FormulaA1);
+        Assert.Equal(3, hoja.Pictures.Count);
         Assert.Contains(hoja.Pictures, imagen => imagen.TopLeftCell.Address.RowNumber == 1);
     }
 
@@ -64,7 +64,7 @@ public class ExportadoresVentasPorCategoriaTests
         var archivo = new VentasPorCategoriaExcel(Grafico).Exportar(CrearReporte());
 
         using var libro = new XLWorkbook(new MemoryStream(archivo.Contenido));
-        Assert.Equal("Sin resultados para los filtros seleccionados", libro.Worksheet(1).Cell(8, 1).GetString());
+        Assert.Equal("Sin resultados para los filtros seleccionados", libro.Worksheet(1).Cell(7, 1).GetString());
     }
 
     [Fact]
