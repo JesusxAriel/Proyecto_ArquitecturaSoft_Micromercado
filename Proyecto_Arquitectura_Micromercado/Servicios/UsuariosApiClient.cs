@@ -32,6 +32,43 @@ public sealed class UsuariosApiClient(HttpClient httpClient)
         }
     }
 
+    public async Task<CambiarPasswordRespuestaDto> CambiarPasswordAsync(
+        CambiarPasswordDto solicitud,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var respuesta = await httpClient.PostAsJsonAsync(
+                "api/autenticacion/cambiar-password", solicitud, cancellationToken);
+
+            if (!respuesta.IsSuccessStatusCode)
+            {
+                var mensaje = respuesta.StatusCode switch
+                {
+                    HttpStatusCode.BadRequest => await LeerMensajeCambioPasswordAsync(
+                        respuesta, cancellationToken),
+                    HttpStatusCode.Unauthorized => "La sesión con Servicio 2 venció. Inicie sesión nuevamente.",
+                    HttpStatusCode.Forbidden => "La cuenta ya no está activa. Contacte al administrador.",
+                    _ => "No se pudo completar el cambio de contraseña con el servicio de usuarios. Intente nuevamente."
+                };
+                throw new HttpRequestException(mensaje, null, respuesta.StatusCode);
+            }
+
+            var resultado = await respuesta.Content.ReadFromJsonAsync<CambiarPasswordRespuestaDto>(
+                cancellationToken);
+            if (resultado is null || !resultado.Cambiada)
+                throw new JsonException("La API de usuarios devolvió una respuesta de cambio de contraseña inválida.");
+
+            return resultado;
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode is null)
+        {
+            throw new HttpRequestException(
+                "No se pudo conectar con el servicio de usuarios. Intente nuevamente.",
+                exception);
+        }
+    }
+
     public async Task<IReadOnlyList<UsuarioListadoDto>> ListarAsync(CancellationToken cancellationToken = default)
     {
         using var respuesta = await httpClient.GetAsync("api/usuarios", cancellationToken);
@@ -105,4 +142,21 @@ public sealed class UsuariosApiClient(HttpClient httpClient)
         };
         throw new HttpRequestException(mensaje, null, respuesta.StatusCode);
     }
+
+    private static async Task<string> LeerMensajeCambioPasswordAsync(
+        HttpResponseMessage respuesta,
+        CancellationToken cancellationToken)
+    {
+        var problema = await respuesta.Content.ReadFromJsonAsync<ProblemaApiDto>(cancellationToken);
+        return problema?.Title switch
+        {
+            "La contraseña actual es obligatoria." => "Ingrese su contraseña actual.",
+            "La contraseña actual es incorrecta." => "La contraseña actual es incorrecta.",
+            "La nueva contraseña no cumple con los requisitos de seguridad." =>
+                "La nueva contraseña no cumple con los requisitos de seguridad.",
+            _ => "No se pudo cambiar la contraseña. Revise los datos ingresados."
+        };
+    }
+
+    private sealed record ProblemaApiDto(string? Title);
 }

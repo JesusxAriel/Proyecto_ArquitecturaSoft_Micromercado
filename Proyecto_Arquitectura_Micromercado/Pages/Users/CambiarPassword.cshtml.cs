@@ -4,14 +4,18 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Proyecto_Arquitectura_Micromercado.Application.Common;
+using System.Net;
 using Proyecto_Arquitectura_Micromercado.Application.Security;
+using Proyecto_Arquitectura_Micromercado.Dtos.Usuarios;
+using Proyecto_Arquitectura_Micromercado.Pages.Shared;
+using Proyecto_Arquitectura_Micromercado.Servicios;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Users;
 
 [Authorize]
-public sealed class CambiarPasswordModel(IAutenticacionService autenticacion) : PageModel
+public sealed class CambiarPasswordModel(UsuariosApiClient usuariosApi) : PageModel
 {
     [BindProperty]
     public CambiarPasswordInput Input { get; set; } = new();
@@ -33,28 +37,38 @@ public sealed class CambiarPasswordModel(IAutenticacionService autenticacion) : 
             return Page();
         }
 
-        var userIdString = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (!int.TryParse(userIdString, out var usuarioId))
-        {
-            return RedirectToPage("/Login");
-        }
-
         try
         {
-            var actualizado = await autenticacion.CambiarPasswordAsync(
-                usuarioId,
-                Input.ContrasenaActual,
-                Input.NuevaContrasena,
+            await usuariosApi.CambiarPasswordAsync(
+                new CambiarPasswordDto(Input.ContrasenaActual, Input.NuevaContrasena),
                 cancellationToken);
-            if (!actualizado)
-            {
-                MensajeDeError = "La contraseña actual es incorrecta o la cuenta ya no está activa.";
-                return Page();
-            }
         }
-        catch (ErrorDePersistenciaException)
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Unauthorized)
         {
-            MensajeDeError = "Error al actualizar la contraseña en la base de datos. Intente nuevamente.";
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            HttpContext.Session.Clear();
+            return RedirectToPage("/Login", new { SesionVencida = true });
+        }
+        catch (HttpRequestException exception)
+        {
+            MensajeDeError = exception.StatusCode switch
+            {
+                HttpStatusCode.BadRequest or HttpStatusCode.Forbidden => exception.Message,
+                _ => "El servicio de usuarios no está disponible. Intente nuevamente."
+            };
+            LimpiarContrasenas();
+            return Page();
+        }
+        catch (JsonException)
+        {
+            MensajeDeError = "El servicio de usuarios devolvió una respuesta inválida. Intente nuevamente.";
+            LimpiarContrasenas();
+            return Page();
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            MensajeDeError = "El servicio de usuarios no está disponible. Intente nuevamente.";
+            LimpiarContrasenas();
             return Page();
         }
 
@@ -65,9 +79,7 @@ public sealed class CambiarPasswordModel(IAutenticacionService autenticacion) : 
 
         var claimCambioPassword = identidad.FindFirst(ClaimsDeIdentidad.DebeCambiarPassword);
         if (claimCambioPassword is not null)
-        {
             identidad.RemoveClaim(claimCambioPassword);
-        }
 
         identidad.AddClaim(new Claim(ClaimsDeIdentidad.DebeCambiarPassword, bool.FalseString));
         await HttpContext.SignInAsync(
@@ -75,6 +87,16 @@ public sealed class CambiarPasswordModel(IAutenticacionService autenticacion) : 
             new ClaimsPrincipal(identidad));
 
         return RedirectToPage("/Index");
+    }
+
+    private void LimpiarContrasenas()
+    {
+        ModelState.Remove("Input.ContrasenaActual");
+        ModelState.Remove("Input.NuevaContrasena");
+        ModelState.Remove("Input.ConfirmarContrasena");
+        Input.ContrasenaActual = string.Empty;
+        Input.NuevaContrasena = string.Empty;
+        Input.ConfirmarContrasena = string.Empty;
     }
 
     public sealed class CambiarPasswordInput
