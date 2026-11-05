@@ -22,6 +22,7 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
 using System.Globalization;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
 using Proyecto_Arquitectura_Micromercado.Pages.Shared;
+using Proyecto_Arquitectura_Micromercado.Servicios;
 using Proyecto_Arquitectura_Micromercado.Servicios.Reportes;
 
 
