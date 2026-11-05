@@ -1,0 +1,141 @@
+@page
+@model Proyecto_Arquitectura_Micromercado.Pages.Reportes.VentasListadoModel
+@{
+    ViewData["Title"] = "Listado de ventas";
+}
+
+<header class="mb-4">
+    <h1 class="page-heading mb-1">Listado de ventas</h1>
+    <p class="text-muted mb-0">Consulte las ventas de un período, ordenadas de la más reciente a la más antigua.</p>
+</header>
+
+<div id="regionDeErrores" role="alert">
+    @if (!string.IsNullOrWhiteSpace(Model.MensajeDeError))
+    {
+        <div class="alert alert-danger shadow-sm">@Model.MensajeDeError</div>
+    }
+</div>
+
+<section class="card shadow-sm mb-4" aria-labelledby="filtrosTitulo">
+    <div class="card-body">
+        <h2 class="h5 card-title mb-3" id="filtrosTitulo">Filtros</h2>
+        <form id="filtrosReporte" method="get" novalidate>
+            <input type="hidden" name="Consultar" value="true" />
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label asp-for="Filtros.Desde" class="form-label"></label>
+                    <input asp-for="Filtros.Desde" type="date" class="form-control" />
+                    <span asp-validation-for="Filtros.Desde" class="text-danger"></span>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Filtros.Hasta" class="form-label"></label>
+                    <input asp-for="Filtros.Hasta" type="date" class="form-control" />
+                    <span asp-validation-for="Filtros.Hasta" class="text-danger"></span>
+                </div>
+                <div class="col-md-2">
+                    <label asp-for="Filtros.Estado" class="form-label"></label>
+                    <select asp-for="Filtros.Estado" asp-items="Model.Estados" class="form-select">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Filtros.Cliente" class="form-label"></label>
+                    <input asp-for="Filtros.Cliente" class="form-control" placeholder="NIT/CI o razón social" />
+                    <span asp-validation-for="Filtros.Cliente" class="text-danger"></span>
+                </div>
+                <div class="col-md-1">
+                    <label asp-for="Filtros.Tope" class="form-label"></label>
+                    <input asp-for="Filtros.Tope" type="number" class="form-control" inputmode="numeric" />
+                    <span asp-validation-for="Filtros.Tope" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-warning fw-semibold">
+                        <i class="bi bi-search" aria-hidden="true"></i> Consultar
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+@if (Model.Resultado is { } resultado)
+{
+    <section class="card shadow-sm mb-4" aria-labelledby="resultadoTitulo">
+        <div class="card-body">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <h2 class="h5 mb-0" id="resultadoTitulo">Resultado</h2>
+                @if (resultado.Filas.Count > 0)
+                {
+                    <div class="ms-auto d-flex flex-wrap gap-2">
+                        <a class="btn btn-outline-danger btn-sm" asp-page-handler="DescargarPdf" asp-all-route-data="Model.ParametrosDeConsulta">
+                            <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> Descargar PDF
+                        </a>
+                        <a class="btn btn-outline-success btn-sm" asp-page-handler="DescargarExcel" asp-all-route-data="Model.ParametrosDeConsulta">
+                            <i class="bi bi-file-earmark-excel" aria-hidden="true"></i> Descargar Excel
+                        </a>
+                    </div>
+                }
+            </div>
+
+            @if (resultado.Filas.Count == 0)
+            {
+                <p class="text-center text-muted py-4 mb-0" role="status">Sin resultados para los filtros seleccionados</p>
+            }
+            else
+            {
+                <div class="table-responsive rounded-3 border mb-3">
+                    <table class="table table-hover align-middle mb-0" aria-labelledby="resultadoTitulo">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Comprobante</th>
+                                <th scope="col" class="text-nowrap">Fecha y hora</th>
+                                <th scope="col">NIT/CI</th>
+                                <th scope="col">Razón social</th>
+                                <th scope="col">Cajero</th>
+                                <th scope="col">Estado</th>
+                                <th scope="col" class="text-end text-nowrap">Monto (Bs)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var fila in resultado.Filas)
+                            {
+                                <tr>
+                                    <th scope="row" class="fw-normal">@fila.Comprobante</th>
+                                    <td class="text-nowrap">@fila.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>@fila.NitCi</td>
+                                    <td>@fila.RazonSocial</td>
+                                    <td>@fila.Cajero</td>
+                                    <td><span class="@VentasListadoModel.ClaseDelEstado(fila.Estado)">@VentasListadoModel.NombreDelEstado(fila.Estado)</span></td>
+                                    <td class="text-end">@fila.Monto.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 class="h6 mb-3" id="sumariadosTitulo">Sumariados</h3>
+                <dl class="row mb-0" aria-labelledby="sumariadosTitulo">
+                    <dt class="col-sm-4 col-lg-3">Ventas completadas</dt>
+                    <dd class="col-sm-8 col-lg-9">@resultado.Totales.VentasCompletadas.ToString("N0")</dd>
+
+                    <dt class="col-sm-4 col-lg-3">Ventas anuladas</dt>
+                    <dd class="col-sm-8 col-lg-9">@resultado.Totales.VentasAnuladas.ToString("N0")</dd>
+
+                    <dt class="col-sm-4 col-lg-3">Monto total de las completadas</dt>
+                    <dd class="col-sm-8 col-lg-9">Bs @resultado.Totales.MontoTotalDeCompletadas.ToString("N2")</dd>
+
+                    <dt class="col-sm-4 col-lg-3">Promedio por venta completada</dt>
+                    <dd class="col-sm-8 col-lg-9 mb-0">Bs @resultado.Totales.PromedioPorVenta.ToString("N2")</dd>
+                </dl>
+
+                <p class="small text-muted mt-3 mb-0">
+                    Generado el @resultado.GeneradoEn.ToString("dd/MM/yyyy HH:mm") por @resultado.GeneradoPor.
+                </p>
+            }
+        </div>
+    </section>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

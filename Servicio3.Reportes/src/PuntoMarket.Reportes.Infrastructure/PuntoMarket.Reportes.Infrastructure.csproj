@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\PuntoMarket.Reportes.Application\PuntoMarket.Reportes.Application.csproj" />
+    <ProjectReference Include="..\PuntoMarket.Reportes.Domain\PuntoMarket.Reportes.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+    <PackageReference Include="MySql.Data" Version="26.7.0" />
+    <PackageReference Include="QuestPDF" Version="2026.9.1" />
+    <PackageReference Include="ScottPlot" Version="5.1.59" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Exportacion\Comunes\logo.jpg" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
