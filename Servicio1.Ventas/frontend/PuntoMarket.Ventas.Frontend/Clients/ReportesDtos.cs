@@ -35,3 +35,4 @@ public sealed class FiltroCategoriasReporte : FiltroFechasReporte
     [Range(1, int.MaxValue)] public int? IdCategoria { get; set; }
     [Range(1, 100)] public int? Top { get; set; }
 }
+public sealed record CategoriaReporte(int Id, string Nombre);

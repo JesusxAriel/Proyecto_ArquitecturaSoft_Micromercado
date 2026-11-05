@@ -10,6 +10,12 @@ public sealed class CategoriasModel(IReportesApiClient api) : ReportePageModel
 {
     [BindProperty(SupportsGet = true)] public FiltroCategoriasReporte Filtro { get; set; } = new();
     public CategoriasReporte? Reporte { get; private set; }
+    public IReadOnlyList<CategoriaReporte> Categorias { get; private set; } = [];
+    private async Task CargarCategorias(CancellationToken ct)
+    {
+        try { Categorias = await api.ListarCategorias(ct); }
+        catch (ReportesApiException) { Categorias = []; }
+    }
     private const int AnchoMinimoDeBarra = 2;
     public int AnchoDeBarra(decimal monto)
     {
@@ -19,7 +25,11 @@ public sealed class CategoriasModel(IReportesApiClient api) : ReportePageModel
     }
     public string DescripcionDelGrafico => Reporte is null ? "" :
         "Monto vendido por categoría: " + string.Join("; ", Reporte.Filas.Select(f => $"{f.Categoria}, Bs {f.MontoVendido:N2}"));
-    public Task<IActionResult> OnGetAsync(CancellationToken ct) => Ejecutar(async () => Reporte = await api.Categorias(Filtro, ct));
+    public async Task<IActionResult> OnGetAsync(CancellationToken ct)
+    {
+        await CargarCategorias(ct);
+        return await Ejecutar(async () => Reporte = await api.Categorias(Filtro, ct));
+    }
     public Task<IActionResult> OnGetPdfAsync(CancellationToken ct) => Descargar(() => api.DescargarCategorias(Filtro, "pdf", ct));
     public Task<IActionResult> OnGetExcelAsync(CancellationToken ct) => Descargar(() => api.DescargarCategorias(Filtro, "xlsx", ct));
 }
