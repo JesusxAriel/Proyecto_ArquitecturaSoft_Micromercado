@@ -39,8 +39,22 @@
                 </div>
                 <div class="navbar-user">
                 @if (User.Identity?.IsAuthenticated == true) {
-                    <span class="badge rounded-pill text-bg-secondary">@User.Identity.Name · @User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value · Usuarios</span>
-                    <form method="post" asp-page="/Account/Logout" class="d-inline"><button type="submit" class="btn btn-outline-light btn-sm ms-2">Salir</button></form>
+                    var nombreUsuario = User.Identity.Name ?? "";
+                    var rolUsuario = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+                    var iniciales = nombreUsuario.Length == 0 ? "" : nombreUsuario[..1].ToUpperInvariant();
+                    <div class="dropdown">
+                        <button type="button" id="userDropdown" class="btn btn-link text-white text-decoration-none dropdown-toggle user-profile-dropdown d-flex align-items-center gap-2" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="user-avatar" aria-hidden="true">@iniciales</span>
+                            <span class="d-none d-md-inline user-summary"><span class="fw-semibold user-name">@nombreUsuario</span> <small class="user-role">@rolUsuario</small></span>
+                            <span class="visually-hidden d-md-none">Menú de usuario: @nombreUsuario</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" asp-page="/Account/Perfil"><i class="bi bi-person" aria-hidden="true"></i> Mi perfil</a></li>
+                            <li><a class="dropdown-item" asp-page="/Account/CambiarPassword"><i class="bi bi-key" aria-hidden="true"></i> Cambiar contraseña</a></li>
+                            <li><hr class="dropdown-divider" /></li>
+                            <li><form method="post" asp-page="/Account/Logout"><button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión</button></form></li>
+                        </ul>
+                    </div>
                 } else { <a class="btn btn-outline-light btn-sm" asp-page="/Account/Login">Iniciar sesión</a> }
                 </div>
             </div>

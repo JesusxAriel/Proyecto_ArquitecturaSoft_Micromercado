@@ -175,6 +175,28 @@ public sealed class CambiarPasswordTests
         Assert.Empty(h.Api.Llamadas);
     }
 
+    [Theory]
+    [InlineData("Administrador", true)]
+    [InlineData("Cajero", false)]
+    public async Task El_menu_del_usuario_ofrece_perfil_cambio_de_contrasena_y_cierre_de_sesion_en_orden(string rol, bool veUsuarios)
+    {
+        await using var h = await Host.Crear(rol);
+        using var c = h.Cliente();
+        await h.Login(c);
+
+        var html = WebUtility.HtmlDecode(await c.GetStringAsync("/Account/Perfil"));
+
+        Assert.Matches("<button[^>]*id=\"userDropdown\"[^>]*aria-expanded=\"false\"|<button[^>]*aria-expanded=\"false\"[^>]*id=\"userDropdown\"", html);
+        Assert.Contains("aria-labelledby=\"userDropdown\"", html);
+        var perfil = html.IndexOf("Mi perfil</a>", StringComparison.Ordinal);
+        var cambio = html.IndexOf("Cambiar contraseña</a>", StringComparison.Ordinal);
+        var cierre = html.IndexOf("Cerrar sesión</button>", StringComparison.Ordinal);
+        Assert.InRange(perfil, 0, cambio - 1);
+        Assert.InRange(cambio, 0, cierre - 1);
+        Assert.DoesNotContain(">Salir<", html);
+        Assert.Equal(veUsuarios, html.Contains("href=\"/Users\""));
+    }
+
     [Fact]
     public async Task Mi_perfil_sin_sesion_redirige_al_login()
     {

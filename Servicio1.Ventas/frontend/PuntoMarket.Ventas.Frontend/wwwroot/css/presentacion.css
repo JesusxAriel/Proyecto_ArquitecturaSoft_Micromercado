@@ -5,11 +5,11 @@ main { flex: 1; }
 .inicio-hero { padding: 2.5rem; background: #fff; border: 1px solid #d8e0e8; border-left: 6px solid #f59e0b; border-radius: 6px; }
 .inicio-hero p { max-width: 680px; }
 .inicio-icono { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: #fffbeb; color: #b45309; border-radius: 10px; font-size: 1.5rem; }
+.user-summary { align-items: baseline; display: inline-flex; gap: .5rem; white-space: nowrap; }
 .skip-link { position: fixed; top: 0; left: 0; z-index: 2000; background: #fff; padding: 12px; }
 @media (max-width: 991.98px) {
     .navbar-main-grid { grid-template-columns: minmax(0, 1fr) auto; }
     .navbar-main-grid .navbar-toggler { grid-column: 2; }
-    .navbar-user { display: none; }
 }
 @media (max-width: 575.98px) {
     .inicio-hero { padding: 1.5rem; }
