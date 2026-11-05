@@ -195,6 +195,7 @@ public sealed class CambiarPasswordTests
         Assert.InRange(cambio, 0, cierre - 1);
         Assert.DoesNotContain(">Salir<", html);
         Assert.Equal(veUsuarios, html.Contains("href=\"/Users\""));
+        Assert.Equal(veUsuarios, html.Contains("Listado de ventas</a>") && html.Contains("Ventas por categoría</a>"));
     }
 
     [Fact]
