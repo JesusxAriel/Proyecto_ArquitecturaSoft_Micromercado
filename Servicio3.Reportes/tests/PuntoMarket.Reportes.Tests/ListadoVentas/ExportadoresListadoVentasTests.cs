@@ -10,7 +10,7 @@ namespace PuntoMarket.Reportes.Tests.ListadoVentas;
 
 public class ExportadoresListadoVentasTests
 {
-    private const int FilaDelPrimerDato = 9;
+    private const int FilaDelPrimerDato = 2;
 
     private static ReporteListadoVentas CrearReporte(params FilaDeVenta[] filas) =>
         ReporteListadoVentas.Crear(
@@ -58,9 +58,9 @@ public class ExportadoresListadoVentasTests
     }
 
     [Fact]
-    public void El_excel_escribe_las_filas_el_estado_y_la_fila_de_totales()
+    public void El_excel_escribe_las_filas_el_estado_y_los_totales_en_la_hoja_listado()
     {
-        var exportador = new ListadoVentasExcel();
+        var exportador = new ListadoVentasExcel(new GeneradorDeGrafico());
 
         var archivo = exportador.Exportar(ReporteConDatos());
 
@@ -68,46 +68,78 @@ public class ExportadoresListadoVentasTests
         Assert.Equal("PK", Encoding.ASCII.GetString(archivo.Contenido, 0, 2));
 
         using var libro = new XLWorkbook(new MemoryStream(archivo.Contenido));
-        var hoja = libro.Worksheet(1);
-        Assert.Single(hoja.Pictures);
-        Assert.Equal(1, hoja.Pictures.Single().TopLeftCell.Address.RowNumber);
-        Assert.Equal("Comprobante", hoja.Cell(8, 2).GetString());
-        Assert.Equal("Reporte generado: alejandra - 03/11/2026 09:15:00", hoja.Cell(6, 1).GetString());
+        Assert.Equal(["Resumen", "Listado"], libro.Worksheets.Select(h => h.Name));
+        var hoja = libro.Worksheet("Listado");
+        Assert.Equal("Comprobante", hoja.Cell(1, 2).GetString());
         Assert.Equal("F-0001", hoja.Cell(FilaDelPrimerDato, 2).GetString());
         Assert.Equal("Completada", hoja.Cell(FilaDelPrimerDato, 7).GetString());
         Assert.Equal("Anulada", hoja.Cell(FilaDelPrimerDato + 2, 7).GetString());
         Assert.Equal(120d, hoja.Cell(FilaDelPrimerDato, 8).GetDouble());
-        Assert.Equal("SUMIF(G9:G11,\"Completada\",H9:H11)", hoja.Cell(12, 8).FormulaA1);
-        Assert.Contains("Monto total", hoja.Cell(12, 1).GetString());
+        Assert.Equal("SUMIF(G2:G4,\"Completada\",H2:H4)", hoja.Cell(6, 8).FormulaA1);
+        Assert.Contains("Monto total", hoja.Cell(6, 1).GetString());
+        Assert.Equal(200d, hoja.Cell(6, 8).Value.GetNumber());
+        Assert.True(hoja.AutoFilter.IsEnabled);
+        Assert.Equal(1, hoja.SheetView.SplitRow);
     }
 
     [Fact]
-    public void El_excel_escribe_los_sumariados_con_formulas()
+    public void El_excel_escribe_los_sumariados_con_formulas_que_calculan()
     {
-        var archivo = new ListadoVentasExcel().Exportar(ReporteConDatos());
+        var archivo = new ListadoVentasExcel(new GeneradorDeGrafico()).Exportar(ReporteConDatos());
 
         using var libro = new XLWorkbook(new MemoryStream(archivo.Contenido));
-        var hoja = libro.Worksheet(1);
-        Assert.Equal("COUNTIF(G9:G11,\"Completada\")", hoja.Cell(14, 8).FormulaA1);
-        Assert.Equal("COUNTIF(G9:G11,\"Anulada\")", hoja.Cell(15, 8).FormulaA1);
-        Assert.StartsWith("IFERROR(", hoja.Cell(16, 8).FormulaA1);
+        var hoja = libro.Worksheet("Listado");
+        Assert.Equal("COUNTIF(G2:G4,\"Completada\")", hoja.Cell(7, 8).FormulaA1);
+        Assert.Equal("COUNTIF(G2:G4,\"Anulada\")", hoja.Cell(8, 8).FormulaA1);
+        Assert.StartsWith("IFERROR(", hoja.Cell(9, 8).FormulaA1);
+        Assert.Equal(2d, hoja.Cell(7, 8).Value.GetNumber());
+        Assert.Equal(1d, hoja.Cell(8, 8).Value.GetNumber());
+        Assert.Equal(100d, hoja.Cell(9, 8).Value.GetNumber());
     }
 
     [Fact]
-    public void El_excel_sin_datos_muestra_la_fila_de_sin_resultados()
+    public void El_resumen_incluye_logo_indicadores_graficos_y_la_linea_de_reporte_generado()
     {
-        var archivo = new ListadoVentasExcel().Exportar(CrearReporte());
+        var archivo = new ListadoVentasExcel(new GeneradorDeGrafico()).Exportar(ReporteConDatos());
 
         using var libro = new XLWorkbook(new MemoryStream(archivo.Contenido));
-        Assert.Equal(
-            "Sin resultados para los filtros seleccionados",
-            libro.Worksheet(1).Cell(FilaDelPrimerDato, 1).GetString());
+        var resumen = libro.Worksheet("Resumen");
+        Assert.Equal(3, resumen.Pictures.Count);
+        Assert.Equal(1, resumen.Pictures.Min(imagen => imagen.TopLeftCell.Address.RowNumber));
+        Assert.Equal("Reporte generado: alejandra - 03/11/2026 09:15:00", resumen.Cell(6, 1).GetString());
+        Assert.Equal("VENTAS COMPLETADAS", resumen.Cell(8, 1).GetString());
+        Assert.Equal("Bs 200,00", resumen.Cell(9, 2).GetString());
+        Assert.Equal("VENTAS ANULADAS", resumen.Cell(8, 5).GetString());
+    }
+
+    [Fact]
+    public void El_excel_se_genera_con_una_sola_venta_y_con_muchas()
+    {
+        var una = new ListadoVentasExcel(new GeneradorDeGrafico()).Exportar(CrearReporte(Fila(1, EstadoDeVenta.Completada, 10m)));
+        var muchas = new ListadoVentasExcel(new GeneradorDeGrafico()).Exportar(
+            CrearReporte(Enumerable.Range(1, 300).Select(i => Fila(i, i % 7 == 0 ? EstadoDeVenta.Anulada : EstadoDeVenta.Completada, i)).ToArray()));
+
+        using var libroUna = new XLWorkbook(new MemoryStream(una.Contenido));
+        using var libroMuchas = new XLWorkbook(new MemoryStream(muchas.Contenido));
+        Assert.Equal("F-0001", libroUna.Worksheet("Listado").Cell(2, 2).GetString());
+        Assert.Equal("SUMIF(G2:G301,\"Completada\",H2:H301)", libroMuchas.Worksheet("Listado").Cell(303, 8).FormulaA1);
+    }
+
+    [Fact]
+    public void El_excel_sin_datos_muestra_el_mensaje_en_el_resumen_y_no_crea_la_hoja_listado()
+    {
+        var archivo = new ListadoVentasExcel(new GeneradorDeGrafico()).Exportar(CrearReporte());
+
+        using var libro = new XLWorkbook(new MemoryStream(archivo.Contenido));
+        Assert.Equal(["Resumen"], libro.Worksheets.Select(h => h.Name));
+        Assert.Equal("Sin resultados para los filtros seleccionados", libro.Worksheet("Resumen").Cell(8, 1).GetString());
+        Assert.Single(libro.Worksheet("Resumen").Pictures);
     }
 
     [Fact]
     public void El_creador_devuelve_el_exportador_que_corresponde_al_formato()
     {
-        var creador = new CreadorExportadorListadoVentas([new ListadoVentasPdf(new GeneradorDeGrafico()), new ListadoVentasExcel()]);
+        var creador = new CreadorExportadorListadoVentas([new ListadoVentasPdf(new GeneradorDeGrafico()), new ListadoVentasExcel(new GeneradorDeGrafico())]);
 
         Assert.Equal("application/pdf", creador.Exportar(ReporteConDatos(), FormatoDeExportacion.Pdf).TipoDeContenido);
         Assert.EndsWith(".xlsx", creador.Exportar(ReporteConDatos(), FormatoDeExportacion.Xlsx).NombreDeArchivo);
@@ -116,7 +148,7 @@ public class ExportadoresListadoVentasTests
     [Fact]
     public void El_creador_rechaza_un_formato_no_soportado()
     {
-        var creador = new CreadorExportadorListadoVentas([new ListadoVentasPdf(new GeneradorDeGrafico()), new ListadoVentasExcel()]);
+        var creador = new CreadorExportadorListadoVentas([new ListadoVentasPdf(new GeneradorDeGrafico()), new ListadoVentasExcel(new GeneradorDeGrafico())]);
 
         Assert.Throws<FormatoDeExportacionNoSoportadoException>(
             () => creador.Exportar(ReporteConDatos(), FormatoDeExportacion.Json));
