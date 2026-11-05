@@ -31,7 +31,7 @@ public sealed class VentaConsultaService(
         var guardadas = await LeerDeCacheAsync(clave, cancellationToken);
         if (guardadas is not null)
         {
-            RegistrarAcceso("HIT", clave, "Redis");
+            RegistrarAcceso("HIT", clave, "caché");
             return guardadas;
         }
 
@@ -72,7 +72,7 @@ public sealed class VentaConsultaService(
         {
             logger.LogWarning(
                 ex,
-                "No se pudo leer el historial de ventas desde Redis.");
+                "No se pudo leer el historial de ventas desde la caché.");
             return null;
         }
     }
@@ -97,7 +97,7 @@ public sealed class VentaConsultaService(
         {
             logger.LogWarning(
                 ex,
-                "No se pudo guardar el historial de ventas en Redis.");
+                "No se pudo guardar el historial de ventas en la caché.");
         }
     }
 
@@ -113,7 +113,7 @@ public sealed class VentaConsultaService(
         {
             logger.LogWarning(
                 ex,
-                "No se pudo invalidar la clave {Clave} en Redis.",
+                "No se pudo invalidar la clave {Clave} en la caché.",
                 clave);
         }
     }
