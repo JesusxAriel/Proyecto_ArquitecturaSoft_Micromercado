@@ -336,8 +336,8 @@ dotnet --version
 ### Clonar el proyecto
 
 ```bash
-git clone <URL_DEL_REPOSITORIO>
-cd "Proyecto_Arquitectura_Micromercado - copia"
+git clone https://github.com/JesusxAriel/Proyecto_ArquitecturaSoft_Micromercado
+cd Proyecto_ArquitecturaSoft_Micromercado
 ```
 
 ### Restaurar dependencias
@@ -372,13 +372,16 @@ El sistema completo se levanta con Docker Compose, con una sola instancia por ap
 ```
 Navegador ──► frontend (sitio, :8080) ──► MySQL
                     │
+                    ├──► usuarios (API, :5053) ──► MySQL
+                    │
                     └──► reportes (API, :5003) ──► MySQL
 ```
 
 | Servicio | Qué es | Dirección |
 |---|---|---|
 | `mysql` | Base de datos MySQL 8.4 | `127.0.0.1:3307` (solo su equipo, para MySQL Workbench) |
-| `frontend` | El monolito actual (Razor Pages), que hace de pantalla | `http://localhost:8080` |
+| `usuarios` | API del Servicio 2 (Usuarios): inicio de sesión, emisión del JWT, gestión de usuarios y cambio de contraseña | `http://localhost:5053` |
+| `frontend` | El monolito actual (Razor Pages), que hace de pantalla y contiene el Servicio 1 (Ventas) | `http://localhost:8080` |
 | `reportes` | API del Servicio 3 (Reportes), protegida con JWT | `http://localhost:5003` |
 
 La sesión y la caché del historial de ventas viven en la memoria del contenedor `frontend`, por lo que se vacían al reiniciarlo. Las claves de Data Protection se guardan en el volumen `dataprotection_keys`, de modo que las cookies de inicio de sesión siguen siendo válidas después de reiniciar.
@@ -404,7 +407,8 @@ cp .env.example .env
 | `ACTIVACION_BASE_URL` | URL pública de la aplicación para los enlaces de activación (`http://localhost:8080`) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENABLE_SSL` | Servidor de correo (`smtp.gmail.com`, `587`, `true`) |
 | `SMTP_FROM_ADDRESS`, `SMTP_FROM_NAME`, `SMTP_USER_NAME`, `SMTP_PASSWORD` | Remitente y credenciales del correo |
-| `Jwt__Key` | Clave secreta con la que el servicio de Reportes valida los tokens (mínimo 32 caracteres) |
+| `USUARIOS_PUBLISHED_PORT` | Puerto de su equipo para el servicio de Usuarios (por defecto `5053`) |
+| `Jwt__Key` | Clave secreta con la que Usuarios firma los tokens y con la que Reportes y el frontend los validan (mínimo 32 caracteres) |
 | `Jwt__Issuer`, `Jwt__Audience` | Emisor y audiencia que debe traer el token; deben coincidir con los del servicio que lo emita |
 
 2. Genere una clave JWT aleatoria en su equipo y péguela como valor de `Jwt__Key` en el `.env`. No la comparta ni la suba al repositorio.
@@ -427,7 +431,7 @@ docker compose up -d --build
 
 4. Abra `http://localhost:8080` e ingrese con los usuarios de prueba de la sección anterior.
 
-El orden de arranque es automático: `mysql` queda saludable, luego se inicia `reportes` y, cuando este también está saludable, se inicia `frontend`. Si falta alguna variable `Jwt__*`, Compose se detiene con un mensaje que indica cuál.
+El orden de arranque es automático: `mysql` queda saludable, luego se inician `usuarios` y `reportes` y, cuando ambos están saludables, se inicia `frontend`. Si falta alguna variable `Jwt__*`, Compose se detiene con un mensaje que indica cuál.
 
 ### Comprobar que todo funciona
 
@@ -435,20 +439,22 @@ El orden de arranque es automático: `mysql` queda saludable, luego se inicia `r
 docker compose ps
 curl -i http://localhost:5003/api/salud
 curl -i http://localhost:5003/api/salud/protegido
+curl -i http://localhost:5053/
 ```
 
-`docker compose ps` debe mostrar `mysql`, `reportes` y `frontend` en estado `healthy`. La primera dirección responde `200` y la segunda responde `401` mientras no se envíe un token.
+`docker compose ps` debe mostrar `mysql`, `usuarios`, `reportes` y `frontend` en estado `healthy`. La primera dirección responde `200` y la segunda responde `401` mientras no se envíe un token.
 
-La barra superior del sitio muestra **Instancia: frontend**, que identifica el contenedor que atiende.
+La pantalla de inicio de sesión muestra **Instancia: frontend**, que identifica el contenedor que atiende.
 
-### Reporte de ventas por categoría
+### Reportes
 
-Con el rol Administrador, en el menú **Reportes → Ventas por categoría** se consulta el reporte y se descarga en PDF o Excel. La pantalla llama al servicio `reportes` con el token que el inicio de sesión guarda en la claim `access_token` del usuario. Mientras el inicio de sesión no emita ese token, la pantalla solo funciona al ejecutar el sitio en el entorno `Development` con la variable `Reportes__TokenDePrueba`.
+Con el rol Administrador, el menú **Reportes** ofrece **Listado de ventas** y **Ventas por categoría**. Ambos se consultan en pantalla y se descargan en PDF o Excel. Las pantallas llaman al servicio `reportes` con el token que emite el servicio `usuarios` al iniciar sesión y que el sitio guarda en la claim `access_token` del usuario. La variable `Reportes__TokenDePrueba` solo se usa en el entorno `Development`.
 
 ### Ver los registros de un servicio
 
 ```bash
 docker compose logs -f frontend
+docker compose logs -f usuarios
 docker compose logs -f reportes
 ```
 
@@ -536,6 +542,15 @@ La entidad `Domain/Suppliers/Supplier` no lleva ningún atributo de validación.
 - **Sin idempotencia al registrar ventas.** Si el mismo envío llegara dos veces (por ejemplo, un reintento de red), se registrarían dos ventas; la pantalla solo evita el doble clic sobre Confirmar.
 - **Números de comprobante no correlativos.** Si una venta falla después de crear su cabecera, la transacción se revierte y el contador de identificadores deja un hueco en la secuencia de `V-aaaammdd-NNNN`.
 - **Anulación sobre un lote ya dado de baja.** Anular una venta cuyo lote vencido ya se dio de baja devuelve las unidades a ese lote inactivo, por lo que el stock mostrado no aumenta.
+
+## 🗂️ Organización del repositorio
+
+- **Repositorio:** `https://github.com/JesusxAriel/Proyecto_ArquitecturaSoft_Micromercado`
+- **Rama principal:** `main`. Solo recibe cambios mediante Pull Requests revisados; no se trabaja directamente sobre ella.
+- **Ramas de trabajo:** una por tema, con prefijo según el tipo de cambio: `feat/` (funcionalidad nueva), `fix/` (corrección), `refactor/` (reorganización sin cambiar el comportamiento) y `chore/` (configuración, Docker, herramientas). Ejemplos: `feat/usuarios-gestion`, `feat/reportes-listado-ventas`, `fix/integracion-final`, `chore/docker-servicios`.
+- **Pull Requests:** cada rama se fusiona a `main` mediante un Pull Request, que se revisa antes de fusionar. Las ramas ya fusionadas se eliminan.
+- **Commits:** en español, pequeños y de un solo tema, con prefijo convencional: `feat:`, `fix:`, `refactor:`, `test:`, `docs:` o `chore:`. Ejemplo: `fix: corregir la comprobación de salud del servicio de usuarios`.
+- **Carpetas:** `Proyecto_Arquitectura_Micromercado` (frontend y Servicio 1, hexagonal), `Servicio2.Usuarios` y `Servicio3.Reportes` (Clean Architecture, cada uno con su solución y sus pruebas) y `Proyecto_Arquitectura_Micromercado.Tests` (pruebas del frontend y Servicio 1).
 
 ## 📚 Documentación adicional
 
