@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Http;
 
 namespace Proyecto_Arquitectura_Micromercado.Servicios;
 
@@ -29,7 +30,10 @@ public static class RegistroUsuariosApi
         if (!baseAddress.AbsoluteUri.EndsWith("/", StringComparison.Ordinal))
             baseAddress = new Uri(baseAddress.AbsoluteUri + "/", UriKind.Absolute);
 
-        services.AddHttpClient<UsuariosApiClient>(client => client.BaseAddress = baseAddress);
+        services.AddHttpContextAccessor();
+        services.AddTransient<UsuariosApiBearerTokenHandler>();
+        services.AddHttpClient<UsuariosApiClient>(client => client.BaseAddress = baseAddress)
+            .AddHttpMessageHandler<UsuariosApiBearerTokenHandler>();
         return services;
     }
 }
