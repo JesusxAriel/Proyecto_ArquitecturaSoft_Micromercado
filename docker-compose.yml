@@ -79,9 +79,7 @@ services:
         condition: service_healthy
     healthcheck:
       <<: *comprobacion-http
-      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET / HTTP/1.0
-
-\" >&3 && head -n1 <&3 | grep -q HTTP/'"]
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET / HTTP/1.0\r\n\r\n\" >&3 && head -n1 <&3 | grep -q HTTP/'"]
 
   frontend:
     image: puntomarket-frontend
