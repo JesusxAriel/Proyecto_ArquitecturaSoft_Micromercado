@@ -11,15 +11,25 @@ public static class PrincipalDeSesion
         string nombreUsuario,
         string rol,
         string esquema,
-        bool debeCambiarPassword = false)
+        bool debeCambiarPassword = false,
+        DateTimeOffset? expiracionJwtUtc = null)
     {
+        var claims = new List<Claim>
+        {
+            new(ClaimsDeIdentidad.IdUsuario, id.ToString(CultureInfo.InvariantCulture)),
+            new(ClaimsDeIdentidad.NombreUsuario, nombreUsuario),
+            new(ClaimsDeIdentidad.Rol, rol),
+            new(ClaimsDeIdentidad.DebeCambiarPassword, debeCambiarPassword.ToString())
+        };
+        if (expiracionJwtUtc is DateTimeOffset expiracion)
+        {
+            claims.Add(new Claim(
+                ClaimsDeIdentidad.ExpiracionJwt,
+                expiracion.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture)));
+        }
+
         var identidad = new ClaimsIdentity(
-            [
-                new Claim(ClaimsDeIdentidad.IdUsuario, id.ToString(CultureInfo.InvariantCulture)),
-                new Claim(ClaimsDeIdentidad.NombreUsuario, nombreUsuario),
-                new Claim(ClaimsDeIdentidad.Rol, rol),
-                new Claim(ClaimsDeIdentidad.DebeCambiarPassword, debeCambiarPassword.ToString())
-            ],
+            claims,
             esquema);
 
         return new ClaimsPrincipal(identidad);

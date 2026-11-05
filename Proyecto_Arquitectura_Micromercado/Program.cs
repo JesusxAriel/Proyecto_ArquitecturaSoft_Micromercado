@@ -30,6 +30,9 @@ using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddUsuariosApiClient(builder.Configuration);
+builder.Services.AddJwtTokenValidation(builder.Configuration);
+
 builder.Services.AddRazorPages()
     .AddMvcOptions(options =>
     {
@@ -54,7 +57,11 @@ builder.Services
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
         options.Events.OnRedirectToLogin = SesionVencidaAjax.ResponderAsync;
-        options.Events.OnValidatePrincipal = ValidacionCookieUsuarioActivo.ValidarAsync;
+        options.Events.OnSigningIn = ExpiracionCookieJwt.LimitarExpiracionAsync;
+        options.Events.OnValidatePrincipal = async context =>
+        {
+            await ValidacionCookieUsuarioActivo.ValidarAsync(context);
+        };
     });
 
 

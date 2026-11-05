@@ -19,7 +19,8 @@
     <header>
         @{
             var autenticado = User.Identity?.IsAuthenticated == true;
-            var esAdministrador = User.IsInRole(Roles.Administrador);
+            var permisosNavegacion = PermisosNavegacion.Desde(User);
+            var esAdministrador = permisosNavegacion.PuedeAdministrar;
             var rolActual = User.FindFirst(ClaimsDeIdentidad.Rol)?.Value ?? string.Empty;
             var nombreMostrado = Context.Session.GetString(VariablesDeSesion.NombreParaMostrar)
                 ?? User.Identity?.Name
@@ -89,6 +90,8 @@
                             </ul>
                         </li>
                         }
+                        @if (permisosNavegacion.PuedeAccederCajaVentas)
+                        {
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button">Caja y Ventas</a>
                             <ul class="dropdown-menu">
@@ -102,12 +105,20 @@
                                             Historial de ventas
                                         </a>
                                     </li>
-                                    @if (!esAdministrador)
+                                    @if (permisosNavegacion.PuedeConsultarCatalogo)
                                     {
                                         <li><a class="dropdown-item" asp-page="/Products/Catalog">Consultar productos</a></li>
                                     }
                             </ul>
                         </li>
+                        }
+                        @if (autenticado && permisosNavegacion.PuedeAccederCajaVentas)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link @(currentPage.Equals("/Users/CambiarPassword", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)"
+                                   asp-page="/Users/CambiarPassword">Cambiar contraseña</a>
+                            </li>
+                        }
                     </ul>
                 </div>
                 @if (autenticado)

@@ -83,6 +83,8 @@
                     <th scope="col">Rol</th>
                     <th scope="col">Estado</th>
                     <th scope="col">Fecha de creación</th>
+                    <th scope="col">Vence</th>
+                    <th scope="col">Activada el</th>
                     <th scope="col">Acciones</th>
                 </tr>
             </thead>
@@ -95,8 +97,16 @@
                         <td>@usuario.Correo</td>
                         <td>@usuario.Username</td>
                         <td>@usuario.Rol</td>
-                        <td>@usuario.Estado</td>
+                        <td>
+                            @usuario.Estado
+                            @if (usuario.EstaExpirado)
+                            {
+                                <span class="badge bg-danger">Expirado</span>
+                            }
+                        </td>
                         <td>@usuario.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@(usuario.TokenActivacionExpira?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
+                        <td>@(usuario.FechaActivacion?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
                         <td class="text-nowrap">
                             @if (usuario.Estado == "PENDIENTE")
                             {
@@ -107,11 +117,10 @@
                             }
                             @if (usuario.Estado is "ACTIVO" or "PENDIENTE")
                             {
-                                <form method="post" asp-page-handler="Desactivar" class="d-inline"
-                                      onsubmit="return confirm('¿Desactivar este usuario?');">
-                                    <input type="hidden" name="usuarioId" value="@usuario.Id" />
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Desactivar</button>
-                                </form>
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                        data-bs-toggle="modal" data-bs-target="#bajaUsuarioModal"
+                                        data-usuario-id="@usuario.Id" data-usuario-nombre="@usuario.Nombre @usuario.Apellido"
+                                        data-usuario-username="@usuario.Username">Dar de baja</button>
                             }
                         </td>
                     </tr>
@@ -125,6 +134,45 @@
     }
 </section>
 
+<div class="modal fade" id="bajaUsuarioModal" tabindex="-1" aria-labelledby="bajaUsuarioTitulo" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Desactivar">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="bajaUsuarioTitulo">Dar de baja usuario</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Desea dar de baja a este usuario?</p>
+                    <p>Nombre: <strong id="bajaUsuarioNombre"></strong></p>
+                    <p>Username: <strong id="bajaUsuarioUsername"></strong></p>
+                    <input type="hidden" name="usuarioId" id="bajaUsuarioId" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger" id="bajaUsuarioConfirmar" disabled>Dar de baja</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        const bajaModal = document.getElementById('bajaUsuarioModal');
+        const bajaId = document.getElementById('bajaUsuarioId');
+        const bajaConfirmar = document.getElementById('bajaUsuarioConfirmar');
+        bajaModal.addEventListener('show.bs.modal', function (event) {
+            const boton = event.relatedTarget;
+            bajaId.value = boton?.dataset.usuarioId ?? '';
+            document.getElementById('bajaUsuarioNombre').textContent = boton?.dataset.usuarioNombre ?? '';
+            document.getElementById('bajaUsuarioUsername').textContent = boton?.dataset.usuarioUsername ?? '';
+            bajaConfirmar.disabled = !bajaId.value;
+        });
+        bajaModal.addEventListener('hidden.bs.modal', function () {
+            bajaId.value = '';
+            bajaConfirmar.disabled = true;
+        });
+    </script>
 }

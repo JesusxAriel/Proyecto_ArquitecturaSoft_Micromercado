@@ -1,17 +1,18 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Proyecto_Arquitectura_Micromercado.Application.Security;
-using Proyecto_Arquitectura_Micromercado.Application.Users;
+using Proyecto_Arquitectura_Micromercado.Dtos.Usuarios;
+using Proyecto_Arquitectura_Micromercado.Servicios;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Users;
 
-[Authorize(Roles = Roles.Administrador)]
-public class IndexModel(IUsuarioAdministracionService servicio) : PageModel
+[Authorize(Roles = "Administrador")]
+public class IndexModel(UsuariosApiClient usuariosApi) : PageModel
 {
     public IReadOnlyList<UsuarioListadoDto> Usuarios { get; private set; } = [];
-    public IReadOnlyList<RolActivoDto> RolesActivos { get; private set; } = [];
+    public IReadOnlyList<RolDto> RolesActivos { get; private set; } = [];
 
     [BindProperty]
     public UsuarioFormulario NuevoUsuario { get; set; } = new();
@@ -42,116 +43,95 @@ public class IndexModel(IUsuarioAdministracionService servicio) : PageModel
 
         try
         {
-            var usuarioCreado = await servicio.CrearAsync(new UsuarioCreacionDto(
+            var creado = await usuariosApi.CrearAsync(new CrearUsuarioDto(
                 NuevoUsuario.Nombre, NuevoUsuario.Apellido, NuevoUsuario.Correo,
                 NuevoUsuario.IdRol!.Value), cancellationToken);
-            UsuarioCreadoId = usuarioCreado.Id;
+            UsuarioCreadoId = creado.Id;
+            StatusMessage = "Usuario creado correctamente.";
+            return RedirectToPage();
         }
-        catch (CorreoUsuarioDuplicadoException)
+        catch (Exception ex) when (EsErrorDeApi(ex, cancellationToken))
         {
-            ModelState.AddModelError("NuevoUsuario.Correo", "El correo ya está registrado. Ingrese otro correo.");
-        }
-        catch (ErrorEnvioActivacionException)
-        {
-            ModelState.AddModelError(string.Empty,
-                "El usuario quedó creado como PENDIENTE, pero no se pudo enviar el enlace. " +
-                "Revise la configuración SMTP y use Reenviar activación en el listado. No repita el alta.");
-        }
-        catch (ArgumentException)
-        {
-            ModelState.AddModelError(string.Empty,
-                "No se pudo crear el usuario. Revise el nombre, apellido y correo, y seleccione un rol activo.");
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException and not UnauthorizedAccessException)
-        {
-            ModelState.AddModelError(string.Empty, "No se pudo crear el usuario. Intente nuevamente.");
-        }
-
-        if (!ModelState.IsValid)
-        {
+            ModelState.AddModelError(string.Empty, MensajeDeError(ex) +
+                " Actualice el listado antes de repetir el alta para comprobar si el usuario fue creado.");
             await CargarDatosAsync(cancellationToken);
             return Page();
         }
-
-        StatusMessage = "Usuario creado correctamente.";
-        return RedirectToPage();
     }
 
-    public async Task<IActionResult> OnPostReenviarActivacionAsync(
-        int usuarioId,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> OnPostReenviarActivacionAsync(int usuarioId, CancellationToken cancellationToken)
     {
         try
         {
-            StatusMessage = await servicio.ReenviarActivacionAsync(usuarioId, cancellationToken)
-                ? "Se envió un nuevo enlace de activación. Es válido durante 10 minutos."
-                : "El usuario ya no está pendiente de activación o no existe.";
-        }
-        catch (ErrorEnvioActivacionException)
-        {
-            ModelState.AddModelError(string.Empty,
-                "No se pudo enviar el enlace. El token fue renovado; puede volver a intentar el envío.");
-            await CargarDatosAsync(cancellationToken);
-            return Page();
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException and not UnauthorizedAccessException)
-        {
-            ModelState.AddModelError(string.Empty, "No se pudo reenviar el enlace. Intente nuevamente.");
-            await CargarDatosAsync(cancellationToken);
-            return Page();
-        }
+            var respuesta = await usuariosApi.ReenviarActivacionAsync(usuarioId, cancellationToken);
+            if (!respuesta.Reenviado)
+            {
+                ErrorMessage = "No se reenvió la activación. El usuario ya no está pendiente o no existe.";
+                await CargarDatosAsync(cancellationToken);
+                return Page();
+            }
 
-        return RedirectToPage();
+            StatusMessage = "Se envió un nuevo enlace de activación.";
+            return RedirectToPage();
+        }
+        catch (Exception ex) when (EsErrorDeApi(ex, cancellationToken))
+        {
+            ErrorMessage = MensajeDeError(ex);
+            await CargarDatosAsync(cancellationToken);
+            return Page();
+        }
     }
 
-    public async Task<IActionResult> OnPostDesactivarAsync(
-        int usuarioId,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> OnPostDesactivarAsync(int usuarioId, CancellationToken cancellationToken)
     {
         try
         {
-            StatusMessage = await servicio.DesactivarAsync(usuarioId, cancellationToken)
-                ? "Usuario desactivado correctamente."
-                : "El usuario ya estaba inactivo o no existe.";
+            await usuariosApi.DarDeBajaAsync(usuarioId, cancellationToken);
+            StatusMessage = "Usuario dado de baja correctamente.";
+            return RedirectToPage();
         }
-        catch (NoPuedeDesactivarSuPropiaCuentaException)
+        catch (Exception ex) when (EsErrorDeApi(ex, cancellationToken))
         {
-            ModelState.AddModelError(string.Empty, "No puede desactivar su propia cuenta.");
+            ErrorMessage = MensajeDeError(ex);
             await CargarDatosAsync(cancellationToken);
             return Page();
         }
-        catch (Exception ex) when (ex is not OperationCanceledException and not UnauthorizedAccessException)
-        {
-            ModelState.AddModelError(string.Empty, "No se pudo desactivar el usuario. Intente nuevamente.");
-            await CargarDatosAsync(cancellationToken);
-            return Page();
-        }
-
-        return RedirectToPage();
     }
 
     private async Task CargarDatosAsync(CancellationToken cancellationToken)
     {
         try
         {
-            Usuarios = await servicio.ListarAsync(cancellationToken);
+            Usuarios = await usuariosApi.ListarAsync(cancellationToken);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException and not UnauthorizedAccessException)
+        catch (Exception ex) when (EsErrorDeApi(ex, cancellationToken))
         {
-            ErrorMessage = "No se pudo cargar el listado de usuarios. Recargue la página para intentar nuevamente.";
+            ErrorMessage = string.Join(" ", new[] { ErrorMessage, "No se pudo cargar el listado de usuarios.", MensajeDeError(ex) }
+                .Where(mensaje => mensaje is not null));
         }
 
         try
         {
-            RolesActivos = await servicio.ListarRolesActivosAsync(cancellationToken);
+            RolesActivos = await usuariosApi.ListarRolesAsync(cancellationToken);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException and not UnauthorizedAccessException)
+        catch (Exception ex) when (EsErrorDeApi(ex, cancellationToken))
         {
-            ErrorMessage = string.Join(" ", new[] { ErrorMessage,
-                "No se pudieron cargar los roles activos. Recargue la página para intentar nuevamente." }
+            ErrorMessage = string.Join(" ", new[] { ErrorMessage, "No se pudieron cargar los roles activos.", MensajeDeError(ex) }
                 .Where(mensaje => mensaje is not null));
         }
     }
+
+    private static bool EsErrorDeApi(Exception ex, CancellationToken cancellationToken) =>
+        ex is HttpRequestException or JsonException ||
+        (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested);
+
+    private static string MensajeDeError(Exception ex) => ex switch
+    {
+        HttpRequestException { StatusCode: not null } => ex.Message,
+        JsonException => "El servicio de usuarios devolvió una respuesta inválida.",
+        OperationCanceledException => "El servicio de usuarios tardó demasiado en responder.",
+        _ => "No se pudo conectar con el servicio de usuarios. Intente nuevamente."
+    };
 
     public sealed class UsuarioFormulario
     {
