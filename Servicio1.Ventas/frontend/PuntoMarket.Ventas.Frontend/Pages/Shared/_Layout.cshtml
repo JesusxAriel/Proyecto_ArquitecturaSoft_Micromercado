@@ -21,12 +21,9 @@
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark bg-navy fixed-top shadow-sm py-3" aria-label="Navegación principal">
             <div class="container-fluid px-4 navbar-main-grid">
-                <div class="marca-instancia d-flex align-items-center">
-                    <a class="navbar-brand" asp-page="/Index" aria-label="PuntoMarket, inicio">
-                        <img src="~/images/logo.jpg" alt="PuntoMarket" class="navbar-logo" />
-                    </a>
-                    <span class="badge rounded-pill text-bg-secondary ms-2">Instancia: @Context.Items["ReplicaId"]</span>
-                </div>
+                <a class="navbar-brand" asp-page="/Index" aria-label="PuntoMarket, inicio">
+                    <img src="~/images/logo.jpg" alt="PuntoMarket" class="navbar-logo" />
+                </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavigation"
                         aria-controls="mainNavigation" aria-expanded="false" aria-label="Abrir navegación">
                     <span class="navbar-toggler-icon"></span>

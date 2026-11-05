@@ -8,7 +8,6 @@ namespace PuntoMarket.Ventas.Frontend;
 
 public static class FrontendBootstrap
 {
-    private static readonly string IdReplica = Environment.GetEnvironmentVariable("REPLICA_ID") ?? Environment.MachineName;
     public static WebApplication Crear(string[] args, Action<WebApplicationBuilder>? configurar = null, Action<IServiceCollection>? configurarServicios = null)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ApplicationName = typeof(FrontendBootstrap).Assembly.FullName });
@@ -45,8 +44,6 @@ public static class FrontendBootstrap
                 context.Response.Cookies.Delete("PuntoMarket.Demo.Session", new CookieOptions { Path = "/", HttpOnly = true, SameSite = SameSiteMode.Strict });
             context.Response.Headers.CacheControl = "no-store";
             context.Response.Headers["Referrer-Policy"] = "no-referrer";
-            context.Items["ReplicaId"] = IdReplica;
-            context.Response.Headers["X-Replica-Id"] = IdReplica;
             await next();
         });
         app.UseStaticFiles();
