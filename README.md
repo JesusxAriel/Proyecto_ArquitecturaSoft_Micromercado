@@ -12,6 +12,8 @@ PuntoMarket integra ventas, gestión de usuarios y reportes mediante tres APIs R
 
 Reportes consulta MySQL directamente, con JOIN SQL y cuenta SELECT independiente. No consume la API de Ventas. Temporalmente los tres servicios comparten la base Demo, con cuentas separadas.
 
+Repositorio: https://github.com/JesusxAriel/Proyecto_ArquitecturaSoft_Micromercado
+
 ## Requisitos
 
 - Windows y **PowerShell 7.6** para los scripts locales con ACL y secretos privados.
@@ -40,6 +42,14 @@ La ejecución local documentada no necesita Redis. El despliegue antiguo del mon
       compatibilidad-usuarios/  integracion/  despliegue/  historico/
 
 La solución raíz incluye los proyectos actuales, las pruebas, lanzadores y utilitarios. Los documentos de historico son evidencias anteriores, no instrucciones de arranque.
+
+## Organización del repositorio
+
+- **Rama principal:** `main`. Solo recibe cambios mediante Pull Requests revisados; no se trabaja directamente sobre ella.
+- **Ramas de trabajo:** una por tema, con prefijo según el tipo de cambio: `feat/` (funcionalidad nueva), `fix/` (corrección), `refactor/` (reorganización sin cambiar el comportamiento) y `chore/` (configuración, herramientas y soluciones). Ejemplos: `feat/usuarios-gestion`, `feat/reportes-listado-ventas`, `fix/ajustes-finales`, `chore/solucion-reportes`.
+- **Pull Requests:** cada rama se fusiona a `main` mediante un Pull Request que se revisa antes de fusionar. Las ramas ya fusionadas se eliminan.
+- **Commits:** en español, pequeños y de un solo tema, con prefijo convencional: `feat:`, `fix:`, `refactor:`, `test:`, `docs:` o `chore:`. Ejemplo: `fix: mostrar los estados de usuario como Pendiente, Activo, Inactivo y Vencido`.
+- **Carpetas:** `Servicio1.Ventas` (API de Ventas y frontend), `Servicio2.Usuarios` (Usuarios) y `Servicio3.Reportes` (Reportes). Cada servicio tiene su propia solución y sus pruebas; `PuntoMarket.slnx` agrupa todo.
 
 ## 1. Restaurar y compilar
 
