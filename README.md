@@ -294,6 +294,8 @@ Los campos que deben revisarse o reemplazarse son:
 
 No incluya contraseñas reales en commits o documentación pública. En entornos compartidos se recomienda utilizar variables de entorno, User Secrets o un gestor de secretos.
 
+La URL de Servicio 2 se configura con `UsuariosApi:BaseUrl` en `appsettings.json` o mediante la variable de entorno `UsuariosApi__BaseUrl`. Al ejecutar el frontend directamente en el host, use `http://localhost:5053/`; con Docker Compose, `.env.example` configura `USUARIOS_API_BASE_URL=http://usuarios:8080/`, que es la dirección interna del servicio en la red de Docker.
+
 `appsettings.Development.json` tampoco se versiona. En modo Desarrollo ese archivo tiene prioridad sobre `appsettings.json`, así que si contiene una cadena de conexión de otra persona, la aplicación muestra "No se pudo conectar con la base de datos" (error 1045, `Access denied`). Si después de actualizar el repositorio todavía conserva uno, elimínelo o reemplace su cadena por la suya.
 
 Una alternativa que no depende de ningún archivo del proyecto es User Secrets, que se guarda solo en su equipo y tiene prioridad sobre ambos `appsettings`. Desde la carpeta `Proyecto_Arquitectura_Micromercado`:
@@ -391,6 +393,7 @@ cp .env.example .env
 |---|---|
 | `MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD` | Base de datos MySQL |
 | `MYSQL_PUBLISHED_PORT` | Puerto de su equipo desde el que se conecta MySQL Workbench (por defecto `3307`) |
+| `USUARIOS_API_BASE_URL` | URL interna de Servicio 2 para los contenedores del frontend (por defecto `http://usuarios:8080/`) |
 | `ACTIVACION_BASE_URL` | URL pública de la aplicación para los enlaces de activación (`http://localhost:8080`) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENABLE_SSL` | Servidor de correo (`smtp.gmail.com`, `587`, `true`) |
 | `SMTP_FROM_ADDRESS`, `SMTP_FROM_NAME`, `SMTP_USER_NAME`, `SMTP_PASSWORD` | Remitente y credenciales del correo |

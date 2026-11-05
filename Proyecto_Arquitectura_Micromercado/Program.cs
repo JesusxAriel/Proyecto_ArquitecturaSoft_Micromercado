@@ -22,12 +22,15 @@ using Proyecto_Arquitectura_Micromercado.Infrastructure.Web;
 using System.Globalization;
 using Proyecto_Arquitectura_Micromercado.Application.Sales;
 using Proyecto_Arquitectura_Micromercado.Pages.Shared;
+using Proyecto_Arquitectura_Micromercado.Servicios;
 
 
 using Microsoft.AspNetCore.DataProtection;
 using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddUsuariosApiClient(builder.Configuration);
 
 builder.Services.AddRazorPages()
     .AddMvcOptions(options =>
