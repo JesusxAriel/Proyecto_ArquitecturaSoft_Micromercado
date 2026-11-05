@@ -346,6 +346,8 @@ Las contraseñas de las cuentas MySQL y los hashes de `admin` y `cajero1` se apl
 
 Todos los puertos se publican solo en el equipo local. Entre contenedores los servicios se comunican por su nombre dentro de la red interna de Docker. Para levantar otra copia sin choques, usar otro `.env` y otro nombre de proyecto, por ejemplo `docker compose -p copia --env-file otro.env up -d --build`, con puertos distintos.
 
+Los contenedores, la red y el volumen se llaman `puntomarket-*` (por ejemplo `puntomarket-mysql-1` y el volumen `puntomarket_mysql-data`), sin depender del nombre de la carpeta.
+
 ### Usuarios de prueba
 
 | Usuario | Correo | Rol | Contraseña |

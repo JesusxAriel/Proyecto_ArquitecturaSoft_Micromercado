@@ -1,4 +1,4 @@
-name: puntomarket-docker
+name: puntomarket
 
 services:
   mysql:
