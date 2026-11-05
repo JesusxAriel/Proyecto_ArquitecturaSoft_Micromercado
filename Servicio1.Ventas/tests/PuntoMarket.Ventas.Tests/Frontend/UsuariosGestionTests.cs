@@ -23,7 +23,7 @@ public sealed class UsuariosGestionTests
         var crear=await c.GetAsync("/Users/Crear");Assert.Equal((HttpStatusCode)esperado,crear.StatusCode);
         var html=await index.Content.ReadAsStringAsync();
         if(rol=="Administrador") {
-            Assert.Contains("href=\"/Users\"",html);Assert.Contains("pendiente@example.invalid",html);Assert.Contains("PENDIENTE (activaci",html);
+            Assert.Contains("href=\"/Users\"",html);Assert.Contains("pendiente@example.invalid",html);Assert.Contains("Vencido",html);Assert.Contains("Pendiente",html);Assert.Contains("Activo",html);Assert.Contains("Inactivo",html);Assert.Contains("Nombre de usuario",html);Assert.DoesNotContain("PENDIENTE",html);
             Assert.Contains(h.Api.Llamadas,x=>x.Ruta=="/api/usuarios");Assert.Contains(h.Api.Llamadas,x=>x.Ruta=="/api/usuarios/roles");
             var alta=await crear.Content.ReadAsStringAsync();Assert.Contains("Administrador",alta);Assert.Contains("Cajero",alta);Assert.DoesNotContain("type=\"password\"",alta);
         } else {

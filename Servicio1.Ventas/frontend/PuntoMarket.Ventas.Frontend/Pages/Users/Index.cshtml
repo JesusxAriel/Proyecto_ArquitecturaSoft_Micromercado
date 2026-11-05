@@ -13,7 +13,7 @@
 <label class="form-check-label"><input class="form-check-input" type="checkbox" name="confirmar" value="true" required /> Confirmo que deseo dar de baja esta cuenta.</label>
 <div class="mt-3"><button type="submit" class="btn btn-danger">Confirmar baja</button> <a asp-page="Index" class="btn btn-outline-secondary">Cancelar</a></div></form>
 </section>}
-<div class="table-responsive"><table class="table table-striped"><thead><tr><th>Usuario</th><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
+<div class="table-responsive"><table class="table table-striped"><thead><tr><th>Nombre de usuario</th><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
 @foreach(var u in Model.Usuarios){<tr><td>@u.Username</td><td>@u.Nombre @u.Apellido</td><td>@u.Correo</td><td>@u.Rol</td><td>@u.EstadoVisible</td><td>
 @if(!Model.EsPropia(u)&&(u.EsPendiente||u.Estado=="ACTIVO")){<a asp-page-handler="ConfirmarBaja" asp-route-id="@u.Id" class="btn btn-outline-danger btn-sm">Dar de baja</a>}
 @if(u.EsPendiente&&u.FechaActivacion is null){<form method="post" asp-page-handler="Reenviar" class="d-inline"><input type="hidden" name="id" value="@u.Id" /><button type="submit" class="btn btn-outline-secondary btn-sm">Reenviar activación</button></form>}
