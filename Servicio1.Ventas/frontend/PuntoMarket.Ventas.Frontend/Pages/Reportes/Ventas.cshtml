@@ -17,6 +17,7 @@
 @if (Model.ErrorReporte is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorReporte</div> }
 @if (Model.Reporte is { } reporte)
 {
+    <partial name="_IndicadoresReporte" model="Model.Indicadores" />
     <p>Generado por @reporte.GeneradoPor · @reporte.GeneradoEn.ToString("dd/MM/yyyy HH:mm")</p>
     <p>Completadas: <strong>@reporte.Totales.VentasCompletadas</strong> · Anuladas: <strong>@reporte.Totales.VentasAnuladas</strong> · Total completadas: <strong>Bs @reporte.Totales.MontoTotalDeCompletadas.ToString("N2")</strong> · Promedio: <strong>Bs @reporte.Totales.PromedioPorVenta.ToString("N2")</strong></p>
     <section data-resultados-reporte aria-label="Resultados del reporte">
@@ -26,6 +27,10 @@
     <partial name="_PaginacionReportes" />
     </section>
     @if (reporte.Filas.Count == 0) { <p>No hay ventas para los filtros indicados.</p> }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/reportes.css" asp-append-version="true" />
 }
 
 @section Scripts {

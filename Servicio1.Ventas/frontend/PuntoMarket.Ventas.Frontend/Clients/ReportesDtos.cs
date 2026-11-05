@@ -4,7 +4,7 @@ namespace PuntoMarket.Ventas.Frontend.Clients;
 
 // Contratos HTTP propios del frontend: ninguna referencia a ensamblados de Reportes.
 public sealed record FilaVentaReporte(int IdVenta, string Comprobante, DateTime Fecha, string NitCi, string RazonSocial, string Cajero, string Estado, decimal Monto);
-public sealed record TotalesVentasReporte(int VentasCompletadas, int VentasAnuladas, decimal MontoTotalDeCompletadas, decimal PromedioPorVenta);
+public sealed record TotalesVentasReporte(int VentasCompletadas, int VentasAnuladas, decimal MontoTotalDeCompletadas, decimal PromedioPorVenta, decimal VentaMasAlta = 0m);
 public sealed record FiltrosVentasReporte(DateOnly? Desde, DateOnly? Hasta, string? Estado, string? Cliente, int? Tope);
 public sealed record ListadoVentasReporte(IReadOnlyList<FilaVentaReporte> Filas, TotalesVentasReporte Totales, FiltrosVentasReporte Filtros, DateTime GeneradoEn, string GeneradoPor);
 public sealed record FilaCategoriaReporte(int IdCategoria, string Categoria, long UnidadesVendidas, decimal MontoVendido);

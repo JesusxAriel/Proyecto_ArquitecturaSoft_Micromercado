@@ -16,6 +16,7 @@
 @if (Model.ErrorReporte is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorReporte</div> }
 @if (Model.Reporte is { } reporte)
 {
+    <partial name="_IndicadoresReporte" model="Model.Indicadores" />
     <p>Generado por @reporte.GeneradoPor · @reporte.GeneradoEn.ToString("dd/MM/yyyy HH:mm") · Solo ventas completadas.</p>
     <p>Unidades: <strong>@reporte.Totales.TotalUnidades</strong> · Monto: <strong>Bs @reporte.Totales.TotalMonto.ToString("N2")</strong> · Categoría líder: <strong>@(reporte.Totales.CategoriaLider ?? "Sin datos")</strong></p>
     <section data-resultados-reporte aria-label="Resultados del reporte">
@@ -25,6 +26,10 @@
     <partial name="_PaginacionReportes" />
     </section>
     @if (reporte.Filas.Count == 0) { <p>No hay ventas por categoría para los filtros indicados.</p> }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/reportes.css" asp-append-version="true" />
 }
 
 @section Scripts {
