@@ -20,12 +20,11 @@ public sealed class UsuariosGestionTests
     {
         await using var h=await Host.Crear(rol);using var c=h.Cliente();await h.Login(c);
         var index=await c.GetAsync("/Users");Assert.Equal((HttpStatusCode)esperado,index.StatusCode);
-        var crear=await c.GetAsync("/Users/Crear");Assert.Equal((HttpStatusCode)esperado,crear.StatusCode);
         var html=await index.Content.ReadAsStringAsync();
         if(rol=="Administrador") {
             Assert.Contains("href=\"/Users\"",html);Assert.Contains("pendiente@example.invalid",html);Assert.Contains("Vencido",html);Assert.Contains("Pendiente",html);Assert.Contains("Activo",html);Assert.Contains("Inactivo",html);Assert.Contains("Nombre de usuario",html);Assert.DoesNotContain("PENDIENTE",html);
             Assert.Contains(h.Api.Llamadas,x=>x.Ruta=="/api/usuarios");Assert.Contains(h.Api.Llamadas,x=>x.Ruta=="/api/usuarios/roles");
-            var alta=await crear.Content.ReadAsStringAsync();Assert.Contains("Administrador",alta);Assert.Contains("Cajero",alta);Assert.DoesNotContain("type=\"password\"",alta);
+            Assert.Contains("Crear usuario",html);Assert.Contains("Administrador",html);Assert.Contains("Cajero",html);Assert.DoesNotContain("type=\"password\"",html);Assert.DoesNotContain("Preparar alta",html);Assert.DoesNotContain("Consultar listado",html);Assert.DoesNotContain("SMTP",html);Assert.DoesNotContain("API",html);
         } else {
             Assert.Empty(h.Api.Llamadas);
             var pagina=await c.GetStringAsync("/Sales/Historial");Assert.DoesNotContain("href=\"/Users\"",pagina);
@@ -39,14 +38,15 @@ public sealed class UsuariosGestionTests
     public async Task Alta_valida_solo_envia_DTO_sin_password_y_sin_duplicar_POST()
     {
         await using var h=await Host.Crear();using var c=h.Cliente();await h.Login(c);
-        var datos=Alta(await c.GetStringAsync("/Users/Crear"));
-        var r=await c.PostAsync("/Users/Crear",new FormUrlEncodedContent(datos));Assert.Equal(HttpStatusCode.Redirect,r.StatusCode);
+        var datos=Alta(await c.GetStringAsync("/Users"));
+        var r=await c.PostAsync("/Users?handler=Crear",new FormUrlEncodedContent(datos));Assert.Equal(HttpStatusCode.Redirect,r.StatusCode);
         Assert.Equal("/Users",r.Headers.Location!.OriginalString);
+        var despues=WebUtility.HtmlDecode(await c.GetStringAsync("/Users"));Assert.Contains("Usuario creado. Nombre de usuario generado: fixture6.",despues);Assert.Contains("nuevo@example.invalid",despues);
         var enviada=h.Api.Llamadas.Single(x=>x.Metodo==HttpMethod.Post);
         using var json=JsonDocument.Parse(enviada.Cuerpo!);
         Assert.Equal(new[]{"apellido","correo","idRol","nombre"},json.RootElement.EnumerateObject().Select(x=>x.Name).Order().ToArray());
         Assert.Equal(2,json.RootElement.GetProperty("idRol").GetInt32());Assert.Equal(h.Jwt,enviada.Token);
-        var repetir=await c.PostAsync("/Users/Crear",new FormUrlEncodedContent(datos));Assert.Equal(HttpStatusCode.Conflict,repetir.StatusCode);
+        var repetir=await c.PostAsync("/Users?handler=Crear",new FormUrlEncodedContent(datos));Assert.Equal(HttpStatusCode.Conflict,repetir.StatusCode);
         Assert.Single(h.Api.Llamadas,x=>x.Metodo==HttpMethod.Post);
     }
     [Theory]
@@ -54,15 +54,15 @@ public sealed class UsuariosGestionTests
     public async Task Alta_invalida_no_escribe(string campo,string valor)
     {
         await using var h=await Host.Crear();using var c=h.Cliente();await h.Login(c);
-        var d=Alta(await c.GetStringAsync("/Users/Crear"));d[campo]=valor;
-        Assert.Equal(HttpStatusCode.BadRequest,(await c.PostAsync("/Users/Crear",new FormUrlEncodedContent(d))).StatusCode);
+        var d=Alta(await c.GetStringAsync("/Users"));d[campo]=valor;
+        Assert.Equal(HttpStatusCode.BadRequest,(await c.PostAsync("/Users?handler=Crear",new FormUrlEncodedContent(d))).StatusCode);
         Assert.DoesNotContain(h.Api.Llamadas,x=>x.Metodo!=HttpMethod.Get);
     }
     [Fact]
     public async Task Todas_las_escrituras_exigen_antiforgery()
     {
         await using var h=await Host.Crear();using var c=h.Cliente();await h.Login(c);
-        foreach(var ruta in new[]{"/Users/Crear","/Users?handler=Baja","/Users?handler=Reenviar"}) {
+        foreach(var ruta in new[]{"/Users?handler=Crear","/Users?handler=Baja","/Users?handler=Reenviar"}) {
             Assert.Equal(HttpStatusCode.BadRequest,(await c.PostAsync(ruta,new FormUrlEncodedContent(new Dictionary<string,string>{{"id","3"},{"confirmar","true"}}))).StatusCode);
         }
         Assert.Empty(h.Api.Llamadas);
@@ -104,16 +104,17 @@ public sealed class UsuariosGestionTests
     public async Task Alta_traduce_errores_y_no_afirma_envio_de_correo(int remoto,int esperado)
     {
         await using var h=await Host.Crear();using var c=h.Cliente();await h.Login(c);
-        var d=Alta(await c.GetStringAsync("/Users/Crear"));h.Api.CodigoEscritura=remoto;
-        var r=await c.PostAsync("/Users/Crear",new FormUrlEncodedContent(d));Assert.Equal((HttpStatusCode)esperado,r.StatusCode);
+        var d=Alta(await c.GetStringAsync("/Users"));h.Api.CodigoEscritura=remoto;
+        var r=await c.PostAsync("/Users?handler=Crear",new FormUrlEncodedContent(d));Assert.Equal((HttpStatusCode)esperado,r.StatusCode);
         var html=await r.Content.ReadAsStringAsync();Assert.DoesNotContain("Se envió",html);Assert.DoesNotContain(ApiRemota.Privado,html);Assert.DoesNotContain(h.Jwt,html);
         Assert.Single(h.Api.Llamadas,x=>x.Metodo==HttpMethod.Post);Assert.DoesNotContain(ApiRemota.Privado,h.Logs.Texto);Assert.DoesNotContain(h.Jwt,h.Logs.Texto);
         var sesionActiva=(await c.GetStringAsync("/Account/Login")).Contains("Sesión activa:");
         Assert.Equal(remoto!=401,sesionActiva);
+        if(remoto==409) Assert.Contains("El usuario se creó pero no se pudo enviar el correo",WebUtility.HtmlDecode(html));
         if(remoto==500) {
-            Assert.Contains("puede haberse",WebUtility.HtmlDecode(html).ToLowerInvariant());Assert.Contains("disabled=",html);
-            var nueva=Alta(await c.GetStringAsync("/Users/Crear"));
-            Assert.Equal(HttpStatusCode.Conflict,(await c.PostAsync("/Users/Crear",new FormUrlEncodedContent(nueva))).StatusCode);
+            Assert.Contains("no se pudo enviar el correo de activación",WebUtility.HtmlDecode(html));Assert.Contains("disabled=",html);
+            var nueva=Alta(await c.GetStringAsync("/Users"));
+            Assert.Equal(HttpStatusCode.Conflict,(await c.PostAsync("/Users?handler=Crear",new FormUrlEncodedContent(nueva))).StatusCode);
             Assert.Single(h.Api.Llamadas,x=>x.Metodo==HttpMethod.Post);
             Assert.Contains("nuevo@example.invalid",await c.GetStringAsync("/Users"));
         }
@@ -125,14 +126,14 @@ public sealed class UsuariosGestionTests
         var csrf=Campo(await c.GetStringAsync("/Users"),"__RequestVerificationToken");h.Api.CodigoEscritura=500;
         var r=await c.PostAsync("/Users?handler=Reenviar",new FormUrlEncodedContent(new Dictionary<string,string>{{"__RequestVerificationToken",csrf},{"id","3"}}));
         Assert.Equal(HttpStatusCode.ServiceUnavailable,r.StatusCode);var html=await r.Content.ReadAsStringAsync();
-        Assert.Contains("Puede haberse guardado",WebUtility.HtmlDecode(html));Assert.DoesNotContain(ApiRemota.Privado,html);Assert.DoesNotContain("alert-success",html);
+        Assert.Contains("No se pudo reenviar el correo de activación",WebUtility.HtmlDecode(html));Assert.DoesNotContain(ApiRemota.Privado,html);Assert.DoesNotContain("alert-success",html);
         Assert.Single(h.Api.Llamadas,x=>x.Metodo==HttpMethod.Post);
     }
     [Fact]
     public async Task Listado_401_y_roles_403_conservan_estados_sin_escrituras()
     {
         await using var h=await Host.Crear();using var c=h.Cliente();await h.Login(c);h.Api.CodigoLectura=403;
-        Assert.Equal(HttpStatusCode.Forbidden,(await c.GetAsync("/Users/Crear")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,(await c.GetAsync("/Users")).StatusCode);
         h.Api.CodigoLectura=401;Assert.Equal(HttpStatusCode.Unauthorized,(await c.GetAsync("/Users")).StatusCode);
         Assert.DoesNotContain(h.Api.Llamadas,x=>x.Metodo!=HttpMethod.Get);
     }
@@ -141,10 +142,10 @@ public sealed class UsuariosGestionTests
     public async Task Fallo_de_conexion_o_timeout_bloquea_reenvio_del_alta(string fallo)
     {
         await using var h=await Host.Crear();using var c=h.Cliente();await h.Login(c);
-        var datos=Alta(await c.GetStringAsync("/Users/Crear"));h.Api.Fallo=fallo;
-        var r=await c.PostAsync("/Users/Crear",new FormUrlEncodedContent(datos));Assert.Equal(HttpStatusCode.ServiceUnavailable,r.StatusCode);
+        var datos=Alta(await c.GetStringAsync("/Users"));h.Api.Fallo=fallo;
+        var r=await c.PostAsync("/Users?handler=Crear",new FormUrlEncodedContent(datos));Assert.Equal(HttpStatusCode.ServiceUnavailable,r.StatusCode);
         var html=await r.Content.ReadAsStringAsync();Assert.DoesNotContain(ApiRemota.Privado,html);Assert.Contains("disabled=",html);
-        Assert.Equal(HttpStatusCode.Conflict,(await c.PostAsync("/Users/Crear",new FormUrlEncodedContent(datos))).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict,(await c.PostAsync("/Users?handler=Crear",new FormUrlEncodedContent(datos))).StatusCode);
         Assert.Single(h.Api.Llamadas,x=>x.Metodo==HttpMethod.Post);
     }
     [Fact]

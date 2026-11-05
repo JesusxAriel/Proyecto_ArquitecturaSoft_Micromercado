@@ -1,23 +1,135 @@
 @page
 @model PuntoMarket.Ventas.Frontend.Pages.Users.IndexModel
-@{ ViewData["Title"]="Usuarios"; }
-<h1>Usuarios</h1>
-<div class="d-flex gap-2 mb-3"><a asp-page="Crear" class="btn btn-primary">Preparar alta</a><a asp-page="Index" class="btn btn-outline-secondary">Consultar listado</a></div>
-@if(Model.MensajeGestion is not null){<p class="alert alert-success" role="status">@Model.MensajeGestion</p>}
-@if(Model.ErrorGestion is not null){<p class="alert alert-danger" role="alert">@Model.ErrorGestion</p>}
-@if(Model.ConfirmarBaja is {} baja){
-<section class="card card-body border-danger mb-3" aria-labelledby="confirmar-baja">
-<h2 class="h5" id="confirmar-baja">Confirmar baja lógica</h2>
-<p>Se desactivará la cuenta @baja.Username (@baja.Correo). Sus registros históricos se conservarán.</p>
-<form method="post" asp-page-handler="Baja"><input type="hidden" name="id" value="@baja.Id" />
-<label class="form-check-label"><input class="form-check-input" type="checkbox" name="confirmar" value="true" required /> Confirmo que deseo dar de baja esta cuenta.</label>
-<div class="mt-3"><button type="submit" class="btn btn-danger">Confirmar baja</button> <a asp-page="Index" class="btn btn-outline-secondary">Cancelar</a></div></form>
-</section>}
-<div class="table-responsive"><table class="table table-striped"><thead><tr><th>Nombre de usuario</th><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
-@foreach(var u in Model.Usuarios){<tr><td>@u.Username</td><td>@u.Nombre @u.Apellido</td><td>@u.Correo</td><td>@u.Rol</td><td>@u.EstadoVisible</td><td>
-@if(!Model.EsPropia(u)&&(u.EsPendiente||u.Estado=="ACTIVO")){<a asp-page-handler="ConfirmarBaja" asp-route-id="@u.Id" class="btn btn-outline-danger btn-sm">Dar de baja</a>}
-@if(u.EsPendiente&&u.FechaActivacion is null){<form method="post" asp-page-handler="Reenviar" class="d-inline"><input type="hidden" name="id" value="@u.Id" /><button type="submit" class="btn btn-outline-secondary btn-sm">Reenviar activación</button></form>}
-</td></tr>}
-</tbody></table></div>
-@if(Model.Usuarios.Count==0&&Model.ErrorGestion is null){<p>No hay usuarios para mostrar.</p>}
-<p class="small text-body-secondary">El alta y el reenvío requieren SMTP real. Un error de correo puede ocurrir después de guardar cambios; consulte el listado antes de repetir una acción.</p>
+@{ ViewData["Title"] = "Usuarios"; }
+
+<h1 class="page-heading mb-4">Administración de usuarios</h1>
+
+@if (Model.MensajeGestion is not null)
+{
+    <div class="alert alert-success shadow-sm" role="status">@Model.MensajeGestion</div>
+}
+@if (Model.ErrorGestion is not null)
+{
+    <div class="alert alert-danger shadow-sm" role="alert">@Model.ErrorGestion</div>
+}
+
+@if (Model.ConfirmarBaja is { } baja)
+{
+    <section class="card card-body border-danger shadow-sm mb-4" aria-labelledby="confirmar-baja">
+        <h2 class="h5" id="confirmar-baja">Confirmar baja lógica</h2>
+        <p>Se desactivará la cuenta @baja.Username (@baja.Correo). Sus registros históricos se conservarán.</p>
+        <form method="post" asp-page-handler="Baja">
+            <input type="hidden" name="id" value="@baja.Id" />
+            <label class="form-check-label"><input class="form-check-input" type="checkbox" name="confirmar" value="true" required /> Confirmo que deseo dar de baja esta cuenta.</label>
+            <div class="mt-3">
+                <button type="submit" class="btn btn-danger">Confirmar baja</button>
+                <a asp-page="Index" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </section>
+}
+
+<section class="card shadow-sm mb-4" aria-labelledby="crearUsuarioTitulo">
+    <div class="card-body">
+        <h2 class="h5 card-title mb-3" id="crearUsuarioTitulo">Crear usuario</h2>
+        @if (Model.ErrorAlta is not null)
+        {
+            <div class="alert alert-danger" role="alert">@Model.ErrorAlta</div>
+        }
+        <form method="post" asp-page-handler="Crear" novalidate>
+            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+            <input type="hidden" asp-for="Solicitud" />
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="Input.Nombre" class="form-label">Nombre</label>
+                    <input asp-for="Input.Nombre" class="form-control" maxlength="150" autocomplete="given-name" required />
+                    <span asp-validation-for="Input.Nombre" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Input.Apellido" class="form-label">Apellido</label>
+                    <input asp-for="Input.Apellido" class="form-control" maxlength="150" autocomplete="family-name" required />
+                    <span asp-validation-for="Input.Apellido" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Input.Correo" class="form-label">Correo</label>
+                    <input asp-for="Input.Correo" type="email" class="form-control" maxlength="150" autocomplete="email" required />
+                    <span asp-validation-for="Input.Correo" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Input.IdRol" class="form-label">Rol</label>
+                    <select asp-for="Input.IdRol" class="form-select" required>
+                        <option value="0">Seleccione un rol</option>
+                        @foreach (var rol in Model.Roles)
+                        {
+                            <option value="@rol.Id">@rol.Nombre</option>
+                        }
+                    </select>
+                    <span asp-validation-for="Input.IdRol" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <p class="text-muted small">El nombre de usuario se genera automáticamente al crear el usuario. La contraseña la define la persona al activar su cuenta desde el correo que recibe.</p>
+                    <button type="submit" class="btn btn-warning fw-semibold" disabled="@(Model.AltaBloqueada || Model.Roles.Count == 0)">Crear usuario</button>
+                    @if (Model.AltaBloqueada)
+                    {
+                        <span class="small text-muted ms-2">Actualice la página para crear otro usuario.</span>
+                    }
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+<section aria-labelledby="listadoUsuariosTitulo">
+    <h2 class="h5 mb-3" id="listadoUsuariosTitulo">Listado de usuarios</h2>
+    <div class="table-responsive shadow-sm rounded-3">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Apellido</th>
+                    <th scope="col">Correo</th>
+                    <th scope="col">Nombre de usuario</th>
+                    <th scope="col">Rol</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col">Fecha de creación</th>
+                    <th scope="col">Vence</th>
+                    <th scope="col">Activada el</th>
+                    <th scope="col">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in Model.Usuarios)
+                {
+                    <tr>
+                        <td>@u.Nombre</td>
+                        <td>@u.Apellido</td>
+                        <td>@u.Correo</td>
+                        <td>@u.Username</td>
+                        <td>@u.Rol</td>
+                        <td>@u.EstadoVisible</td>
+                        <td class="text-nowrap">@u.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td class="text-nowrap">@(u.TokenActivacionExpira?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
+                        <td class="text-nowrap">@(u.FechaActivacion?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
+                        <td class="text-nowrap">
+                            @if (u.EsPendiente && u.FechaActivacion is null)
+                            {
+                                <form method="post" asp-page-handler="Reenviar" class="d-inline">
+                                    <input type="hidden" name="id" value="@u.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Reenviar activación</button>
+                                </form>
+                            }
+                            @if (!Model.EsPropia(u) && (u.EsPendiente || u.Estado == "ACTIVO"))
+                            {
+                                <a asp-page-handler="ConfirmarBaja" asp-route-id="@u.Id" class="btn btn-sm btn-outline-danger">Dar de baja</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (Model.Usuarios.Count == 0 && Model.ErrorGestion is null)
+    {
+        <div class="alert alert-info mt-3">No hay usuarios registrados.</div>
+    }
+</section>
