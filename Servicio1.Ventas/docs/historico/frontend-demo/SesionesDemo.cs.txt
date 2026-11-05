@@ -1,0 +1,60 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using Microsoft.Extensions.Caching.Memory;
+
+namespace PuntoMarket.Ventas.Frontend.Security;
+
+public sealed record DemoLocalOptions(bool Enabled, string? Key, bool AdminEnabled = false);
+public sealed record PerfilDemo(int Id, string Usuario, string Rol);
+public sealed class SesionesDemo(IMemoryCache cache, DemoLocalOptions opciones, TimeProvider reloj)
+{
+    // Perfiles de las semillas SQL Demo. Su existencia actual se verifica antes de usar MySQL.
+    private static readonly PerfilDemo Cajero = new(2, "cajero1", "Cajero");
+    private static readonly PerfilDemo Administrador = new(1, "admin", "Administrador");
+    private sealed class Sesion(DateTimeOffset limite, PerfilDemo perfil)
+    {
+        public PerfilDemo Perfil { get; } = perfil;
+        public DateTimeOffset Limite { get; } = limite;
+        public DateTimeOffset VenceToken { get; set; }
+        public string? Token { get; set; }
+    }
+    public string Crear() => Crear(Cajero);
+    public string CrearAdministrador()
+    {
+        if (!opciones.AdminEnabled) throw new InvalidOperationException("Administrador Demo no habilitado.");
+        return Crear(Administrador);
+    }
+    public PerfilDemo? Perfil(string? id) => Existe(id) && cache.TryGetValue<Sesion>(id!, out var sesion) ? sesion?.Perfil : null;
+    private string Crear(PerfilDemo perfil)
+    {
+        if (!opciones.Enabled || Encoding.UTF8.GetByteCount(opciones.Key ?? "") < 32) throw new InvalidOperationException("Demostración local no configurada.");
+        var id = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        var limite = reloj.GetUtcNow().AddMinutes(30);
+        cache.Set(id, new Sesion(limite, perfil), limite);
+        return id;
+    }
+    public bool Existe(string? id) => opciones.Enabled && id is not null && cache.TryGetValue<Sesion>(id, out var s) && s is not null && s.Limite > reloj.GetUtcNow();
+    public void Cerrar(string? id) { if (id is not null) cache.Remove(id); }
+    public string? Token(string? id)
+    {
+        if (!Existe(id) || !cache.TryGetValue<Sesion>(id!, out var sesion) || sesion is null) return null;
+        lock (sesion)
+        {
+            var ahora = reloj.GetUtcNow();
+            if (sesion.Token is not null && sesion.VenceToken > ahora.AddSeconds(30)) return sesion.Token;
+            sesion.VenceToken = ahora.AddMinutes(5) < sesion.Limite ? ahora.AddMinutes(5) : sesion.Limite;
+            static string B64(byte[] bytes) => Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+            var encabezado = B64(JsonSerializer.SerializeToUtf8Bytes(new { alg = "HS256", typ = "JWT" }));
+            var cuerpo = B64(JsonSerializer.SerializeToUtf8Bytes(new
+            {
+                iss = "PuntoMarket.DemoLocal", aud = "PuntoMarket.Ventas.DemoLocal",
+                sub = sesion.Perfil.Id.ToString(System.Globalization.CultureInfo.InvariantCulture), unique_name = sesion.Perfil.Usuario, role = sesion.Perfil.Rol,
+                debeCambiarPassword = "false", nbf = ahora.AddSeconds(-5).ToUnixTimeSeconds(), exp = sesion.VenceToken.ToUnixTimeSeconds(), jti = Guid.NewGuid().ToString("N")
+            }));
+            var contenido = encabezado + "." + cuerpo;
+            sesion.Token = contenido + "." + B64(HMACSHA256.HashData(Encoding.UTF8.GetBytes(opciones.Key!), Encoding.ASCII.GetBytes(contenido)));
+            return sesion.Token;
+        }
+    }
+}

@@ -41,9 +41,9 @@ public class GenerarVentasPorCategoriaCasoDeUso
         CancellationToken cancelacion)
     {
         var filtros = ValidarFiltros(entrada);
-        var filas = await _consulta.ConsultarAsync(filtros.Rango, filtros.IdCategoria, filtros.Top, cancelacion);
-        var reporte = ReporteVentasPorCategoria.Crear(filas, filtros, _reloj.Ahora(), _usuarioActual.NombreDeUsuario);
-        if (RequiereDetalle(entrada.Formato, filas))
+        var resultado = await _consulta.ConsultarAsync(filtros.Rango, filtros.IdCategoria, filtros.Top, cancelacion);
+        var reporte = new ReporteVentasPorCategoria(resultado.Filas, resultado.Totales, filtros, _reloj.Ahora(), _usuarioActual.NombreDeUsuario);
+        if (RequiereDetalle(entrada.Formato, resultado.Filas))
             reporte = await AgregarDetalleAsync(reporte, cancelacion);
 
         return new GenerarVentasPorCategoriaSalida(reporte, GenerarArchivo(reporte, entrada.Formato));

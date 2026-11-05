@@ -1,0 +1,48 @@
+name: puntomarket-ventas-integration
+
+services:
+  mysql-test:
+    image: mysql:8.4
+    restart: "no"
+    environment:
+      MYSQL_DATABASE: puntomarket_ventas_test_local
+      MYSQL_USER: ${VENTAS_TEST_USER:?Definir un usuario exclusivo de pruebas distinto de root}
+      MYSQL_ROOT_HOST: localhost
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/ventas_test_root_password
+      MYSQL_PASSWORD_FILE: /run/secrets/ventas_test_password
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=-04:00
+      - --log-bin-trust-function-creators=1
+    ports:
+      - target: 3306
+        published: "3307"
+        host_ip: 127.0.0.1
+        protocol: tcp
+    volumes:
+      - ventas-test-data:/var/lib/mysql
+    networks:
+      - ventas-test-net
+    secrets:
+      - ventas_test_root_password
+      - ventas_test_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "--host=127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+volumes:
+  ventas-test-data: {}
+
+networks:
+  ventas-test-net:
+    driver: bridge
+
+secrets:
+  ventas_test_root_password:
+    file: ${VENTAS_TEST_ROOT_PASSWORD_FILE:?Definir la ruta del archivo externo de password root}
+  ventas_test_password:
+    file: ${VENTAS_TEST_PASSWORD_FILE:?Definir la ruta del archivo externo de password de pruebas}

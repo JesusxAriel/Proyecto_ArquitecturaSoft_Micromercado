@@ -31,6 +31,35 @@ public class GenerarListadoVentasCasoDeUsoTests
         FormatoDeExportacion formato = FormatoDeExportacion.Pdf) =>
         new(desde, hasta, estado, cliente, tope, formato);
 
+    [Theory]
+    [InlineData(FormatoDeExportacion.Json)]
+    [InlineData(FormatoDeExportacion.Pdf)]
+    [InlineData(FormatoDeExportacion.Xlsx)]
+    public async Task Tope_limita_filas_pero_no_totales_del_periodo(FormatoDeExportacion formato)
+    {
+        var exportador = new ExportadorFalso(formato);
+        var caso = new GenerarListadoVentasCasoDeUso(_consulta, new CreadorFalso(exportador), new RelojFalso(), new UsuarioFalso());
+        var salida = await caso.EjecutarAsync(Entrada(new(2026, 1, 1), new(2026, 1, 31), tope: 1, formato: formato), default);
+        Assert.Single(salida.Reporte.Filas);
+        Assert.Equal(2, salida.Reporte.Totales.CantidadDeCompletadas);
+        Assert.Equal(1, salida.Reporte.Totales.CantidadDeAnuladas);
+        Assert.Equal(200m, salida.Reporte.Totales.MontoTotalDeCompletadas);
+        Assert.Equal(100m, salida.Reporte.Totales.PromedioPorVenta);
+        Assert.Equal(1, _consulta.TopeRecibido);
+        Assert.Equal(new DateOnly(2026, 1, 1), _consulta.RangoRecibido!.Desde);
+        if (formato != FormatoDeExportacion.Json) Assert.Same(salida.Reporte, exportador.ReporteRecibido);
+    }
+
+    [Fact]
+    public async Task Tope_predeterminado_no_recorta_totales_de_mas_de_mil_ventas()
+    {
+        var consulta = new ConsultaFalsa(Enumerable.Range(1, 1001).Select(id => Fila(id, EstadoDeVenta.Completada, 10m)).ToArray());
+        var salida = await CrearCasoDeUso(consulta).EjecutarAsync(Entrada(), default);
+        Assert.Equal(1000, salida.Reporte.Filas.Count);
+        Assert.Equal(1001, salida.Reporte.Totales.CantidadDeCompletadas);
+        Assert.Equal(10010m, salida.Reporte.Totales.MontoTotalDeCompletadas);
+    }
+
     [Fact]
     public async Task Un_rango_invertido_lanza_excepcion_y_no_consulta()
     {

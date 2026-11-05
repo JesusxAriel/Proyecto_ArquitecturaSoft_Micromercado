@@ -1,0 +1,7 @@
+{
+  "fuente": "bdMicroMercadoArqui.sql",
+  "fuenteSha256": "9A8E51B4E79B5F583ED041BA5F63F4A6000013F046758FCE4B9469B4526BCA60",
+  "copia": "sql/PuntoMarket.Ventas.Demo.sql",
+  "copiaSha256": "AA5354688C2EE4AB4CBB008F6CD26307A39FE747257692868290473066B1572E",
+  "base": "puntomarket_ventas_demo_local"
+}

@@ -1,0 +1,16 @@
+@page
+@model PuntoMarket.Ventas.Frontend.Pages.Users.CrearModel
+@{ ViewData["Title"]="Alta de usuario"; }
+<h1>Preparar alta de usuario</h1>
+<p class="alert alert-warning">El alta crea una cuenta pendiente y requiere un correo de activación mediante SMTP real. No se solicita contraseña: la define el destinatario al activar su cuenta. Si falla el correo, la cuenta podría haberse guardado.</p>
+@if(Model.ErrorGestion is not null){<p class="alert alert-danger" role="alert">@Model.ErrorGestion</p>}
+<form method="post" class="card card-body" style="max-width:720px">
+<div asp-validation-summary="All" class="text-danger"></div>
+<input type="hidden" asp-for="Solicitud" />
+<div class="mb-3"><label asp-for="Input.Nombre">Nombre</label><input asp-for="Input.Nombre" class="form-control" maxlength="150" required /><span asp-validation-for="Input.Nombre" class="text-danger"></span></div>
+<div class="mb-3"><label asp-for="Input.Apellido">Apellido</label><input asp-for="Input.Apellido" class="form-control" maxlength="150" required /><span asp-validation-for="Input.Apellido" class="text-danger"></span></div>
+<div class="mb-3"><label asp-for="Input.Correo">Correo</label><input asp-for="Input.Correo" class="form-control" type="email" maxlength="150" required /><span asp-validation-for="Input.Correo" class="text-danger"></span></div>
+<div class="mb-3"><label asp-for="Input.IdRol">Rol activo</label><select asp-for="Input.IdRol" class="form-select" required><option value="0">Seleccione un rol</option>@foreach(var rol in Model.Roles){<option value="@rol.Id">@rol.Nombre</option>}</select><span asp-validation-for="Input.IdRol" class="text-danger"></span></div>
+<button type="submit" class="btn btn-primary" disabled="@Model.Bloqueada">Crear cuenta pendiente</button>
+</form>
+<a asp-page="Index" class="btn btn-outline-secondary mt-3">Consultar listado antes de otra acción</a>

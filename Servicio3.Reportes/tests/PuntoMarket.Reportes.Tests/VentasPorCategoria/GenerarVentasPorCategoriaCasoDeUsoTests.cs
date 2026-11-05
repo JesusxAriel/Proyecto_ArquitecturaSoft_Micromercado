@@ -32,6 +32,24 @@ public class GenerarVentasPorCategoriaCasoDeUsoTests
         FormatoDeExportacion formato = FormatoDeExportacion.Pdf) =>
         new(desde, hasta, idCategoria, top, formato);
 
+    [Theory]
+    [InlineData(FormatoDeExportacion.Json)]
+    [InlineData(FormatoDeExportacion.Pdf)]
+    [InlineData(FormatoDeExportacion.Xlsx)]
+    public async Task Top_limita_categorias_pero_no_totales_del_periodo(FormatoDeExportacion formato)
+    {
+        var exportador = new ExportadorFalso(formato);
+        var caso = new GenerarVentasPorCategoriaCasoDeUso(_consulta, _tendencia, _productos, new CreadorFalso(exportador), new RelojFalso(), new UsuarioFalso());
+        var salida = await caso.EjecutarAsync(Entrada(new(2026, 1, 1), new(2026, 1, 31), top: 1, formato: formato), default);
+        Assert.Single(salida.Reporte.Filas);
+        Assert.Equal(14, salida.Reporte.Totales.TotalUnidades);
+        Assert.Equal(160m, salida.Reporte.Totales.TotalMonto);
+        Assert.Equal("Bebidas", salida.Reporte.Totales.CategoriaLider!.NombreCategoria);
+        Assert.Equal(1, _consulta.TopRecibido);
+        Assert.Equal(new DateOnly(2026, 1, 31), _consulta.RangoRecibido!.Hasta);
+        if (formato != FormatoDeExportacion.Json) Assert.Same(salida.Reporte, exportador.ReporteRecibido);
+    }
+
     [Fact]
     public async Task Al_exportar_agrega_la_tendencia_y_los_productos_de_las_categorias_del_reporte()
     {

@@ -1,0 +1,547 @@
+> HISTORICO: describe el monolito o una etapa retirada. Guia vigente: [README](../../README.md). No ejecutar sus comandos como arranque actual.
+
+# 🛒 PuntoMarket - Sistema de Gestión para Micromercado
+
+## 📋 Descripción del Proyecto
+
+PuntoMarket es una aplicación web para la gestión operativa de un micromercado. Centraliza la administración de productos, inventario, categorías, proveedores, precios y operaciones relacionadas con el control de caja.
+
+El sistema está desarrollado con ASP.NET Core Razor Pages sobre .NET 10 y combina dos patrones de arquitectura: **monolito** y **arquitectura hexagonal**. Es un único proyecto desplegable cuyas carpetas se organizan por **responsabilidad técnica** (presentación, aplicación, dominio e infraestructura), no por módulos de negocio. La regla de dependencia de la hexagonal mantiene las reglas del negocio libres de la interfaz y del acceso a datos.
+
+## 🛠️ Tecnologías Utilizadas
+
+| Área | Tecnología | Aplicación |
+|---|---|---|
+| Backend | .NET 10 / C# | Plataforma, lenguaje y lógica de servidor. |
+| Framework web | ASP.NET Core Razor Pages | Vistas Razor, PageModels y handlers HTTP. |
+| Base de datos | MySQL | Persistencia relacional del micromercado. |
+| Acceso a datos | `MySql.Data` 26.7.0 y ADO.NET | Conexiones, comandos SQL, lectores y transacciones. |
+| Frontend | HTML5, Razor, CSS3 | Formularios, tablas, modales y estilos. |
+| Componentes visuales | Bootstrap | Grid, botones, alertas, modales y navegación responsive. |
+| Interactividad | JavaScript y jQuery | Llenado de modales, eventos y validaciones de interfaz. |
+| Validación | Data Annotations | Reglas declarativas en los modelos de formulario (proveedores) y en las entidades de productos y categorías. |
+| Validación cliente | jQuery Validation Unobtrusive | Validación generada desde los modelos Razor. |
+| Valores decimales | `DecimalModelBinder` | Soporte de coma y punto decimal. |
+| Cultura | `es-BO` | Formatos regionales de números y mensajes. |
+
+La configuración del proyecto se encuentra en ``Proyecto_Arquitectura_Micromercado.csproj`` (codigo historico archivado), donde se define `net10.0`, `Nullable`, `ImplicitUsings` y la dependencia `MySql.Data`.
+
+## 📁 Estructura del Repositorio
+
+El repositorio se organiza de la siguiente manera:
+
+```text
+PuntoMarket/
+├── README.md
+├── doc/
+├── bdMicroMercadoArqui.sql
+├── Proyecto_Arquitectura_Micromercado.slnx
+├── Proyecto_Arquitectura_Micromercado.Tests/
+└── Proyecto_Arquitectura_Micromercado/
+    ├── Domain/                  entidades, excepciones y reglas puras del negocio
+    ├── Application/             casos de uso y puertos
+    │   ├── Facades/             las tres fachadas del proceso de venta
+    │   ├── Security/            login, IUsuarioActual, IPasswordHasher, roles
+    │   └── Common/              IUnidadDeTrabajo, paginación y contratos comunes
+    ├── Infrastructure/          adaptadores de salida
+    │   ├── Factories/           Factory Method de repositorios
+    │   ├── Persistence/         repositorios MySQL, en memoria y decoradores de errores
+    │   ├── Database/            DatabaseConnection
+    │   ├── Security/            adaptador BCrypt
+    │   └── Web/                 adaptadores web (usuario actual, binders)
+    ├── Pages/                   adaptador de entrada (Razor Pages)
+    ├── wwwroot/
+    ├── Program.cs
+    ├── appsettings.example.json
+    └── Proyecto_Arquitectura_Micromercado.csproj
+```
+
+### Responsabilidad de las carpetas
+
+- `Pages/`: adaptador de entrada. Vistas `.cshtml`, PageModels y handlers HTTP. Solo conoce a `Application`.
+- `Application/`: casos de uso (servicios y fachadas) y los puertos que el resto del sistema debe implementar.
+- `Domain/`: entidades, excepciones de negocio y reglas que no dependen de ninguna tecnología.
+- `Infrastructure/`: adaptadores de salida que implementan los puertos de `Application` (MySQL, BCrypt, claims de la cookie).
+- `wwwroot/`: CSS, JavaScript, imágenes y demás recursos estáticos.
+- `doc/`: informe y documentación del proyecto.
+
+Dentro de cada capa, las subcarpetas (`Products`, `Categories`, `Suppliers`) solo agrupan archivos por el recurso que gestionan; no son módulos independientes. Comparten el mismo ensamblado, el mismo contenedor de dependencias y la misma base de datos.
+
+### CRUD centralizado de Proveedores
+
+El CRUD de Proveedores está centralizado en ``Pages/Suppliers/Index.cshtml`` (codigo historico archivado) y ``Pages/Suppliers/Index.cshtml.cs`` (codigo historico archivado).
+
+La vista contiene los modales de:
+
+- Crear proveedor.
+- Editar proveedor.
+- Eliminar proveedor.
+
+Cada modal utiliza `asp-page-handler="Create"`, `asp-page-handler="Edit"` o `asp-page-handler="Delete"`. Los handlers correspondientes reciben los formularios y delegan las operaciones en `ISupplierService`. No se necesitan páginas independientes para estas tres operaciones.
+
+## 🏗️ Arquitectura: monolito hexagonal por responsabilidad técnica
+
+### Flujo de dependencias
+
+```text
+Pages (adaptador de entrada) ──► Application (puertos, servicios, fachadas) ──► Domain
+                                        ▲
+Infrastructure (adaptadores de salida) ─┘  implementa los puertos de salida
+```
+
+- `Pages` depende de `Application` y nunca de `Infrastructure` ni de los repositorios.
+- `Application` depende de `Domain` y define los puertos; no conoce a `Infrastructure` ni a `Pages`.
+- `Infrastructure` depende de `Application` para implementar sus puertos (`IProductRepository`, `IUnidadDeTrabajo`, `IUsuarioActual`, `IPasswordHasher`).
+- `Domain` no depende de nadie.
+
+Esta regla se comprueba automáticamente en `ArquitecturaHexagonalTests`, que revisa los `using` de `Domain`, `Application` e `Infrastructure` y también las vistas y PageModels de `Pages`. Si alguien la rompe, la prueba falla e indica archivo y línea.
+
+### Puertos
+
+| Tipo | Puertos |
+|---|---|
+| De entrada (casos de uso) | `IProductService`, `ICategoryService`, `ISupplierService`, `IAutenticacionService` y las fachadas |
+| De salida (lo que `Infrastructure` implementa) | `IProductRepository`, `ICategoryRepository`, `ISupplierRepository`, `IPriceHistoryRepository`, `IUsuarioRepository`, `IUnidadDeTrabajo`, `IUsuarioActual`, `IPasswordHasher` |
+
+### Fachadas del proceso de venta (Facade)
+
+La carpeta `Application/Facades/` define las tres fachadas acordadas para el proceso principal:
+
+| Fachada | Quién la usa | Rol |
+|---|---|---|
+| `IFachadaVenta` | Las Razor Pages | Registrar una venta completa de forma atómica. |
+| `IFachadaAnulacion` | Las Razor Pages | Anular una venta y devolver el stock. |
+| `IFachadaActualizacionStockProducto` | Solo las dos anteriores | Concentrar los cambios de stock; ambas la consumen bajo la misma `IUnidadDeTrabajo`. |
+
+La Page conoce una sola interfaz y llama un método; la coordinación de colaboradores y de la transacción queda dentro de la fachada. `FachadaVenta` y `FachadaAnulacion` están implementadas y registradas en `Program.cs`: cada una abre, confirma y revierte una `IUnidadDeTrabajo` (una sola transacción por operación) y consume `FachadaActualizacionStockProducto` para descontar o restaurar el stock por lote. La regla FEFO (primero en vencer, primero en salir) vive en `Domain/Stock/AsignadorFefo`, como lógica pura de dominio. El proceso de venta y anulación ya no usa Stored Procedures: toda la lógica de negocio está en C# y la base solo guarda los datos y aplica sus restricciones.
+
+### Pago y vuelto
+
+La venta guarda solo lo vendido y el total a cobrar: el sistema no registra manejo de dinero físico, porque en Bolivia es común pagar por QR o transferencia, y la tabla `VENTA` no tiene columnas de efectivo ni de cambio. El campo **Con cuánto paga (opcional)** de la pantalla de registro es una calculadora: muestra el vuelto, o cuánto falta, y no se envía al servidor ni bloquea **Confirmar venta**. Solo valida en pantalla un máximo de Bs 1.000.000 y dos decimales.
+
+### Historial, detalle y anulación de ventas
+
+La pantalla `/Sales` incluye debajo del formulario de registro una sección **Historial de ventas**:
+
+- **Historial:** lista una fila por venta (número de comprobante, fecha y hora, cliente, estado, total y acciones) con las últimas 50 ventas, de la más reciente a la más antigua. Por defecto solo muestra las completadas; la casilla **Mostrar anuladas** incluye también las anuladas. Se actualiza con el botón **Actualizar** y de forma automática después de registrar una venta. Lo consulta `IVentaConsultaService`, que lee con un puerto de solo lectura (`IVentaConsultaRepository`).
+- **Detalle:** el botón **Ver detalle** abre un modal de solo lectura con los datos completos de la transacción: cliente, cajero, fecha y hora, estado, productos (una línea por producto), y total. Si la venta está anulada, muestra además el motivo, quién la anuló y cuándo.
+- **Anulación:** solo el rol Administrador ve el botón **Anular** y puede ejecutarlo; el Cajero puede ver el historial y el detalle, pero no anular. La anulación pide confirmación y un motivo obligatorio (hasta 255 caracteres) y la ejecuta `IFachadaAnulacion` en una sola transacción: restaura el stock de cada lote usado y marca la venta como `ANULADA` con el motivo, el usuario y la fecha de anulación. No se borra ninguna fila: la venta y su detalle se conservan.
+
+### Patrones de diseño
+
+- **Facade:** las tres fachadas descritas arriba.
+- **Factory Method:** `Infrastructure/Factories/`. `CreatorRepositorio<T>` es el creador abstracto y cada `Creator*Repository*` concreto (MySQL o en memoria) decide qué repositorio construir. `Program.cs` es el único lugar donde se elige el motor de persistencia.
+- **Repository:** los puertos `I*Repository` aíslan al negocio del SQL.
+- **Decorator:** `Infrastructure/Persistence/Errores/` envuelve cada repositorio MySQL para traducir los errores del driver a `ErrorDePersistenciaException`.
+- **Unit of Work:** `IUnidadDeTrabajo` y `MySqlUnidadDeTrabajo` delimitan una transacción compartida por varios repositorios.
+- **Singleton:** `DatabaseConnection` guarda la cadena de conexión en una única instancia, creada una sola vez al arrancar. Existe para que la configuración de acceso a la base viva en un solo lugar inmutable. Además se registra en el contenedor de dependencias para que los repositorios la reciban por constructor y se puedan probar con otra cadena.
+
+### Flujo de una operación
+
+1. El usuario completa un formulario o modal Razor.
+2. El PageModel recibe la solicitud mediante un handler `OnPostAsync`.
+3. ASP.NET Core ejecuta el model binding y las validaciones.
+4. El PageModel invoca un servicio o una fachada de `Application`.
+5. Application normaliza los datos, aplica las reglas de negocio y llama a los puertos de salida.
+6. El adaptador de `Infrastructure` abre una conexión MySQL y ejecuta SQL parametrizado.
+7. El resultado vuelve al PageModel, que muestra un mensaje o redirige.
+
+Las dependencias se registran en ``Program.cs`` (codigo historico archivado). Por ejemplo, el repositorio de productos se resuelve a través de su creador:
+
+```csharp
+builder.Services.AddScoped<CreatorProductRepository, CreatorProductRepositoryMySql>();
+builder.Services.AddScoped<IProductRepository>(sp =>
+    sp.GetRequiredService<CreatorProductRepository>().ObtenerRepositorio());
+builder.Services.AddScoped<IProductService, ProductService>();
+```
+
+### Nota sobre el stock
+
+El stock actual de cada producto se guarda en `PRODUCTO.stockActual`, de modo que el catálogo y la búsqueda para ventas leen una sola tabla (más `EMPAQUE` para la presentación). Ese valor no se edita a mano: lo mantienen al día los triggers `trg_lote_ai`, `trg_lote_au` y `trg_lote_ad` de `LOTE`, dentro de la misma transacción de la venta o de la anulación, y equivale a la suma de `cantidadDisponible` de los lotes activos. La salida sigue siendo FEFO (primero en vencer, primero en salir) y se decide con `LOTE.cantidadDisponible`: la venta descuenta de `LOTE` y la anulación restaura en `LOTE`. Los lotes vencidos cuentan en `stockActual`, pero `AsignadorFefo` no los vende; el procedimiento de solo lectura `sp_arqueo_stock` compara `stockActual` con la suma real de los lotes, lista los lotes vencidos o por vencer y los lotes cuyas cantidades no cuadran con las ventas vigentes. Para que el stock del catálogo refleje solo lo vendible, el Administrador puede usar el botón **Dar de baja lotes vencidos** del catálogo: en una sola transacción pone `estaActivo = 0` en los lotes vencidos con stock y registra su usuario en `idUsuarioActualizacion`, y los triggers restan esas unidades de `stockActual`.
+
+La misma baja se ejecuta de forma automática: el servicio en segundo plano `BajaAutomaticaDeLotesVencidos` la lanza al arrancar la aplicación y luego cada 6 horas, en su propio alcance de servicios y con su propia unidad de trabajo, sin depender de ningún usuario HTTP. Como no hay una persona detrás de esa ejecución, `idUsuarioActualizacion` queda en `NULL` (la columna lo admite y evita inventar un usuario ficticio); la baja manual del catálogo sigue registrando al Administrador. Desfase máximo: un lote que vence a las 00:00 sigue contando en `stockActual` hasta la siguiente ejecución, es decir, hasta 6 horas como máximo; durante ese lapso `AsignadorFefo` ya no lo vende, así que solo se ve de más el stock mostrado, nunca se vende un lote vencido. Si la aplicación está apagada, el desfase dura hasta que vuelva a arrancar.
+
+## 🧾 Comprobante de venta
+
+El comprobante de una venta está disponible en `/Comprobante/{idVenta}` para los roles Administrador y Cajero. Es un documento HTML imprimible, sin el menú del sitio, con el logo y los colores del proyecto. Muestra el comprobante y la fecha de la venta, el CI/NIT y la razón social del cliente, el detalle, el total (también en letras) y, al pie, la fecha y hora de la venta (`VENTA.fechaVenta`) con el nombre de usuario del cajero que la registró (`VENTA.idUsuario` unido a `USUARIO.username`), de modo que el pie es el mismo sin importar quién ni cuándo abra el comprobante. Si la venta está anulada, lo indica de forma visible; si no existe, muestra un mensaje claro.
+
+### Piezas y puertos
+
+| Pieza | Capa | Rol |
+|---|---|---|
+| `IComprobanteService` / `ComprobanteService` | Application | Arma el `ComprobanteDto` con los datos que devuelve el repositorio: la fecha de la venta y el usuario cajero se usan como fecha y usuario del pie. No depende de la hora ni del usuario del momento en que se abre. |
+| `IComprobanteRepository` | Application (puerto de salida) | Lectura de la venta y su detalle. Es un puerto nuevo y de solo lectura: no altera ningún repositorio existente. |
+| `IGeneradorComprobante` | Application (puerto de salida) | Convierte un `ComprobanteDto` en un documento. |
+| `MySqlComprobanteRepository` / `InMemoryComprobanteRepository` | Infrastructure | Adaptadores del puerto de lectura, con SQL parametrizado. |
+| `GeneradorComprobanteHtml` | Infrastructure | Adaptador HTML del generador, con su propio CSS de pantalla y de impresión. Escapa todo texto que viene de la base de datos. |
+| `Pages/Comprobante/Index` | Pages | Solo conoce los puertos de Application. Devuelve el HTML del generador. |
+| `MontoEnLetras` | Application | Convierte el total a letras en bolivianos, por ejemplo `Son Treinta y Un 00/100 Bolivianos`. |
+
+### Agrupación por producto
+
+Como el stock se lleva por lote, una venta puede tener varias filas de `DETALLE_VENTA` del mismo producto, una por lote. El adaptador de lectura las devuelve sin agrupar y `ComprobanteService` las agrupa por producto y precio: suma la cantidad y el importe para que el comprobante muestre una sola línea por producto. La regla vive en Application y no en el SQL, de modo que se prueba sin base de datos.
+
+### Cambiar a PDF
+
+Como la página y el servicio solo conocen `IGeneradorComprobante`, generar un PDF consiste en escribir otro adaptador que implemente ese puerto y cambiar su registro en ``Program.cs`` (codigo historico archivado):
+
+```csharp
+builder.Services.AddSingleton<IGeneradorComprobante, GeneradorComprobanteHtml>();
+```
+
+Habría que ajustar la página para devolver el formato nuevo, porque hoy responde con `text/html`.
+
+### Cómo abrirlo tras guardar una venta
+
+Después de registrar la venta, la página que la guarda abre el comprobante en una pestaña nueva. La dirección se obtiene con `ComprobanteUrl.Para(idVenta)` (en `Pages/Shared`), sin armar la ruta a mano:
+
+```html
+<script>
+    // idVenta es el identificador que devolvió el registro de la venta
+    window.open('@ComprobanteUrl.Para(idVenta)', '_blank');
+</script>
+```
+
+Si el identificador llega por JavaScript, por ejemplo en la respuesta de un `fetch`, se arma igual: `window.open('/Comprobante/' + idVenta, '_blank');`. Conviene llamar a `window.open` dentro del manejador del clic o de la respuesta, porque el navegador puede bloquear las ventanas emergentes que no nacen de una acción de la persona usuaria.
+
+## ✨ Funcionalidades Principales
+
+### Productos e inventario
+
+- Crear, consultar, editar y eliminar lógicamente productos.
+- Asociar cada producto con una categoría y un proveedor.
+- Gestionar precio de venta, precio de costo y stock mínimo.
+- Calcular y mostrar el stock disponible.
+- Solicitar un motivo al cambiar precios.
+- Registrar automáticamente los cambios en `HISTORIAL_PRECIO`.
+- Consultar el historial desde `Pages/Products/History.cshtml`.
+
+### Categorías
+
+- Crear, editar y eliminar lógicamente categorías.
+- Validar nombre, código, descripción y ubicación de pasillo.
+- Mostrar mensajes de éxito mediante `StatusMessage`.
+- Ejecutar las operaciones con servicios y repositorios asíncronos.
+
+### Proveedores
+
+- Crear, editar y eliminar lógicamente proveedores.
+- Utilizar formularios modales reutilizables en la vista principal.
+- Validar nombre de empresa, teléfono, correo y campos obligatorios.
+- Aplicar la regla de correo obligatorio para proveedores autogestionados.
+- Prevenir duplicidades mediante reglas de aplicación y consultas parametrizadas.
+
+### Interfaz y experiencia de usuario
+
+- Navbar responsive basada en Bootstrap.
+- Estado activo y hover con una paleta consistente:
+  - Fondo principal: `#1E293B`.
+  - Fondo destacado: `#334155`.
+  - Texto base: `rgba(255, 255, 255, 0.75)`.
+  - Texto activo: `#FFFFFF`.
+  - Naranja principal: `#F59E0B`.
+- Alertas de confirmación mediante `TempData`.
+- Soporte de formatos decimales de la cultura `es-BO`.
+- Protección antiforgery en formularios POST.
+
+## 🗄️ Base de Datos
+
+El script [`bdMicroMercadoArqui.sql`](./bdMicroMercadoArqui.sql) contiene la creación de la base de datos, tablas, relaciones, vistas y datos iniciales del sistema.
+
+Entre las estructuras principales se encuentran:
+
+- `PRODUCTO`.
+- `CATEGORIAS`.
+- `PROVEEDOR`.
+- `HISTORIAL_PRECIO`.
+- Tablas relacionadas con usuarios, inventario y control de caja.
+
+Los repositorios de `Infrastructure/Persistence/` utilizan `MySqlConnection`, `MySqlCommand` y `MySqlDataReader`. Los valores recibidos desde formularios se envían como parámetros (`@id`, `@nombre`, `@codigo`, `@idUsuarioAdmin`, etc.), evitando concatenar entradas del usuario en las sentencias SQL y reduciendo el riesgo de inyección SQL.
+
+La actualización de precios de productos utiliza una transacción SQL mediante `BeginTransactionAsync`. El flujo bloquea el registro actual, actualiza el precio, inserta el historial y confirma con `CommitAsync`. Si ocurre un error, se ejecuta `RollbackAsync`, evitando que el producto quede actualizado sin su correspondiente registro de auditoría.
+
+## ⚙️ Configuración de la Base de Datos
+
+### 1. Crear la base de datos
+
+Inicie MySQL mediante MySQL Workbench, XAMPP u otra herramienta compatible. Después, ejecute el archivo:
+
+```text
+bdMicroMercadoArqui.sql
+```
+
+El script debe ejecutarse antes de iniciar la aplicación para que exista la base de datos `bdMicroMercadoArqui` y sus tablas.
+
+### 2. Configurar `appsettings.json`
+
+El archivo `appsettings.json` no se versiona porque contiene la contraseña local. Copie la plantilla ``appsettings.example.json`` (codigo historico archivado) como `appsettings.json` en la misma carpeta y reemplace los valores de la cadena `MySqlConnection`:
+
+```json
+{
+  "ConnectionStrings": {
+    "MySqlConnection": "Server=localhost;Port=3306;Database=bdMicroMercadoArqui;Uid=root;Pwd=SU_PASSWORD;"
+  }
+}
+```
+
+Los campos que deben revisarse o reemplazarse son:
+
+| Campo | Descripción |
+|---|---|
+| `Server` | Host del servidor MySQL, por ejemplo `localhost` o una dirección IP. |
+| `Port` | Puerto del servidor MySQL, normalmente `3306`. |
+| `Database` | Nombre de la base creada por el script, normalmente `bdMicroMercadoArqui`. |
+| `Uid` | Usuario de MySQL. |
+| `Pwd` | Contraseña del usuario de MySQL. |
+
+No incluya contraseñas reales en commits o documentación pública. En entornos compartidos se recomienda utilizar variables de entorno, User Secrets o un gestor de secretos.
+
+`appsettings.Development.json` tampoco se versiona. En modo Desarrollo ese archivo tiene prioridad sobre `appsettings.json`, así que si contiene una cadena de conexión de otra persona, la aplicación muestra "No se pudo conectar con la base de datos" (error 1045, `Access denied`). Si después de actualizar el repositorio todavía conserva uno, elimínelo o reemplace su cadena por la suya.
+
+Una alternativa que no depende de ningún archivo del proyecto es User Secrets, que se guarda solo en su equipo y tiene prioridad sobre ambos `appsettings`. Desde la carpeta `Proyecto_Arquitectura_Micromercado`:
+
+```bash
+dotnet user-secrets init
+dotnet user-secrets set "ConnectionStrings:MySqlConnection" "Server=localhost;Port=3306;Database=bdMicroMercadoArqui;Uid=root;Pwd=SU_PASSWORD;"
+```
+
+### 3. Usuarios de prueba
+
+El script crea dos usuarios con contraseñas protegidas con BCrypt. Estas credenciales son solo para desarrollo y pruebas; cámbielas antes de cualquier uso real.
+
+El inicio de sesión se hace con el **correo** y la contraseña.
+
+| Correo | Contraseña | Rol | Acceso |
+|---|---|---|---|
+| `gerencia@micromercado.com` | `admin123` | Administrador | Todo el sistema: inventario, categorías, proveedores y caja. |
+| `cajero@example.invalid` | `cajero123` | Cajero | Solo caja y ventas: registro, historial y comprobante. |
+
+La sesión se cierra tras 30 minutos sin actividad. La identidad del usuario (id, nombre de usuario y rol) viaja en los claims de la cookie de autenticación y es la única fuente de los datos de auditoría; la `Session` solo guarda datos de conveniencia, como el nombre para mostrar y la hora de inicio.
+
+## 🚀 Instalación y Ejecución Local
+
+### Requisitos previos
+
+- .NET 10 SDK.
+- MySQL Server.
+- MySQL Workbench, XAMPP o cliente equivalente.
+- Git.
+
+Verifique el SDK:
+
+```bash
+dotnet --version
+```
+
+### Clonar el proyecto
+
+```bash
+git clone <URL_DEL_REPOSITORIO>
+cd "Proyecto_Arquitectura_Micromercado - copia"
+```
+
+### Restaurar dependencias
+
+```bash
+dotnet restore
+```
+
+### Compilar la solución
+
+```bash
+dotnet build
+```
+
+### Ejecutar la aplicación
+
+```bash
+dotnet run --project Proyecto_Arquitectura_Micromercado
+```
+
+Las URLs pueden consultarse en `Proyecto_Arquitectura_Micromercado/Properties/launchSettings.json` o en la salida de la consola. La configuración utilizada por el proyecto contempla normalmente:
+
+- `http://localhost:5222`
+- `https://localhost:7205`
+
+La aplicación debe ejecutarse con el servidor MySQL activo y con una cadena de conexión válida.
+
+## 🐳 Ejecución con Docker (escalamiento horizontal)
+
+El mismo monolito se ejecuta en tres réplicas detrás de Nginx, con MySQL compartido y Redis como caché distribuida.
+
+```
+Navegador ──► Nginx :8080 ──► app1 / app2 / app3 ──► MySQL
+                                      └──────────► Redis
+```
+
+Las tres réplicas comparten las claves de Data Protection en el volumen `dataprotection_keys`, por lo que una cookie emitida por una réplica es válida en las demás.
+
+### Requisitos
+
+- Docker Desktop en ejecución (el motor debe estar activo).
+- Una cuenta de correo con contraseña de aplicación si desea probar el envío de enlaces de activación.
+
+### Primer arranque
+
+1. Copie la plantilla de variables y complete los valores en el archivo `.env` (no se versiona):
+
+```bash
+cp .env.example .env
+```
+
+| Variable | Uso |
+|---|---|
+| `MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD` | Base de datos MySQL |
+| `MYSQL_PUBLISHED_PORT` | Puerto de su equipo desde el que se conecta MySQL Workbench (por defecto `3307`) |
+| `ACTIVACION_BASE_URL` | URL pública de la aplicación para los enlaces de activación (`http://localhost:8080`) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENABLE_SSL` | Servidor de correo (`smtp.gmail.com`, `587`, `true`) |
+| `SMTP_FROM_ADDRESS`, `SMTP_FROM_NAME`, `SMTP_USER_NAME`, `SMTP_PASSWORD` | Remitente y credenciales del correo |
+
+2. Levante todos los servicios:
+
+```bash
+docker compose up -d --build
+```
+
+3. Abra `http://localhost:8080` e ingrese con los usuarios de prueba de la sección anterior.
+
+El orden de arranque es automático: `app1` crea las claves de Data Protection y pasa a estado saludable antes de iniciar `app2` y `app3`.
+
+### Ver la réplica que atiende
+
+- En la barra superior, el texto **Instancia: appN**. También aparece en la pantalla de inicio de sesión.
+- En la cabecera de respuesta `X-Replica-Id`:
+
+```bash
+curl -s -o /dev/null -D - http://localhost:8080/Login
+```
+
+### Detener y volver a levantar una réplica
+
+```bash
+docker compose stop app2
+docker compose start app2
+```
+
+Con una réplica detenida, Nginx reparte las peticiones entre las restantes y las sesiones continúan.
+
+### Agregar la cuarta réplica
+
+1. En `docker-compose.yml`, copie el bloque de `app3` como `app4` (cambia `REPLICA_ID`) y agregue `- app4` en `depends_on` de `nginx`.
+2. En `nginx/nginx.conf`, agregue en el `upstream`: `server app4:8080 max_fails=2 fail_timeout=10s;`
+3. Aplique los cambios:
+
+```bash
+docker compose up -d
+docker compose restart nginx
+```
+
+### Inspeccionar Redis
+
+```bash
+docker compose exec redis redis-cli KEYS '*'
+docker compose exec redis redis-cli TTL "PuntoMarket:ventas:historial:incluir-anuladas:False"
+docker compose exec redis redis-cli MONITOR
+```
+
+Cada lectura del historial de ventas registra en el log de la réplica si fue `HIT` o `MISS`, la clave, el origen (Redis o MySQL) y la réplica:
+
+```bash
+docker compose logs app1 app2 app3 | grep "Caché del historial"
+```
+
+La entrada expira a los 30 segundos y se invalida al registrar o anular una venta.
+
+### Ver la base de datos con MySQL Workbench
+
+El MySQL de Docker queda publicado solo en su equipo (`127.0.0.1`), en el puerto que defina `MYSQL_PUBLISHED_PORT` en el `.env` (por defecto `3307`, para no chocar con un MySQL local, que usa el `3306`). Así puede ver en Workbench los mismos datos que usa la aplicación en `http://localhost:8080`.
+
+Cree una conexión nueva en Workbench:
+
+| Campo | Valor |
+|---|---|
+| Hostname | `127.0.0.1` |
+| Port | `3307`, o el valor de `MYSQL_PUBLISHED_PORT` |
+| Username | `MYSQL_USER` de su `.env` (o `root` con `MYSQL_ROOT_PASSWORD`) |
+| Password | La que corresponda en su `.env` |
+| Default Schema | `bdMicroMercadoArqui` |
+
+Un MySQL instalado en su equipo con el puerto `3306` no genera conflicto. Si otro programa ya usa el `3307` (por ejemplo, un MySQL local configurado en ese puerto), Docker no podrá iniciar el servicio `mysql`. En ese caso, defina otro puerto libre en su `.env`, por ejemplo `MYSQL_PUBLISHED_PORT=3308`, y use ese puerto en Workbench.
+
+Esta es la base de Docker. Cuando ejecuta la aplicación desde Visual Studio se usa su MySQL local, que es otra base distinta. Cada integrante tiene su propia base: los cambios hechos desde `http://localhost:8080` se ven en su conexión, no en la de sus compañeros.
+
+Si cambia el script `bdMicroMercadoArqui.sql`, hay que recrear la base con `docker compose down -v` y volver a levantar (ver «Limpiar»).
+
+### Limpiar
+
+```bash
+docker compose down -v
+```
+
+Elimina los contenedores y también los volúmenes (base de datos y claves de Data Protection).
+
+## ✅ Validaciones y buenas prácticas
+
+El sistema valida los datos en dos niveles:
+
+### Frontend
+
+- `asp-for` para generar nombres e identificadores coherentes.
+- Atributos de Data Annotations reflejados en HTML.
+- jQuery Validation Unobtrusive.
+- Reglas JavaScript para interacciones de modales y motivos de cambio de precio.
+- Mensajes de validación visibles en formularios.
+
+### Backend
+
+- `ModelState.IsValid` en los handlers.
+- `[Required]`, `[StringLength]`, `[Range]`, `[EmailAddress]` y validadores personalizados.
+- Normalización de espacios y datos antes de persistir.
+- Verificación de duplicidades.
+- Eliminación lógica mediante estados activos.
+- Consultas SQL parametrizadas.
+- `CancellationToken` en operaciones asíncronas.
+
+La validación del servidor es la autoridad final y no depende exclusivamente de las restricciones del navegador.
+
+### Dónde vive cada validación
+
+En proveedores la validación está separada en dos lugares:
+
+- **Pantalla:** `Pages/Suppliers/SupplierFormModel` lleva los atributos de Data Annotations (`[Required]`, `[StringLength]`, `[EmailAddress]` y los validadores de texto y teléfono), los mensajes junto a cada campo y la regla entre campos. La Page lo convierte con `ToSupplier()` antes de llamar al servicio.
+- **Negocio:** `SupplierService` aplica por su cuenta los campos obligatorios, el formato del teléfono y del correo, los largos máximos, la regla de proveedor autogestionado, la unicidad del nombre y la baja con productos, sin depender de que la Page haya validado.
+
+La entidad `Domain/Suppliers/Supplier` no lleva ningún atributo de validación. `ArquitecturaHexagonalTests` lo verifica.
+
+## 🔐 Seguridad y consistencia
+
+- Contraseñas protegidas con BCrypt (factor de trabajo 11) mediante el puerto `IPasswordHasher`.
+- Autenticación por cookie con dos roles (Administrador y Cajero) y autorización por `[Authorize(Roles = ...)]`.
+- Uso de parámetros SQL para mitigar inyección SQL.
+- Uso de `@Html.AntiForgeryToken()` en formularios de modificación.
+- Separación de responsabilidades mediante interfaces e inyección de dependencias.
+- Eliminación lógica para conservar trazabilidad.
+- Transacciones para mantener sincronizados los precios y `HISTORIAL_PRECIO`.
+- No publicación de credenciales reales.
+
+## ⚠️ Limitaciones conocidas
+
+- **Validación por atributos en Domain (Product y Category).** `Supplier` ya usa un modelo de formulario (`SupplierFormModel`) y su entidad de Domain no tiene DataAnnotations. `Product` y `Category` mantienen sus validaciones por atributos en `Domain`, y las Pages las enlazan directamente. Están pendientes de aplicar el mismo patrón; hasta entonces, la prueba de arquitectura que prohíbe DataAnnotations en Domain se limita a `Domain/Suppliers`.
+- **Sin idempotencia al registrar ventas.** Si el mismo envío llegara dos veces (por ejemplo, un reintento de red), se registrarían dos ventas; la pantalla solo evita el doble clic sobre Confirmar.
+- **Números de comprobante no correlativos.** Si una venta falla después de crear su cabecera, la transacción se revierte y el contador de identificadores deja un hueco en la secuencia de `V-aaaammdd-NNNN`.
+- **Anulación sobre un lote ya dado de baja.** Anular una venta cuyo lote vencido ya se dio de baja devuelve las unidades a ese lote inactivo, por lo que el stock mostrado no aumenta.
+
+## 📚 Documentación adicional
+
+- [`doc/`](./doc/): carpeta destinada al informe y documentación técnica del proyecto.
+- [`bdMicroMercadoArqui.sql`](./bdMicroMercadoArqui.sql): script de creación y datos iniciales de la base de datos.
+
+## 🎓 Justificación de la arquitectura
+
+El monolito hexagonal permite mantener una aplicación fácil de ejecutar y, al mismo tiempo, separar por responsabilidad técnica la presentación, los casos de uso, el dominio y la persistencia, con la dependencia siempre apuntando hacia el núcleo. Esta decisión es adecuada para un sistema de gestión de micromercado porque evita la complejidad operativa de los microservicios cuando el alcance del sistema todavía puede resolverse dentro de una única aplicación.
+
+La estructura favorece el trabajo colaborativo: cada equipo puede trabajar en una funcionalidad o capa concreta, las interfaces reducen el acoplamiento y los repositorios aíslan las consultas SQL. Además, el uso de operaciones asíncronas evita bloquear los hilos de la aplicación durante el acceso a MySQL.
+
+## 📄 Alcance académico
+
+PuntoMarket se presenta como un proyecto académico de arquitectura de software, desarrollo web y persistencia de datos. Para un despliegue productivo deberían añadirse o reforzarse autenticación, autorización por roles, gestión segura de secretos, auditoría de usuarios, observabilidad, copias de seguridad y políticas de disponibilidad de MySQL.
