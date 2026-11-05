@@ -1,9 +1,9 @@
+-- FUENTE PUBLICABLE: esquema y semillas sinteticas; NO es una migracion.
+-- Sin hashes ni contrasenas. Semillas USUARIO requieren variables privadas
+-- @ventas_demo_admin_password_hash y @ventas_demo_cajero_password_hash
+-- cargadas en la MISMA sesion por el importador, nunca valores versionados.
+-- Solo para una base NUEVA y VACIA. No ejecutar en la Demo existente.
 SET NAMES utf8mb4;
-
-DROP DATABASE IF EXISTS `bdMicroMercadoArqui`;
-CREATE DATABASE `bdMicroMercadoArqui`
-  DEFAULT CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
 USE `bdMicroMercadoArqui`;
 
 CREATE TABLE `ROL` (
@@ -326,7 +326,7 @@ CREATE TABLE `DETALLE_VENTA` (
     REFERENCES `LOTE` (`id`, `idProducto`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE OR REPLACE VIEW `vw_productos_con_stock` AS
+CREATE VIEW `vw_productos_con_stock` AS
 SELECT
     p.id,
     p.nombre,
@@ -348,7 +348,7 @@ INNER JOIN `CATEGORIAS` c   ON p.idCategoria = c.id
 INNER JOIN `PROVEEDOR` pr  ON p.idProveedor = pr.id
 WHERE p.estaActivo = 1;
 
-CREATE OR REPLACE VIEW `vw_resumen_ventas` AS
+CREATE VIEW `vw_resumen_ventas` AS
 SELECT
     v.id AS idVenta,
     v.nroComprobante,
@@ -364,7 +364,7 @@ FROM `VENTA` v
 INNER JOIN `CLIENTE` c ON v.idCliente = c.id
 INNER JOIN `USUARIO` u ON v.idUsuario = u.id;
 
-CREATE OR REPLACE VIEW `vw_comprobante_venta` AS
+CREATE VIEW `vw_comprobante_venta` AS
 SELECT
     v.id AS idVenta,
     v.nroComprobante,
@@ -389,7 +389,7 @@ INNER JOIN `PRODUCTO` p       ON dv.idProducto = p.id
 INNER JOIN `EMPAQUE` e        ON p.idEmpaque = e.id
 INNER JOIN `LOTE` l           ON dv.idLote = l.id;
 
-CREATE OR REPLACE VIEW `vw_lotes_por_vencer` AS
+CREATE VIEW `vw_lotes_por_vencer` AS
 SELECT
     l.id AS idLote,
     p.nombre AS producto,
@@ -751,7 +751,6 @@ BEGIN
         SET MESSAGE_TEXT = 'El detalle de una venta no se puede eliminar';
 END$$
 
-DROP PROCEDURE IF EXISTS `sp_arqueo_stock`$$
 CREATE PROCEDURE `sp_arqueo_stock`(IN p_diasAviso INT)
 READS SQL DATA
 BEGIN
@@ -817,8 +816,8 @@ INSERT INTO `ROL` (`id`, `nombre`, `descripcion`) VALUES
 (2, 'Cajero', 'Registro de ventas, anulaciones y atencion al cliente');
 
 INSERT INTO `USUARIO` (`id`, `username`, `passwordHash`, `nombreCompleto`, `correo`, `idRol`) VALUES
-(1, 'admin',   '$2a$11$vHYNXh3Q3oaQJ5htY0Z.OuWKDTj8OuOdGsSj3kDPOVYWU59C1tjlG', 'Gerente General (root)', 'gerencia@micromercado.com', 1),
-(2, 'cajero1', '$2a$11$5qT4nZN5lpU4t/byugwqv.fe93xMvkjMMXCpvs1oK3cWLElPUZAyG', 'Carlos Mamani Quispe', 'carlos.mamani@micromercado.com', 2);
+(1, 'admin', @ventas_demo_admin_password_hash, 'Administrador Demo', 'admin@example.invalid', 1),
+(2, 'cajero1', @ventas_demo_cajero_password_hash, 'Cajero Demo', 'cajero@example.invalid', 2);
 
 INSERT INTO `CATEGORIAS` (`id`, `nombre`, `descripcion`, `codigo`, `pasilloUbicacion`, `idUsuarioAdmin`) VALUES
 (1, 'Lácteos y Derivados', 'Leches, yogures, quesos y mantequillas', 'CAT-LAC', 'Pasillo 1', 1),
@@ -831,13 +830,13 @@ INSERT INTO `CATEGORIAS` (`id`, `nombre`, `descripcion`, `codigo`, `pasilloUbica
 (8, 'Panadería y Repostería', 'Pan fresco, kekes, tostadas y harinas', 'CAT-PAN', 'Pasillo 8', 1);
 
 INSERT INTO `PROVEEDOR` (`id`, `nombreEmpresa`, `numeroEmpresa`, `correoReferencia`, `esAutogestionado`, `idUsuarioAdmin`) VALUES
-(1, 'PIL Andina S.A.', '44112233', 'ventas.cbba@pilandina.com.bo', 0, 1),
-(2, 'EMBOL S.A. (Coca-Cola)', '44556677', 'pedidos.cbba@embol.com.bo', 0, 1),
-(3, 'Sofía SHE S.A.', '44889900', 'contacto.cbba@sofia.com.bo', 1, 1),
-(4, 'CBN (Cervecería Boliviana Nacional)', '44224466', 'distribucion@cbn.com.bo', 0, 1),
-(5, 'Unilever Bolivia', '44335577', 'atencion@unilever.com', 0, 1),
-(6, 'Industrias Venado S.A. (Kris)', '44118899', 'ventas@venado.com.bo', 0, 1),
-(7, 'Arcor Bolivia', '44778811', 'pedidos@arcor.com.bo', 0, 1);
+(1, 'Proveedor Demo 1', '00000001', 'proveedor1@example.invalid', 0, 1),
+(2, 'Proveedor Demo 2', '00000002', 'proveedor2@example.invalid', 0, 1),
+(3, 'Proveedor Demo 3', '00000003', 'proveedor3@example.invalid', 1, 1),
+(4, 'Proveedor Demo 4', '00000004', 'proveedor4@example.invalid', 0, 1),
+(5, 'Proveedor Demo 5', '00000005', 'proveedor5@example.invalid', 0, 1),
+(6, 'Proveedor Demo 6', '00000006', 'proveedor6@example.invalid', 0, 1),
+(7, 'Proveedor Demo 7', '00000007', 'proveedor7@example.invalid', 0, 1);
 
 INSERT INTO `EMPAQUE` (`id`, `nombre`, `idUsuarioAdmin`) VALUES
 (1, 'Bolsa', 1),
@@ -851,51 +850,51 @@ INSERT INTO `EMPAQUE` (`id`, `nombre`, `idUsuarioAdmin`) VALUES
 (9, 'Lata', 1);
 
 INSERT INTO `PRODUCTO` (`id`, `nombre`, `idEmpaque`, `idCategoria`, `precioVenta`, `precioCosto`, `stockMinimo`, `idProveedor`, `idUsuarioAdmin`) VALUES
-(1,  'Leche Entera PIL 1L', 1, 1, 6.50, 5.20, 20, 1, 1),
-(2,  'Yogurt Frutado PIL 1kg', 2, 1, 12.00, 9.50, 10, 1, 1),
-(3,  'Mantequilla con Sal PIL 200g', 3, 1, 14.50, 11.80, 5, 1, 1),
-(4,  'Coca-Cola Sabor Original 2L', 2, 2, 11.00, 9.00, 25, 2, 1),
-(5,  'Fanta Naranja 2L', 2, 2, 10.50, 8.50, 15, 2, 1),
-(6,  'Agua Vital Sin Gas 2L', 2, 2, 6.00, 4.50, 30, 2, 1),
-(7,  'Cerveza Paceña 620ml', 4, 2, 12.00, 9.80, 40, 4, 1),
-(8,  'Mayonesa Kris 500g', 1, 3, 14.00, 11.20, 12, 6, 1),
-(9,  'Ketchup Kris 500g', 1, 3, 12.50, 10.00, 10, 6, 1),
-(10, 'Salsa de Tomate Kris 400g', 1, 3, 8.00, 6.20, 15, 6, 1),
-(11, 'Chorizo Parrillero Sofía 500g', 5, 4, 28.50, 23.50, 8, 3, 1),
-(12, 'Jamón Premium Sofía 200g', 6, 4, 18.00, 14.50, 10, 3, 1),
-(13, 'Salchicha de Pollo Sofía 500g', 5, 4, 16.50, 13.00, 10, 3, 1),
-(14, 'Galletas Moka Arcor 110g', 5, 5, 4.50, 3.20, 20, 7, 1),
-(15, 'Bon o Bon Leche Display x18', 5, 5, 27.00, 21.50, 5, 7, 1),
-(16, 'Detergente OMO Multiacción 800g', 1, 6, 15.00, 12.00, 15, 5, 1),
-(17, 'Lavavajillas Ola Limón 500ml', 2, 6, 8.50, 6.80, 10, 5, 1),
-(18, 'Jabón Lux Suave 125g', 7, 7, 5.50, 4.10, 20, 5, 1),
-(19, 'Crema Dental Colgate Triple Acción 90g', 8, 7, 9.00, 7.00, 15, 5, 1),
-(20, 'Tostadas Trigo PIL 200g', 1, 8, 7.50, 5.80, 10, 1, 1),
-(21, 'Royal Polvo de Hornear 100g', 9, 8, 6.00, 4.50, 15, 6, 1);
+(1, 'Leche Demo', 1, 1, 6.50, 5.20, 20, 1, 1),
+(2, 'Producto Demo 2', 2, 1, 12.00, 9.50, 10, 1, 1),
+(3, 'Producto Demo 3', 3, 1, 14.50, 11.80, 5, 1, 1),
+(4, 'Producto Demo 4', 2, 2, 11.00, 9.00, 25, 2, 1),
+(5, 'Producto Demo 5', 2, 2, 10.50, 8.50, 15, 2, 1),
+(6, 'Producto Demo 6', 2, 2, 6.00, 4.50, 30, 2, 1),
+(7, 'Producto Demo 7', 4, 2, 12.00, 9.80, 40, 4, 1),
+(8, 'Producto Demo 8', 1, 3, 14.00, 11.20, 12, 6, 1),
+(9, 'Producto Demo 9', 1, 3, 12.50, 10.00, 10, 6, 1),
+(10, 'Producto Demo 10', 1, 3, 8.00, 6.20, 15, 6, 1),
+(11, 'Producto Demo 11', 5, 4, 28.50, 23.50, 8, 3, 1),
+(12, 'Producto Demo 12', 6, 4, 18.00, 14.50, 10, 3, 1),
+(13, 'Producto Demo 13', 5, 4, 16.50, 13.00, 10, 3, 1),
+(14, 'Producto Demo 14', 5, 5, 4.50, 3.20, 20, 7, 1),
+(15, 'Producto Demo 15', 5, 5, 27.00, 21.50, 5, 7, 1),
+(16, 'Producto Demo 16', 1, 6, 15.00, 12.00, 15, 5, 1),
+(17, 'Producto Demo 17', 2, 6, 8.50, 6.80, 10, 5, 1),
+(18, 'Producto Demo 18', 7, 7, 5.50, 4.10, 20, 5, 1),
+(19, 'Producto Demo 19', 8, 7, 9.00, 7.00, 15, 5, 1),
+(20, 'Producto Demo 20', 1, 8, 7.50, 5.80, 10, 1, 1),
+(21, 'Producto Demo 21', 9, 8, 6.00, 4.50, 15, 6, 1);
 
 INSERT INTO `LOTE` (`id`, `idProducto`, `codigoLote`, `cantidadInicial`, `cantidadDisponible`, `fechaVencimiento`, `idUsuarioAdmin`) VALUES
-(1,  1,  'LOT-PIL-A',   70,  70,  DATE_ADD(CURDATE(), INTERVAL 7 DAY),   1),
-(2,  1,  'LOT-PIL-B',   50,  50,  DATE_ADD(CURDATE(), INTERVAL 45 DAY),  1),
-(3,  2,  'LOT-YOG-A',   45,  45,  DATE_ADD(CURDATE(), INTERVAL 30 DAY),  1),
-(4,  3,  'LOT-MAN-A',   30,  30,  DATE_ADD(CURDATE(), INTERVAL 45 DAY),  1),
-(5,  4,  'LOT-COC-A',   80,  80,  DATE_ADD(CURDATE(), INTERVAL 150 DAY), 1),
-(6,  5,  'LOT-FAN-A',   50,  50,  DATE_ADD(CURDATE(), INTERVAL 130 DAY), 1),
-(7,  6,  'LOT-VIT-A',  100, 100,  DATE_ADD(CURDATE(), INTERVAL 300 DAY), 1),
-(8,  7,  'LOT-PAC-A',  150, 150,  DATE_ADD(CURDATE(), INTERVAL 220 DAY), 1),
-(9,  8,  'LOT-MAY-A',   60,  60,  DATE_ADD(CURDATE(), INTERVAL 90 DAY),  1),
-(10, 9,  'LOT-KET-A',   55,  55,  DATE_ADD(CURDATE(), INTERVAL 140 DAY), 1),
-(11, 10, 'LOT-TOM-A',   70,  70,  DATE_ADD(CURDATE(), INTERVAL 190 DAY), 1),
-(12, 11, 'LOT-CHO-A',   25,  25,  DATE_ADD(CURDATE(), INTERVAL 15 DAY),  1),
-(13, 12, 'LOT-JAM-A',   40,  40,  DATE_ADD(CURDATE(), INTERVAL 40 DAY),  1),
-(14, 13, 'LOT-SAL-A',   35,  35,  DATE_ADD(CURDATE(), INTERVAL 20 DAY),  1),
-(15, 14, 'LOT-MOK-A',   90,  90,  DATE_ADD(CURDATE(), INTERVAL 100 DAY), 1),
-(16, 15, 'LOT-BON-A',   30,  30,  DATE_ADD(CURDATE(), INTERVAL 160 DAY), 1),
-(17, 16, 'LOT-OMO-A',   60,  60,  NULL, 1),
-(18, 17, 'LOT-OLA-A',   40,  40,  NULL, 1),
-(19, 18, 'LOT-LUX-A',   80,  80,  NULL, 1),
-(20, 19, 'LOT-COL-A',   50,  50,  DATE_ADD(CURDATE(), INTERVAL 450 DAY), 1),
-(21, 20, 'LOT-TOS-A',   40,  40,  DATE_ADD(CURDATE(), INTERVAL 25 DAY),  1),
-(22, 21, 'LOT-ROY-A',   65,  65,  DATE_ADD(CURDATE(), INTERVAL 250 DAY), 1);
+(1, 1, 'LOT-PIL-A', 70, 70, DATE_ADD(CURDATE(), INTERVAL 7 DAY), 1),
+(2, 1, 'LOT-PIL-B', 50, 50, DATE_ADD(CURDATE(), INTERVAL 45 DAY), 1),
+(3, 2, 'LOT-YOG-A', 45, 45, DATE_ADD(CURDATE(), INTERVAL 30 DAY), 1),
+(4, 3, 'LOT-MAN-A', 30, 30, DATE_ADD(CURDATE(), INTERVAL 45 DAY), 1),
+(5, 4, 'LOT-COC-A', 80, 80, DATE_ADD(CURDATE(), INTERVAL 150 DAY), 1),
+(6, 5, 'LOT-FAN-A', 50, 50, DATE_ADD(CURDATE(), INTERVAL 130 DAY), 1),
+(7, 6, 'LOT-VIT-A', 100, 100, DATE_ADD(CURDATE(), INTERVAL 300 DAY), 1),
+(8, 7, 'LOT-PAC-A', 150, 150, DATE_ADD(CURDATE(), INTERVAL 220 DAY), 1),
+(9, 8, 'LOT-MAY-A', 60, 60, DATE_ADD(CURDATE(), INTERVAL 90 DAY), 1),
+(10, 9, 'LOT-KET-A', 55, 55, DATE_ADD(CURDATE(), INTERVAL 140 DAY), 1),
+(11, 10, 'LOT-TOM-A', 70, 70, DATE_ADD(CURDATE(), INTERVAL 190 DAY), 1),
+(12, 11, 'LOT-CHO-A', 25, 25, DATE_ADD(CURDATE(), INTERVAL 15 DAY), 1),
+(13, 12, 'LOT-JAM-A', 40, 40, DATE_ADD(CURDATE(), INTERVAL 40 DAY), 1),
+(14, 13, 'LOT-SAL-A', 35, 35, DATE_ADD(CURDATE(), INTERVAL 20 DAY), 1),
+(15, 14, 'LOT-MOK-A', 90, 90, DATE_ADD(CURDATE(), INTERVAL 100 DAY), 1),
+(16, 15, 'LOT-BON-A', 30, 30, DATE_ADD(CURDATE(), INTERVAL 160 DAY), 1),
+(17, 16, 'LOT-OMO-A', 60, 60, NULL, 1),
+(18, 17, 'LOT-OLA-A', 40, 40, NULL, 1),
+(19, 18, 'LOT-LUX-A', 80, 80, NULL, 1),
+(20, 19, 'LOT-COL-A', 50, 50, DATE_ADD(CURDATE(), INTERVAL 450 DAY), 1),
+(21, 20, 'LOT-TOS-A', 40, 40, DATE_ADD(CURDATE(), INTERVAL 25 DAY), 1),
+(22, 21, 'LOT-ROY-A', 65, 65, DATE_ADD(CURDATE(), INTERVAL 250 DAY), 1);
 
 UPDATE `PRODUCTO` p
 SET p.`stockActual` = (SELECT COALESCE(SUM(l.`cantidadDisponible`), 0)
@@ -904,16 +903,15 @@ SET p.`stockActual` = (SELECT COALESCE(SUM(l.`cantidadDisponible`), 0)
     p.`fechaActualizacion` = p.`fechaActualizacion`
 WHERE p.`id` > 0;
 
-INSERT INTO `HISTORIAL_PRECIO`
-(`idProducto`, `precioVentaAnterior`, `precioVentaNuevo`, `precioCostoAnterior`, `precioCostoNuevo`, `motivoCambio`, `idUsuario`, `fechaCambio`) VALUES
-(1,  6.00, 6.50, 5.00, 5.20, 'Ajuste de precio del proveedor PIL', 1, '2026-01-15 08:30:00'),
-(4, 10.50, 11.00, 8.50, 9.00, 'Incremento de tarifa de EMBOL', 1, '2026-02-01 10:00:00'),
-(11, 26.00, 28.50, 21.00, 23.50, 'Ajuste de precio por temporada Sofía', 1, '2026-03-10 14:15:00');
+INSERT INTO `HISTORIAL_PRECIO` (`idProducto`, `precioVentaAnterior`, `precioVentaNuevo`, `precioCostoAnterior`, `precioCostoNuevo`, `motivoCambio`, `idUsuario`, `fechaCambio`) VALUES
+(1, 6.00, 6.50, 5.00, 5.20, 'Ajuste sintetico de demostracion', 1, '2026-01-15 08:30:00'),
+(4, 10.50, 11.00, 8.50, 9.00, 'Ajuste sintetico de demostracion', 1, '2026-02-01 10:00:00'),
+(11, 26.00, 28.50, 21.00, 23.50, 'Ajuste sintetico de demostracion', 1, '2026-03-10 14:15:00');
 
 INSERT INTO `CLIENTE` (`id`, `nitCi`, `razonSocial`, `correo`, `telefono`, `idUsuarioCreacion`) VALUES
-(1, '0', 'Sin Nombre / Cliente Genérico', NULL, NULL, 1),
-(2, '4545451226', 'JUAN PEREZ VARGAS', 'jperez@gmail.com', '77123456', 2),
-(3, '1020304050', 'MARIA ROJAS LOPEZ', 'mrojas@gmail.com', '70711223', 2);
+(1, 'DEMO1', 'CLIENTE DEMO 1', 'cliente1@example.invalid', NULL, 1),
+(2, 'DEMO2', 'CLIENTE DEMO 2', 'cliente2@example.invalid', NULL, 2),
+(3, 'DEMO3', 'CLIENTE DEMO 3', 'cliente3@example.invalid', NULL, 2);
 
 SELECT * FROM `vw_resumen_ventas`;
 

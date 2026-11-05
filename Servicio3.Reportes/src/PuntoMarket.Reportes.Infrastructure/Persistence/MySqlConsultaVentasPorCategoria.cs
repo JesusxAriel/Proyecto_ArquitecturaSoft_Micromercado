@@ -8,8 +8,11 @@ namespace PuntoMarket.Reportes.Infrastructure.Persistence;
 
 public class MySqlConsultaVentasPorCategoria : IConsultaVentasPorCategoria
 {
+    // MySQL 8+: las ventanas se evalúan antes de LIMIT, en el mismo SELECT y snapshot.
     private const string Seleccion = """
-        SELECT c.id, c.nombre, SUM(d.cantidad) AS unidades, SUM(d.subtotal) AS monto
+        SELECT c.id, c.nombre, SUM(d.cantidad) AS unidades, SUM(d.subtotal) AS monto,
+               SUM(SUM(d.cantidad)) OVER () AS totalUnidades,
+               SUM(SUM(d.subtotal)) OVER () AS totalMonto
         FROM DETALLE_VENTA d
         INNER JOIN VENTA v ON v.id = d.idVenta
         INNER JOIN PRODUCTO p ON p.id = d.idProducto
@@ -26,7 +29,7 @@ public class MySqlConsultaVentasPorCategoria : IConsultaVentasPorCategoria
         _conexion = conexion;
     }
 
-    public async Task<IReadOnlyList<FilaDeCategoria>> ConsultarAsync(
+    public async Task<ResultadoVentasPorCategoria> ConsultarAsync(
         RangoDeFechas rango,
         int? idCategoria,
         int? top,
@@ -36,7 +39,20 @@ public class MySqlConsultaVentasPorCategoria : IConsultaVentasPorCategoria
         using var comando = CrearComando(conexion, rango, idCategoria, top);
         using var lector = await comando.ExecuteReaderAsync(cancelacion);
 
-        return await LeerFilasAsync(lector, cancelacion);
+        var filas = new List<FilaDeCategoria>();
+        long unidades = 0;
+        decimal monto = 0m;
+        while (await lector.ReadAsync(cancelacion))
+        {
+            if (filas.Count == 0)
+            {
+                unidades = Convert.ToInt64(lector.GetValue(4));
+                monto = lector.GetDecimal(5);
+            }
+            filas.Add(MapearFila(lector));
+        }
+        // ORDER BY monto DESC conserva la líder incluso cuando se aplica top.
+        return new(filas, new TotalesPorCategoria(unidades, monto, filas.FirstOrDefault()));
     }
 
     private static MySqlCommand CrearComando(MySqlConnection conexion, RangoDeFechas rango, int? idCategoria, int? top)
@@ -84,17 +100,6 @@ public class MySqlConsultaVentasPorCategoria : IConsultaVentasPorCategoria
 
         sql.Append(" LIMIT @top");
         comando.Parameters.AddWithValue("@top", top.Value);
-    }
-
-    private static async Task<IReadOnlyList<FilaDeCategoria>> LeerFilasAsync(
-        System.Data.Common.DbDataReader lector,
-        CancellationToken cancelacion)
-    {
-        var filas = new List<FilaDeCategoria>();
-        while (await lector.ReadAsync(cancelacion))
-            filas.Add(MapearFila(lector));
-
-        return filas;
     }
 
     private static FilaDeCategoria MapearFila(System.Data.Common.DbDataReader lector) =>

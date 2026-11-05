@@ -35,13 +35,13 @@ public class GenerarListadoVentasCasoDeUso
         CancellationToken cancelacion)
     {
         var filtros = ValidarFiltros(entrada);
-        var filas = await _consulta.ConsultarAsync(
+        var resultado = await _consulta.ConsultarAsync(
             filtros.Rango,
             filtros.Estado,
             filtros.Cliente,
             filtros.Tope,
             cancelacion);
-        var reporte = ReporteListadoVentas.Crear(filas, filtros, _reloj.Ahora(), _usuarioActual.NombreDeUsuario);
+        var reporte = new ReporteListadoVentas(resultado.Filas, resultado.Totales, filtros, _reloj.Ahora(), _usuarioActual.NombreDeUsuario);
 
         return new GenerarListadoVentasSalida(reporte, GenerarArchivo(reporte, entrada.Formato));
     }

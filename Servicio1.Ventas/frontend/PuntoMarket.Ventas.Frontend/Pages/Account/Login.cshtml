@@ -1,0 +1,19 @@
+@page
+@model PuntoMarket.Ventas.Frontend.Pages.Account.LoginModel
+@{ ViewData["Title"] = "Iniciar sesión"; }
+<section class="card sale-panel mx-auto" style="max-width:640px"><div class="card-body p-4">
+<h1 class="h3">Iniciar sesión</h1>
+<p>Ingrese sus credenciales para acceder a PuntoMarket.</p>
+@if (Model.UsuarioPreparado is not null) {
+    <p class="alert alert-success">Sesión activa: @Model.UsuarioPreparado · @Model.RolPreparado.</p>
+    <a asp-page="/Account/Logout" class="btn btn-outline-secondary">Cerrar sesión de Usuarios</a>
+}
+@if (Model.ErrorLogin is not null) { <p class="alert alert-danger" role="alert">@Model.ErrorLogin</p> }
+<form method="post">
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <input type="hidden" asp-for="ReturnUrl" />
+    <div class="mb-3"><label asp-for="Input.Correo">Correo</label><input asp-for="Input.Correo" type="email" autocomplete="username" class="form-control" /><span asp-validation-for="Input.Correo" class="text-danger"></span></div>
+    <div class="mb-3"><label asp-for="Input.Contrasena">Contraseña</label><input asp-for="Input.Contrasena" type="password" autocomplete="current-password" class="form-control" /></div>
+    <button type="submit" class="btn btn-primary">Iniciar sesión</button>
+</form>
+</div></section>

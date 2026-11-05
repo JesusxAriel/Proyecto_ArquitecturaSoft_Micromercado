@@ -1,0 +1,37 @@
+@page
+@model PuntoMarket.Ventas.Frontend.Pages.IndexModel
+@{
+    ViewData["Title"] = "Inicio";
+}
+<section class="inicio-hero mb-4" aria-labelledby="inicio-titulo">
+    <span class="sale-label d-block mb-2">PuntoMarket · Caja y Ventas</span>
+    <h1 id="inicio-titulo" class="display-6 fw-bold mb-3">Tu punto de venta,<br />en un solo lugar.</h1>
+    <p class="lead text-body-secondary mb-4">Registra ventas, consulta el historial y revisa los comprobantes de tu negocio.</p>
+    <a class="btn btn-warning fw-semibold px-4" asp-page="/Sales/Index">Ver Registro de Ventas <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></a>
+</section>
+<partial name="_EstadoPresentacion" />
+<div class="row g-4">
+    <div class="col-md-6">
+        <section class="card sale-panel h-100">
+            <div class="card-body p-4">
+                <div class="inicio-icono mb-3"><i class="bi bi-cart3" aria-hidden="true"></i></div>
+                <h2 class="h4">Registrar Venta</h2>
+                <p class="text-body-secondary">Revisa la búsqueda de productos, selección de cliente, detalle y resumen de una venta.</p>
+                <a asp-page="/Sales/Index" class="btn btn-outline-primary">Abrir registro</a>
+            </div>
+        </section>
+    </div>
+    <div class="col-md-6">
+        <section class="card sale-panel h-100">
+            <div class="card-body p-4">
+                <div class="inicio-icono mb-3"><i class="bi bi-receipt" aria-hidden="true"></i></div>
+                <h2 class="h4">Historial de Ventas</h2>
+                <p class="text-body-secondary">Visualiza la estructura del historial y sus opciones de detalle, comprobantes y anulación.</p>
+                <a asp-page="/Sales/Historial" class="btn btn-outline-primary">Abrir historial</a>
+            </div>
+        </section>
+    </div>
+</div>
+@section Styles {
+    <link rel="stylesheet" href="~/css/ventas.css" asp-append-version="true" />
+}

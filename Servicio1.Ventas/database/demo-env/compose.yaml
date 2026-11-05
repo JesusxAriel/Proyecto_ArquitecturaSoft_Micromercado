@@ -1,0 +1,48 @@
+name: puntomarket-ventas-demo
+
+services:
+  mysql-demo:
+    image: mysql:8.4
+    restart: "no"
+    environment:
+      MYSQL_DATABASE: puntomarket_ventas_demo_local
+      MYSQL_USER: ${VENTAS_DEMO_USER:?Definir un usuario exclusivo de demostracion distinto de root}
+      MYSQL_ROOT_HOST: localhost
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/ventas_demo_root_password
+      MYSQL_PASSWORD_FILE: /run/secrets/ventas_demo_password
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=-04:00
+      - --log-bin-trust-function-creators=1
+    ports:
+      - target: 3306
+        published: "3308"
+        host_ip: 127.0.0.1
+        protocol: tcp
+    volumes:
+      - ventas-demo-data:/var/lib/mysql
+    networks:
+      - ventas-demo-net
+    secrets:
+      - ventas_demo_root_password
+      - ventas_demo_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "--host=127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+volumes:
+  ventas-demo-data: {}
+
+networks:
+  ventas-demo-net:
+    driver: bridge
+
+secrets:
+  ventas_demo_root_password:
+    file: ${VENTAS_DEMO_ROOT_PASSWORD_FILE:?Definir ruta privada externa de password root}
+  ventas_demo_password:
+    file: ${VENTAS_DEMO_PASSWORD_FILE:?Definir ruta privada externa de password demo}

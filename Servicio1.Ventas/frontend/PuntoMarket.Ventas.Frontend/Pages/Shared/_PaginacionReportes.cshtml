@@ -1,0 +1,16 @@
+<div data-paginacion-reportes hidden>
+<nav class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3" aria-label="Paginación del reporte">
+    <div class="d-flex align-items-center gap-2">
+        <label for="tamanoPaginaReporte" class="small mb-0">Registros por página</label>
+        <select id="tamanoPaginaReporte" data-tamano class="form-select form-select-sm w-auto">
+            <option value="10">10</option><option value="25">25</option><option value="50">50</option>
+        </select>
+    </div>
+    <p data-rango class="small text-body-secondary mb-0" role="status" aria-live="polite"></p>
+    <div class="btn-group" role="group" aria-label="Cambiar de página">
+        <button data-anterior type="button" class="btn btn-outline-secondary btn-sm"><i class="bi bi-chevron-left" aria-hidden="true"></i> Anterior</button>
+        <button data-siguiente type="button" class="btn btn-outline-secondary btn-sm">Siguiente <i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+    </div>
+</nav>
+</div>
+<p class="small text-body-secondary mt-2">La paginación incluye solo los registros recibidos de la API, según los filtros y el límite configurado. Los totales y las exportaciones conservan su alcance original.</p>

@@ -1,0 +1,35 @@
+namespace PuntoMarket.Ventas.Application.Sales;
+
+public interface IVentaConsultaRepository
+{
+    Task<IReadOnlyList<VentaResumenDto>> ListarAsync(
+        bool incluirAnuladas,
+        int limite,
+        CancellationToken cancellationToken = default);
+
+    Task<VentaDetalleConFilasDto?> ObtenerDetalleAsync(
+        int idVenta,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed record FilaDetalleVenta(
+    int IdProducto,
+    string Descripcion,
+    int Cantidad,
+    decimal PrecioUnitario,
+    decimal Subtotal,
+    string CodigoLote);
+
+public sealed record VentaDetalleConFilasDto(
+    int Id,
+    string NroComprobante,
+    DateTime FechaHora,
+    string NitCiCliente,
+    string RazonSocialCliente,
+    string UsuarioCajero,
+    string Estado,
+    decimal Total,
+    string? MotivoAnulacion,
+    DateTime? FechaAnulacion,
+    string? UsuarioAnulacion,
+    IReadOnlyList<FilaDetalleVenta> Filas);
