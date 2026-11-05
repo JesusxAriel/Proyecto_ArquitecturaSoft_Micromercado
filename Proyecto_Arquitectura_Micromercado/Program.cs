@@ -31,6 +31,7 @@ using System.IO;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddUsuariosApiClient(builder.Configuration);
+builder.Services.AddJwtTokenValidation(builder.Configuration);
 
 builder.Services.AddRazorPages()
     .AddMvcOptions(options =>
