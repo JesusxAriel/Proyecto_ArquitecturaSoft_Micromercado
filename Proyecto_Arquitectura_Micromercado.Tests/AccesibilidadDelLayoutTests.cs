@@ -36,6 +36,15 @@ public class AccesibilidadDelLayoutTests
         Assert.DoesNotContain("Inicio:", contenido);
     }
 
+    [Fact]
+    public void La_barra_principal_no_dibuja_la_insignia_de_instancia()
+    {
+        var contenido = File.ReadAllText(Path.Combine(RaizDelProyecto(), "Pages", "Shared", "_Layout.cshtml"));
+
+        Assert.DoesNotContain("Instancia:", contenido);
+        Assert.DoesNotContain("ReplicaId", contenido);
+    }
+
     private static string RaizDelProyecto()
     {
         var directorio = new DirectoryInfo(AppContext.BaseDirectory);

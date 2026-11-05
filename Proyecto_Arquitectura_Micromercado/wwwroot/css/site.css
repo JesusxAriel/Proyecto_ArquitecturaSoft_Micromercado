@@ -115,6 +115,25 @@ body {
   justify-self: end;
 }
 
+.navbar-center {
+  gap: .25rem;
+}
+
+.user-summary {
+  align-items: baseline;
+  display: inline-flex;
+  gap: .5rem;
+  white-space: nowrap;
+}
+
+.user-summary .user-name {
+  font-size: .95rem;
+}
+
+.user-summary .user-role {
+  font-size: .8rem;
+}
+
 .navbar-brand {
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -123,9 +142,10 @@ body {
 .navbar-dark .navbar-nav .nav-link {
   background-color: transparent !important;
   color: rgba(255, 255, 255, .75) !important;
-  font-size: 1.05rem;
+  font-size: .95rem;
   font-weight: 500;
-  padding: .5rem .85rem;
+  padding: .5rem .7rem;
+  white-space: nowrap;
   border-radius: .375rem;
   transition: all .2s ease-in-out;
 }
