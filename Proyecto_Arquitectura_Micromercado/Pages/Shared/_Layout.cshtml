@@ -82,6 +82,7 @@
                             <a class="nav-link dropdown-toggle @(currentPage.StartsWith("/Reportes", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)"
                                href="#" role="button">Reportes</a>
                             <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" asp-page="/Reportes/VentasListado">Listado de ventas</a></li>
                                 <li><a class="dropdown-item" asp-page="/Reportes/ResumenCategorias">Ventas por categoría</a></li>
                             </ul>
                         </li>
