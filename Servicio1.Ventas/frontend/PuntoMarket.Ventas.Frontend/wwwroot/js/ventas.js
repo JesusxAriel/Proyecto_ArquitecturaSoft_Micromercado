@@ -65,7 +65,7 @@
         if (!detalle.length) {
             const fila = document.createElement("tr");
             const celda = texto("td", "Seleccione un producto para consultar su precio y stock vigentes.", "text-center text-body-secondary py-4");
-            celda.colSpan = 6;
+            celda.colSpan = 5;
             fila.append(celda);
             cuerpo.replaceChildren(fila);
             actualizarEstado();
@@ -73,10 +73,12 @@
         }
         cuerpo.replaceChildren(...detalle.map(item => {
             const fila = document.createElement("tr");
-            const celdaProducto = texto("td", `${item.nombre} · ${item.presentacion}`, "text-break");
+            const celdaProducto = document.createElement("td");
+            celdaProducto.className = "text-break";
+            celdaProducto.append(texto("div", `${item.nombre} · ${item.presentacion}`));
+            celdaProducto.append(texto("div", `Stock: ${item.stockDisponible}`, "small text-body-secondary"));
             fila.append(celdaProducto);
             fila.append(texto("td", moneda.format(item.precioUnitario), "text-end"));
-            fila.append(texto("td", String(item.stockDisponible), "columna-cantidad"));
             const cantidad = document.createElement("input");
             cantidad.type = "number"; cantidad.min = "1"; cantidad.max = String(item.stockDisponible); cantidad.value = String(item.cantidad);
             cantidad.className = "form-control form-control-sm"; cantidad.setAttribute("aria-label", `Cantidad de ${item.nombre}`);
