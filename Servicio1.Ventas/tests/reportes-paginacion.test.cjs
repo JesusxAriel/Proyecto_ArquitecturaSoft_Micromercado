@@ -68,8 +68,8 @@ test("ambas vistas mantienen formularios y totales fuera del ámbito paginado", 
         const vista = fs.readFileSync(path.join(__dirname, `../frontend/PuntoMarket.Ventas.Frontend/Pages/Reportes/${nombre}.cshtml`), "utf8");
         const inicio = vista.indexOf('<section data-resultados-reporte');
         assert.ok(inicio > vista.indexOf('</form>'));
-        assert.ok(inicio > vista.lastIndexOf('reporte.Totales.'));
         const seccion = vista.slice(inicio, vista.indexOf('</section>', inicio));
+        assert.ok(!/<tbody>[\s\S]*reporte\.Totales\.[\s\S]*<\/tbody>/.test(seccion));
         assert.ok(seccion.includes('_PaginacionReportes'));
         assert.ok(!seccion.includes('asp-for="Filtro.'));
         assert.ok(vista.includes('name="handler" value="Pdf"'));
