@@ -16,6 +16,7 @@ public class ListadoVentasExcel : IExportadorDeReporte<ReporteListadoVentas>
     private const int FilaDeEncabezado = 8;
     private const int Columnas = 8;
     private const int ColumnaDelEstado = 7;
+    private const int ColumnaDelLogo = 6;
     private const int ColumnaDelMonto = 8;
 
     public FormatoDeExportacion Formato => FormatoDeExportacion.Xlsx;
@@ -26,6 +27,7 @@ public class ListadoVentasExcel : IExportadorDeReporte<ReporteListadoVentas>
         var hoja = libro.Worksheets.Add(NombreDeHoja);
 
         EscribirTitulo(hoja, reporte);
+        LogoEnExcel.Agregar(hoja, ColumnaDelLogo);
         EscribirEncabezados(hoja);
         EscribirCuerpo(hoja, reporte);
         DefinirAnchos(hoja);

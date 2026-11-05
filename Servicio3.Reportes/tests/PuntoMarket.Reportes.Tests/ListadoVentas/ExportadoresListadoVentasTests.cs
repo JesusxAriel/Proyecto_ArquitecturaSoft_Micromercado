@@ -68,6 +68,8 @@ public class ExportadoresListadoVentasTests
 
         using var libro = new XLWorkbook(new MemoryStream(archivo.Contenido));
         var hoja = libro.Worksheet(1);
+        Assert.Single(hoja.Pictures);
+        Assert.Equal(1, hoja.Pictures.Single().TopLeftCell.Address.RowNumber);
         Assert.Equal("Comprobante", hoja.Cell(8, 2).GetString());
         Assert.Equal("Reporte generado: alejandra - 03/11/2026 09:15:00", hoja.Cell(6, 1).GetString());
         Assert.Equal("F-0001", hoja.Cell(FilaDelPrimerDato, 2).GetString());

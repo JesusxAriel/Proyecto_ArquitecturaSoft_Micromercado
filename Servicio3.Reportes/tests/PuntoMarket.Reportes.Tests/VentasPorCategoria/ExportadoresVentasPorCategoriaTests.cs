@@ -54,7 +54,8 @@ public class ExportadoresVentasPorCategoriaTests
         Assert.Equal("Lácteos", hoja.Cell(9, 2).GetString());
         Assert.Equal("Totales", hoja.Cell(10, 2).GetString());
         Assert.Equal("SUM(D8:D9)", hoja.Cell(10, 4).FormulaA1);
-        Assert.Single(hoja.Pictures);
+        Assert.Equal(2, hoja.Pictures.Count);
+        Assert.Contains(hoja.Pictures, imagen => imagen.TopLeftCell.Address.RowNumber == 1);
     }
 
     [Fact]

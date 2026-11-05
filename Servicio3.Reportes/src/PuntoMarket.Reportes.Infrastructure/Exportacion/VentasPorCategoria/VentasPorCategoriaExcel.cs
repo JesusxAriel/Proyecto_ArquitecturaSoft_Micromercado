@@ -15,6 +15,7 @@ public class VentasPorCategoriaExcel : IExportadorDeReporte<ReporteVentasPorCate
     private const string FormatoDePorcentaje = "0.0%";
     private const int FilaDeEncabezado = 7;
     private const int ColumnaDelGrafico = 7;
+    private const int ColumnaDelLogo = 4;
 
     private readonly GeneradorDeGrafico _generadorDeGrafico;
 
@@ -31,6 +32,7 @@ public class VentasPorCategoriaExcel : IExportadorDeReporte<ReporteVentasPorCate
         var hoja = libro.Worksheets.Add(NombreDeHoja);
 
         EscribirTitulo(hoja, reporte);
+        LogoEnExcel.Agregar(hoja, ColumnaDelLogo);
         EscribirEncabezados(hoja);
         EscribirCuerpo(hoja, reporte);
         DefinirAnchos(hoja);
