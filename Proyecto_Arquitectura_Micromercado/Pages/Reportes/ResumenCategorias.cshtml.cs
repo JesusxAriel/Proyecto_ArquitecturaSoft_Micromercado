@@ -88,7 +88,10 @@ public sealed class ResumenCategoriasModel(
     {
         await CargarCategoriasAsync(cancellationToken);
         if (!FiltrosSonValidos())
+        {
+            MensajeDeError = PrimerErrorDeFiltros();
             return Page();
+        }
 
         try
         {
@@ -111,6 +114,12 @@ public sealed class ResumenCategoriasModel(
             .Select(categoria => new SelectListItem(categoria.Name, categoria.Id.ToString()))
             .ToList();
     }
+
+    private string? PrimerErrorDeFiltros() =>
+        ModelState.Values
+            .SelectMany(entrada => entrada.Errors)
+            .Select(error => error.ErrorMessage)
+            .FirstOrDefault(mensaje => !string.IsNullOrWhiteSpace(mensaje));
 
     private bool FiltrosSonValidos()
     {

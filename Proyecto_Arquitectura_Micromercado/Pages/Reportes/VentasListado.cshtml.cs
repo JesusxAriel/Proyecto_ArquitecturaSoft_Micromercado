@@ -82,7 +82,10 @@ public sealed class VentasListadoModel(IReportesApiClient reportes) : PageModel
         CancellationToken cancellationToken)
     {
         if (!FiltrosSonValidos())
+        {
+            MensajeDeError = PrimerErrorDeFiltros();
             return Page();
+        }
 
         try
         {
@@ -95,6 +98,12 @@ public sealed class VentasListadoModel(IReportesApiClient reportes) : PageModel
             return Page();
         }
     }
+
+    private string? PrimerErrorDeFiltros() =>
+        ModelState.Values
+            .SelectMany(entrada => entrada.Errors)
+            .Select(error => error.ErrorMessage)
+            .FirstOrDefault(mensaje => !string.IsNullOrWhiteSpace(mensaje));
 
     private bool FiltrosSonValidos()
     {

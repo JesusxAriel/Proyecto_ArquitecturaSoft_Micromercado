@@ -172,6 +172,7 @@ public class ResumenCategoriasModelTests
 
         Assert.IsType<PageResult>(resultado);
         Assert.Equal(0, cliente.Descargas);
+        Assert.Equal("La fecha «Desde» no puede ser posterior a la fecha «Hasta».", pagina.MensajeDeError);
     }
 
     [Fact]
