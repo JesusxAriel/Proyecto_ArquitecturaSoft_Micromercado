@@ -10,10 +10,10 @@ internal static class GraficoDeDona
     private const int AltoPorLeyenda = 38;
     private const int AltoCompacto = 440;
     private const double UnidadesVisibles = 3.0;
-    private const double UnidadesDelAltoCompacto = 2.8;
-    private const double LimiteIzquierdoCompacto = -1.3;
+    private const double UnidadesDelAltoCompacto = 3.1;
+    private const double LimiteIzquierdoCompacto = -1.4;
     private const double FraccionDelCentro = 0.52;
-    private const int CaracteresDeLeyendaCompacta = 26;
+    private const int CaracteresDeLeyendaCompacta = 24;
 
     public static ImagenDeGrafico Generar(string titulo, IReadOnlyList<ParteDelTotal> partes)
     {

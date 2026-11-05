@@ -90,7 +90,7 @@ public class ListadoVentasDocumento : IDocument
         contenedor.Row(fila =>
         {
             fila.Spacing(EspacioEntreBloques);
-            fila.RelativeItem().Element(c => ComponentesDePdf.TarjetaDeGrafico(c, _graficos!.MontoPorDia));
+            fila.RelativeItem().Element(c => ComponentesDePdf.TarjetaDeGrafico(c, _graficos!.MontoPorPeriodo));
             fila.RelativeItem().Element(c => ComponentesDePdf.TarjetaDeGrafico(c, _graficos!.ParticipacionPorCliente));
         });
 

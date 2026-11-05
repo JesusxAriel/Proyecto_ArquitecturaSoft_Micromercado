@@ -18,7 +18,7 @@ internal static class GraficoDeBarrasHorizontales
         barras.ValueLabelStyle.Bold = true;
 
         grafico.Axes.Left.TickGenerator = new NumericManual(CrearMarcas(datos));
-        grafico.Axes.Margins(left: 0, right: 0.28);
+        grafico.Axes.Margins(left: 0, right: 0.4);
         grafico.Axes.SetLimitsY(MinimoEnY(datos.Count), MaximoEnY(datos.Count));
         grafico.Axes.Bottom.Label.Text = ejeDeValores;
 

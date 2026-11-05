@@ -84,13 +84,13 @@ public class GeneradorDeGraficoTests
     [InlineData(1)]
     [InlineData(12)]
     [InlineData(60)]
-    public void El_monto_por_dia_se_genera_con_pocos_y_muchos_dias(int dias)
+    public void El_monto_por_periodo_se_genera_con_pocos_y_muchos_dias(int dias)
     {
         var puntos = Enumerable.Range(0, dias)
             .Select(i => new PuntoDeTendencia(new DateOnly(2026, 1, 1).AddDays(i), 10m + i))
             .ToList();
 
-        AssertEsPng(_generador.MontoPorDia(puntos));
+        AssertEsPng(_generador.MontoPorPeriodo(TendenciaDeVentas.Desde(puntos)));
     }
 
     [Fact]

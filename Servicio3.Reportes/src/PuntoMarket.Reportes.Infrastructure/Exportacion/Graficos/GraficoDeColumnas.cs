@@ -11,7 +11,7 @@ internal static class GraficoDeColumnas
     private const int MaximoDeMarcas = 8;
     private const int Alto = 440;
 
-    public static ImagenDeGrafico Generar(string titulo, IReadOnlyList<PuntoDeTendencia> puntos)
+    public static ImagenDeGrafico Generar(string titulo, string ejeHorizontal, IReadOnlyList<PuntoDeTendencia> puntos)
     {
         var grafico = EstiloDeGrafico.NuevoGrafico();
         var columnas = grafico.Add.Bars(CrearColumnas(puntos));
@@ -20,7 +20,7 @@ internal static class GraficoDeColumnas
         columnas.ValueLabelStyle.Bold = true;
 
         grafico.Axes.Bottom.TickGenerator = new NumericManual(CrearMarcas(puntos));
-        grafico.Axes.Bottom.Label.Text = "Día";
+        grafico.Axes.Bottom.Label.Text = ejeHorizontal;
         grafico.Axes.Left.Label.Text = "Monto (Bs)";
         grafico.Axes.Margins(bottom: 0, top: 0.22);
 

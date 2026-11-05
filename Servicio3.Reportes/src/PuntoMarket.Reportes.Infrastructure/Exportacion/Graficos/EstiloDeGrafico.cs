@@ -23,6 +23,7 @@ internal static class EstiloDeGrafico
     public static Plot NuevoGrafico()
     {
         var grafico = new Plot();
+        grafico.Font.Set(FuenteDeGraficos.Nombre);
         grafico.FigureBackground.Color = Color(EstilosDeReporte.Blanco);
         grafico.DataBackground.Color = Color(EstilosDeReporte.Blanco);
         grafico.Grid.MajorLineColor = Color(EstilosDeReporte.Borde);

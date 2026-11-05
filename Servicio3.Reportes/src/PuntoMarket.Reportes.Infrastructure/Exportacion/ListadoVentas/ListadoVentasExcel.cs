@@ -84,7 +84,7 @@ public class ListadoVentasExcel : IExportadorDeReporte<ReporteListadoVentas>
             return;
 
         var fila = filaInicial;
-        foreach (var grafico in new[] { graficos.MontoPorDia, graficos.ParticipacionPorCliente })
+        foreach (var grafico in new[] { graficos.MontoPorPeriodo, graficos.ParticipacionPorCliente })
         {
             hoja.Cell(fila, 1).Value = grafico.Titulo;
             hoja.Cell(fila, 1).Style.Font.SetBold().Font.SetFontColor(ComponentesDeExcel.Color(EstilosDeReporte.AmbarOscuro));

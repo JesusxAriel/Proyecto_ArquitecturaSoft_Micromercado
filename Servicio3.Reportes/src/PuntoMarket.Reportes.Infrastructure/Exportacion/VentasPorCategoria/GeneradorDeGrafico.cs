@@ -42,8 +42,10 @@ public class GeneradorDeGrafico
         return GraficoDeBarrasHorizontales.Generar("Los 5 productos más vendidos", "Monto vendido (Bs)", datos, EstiloDeGrafico.AnchoCompleto);
     }
 
-    public ImagenDeGrafico MontoPorDia(IReadOnlyList<PuntoDeTendencia> puntos) =>
-        GraficoDeColumnas.Generar("Monto de ventas por día", puntos);
+    public ImagenDeGrafico MontoPorPeriodo(TendenciaDeVentas tendencia) =>
+        tendencia.Agrupacion == AgrupacionDeTendencia.Diaria
+            ? GraficoDeColumnas.Generar("Monto de ventas por día", "Día", tendencia.Puntos)
+            : GraficoDeColumnas.Generar("Monto de ventas por semana", "Semana (inicio en lunes)", tendencia.Puntos);
 
     public ImagenDeGrafico ParticipacionPorCliente(IReadOnlyList<ParteDelTotal> partes) =>
         GraficoDeDona.GenerarConLeyendaLateral("Participación por cliente", partes);
