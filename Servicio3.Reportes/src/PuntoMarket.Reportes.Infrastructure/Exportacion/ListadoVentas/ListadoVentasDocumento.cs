@@ -139,7 +139,7 @@ public class ListadoVentasDocumento : IDocument
                 columna.Item().Row(fila =>
                 {
                     fila.RelativeItem().Text(
-                        $"Generado el {FormatosDeTexto.FechaYHora(_reporte.GeneradoEn)} por {_reporte.GeneradoPor}")
+                        FormatosDeTexto.ReporteGenerado(_reporte.GeneradoPor, _reporte.GeneradoEn))
                         .FontSize(8);
                     fila.ConstantItem(120).AlignRight().DefaultTextStyle(estilo => estilo.FontSize(8)).Text(ComponerNumeroDePagina);
                 });

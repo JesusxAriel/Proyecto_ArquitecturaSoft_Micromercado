@@ -17,6 +17,9 @@ public static class FormatosDeTexto
 
     public static string FechaYHora(DateTime fecha) => fecha.ToString("dd/MM/yyyy HH:mm", Cultura);
 
+    public static string ReporteGenerado(string usuario, DateTime fecha) =>
+        $"Reporte generado: {usuario} - {fecha.ToString("dd/MM/yyyy HH:mm:ss", Cultura)}";
+
     public static string Periodo(RangoDeFechas rango) =>
         (rango.Desde, rango.Hasta) switch
         {

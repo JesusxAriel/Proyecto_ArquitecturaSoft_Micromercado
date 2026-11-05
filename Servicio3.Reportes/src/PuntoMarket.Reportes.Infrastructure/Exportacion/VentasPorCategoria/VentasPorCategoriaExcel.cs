@@ -48,7 +48,7 @@ public class VentasPorCategoriaExcel : IExportadorDeReporte<ReporteVentasPorCate
         hoja.Cell(3, 1).Value = $"Categoría: {TextosDelReporte.Categoria(reporte)}";
         hoja.Cell(4, 1).Value = $"Cantidad de categorías: {TextosDelReporte.Limite(reporte.Filtros)}";
         hoja.Cell(5, 1).Value =
-            $"Generado el {TextosDelReporte.FechaYHora(reporte.GeneradoEn)} por {reporte.GeneradoPor}";
+            FormatosDeTexto.ReporteGenerado(reporte.GeneradoPor, reporte.GeneradoEn);
     }
 
     private static void EscribirEncabezados(IXLWorksheet hoja)

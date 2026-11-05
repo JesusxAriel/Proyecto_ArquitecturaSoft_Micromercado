@@ -48,6 +48,8 @@ public class ExportadoresVentasPorCategoriaTests
         Assert.Equal("PK", System.Text.Encoding.ASCII.GetString(archivo.Contenido, 0, 2));
         using var libro = new XLWorkbook(new MemoryStream(archivo.Contenido));
         var hoja = libro.Worksheet(1);
+        Assert.StartsWith("Reporte generado: ", hoja.Cell(5, 1).GetString());
+        Assert.Matches(@" - \d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2}$", hoja.Cell(5, 1).GetString());
         Assert.Equal("Bebidas", hoja.Cell(8, 2).GetString());
         Assert.Equal("Lácteos", hoja.Cell(9, 2).GetString());
         Assert.Equal("Totales", hoja.Cell(10, 2).GetString());

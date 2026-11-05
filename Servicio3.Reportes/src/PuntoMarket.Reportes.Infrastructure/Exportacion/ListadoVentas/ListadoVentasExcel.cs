@@ -45,7 +45,7 @@ public class ListadoVentasExcel : IExportadorDeReporte<ReporteListadoVentas>
         hoja.Cell(4, 1).Value = $"Cliente: {TextosDelListadoVentas.ClienteFiltrado(reporte.Filtros)}";
         hoja.Cell(5, 1).Value = $"Cantidad de ventas: {TextosDelListadoVentas.Limite(reporte.Filtros)}";
         hoja.Cell(6, 1).Value =
-            $"Generado el {FormatosDeTexto.FechaYHora(reporte.GeneradoEn)} por {reporte.GeneradoPor}";
+            FormatosDeTexto.ReporteGenerado(reporte.GeneradoPor, reporte.GeneradoEn);
     }
 
     private static void EscribirEncabezados(IXLWorksheet hoja)
