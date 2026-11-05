@@ -7,6 +7,31 @@ namespace Proyecto_Arquitectura_Micromercado.Servicios;
 
 public sealed class UsuariosApiClient(HttpClient httpClient)
 {
+    public async Task<IniciarSesionRespuestaDto> IniciarSesionAsync(
+        IniciarSesionDto solicitud,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var respuesta = await httpClient.PostAsJsonAsync(
+                "api/autenticacion/login", solicitud, cancellationToken);
+            VerificarRespuestaLogin(respuesta);
+            var resultado = await respuesta.Content.ReadFromJsonAsync<IniciarSesionRespuestaDto>(
+                cancellationToken);
+
+            if (resultado is null || string.IsNullOrWhiteSpace(resultado.Token))
+                throw new JsonException("La API de usuarios devolvió una respuesta de inicio de sesión inválida.");
+
+            return resultado;
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode is null)
+        {
+            throw new HttpRequestException(
+                "No se pudo conectar con el servicio de usuarios. Intente nuevamente.",
+                exception);
+        }
+    }
+
     public async Task<IReadOnlyList<UsuarioListadoDto>> ListarAsync(CancellationToken cancellationToken = default)
     {
         using var respuesta = await httpClient.GetAsync("api/usuarios", cancellationToken);
@@ -63,6 +88,20 @@ public sealed class UsuariosApiClient(HttpClient httpClient)
             HttpStatusCode.NotFound => "El recurso solicitado no está disponible.",
             HttpStatusCode.Conflict => "La operación no se puede realizar: el usuario ya existe o su estado actual no lo permite.",
             _ => "No se pudo completar la operación con el servicio de usuarios. Si estaba creando una cuenta, actualice el listado antes de repetir el alta."
+        };
+        throw new HttpRequestException(mensaje, null, respuesta.StatusCode);
+    }
+
+    private static void VerificarRespuestaLogin(HttpResponseMessage respuesta)
+    {
+        if (respuesta.IsSuccessStatusCode)
+            return;
+
+        var mensaje = respuesta.StatusCode switch
+        {
+            HttpStatusCode.BadRequest => "Ingrese un correo válido y una contraseña.",
+            HttpStatusCode.Unauthorized => "Correo o contraseña incorrectos.",
+            _ => "No se pudo completar el inicio de sesión con el servicio de usuarios. Intente nuevamente."
         };
         throw new HttpRequestException(mensaje, null, respuesta.StatusCode);
     }
