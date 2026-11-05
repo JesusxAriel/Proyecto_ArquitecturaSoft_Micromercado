@@ -8,4 +8,5 @@ public static class ClaimsDeIdentidad
     public const string NombreUsuario = ClaimTypes.Name;
     public const string Rol = ClaimTypes.Role;
     public const string DebeCambiarPassword = "debeCambiarPassword";
+    public const string ExpiracionJwt = "jwt_exp";
 }

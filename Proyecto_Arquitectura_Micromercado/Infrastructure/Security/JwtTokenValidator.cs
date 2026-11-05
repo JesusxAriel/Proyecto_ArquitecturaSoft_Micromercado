@@ -41,13 +41,21 @@ public sealed class JwtTokenValidator : IValidadorJwt
     }
 
     public ClaimsPrincipal Validar(string token)
+        => ValidarConExpiracion(token).Principal;
+
+    public JwtValidado ValidarConExpiracion(string token)
     {
         if (string.IsNullOrWhiteSpace(token))
             throw new SecurityTokenException("El token JWT está vacío.");
 
-        var principal = _handler.ValidateToken(token, _parametros, out _);
+        var principal = _handler.ValidateToken(token, _parametros, out var validatedToken);
         ValidarClaims(principal);
-        return principal;
+        if (validatedToken is not JwtSecurityToken jwt)
+            throw new SecurityTokenValidationException("El token JWT validado tiene un formato inesperado.");
+
+        var expiraUtc = new DateTimeOffset(
+            DateTime.SpecifyKind(jwt.ValidTo, DateTimeKind.Utc));
+        return new JwtValidado(principal, expiraUtc);
     }
 
     private static void ValidarClaims(ClaimsPrincipal principal)
