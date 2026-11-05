@@ -1,5 +1,6 @@
 using PuntoMarket.Usuarios.Application.Ports.Gestion;
 using PuntoMarket.Usuarios.Application.UseCases.Gestion.ListarUsuarios;
+using PuntoMarket.Usuarios.Domain.Services;
 using PuntoMarket.Usuarios.Tests.Gestion.TestDoubles;
 using Xunit;
 
@@ -34,7 +35,7 @@ public class ListarUsuariosTests
     {
         var reloj = new RelojFijo();
         DateTime? expira = segundosHastaExpirar is int segundos
-            ? reloj.UtcNow.AddSeconds(segundos).UtcDateTime : null;
+            ? ZonaHorariaDeLaPaz.ALocal(reloj.UtcNow.AddSeconds(segundos).UtcDateTime) : null;
         var usuario = new UsuarioListadoDto(42, "Ana", "Perez", "ana@example.com", "aperez",
             "Cajero", estado, reloj.UtcNow.AddDays(-1).UtcDateTime, expira);
         var repositorio = new UsuarioGestionRepositorioStub { Usuarios = [usuario] };

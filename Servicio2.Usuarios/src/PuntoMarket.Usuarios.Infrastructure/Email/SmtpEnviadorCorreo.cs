@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Mail;
 using System.Text;
 using PuntoMarket.Usuarios.Application.Ports.Gestion;
+using PuntoMarket.Usuarios.Domain.Services;
 
 namespace PuntoMarket.Usuarios.Infrastructure.Email;
 
@@ -48,7 +49,7 @@ public sealed class SmtpEnviadorCorreo(SmtpEnviadorCorreoOpciones opciones) : IE
 
         var enlace = new Uri(origen, $"Users/Activar?token={Uri.EscapeDataString(token)}").AbsoluteUri;
         var enlaceHtml = WebUtility.HtmlEncode(enlace);
-        var vencimiento = expira.ToUniversalTime().ToString("dd/MM/yyyy HH:mm 'UTC'", CultureInfo.InvariantCulture);
+        var vencimiento = ZonaHorariaDeLaPaz.ALocal(expira.UtcDateTime).ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
 
         using var mensaje = new MailMessage
         {
