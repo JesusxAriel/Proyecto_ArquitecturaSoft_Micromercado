@@ -12,7 +12,7 @@
         @Model.StatusMessage
         @if (!string.IsNullOrWhiteSpace(Model.UsernameGenerado))
         {
-            <span>Username generado: <strong>@Model.UsernameGenerado</strong>.</span>
+            <span>Nombre de usuario generado: <strong>@Model.UsernameGenerado</strong>.</span>
         }
     </div>
 }
@@ -55,7 +55,7 @@
                     <span asp-validation-for="NuevoUsuario.IdRol" class="text-danger"></span>
                 </div>
                 <div class="col-12">
-                    <p class="text-muted small">El username se genera automáticamente al crear el usuario.</p>
+                    <p class="text-muted small">El nombre de usuario se genera automáticamente al crear el usuario.</p>
                     @if (Model.RolesActivos.Count > 0)
                     {
                         <button type="submit" class="btn btn-warning fw-semibold">Crear usuario</button>
@@ -79,7 +79,7 @@
                     <th scope="col">Nombre</th>
                     <th scope="col">Apellido</th>
                     <th scope="col">Correo</th>
-                    <th scope="col">Username</th>
+                    <th scope="col">Nombre de usuario</th>
                     <th scope="col">Rol</th>
                     <th scope="col">Estado</th>
                     <th scope="col">Fecha de creación</th>
@@ -145,7 +145,7 @@
                 <div class="modal-body">
                     <p>¿Desea dar de baja a este usuario?</p>
                     <p>Nombre: <strong id="bajaUsuarioNombre"></strong></p>
-                    <p>Username: <strong id="bajaUsuarioUsername"></strong></p>
+                    <p>Nombre de usuario: <strong id="bajaUsuarioUsername"></strong></p>
                     <input type="hidden" name="usuarioId" id="bajaUsuarioId" />
                 </div>
                 <div class="modal-footer">
