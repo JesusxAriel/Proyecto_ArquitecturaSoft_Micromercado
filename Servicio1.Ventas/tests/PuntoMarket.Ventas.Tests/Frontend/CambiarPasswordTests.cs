@@ -155,6 +155,38 @@ public sealed class CambiarPasswordTests
         Assert.Empty(h.Api.Llamadas);
     }
 
+    [Theory]
+    [InlineData("Administrador")]
+    [InlineData("Cajero")]
+    public async Task Mi_perfil_muestra_usuario_rol_e_inicio_de_sesion_sin_llamar_a_servicios(string rol)
+    {
+        await using var h = await Host.Crear(rol);
+        using var c = h.Cliente();
+        await h.Login(c);
+
+        var html = WebUtility.HtmlDecode(await c.GetStringAsync("/Account/Perfil"));
+
+        Assert.Contains("<title>Mi perfil - PuntoMarket</title>", html);
+        Assert.Contains(rol == "Administrador" ? "admin" : "cajero1", html);
+        Assert.Contains(rol, html);
+        Assert.Contains("Nombre de usuario", html);
+        Assert.Matches(@"Inicio de sesión</dt>\s*<dd[^>]*>\d{2}/\d{2}/\d{4} \d{2}:\d{2}", html);
+        Assert.Contains("href=\"/Account/CambiarPassword\"", html);
+        Assert.Empty(h.Api.Llamadas);
+    }
+
+    [Fact]
+    public async Task Mi_perfil_sin_sesion_redirige_al_login()
+    {
+        await using var h = await Host.Crear();
+        using var c = h.Cliente();
+
+        var respuesta = await c.GetAsync("/Account/Perfil");
+
+        Assert.Equal(HttpStatusCode.Redirect, respuesta.StatusCode);
+        Assert.Contains("/Account/Login", respuesta.Headers.Location!.OriginalString);
+    }
+
     private static string Campo(string html, string campo) =>
         WebUtility.HtmlDecode(Regex.Match(html, "name=\"" + Regex.Escape(campo) + "\"[^>]*value=\"([^\"]*)\"").Groups[1].Value);
 
@@ -204,10 +236,10 @@ public sealed class CambiarPasswordTests
         public ApiRemota Api => api;
         public Registro Logs => logs;
 
-        public static async Task<Host> Crear()
+        public static async Task<Host> Crear(string rol = "Cajero")
         {
             var clave = Convert.ToHexString(RandomNumberGenerator.GetBytes(48));
-            var jwt = SesionRealPrueba.Token(clave, "Cajero");
+            var jwt = SesionRealPrueba.Token(clave, rol);
             var api = new ApiRemota();
             var logs = new Registro();
             var raiz = new DirectoryInfo(AppContext.BaseDirectory);
