@@ -137,6 +137,17 @@ public class IniciarSesionCasoDeUsoTests
         public UsuarioAutenticacionDto? Usuario { get; set; }
         public string? CorreoConsultado { get; private set; }
         public CancellationToken CancellationTokenRecibido { get; private set; }
+        public Task<UsuarioAutenticacionDto?> ObtenerPorIdAsync(
+            int usuarioId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<UsuarioAutenticacionDto?>(null);
+
+        public Task<bool> ActualizarPasswordAsync(
+            int usuarioId,
+            string passwordHashActual,
+            string passwordHash,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
 
         public Task<UsuarioAutenticacionDto?> ObtenerPorCorreoAsync(
             string correo,

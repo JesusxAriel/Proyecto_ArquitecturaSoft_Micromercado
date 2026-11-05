@@ -8,6 +8,7 @@ using PuntoMarket.Usuarios.Api.Contracts.Autenticacion;
 using PuntoMarket.Usuarios.Api.Controllers;
 using PuntoMarket.Usuarios.Application.Ports.Autenticacion;
 using PuntoMarket.Usuarios.Application.Ports.Comunes;
+using PuntoMarket.Usuarios.Application.UseCases.Autenticacion.CambiarPassword;
 using PuntoMarket.Usuarios.Application.UseCases.Autenticacion.IniciarSesion;
 using PuntoMarket.Usuarios.Domain.Enums;
 using Xunit;
@@ -88,8 +89,99 @@ public class AutenticacionControllerTests
     [Fact]
     public void Controlador_permite_acceso_anonimo()
     {
-        Assert.Contains(typeof(AutenticacionController).GetCustomAttributes(inherit: true),
+        var metodo = typeof(AutenticacionController).GetMethod(nameof(AutenticacionController.IniciarSesion))!;
+        Assert.Contains(metodo.GetCustomAttributes(inherit: true),
             attribute => attribute is AllowAnonymousAttribute);
+    }
+
+    [Fact]
+    public void Cambio_password_requiere_autenticacion()
+    {
+        var metodo = typeof(AutenticacionController).GetMethod(nameof(AutenticacionController.CambiarPassword))!;
+
+        Assert.Contains(metodo.GetCustomAttributes(inherit: true),
+            attribute => attribute is AuthorizeAttribute);
+        Assert.DoesNotContain(metodo.GetCustomAttributes(inherit: true),
+            attribute => attribute is AllowAnonymousAttribute);
+    }
+
+    [Fact]
+    public async Task Cambio_password_responde_sin_hash_ni_datos_del_usuario()
+    {
+        var controlador = CrearControlador();
+
+        var resultado = await controlador.CambiarPassword(
+            new CambiarPasswordSolicitud
+            {
+                ContrasenaActual = "Segura1!",
+                NuevaContrasena = "NuevaSegura2!"
+            },
+            CancellationToken.None);
+        var ok = Assert.IsType<OkObjectResult>(resultado.Result);
+        var respuesta = Assert.IsType<CambiarPasswordRespuesta>(ok.Value);
+        var json = JsonSerializer.Serialize(respuesta);
+
+        Assert.True(respuesta.Cambiada);
+        Assert.DoesNotContain("password", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("hash", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("usuario", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Cambio_password_rechaza_contrasena_actual_incorrecta_con_400()
+    {
+        var controlador = CrearControlador(contrasenaActualCorrecta: false);
+
+        var resultado = await controlador.CambiarPassword(
+            new CambiarPasswordSolicitud
+            {
+                ContrasenaActual = "incorrecta",
+                NuevaContrasena = "NuevaSegura2!"
+            },
+            CancellationToken.None);
+
+        var invalido = Assert.IsType<BadRequestObjectResult>(resultado.Result);
+        var problema = Assert.IsType<ProblemDetails>(invalido.Value);
+        Assert.Equal(StatusCodes.Status400BadRequest, problema.Status);
+        Assert.Equal("La contraseña actual es incorrecta.", problema.Title);
+    }
+
+    [Fact]
+    public async Task Cambio_password_devuelve_mensaje_correcto_si_falta_contrasena_actual()
+    {
+        var controlador = CrearControlador();
+
+        var resultado = await controlador.CambiarPassword(
+            new CambiarPasswordSolicitud
+            {
+                ContrasenaActual = "",
+                NuevaContrasena = "NuevaSegura2!"
+            },
+            CancellationToken.None);
+
+        var invalido = Assert.IsType<BadRequestObjectResult>(resultado.Result);
+        var problema = Assert.IsType<ProblemDetails>(invalido.Value);
+        Assert.Equal(StatusCodes.Status400BadRequest, problema.Status);
+        Assert.Equal("La contraseña actual es obligatoria.", problema.Title);
+    }
+
+    [Fact]
+    public async Task Cambio_password_rechaza_nueva_contrasena_debil()
+    {
+        var controlador = CrearControlador();
+
+        var resultado = await controlador.CambiarPassword(
+            new CambiarPasswordSolicitud
+            {
+                ContrasenaActual = "Segura1!",
+                NuevaContrasena = "debil"
+            },
+            CancellationToken.None);
+
+        var invalido = Assert.IsType<BadRequestObjectResult>(resultado.Result);
+        var problema = Assert.IsType<ProblemDetails>(invalido.Value);
+        Assert.Equal(StatusCodes.Status400BadRequest, problema.Status);
+        Assert.Equal("La nueva contraseña no cumple con los requisitos de seguridad.", problema.Title);
     }
 
     [Fact]
@@ -113,7 +205,8 @@ public class AutenticacionControllerTests
     private static AutenticacionController CrearControlador(
         UsuarioAutenticacionDto? usuario = null,
         Exception? error = null,
-        bool usuarioInexistente = false)
+        bool usuarioInexistente = false,
+        bool contrasenaActualCorrecta = true)
     {
         var repositorio = new RepositorioStub(
             usuario ?? (usuarioInexistente ? null : UsuarioValido()),
@@ -122,9 +215,14 @@ public class AutenticacionControllerTests
             repositorio,
             new HasheadorStub(),
             new EmisorStub());
+        var casoCambioPassword = new CambiarPasswordCasoDeUso(
+            repositorio,
+            new HasheadorStub(contrasenaActualCorrecta),
+            new UsuarioActualStub());
 
         return new AutenticacionController(
             caso,
+            casoCambioPassword,
             NullLogger<AutenticacionController>.Instance);
     }
 
@@ -141,12 +239,29 @@ public class AutenticacionControllerTests
 
             return Task.FromResult(usuario);
         }
+
+        public Task<UsuarioAutenticacionDto?> ObtenerPorIdAsync(
+            int usuarioId,
+            CancellationToken cancellationToken = default)
+        {
+            if (error is not null)
+                throw error;
+
+            return Task.FromResult(usuario?.Id == usuarioId ? usuario : null);
+        }
+
+        public Task<bool> ActualizarPasswordAsync(
+            int usuarioId,
+            string passwordHashActual,
+            string passwordHash,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(usuario?.Id == usuarioId);
     }
 
-    private sealed class HasheadorStub : IHasheadorPassword
+    private sealed class HasheadorStub(bool contrasenaActualCorrecta = true) : IHasheadorPassword
     {
-        public string Hash(string contrasena) => throw new NotSupportedException();
-        public bool Verify(string contrasena, string hash) => true;
+        public string Hash(string contrasena) => "hash-nuevo-no-sensible";
+        public bool Verify(string contrasena, string hash) => contrasenaActualCorrecta;
     }
 
     private sealed class EmisorStub : IEmisorToken
@@ -157,6 +272,12 @@ public class AutenticacionControllerTests
             string nombreCompleto,
             string rol,
             bool debeCambiarPassword) => "jwt-de-prueba";
+    }
+
+    private sealed class UsuarioActualStub : IUsuarioActual
+    {
+        public int Id => 42;
+        public string Rol => "Administrador";
     }
 
     private static UsuarioAutenticacionDto UsuarioValido() =>
