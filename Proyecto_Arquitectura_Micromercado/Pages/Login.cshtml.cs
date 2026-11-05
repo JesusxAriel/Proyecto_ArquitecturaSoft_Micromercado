@@ -108,7 +108,8 @@ public sealed class LoginModel(
             rol,
             CookieAuthenticationDefaults.AuthenticationScheme,
             debeCambiarPassword,
-            jwt.ExpiraUtc);
+            jwt.ExpiraUtc,
+            token);
 
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
