@@ -365,16 +365,23 @@ Las URLs pueden consultarse en `Proyecto_Arquitectura_Micromercado/Properties/la
 
 La aplicación debe ejecutarse con el servidor MySQL activo y con una cadena de conexión válida.
 
-## 🐳 Ejecución con Docker (escalamiento horizontal)
+## 🐳 Ejecución con Docker
 
-El mismo monolito se ejecuta en tres réplicas detrás de Nginx, con MySQL compartido y Redis como caché distribuida.
+El sistema completo se levanta con Docker Compose, con una sola instancia por aplicación y sin Nginx ni Redis.
 
 ```
-Navegador ──► Nginx :8080 ──► app1 / app2 / app3 ──► MySQL
-                                      └──────────► Redis
+Navegador ──► frontend (sitio, :8080) ──► MySQL
+                    │
+                    └──► reportes (API, :5003) ──► MySQL
 ```
 
-Las tres réplicas comparten las claves de Data Protection en el volumen `dataprotection_keys`, por lo que una cookie emitida por una réplica es válida en las demás.
+| Servicio | Qué es | Dirección |
+|---|---|---|
+| `mysql` | Base de datos MySQL 8.4 | `127.0.0.1:3307` (solo su equipo, para MySQL Workbench) |
+| `frontend` | El monolito actual (Razor Pages), que hace de pantalla | `http://localhost:8080` |
+| `reportes` | API del Servicio 3 (Reportes), protegida con JWT | `http://localhost:5003` |
+
+La sesión y la caché del historial de ventas viven en la memoria del contenedor `frontend`, por lo que se vacían al reiniciarlo. Las claves de Data Protection se guardan en el volumen `dataprotection_keys`, de modo que las cookies de inicio de sesión siguen siendo válidas después de reiniciar.
 
 ### Requisitos
 
@@ -397,61 +404,53 @@ cp .env.example .env
 | `ACTIVACION_BASE_URL` | URL pública de la aplicación para los enlaces de activación (`http://localhost:8080`) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENABLE_SSL` | Servidor de correo (`smtp.gmail.com`, `587`, `true`) |
 | `SMTP_FROM_ADDRESS`, `SMTP_FROM_NAME`, `SMTP_USER_NAME`, `SMTP_PASSWORD` | Remitente y credenciales del correo |
+| `Jwt__Key` | Clave secreta con la que el servicio de Reportes valida los tokens (mínimo 32 caracteres) |
+| `Jwt__Issuer`, `Jwt__Audience` | Emisor y audiencia que debe traer el token; deben coincidir con los del servicio que lo emita |
 
-2. Levante todos los servicios:
+2. Genere una clave JWT aleatoria en su equipo y péguela como valor de `Jwt__Key` en el `.env`. No la comparta ni la suba al repositorio.
+
+```bash
+openssl rand -base64 48
+```
+
+En Windows PowerShell:
+
+```powershell
+$bytes = New-Object byte[] 48; [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes); [Convert]::ToBase64String($bytes)
+```
+
+3. Levante todos los servicios:
 
 ```bash
 docker compose up -d --build
 ```
 
-3. Abra `http://localhost:8080` e ingrese con los usuarios de prueba de la sección anterior.
+4. Abra `http://localhost:8080` e ingrese con los usuarios de prueba de la sección anterior.
 
-El orden de arranque es automático: `app1` crea las claves de Data Protection y pasa a estado saludable antes de iniciar `app2` y `app3`.
+El orden de arranque es automático: `mysql` queda saludable, luego se inicia `reportes` y, cuando este también está saludable, se inicia `frontend`. Si falta alguna variable `Jwt__*`, Compose se detiene con un mensaje que indica cuál.
 
-### Ver la réplica que atiende
-
-- En la barra superior, el texto **Instancia: appN**. También aparece en la pantalla de inicio de sesión.
-- En la cabecera de respuesta `X-Replica-Id`:
+### Comprobar que todo funciona
 
 ```bash
-curl -s -o /dev/null -D - http://localhost:8080/Login
+docker compose ps
+curl -i http://localhost:5003/api/salud
+curl -i http://localhost:5003/api/salud/protegido
 ```
 
-### Detener y volver a levantar una réplica
+`docker compose ps` debe mostrar `mysql`, `reportes` y `frontend` en estado `healthy`. La primera dirección responde `200` y la segunda responde `401` mientras no se envíe un token.
+
+La barra superior del sitio muestra **Instancia: frontend**, que identifica el contenedor que atiende.
+
+### Reporte de ventas por categoría
+
+Con el rol Administrador, en el menú **Reportes → Ventas por categoría** se consulta el reporte y se descarga en PDF o Excel. La pantalla llama al servicio `reportes` con el token que el inicio de sesión guarda en la claim `access_token` del usuario. Mientras el inicio de sesión no emita ese token, la pantalla solo funciona al ejecutar el sitio en el entorno `Development` con la variable `Reportes__TokenDePrueba`.
+
+### Ver los registros de un servicio
 
 ```bash
-docker compose stop app2
-docker compose start app2
+docker compose logs -f frontend
+docker compose logs -f reportes
 ```
-
-Con una réplica detenida, Nginx reparte las peticiones entre las restantes y las sesiones continúan.
-
-### Agregar la cuarta réplica
-
-1. En `docker-compose.yml`, copie el bloque de `app3` como `app4` (cambia `REPLICA_ID`) y agregue `- app4` en `depends_on` de `nginx`.
-2. En `nginx/nginx.conf`, agregue en el `upstream`: `server app4:8080 max_fails=2 fail_timeout=10s;`
-3. Aplique los cambios:
-
-```bash
-docker compose up -d
-docker compose restart nginx
-```
-
-### Inspeccionar Redis
-
-```bash
-docker compose exec redis redis-cli KEYS '*'
-docker compose exec redis redis-cli TTL "PuntoMarket:ventas:historial:incluir-anuladas:False"
-docker compose exec redis redis-cli MONITOR
-```
-
-Cada lectura del historial de ventas registra en el log de la réplica si fue `HIT` o `MISS`, la clave, el origen (Redis o MySQL) y la réplica:
-
-```bash
-docker compose logs app1 app2 app3 | grep "Caché del historial"
-```
-
-La entrada expira a los 30 segundos y se invalida al registrar o anular una venta.
 
 ### Ver la base de datos con MySQL Workbench
 
@@ -471,15 +470,21 @@ Un MySQL instalado en su equipo con el puerto `3306` no genera conflicto. Si otr
 
 Esta es la base de Docker. Cuando ejecuta la aplicación desde Visual Studio se usa su MySQL local, que es otra base distinta. Cada integrante tiene su propia base: los cambios hechos desde `http://localhost:8080` se ven en su conexión, no en la de sus compañeros.
 
-Si cambia el script `bdMicroMercadoArqui.sql`, hay que recrear la base con `docker compose down -v` y volver a levantar (ver «Limpiar»).
+Si cambia el script `bdMicroMercadoArqui.sql`, hay que recrear la base con `docker compose down -v` y volver a levantar (ver «Detener y limpiar»).
 
-### Limpiar
+### Detener y limpiar
+
+Detener los servicios y eliminar los contenedores, conservando la base de datos y las claves de Data Protection:
+
+```bash
+docker compose down
+```
+
+Eliminar también los volúmenes. **Esto borra la base de datos** (se recreará desde `bdMicroMercadoArqui.sql` en el siguiente arranque) y las claves de Data Protection:
 
 ```bash
 docker compose down -v
 ```
-
-Elimina los contenedores y también los volúmenes (base de datos y claves de Data Protection).
 
 ## ✅ Validaciones y buenas prácticas
 

@@ -53,7 +53,7 @@ public class HistorialVentasEnCacheTests
 
         private void ComprobarDisponible()
         {
-            if (Falla) throw new InvalidOperationException("Redis no disponible.");
+            if (Falla) throw new InvalidOperationException("Caché no disponible.");
         }
     }
 
@@ -149,7 +149,7 @@ public class HistorialVentasEnCacheTests
         Assert.Equal(
             [
                 $"Caché del historial: MISS clave={ClaveConAnuladas} origen=MySQL réplica=app3",
-                $"Caché del historial: HIT clave={ClaveConAnuladas} origen=Redis réplica=app3"
+                $"Caché del historial: HIT clave={ClaveConAnuladas} origen=caché réplica=app3"
             ],
             registro.Mensajes);
     }
@@ -185,7 +185,7 @@ public class HistorialVentasEnCacheTests
     }
 
     [Fact]
-    public async Task Si_Redis_falla_el_historial_responde_desde_la_base()
+    public async Task Si_la_cache_falla_el_historial_responde_desde_la_base()
     {
         var consulta = new ConsultaConConteo();
         var cache = new CacheEspia { Falla = true };

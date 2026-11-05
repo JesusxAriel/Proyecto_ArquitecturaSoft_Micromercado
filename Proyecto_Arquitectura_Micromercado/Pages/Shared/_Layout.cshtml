@@ -25,7 +25,6 @@
             var nombreMostrado = Context.Session.GetString(VariablesDeSesion.NombreParaMostrar)
                 ?? User.Identity?.Name
                 ?? string.Empty;
-            var inicioDeSesion = Context.Session.GetString(VariablesDeSesion.InicioDeSesion);
             var iniciales = string.Concat(
                 nombreMostrado
                     .Split(' ', StringSplitOptions.RemoveEmptyEntries)
@@ -40,9 +39,6 @@
                 <a class="navbar-brand" asp-area="" asp-page="/Index" aria-label="PuntoMarket, ir al inicio">
                     <img src="~/images/logo.jpg" alt="" class="navbar-logo" style="height: 76px; width: auto; object-fit: contain;">
                 </a>
-                <span class="badge rounded-pill text-bg-secondary ms-2">
-    Instancia: @Context.Items["ReplicaId"]
-</span>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavigation"
                         aria-controls="mainNavigation" aria-expanded="false" aria-label="Abrir navegación">
                     <span class="navbar-toggler-icon"></span>
@@ -86,6 +82,7 @@
                             <a class="nav-link dropdown-toggle @(currentPage.StartsWith("/Reportes", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)"
                                href="#" role="button">Reportes</a>
                             <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" asp-page="/Reportes/VentasListado">Listado de ventas</a></li>
                                 <li><a class="dropdown-item" asp-page="/Reportes/ResumenCategorias">Ventas por categoría</a></li>
                             </ul>
                         </li>
@@ -112,13 +109,6 @@
                             </ul>
                         </li>
                         }
-                        @if (autenticado && permisosNavegacion.PuedeAccederCajaVentas)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link @(currentPage.Equals("/Users/CambiarPassword", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)"
-                                   asp-page="/Users/CambiarPassword">Cambiar contraseña</a>
-                            </li>
-                        }
                     </ul>
                 </div>
                 @if (autenticado)
@@ -128,19 +118,22 @@
                                 class="btn btn-link text-white text-decoration-none dropdown-toggle user-profile-dropdown d-flex align-items-center gap-2"
                                 data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="user-avatar" aria-label="Usuario @nombreMostrado">@iniciales</span>
-                            <span class="d-none d-md-block text-start">
-                                <span class="d-block fw-semibold user-name">@nombreMostrado</span>
-                                <small class="d-block user-role">@rolActual</small>
-                                @if (inicioDeSesion is not null)
-                                {
-                                    <small class="d-block text-white-50">Inicio: @inicioDeSesion</small>
-                                }
+                            <span class="d-none d-md-inline user-summary">
+                                <span class="fw-semibold user-name">@nombreMostrado</span>
+                                <small class="user-role">@rolActual</small>
                             </span>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li>
+                                <a class="dropdown-item" asp-page="/Cuenta/Perfil"><i class="bi bi-person" aria-hidden="true"></i> Mi perfil</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" asp-page="/Users/CambiarPassword"><i class="bi bi-key" aria-hidden="true"></i> Cambiar contraseña</a>
+                            </li>
+                            <li><hr class="dropdown-divider" /></li>
                             <li>
                                 <form method="post" asp-page="/Logout">
-                                    <button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</button>
+                                    <button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión</button>
                                 </form>
                             </li>
                         </ul>

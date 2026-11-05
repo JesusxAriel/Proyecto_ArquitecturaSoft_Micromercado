@@ -1,5 +1,12 @@
 <Solution>
   <Project Path="Proyecto_Arquitectura_Micromercado/Proyecto_Arquitectura_Micromercado.csproj" />
+  <Folder Name="/Servicio2.Usuarios/">
+    <Project Path="Servicio2.Usuarios/src/PuntoMarket.Usuarios.Api/PuntoMarket.Usuarios.Api.csproj" />
+    <Project Path="Servicio2.Usuarios/src/PuntoMarket.Usuarios.Application/PuntoMarket.Usuarios.Application.csproj" />
+    <Project Path="Servicio2.Usuarios/src/PuntoMarket.Usuarios.Domain/PuntoMarket.Usuarios.Domain.csproj" />
+    <Project Path="Servicio2.Usuarios/src/PuntoMarket.Usuarios.Infrastructure/PuntoMarket.Usuarios.Infrastructure.csproj" />
+    <Project Path="Servicio2.Usuarios/tests/PuntoMarket.Usuarios.Tests/PuntoMarket.Usuarios.Tests.csproj" />
+  </Folder>
   <Folder Name="/Servicio3.Reportes/">
     <Project Path="Servicio3.Reportes/src/PuntoMarket.Reportes.Api/PuntoMarket.Reportes.Api.csproj" />
     <Project Path="Servicio3.Reportes/src/PuntoMarket.Reportes.Application/PuntoMarket.Reportes.Application.csproj" />

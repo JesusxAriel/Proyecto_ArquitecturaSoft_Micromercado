@@ -1,0 +1,32 @@
+@page
+@model Proyecto_Arquitectura_Micromercado.Pages.Cuenta.PerfilModel
+@{
+    ViewData["Title"] = "Mi perfil";
+}
+
+<div class="container mt-5" style="max-width: 560px;">
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <h1 class="h4 fw-bold text-center mb-4">Mi perfil</h1>
+
+            <dl class="row mb-4">
+                <dt class="col-sm-5">Nombre</dt>
+                <dd class="col-sm-7">@Model.Nombre</dd>
+
+                <dt class="col-sm-5">Nombre de usuario</dt>
+                <dd class="col-sm-7">@Model.NombreUsuario</dd>
+
+                <dt class="col-sm-5">Rol</dt>
+                <dd class="col-sm-7">@Model.Rol</dd>
+
+                @if (Model.InicioDeSesion is not null)
+                {
+                    <dt class="col-sm-5">Inicio de sesión</dt>
+                    <dd class="col-sm-7">@Model.InicioDeSesion</dd>
+                }
+            </dl>
+
+            <a asp-page="/Users/CambiarPassword" class="btn btn-primary w-100">Cambiar contraseña</a>
+        </div>
+    </div>
+</div>

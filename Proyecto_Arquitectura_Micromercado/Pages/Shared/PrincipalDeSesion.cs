@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Claims;
 using Proyecto_Arquitectura_Micromercado.Application.Security;
+using Proyecto_Arquitectura_Micromercado.Servicios.Reportes;
 
 namespace Proyecto_Arquitectura_Micromercado.Pages.Shared;
 
@@ -12,7 +13,8 @@ public static class PrincipalDeSesion
         string rol,
         string esquema,
         bool debeCambiarPassword = false,
-        DateTimeOffset? expiracionJwtUtc = null)
+        DateTimeOffset? expiracionJwtUtc = null,
+        string? tokenDeAcceso = null)
     {
         var claims = new List<Claim>
         {
@@ -26,6 +28,11 @@ public static class PrincipalDeSesion
             claims.Add(new Claim(
                 ClaimsDeIdentidad.ExpiracionJwt,
                 expiracion.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(tokenDeAcceso))
+        {
+            claims.Add(new Claim(TokenDeAccesoDelUsuario.ClaimDeTokenDeAcceso, tokenDeAcceso));
         }
 
         var identidad = new ClaimsIdentity(

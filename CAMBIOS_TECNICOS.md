@@ -1,5 +1,7 @@
 # Cambios técnicos del proyecto PuntoMarket
 
+> **Nota:** este documento es un registro histórico. Nginx, Redis y las réplicas `app1`, `app2` y `app3` ya no forman parte del proyecto. Hoy cada servicio (`mysql`, `usuarios`, `reportes` y `frontend`) se ejecuta como una sola instancia, y la caché del historial de ventas y la sesión usan la caché en memoria (`AddDistributedMemoryCache`). El estado actual de Docker está descrito en el `README.md`.
+
 ## 1. Introducción y objetivo de los cambios
 
 Este documento describe los cambios técnicos que se encuentran actualmente en
