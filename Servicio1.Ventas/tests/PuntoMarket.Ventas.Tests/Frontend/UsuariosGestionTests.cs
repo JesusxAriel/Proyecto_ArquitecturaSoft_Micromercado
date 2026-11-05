@@ -164,7 +164,10 @@ public sealed class UsuariosGestionTests
     }
     private static Dictionary<string,string> Alta(string html)=>new(){{"__RequestVerificationToken",Campo(html,"__RequestVerificationToken")},{"Solicitud",Campo(html,"Solicitud")},{"Input.Nombre","Nuevo"},{"Input.Apellido","Usuario"},{"Input.Correo","nuevo@example.invalid"},{"Input.IdRol","2"}};
     private static string Campo(string html,string campo)=>WebUtility.HtmlDecode(Regex.Match(html,"name=\""+Regex.Escape(campo)+"\"[^>]*value=\"([^\"]*)\"").Groups[1].Value);
-    private sealed class LoginFalso(string jwt) : IUsuariosApiClient { public Task<string> IniciarSesion(string correo,string password,CancellationToken ct)=>Task.FromResult(jwt); }
+    private sealed class LoginFalso(string jwt) : IUsuariosApiClient {
+        public Task<string> IniciarSesion(string correo,string password,CancellationToken ct)=>Task.FromResult(jwt);
+        public Task CambiarPassword(string token,string contrasenaActual,string nuevaContrasena,CancellationToken ct)=>Task.FromException(new NotSupportedException());
+    }
     private sealed class ApiRemota {
         public const string Privado="DetalleSMTPPrivadoNoPublicar";
         public int CodigoEscritura {get;set;}=200;public int CodigoLectura {get;set;}=200;

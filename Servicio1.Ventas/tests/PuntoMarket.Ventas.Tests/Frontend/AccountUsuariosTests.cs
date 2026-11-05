@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -49,7 +50,7 @@ public sealed class AccountUsuariosTests
         Assert.Equal(1,h.Api.Llamadas);
     }
     [Theory]
-    [InlineData("credenciales",401)] [InlineData("token-invalido",401)] [InlineData("expirado",401)] [InlineData("password-pendiente",403)]
+    [InlineData("credenciales",401)] [InlineData("token-invalido",401)] [InlineData("expirado",401)]
     public async Task Rechaza_login_invalido_sin_cookie_ni_password_republicada(string modo,int esperado)
     {
         await using var h=await Host.Crear(modo:modo); using var c=h.Cliente();
@@ -59,7 +60,101 @@ public sealed class AccountUsuariosTests
         Assert.DoesNotContain(Password,h.Logs.Texto); Assert.DoesNotContain(h.Jwt,h.Logs.Texto);
         Assert.DoesNotContain(r.Headers.GetValues("Set-Cookie"),x=>x.StartsWith(AccesoUsuariosPreparado.Cookie+"=")&&!x.StartsWith(AccesoUsuariosPreparado.Cookie+"=;"));
         Assert.DoesNotContain("Sesión activa:",await c.GetStringAsync("/Account/Login"));
-        if(modo=="password-pendiente") Assert.Contains("Debe cambiar su contraseña",WebUtility.HtmlDecode(html));
+    }
+
+    [Theory]
+    [InlineData("Administrador")] [InlineData("Cajero")]
+    public async Task Opcion_cambiar_password_aparece_para_todos_los_roles_autenticados(string rol)
+    {
+        await using var h=await Host.Crear(rol:rol); using var c=h.Cliente();
+        await h.Login(c);
+        var html=await c.GetStringAsync("/Account/CambiarPassword");
+        Assert.Contains("Cambiar contraseña",WebUtility.HtmlDecode(html));
+        Assert.Contains("Input.ContrasenaActual",html);
+        Assert.Contains("Input.NuevaContrasena",html);
+        Assert.Contains("Input.ConfirmarContrasena",html);
+    }
+
+    [Fact]
+    public async Task Cambio_password_valida_nueva_y_confirmacion_sin_enviar_datos_invalidos()
+    {
+        await using var h=await Host.Crear(); using var c=h.Cliente();
+        await h.Login(c);
+        var html=await c.GetStringAsync("/Account/CambiarPassword");
+        var csrf=Csrf(html);
+        var respuesta=await c.PostAsync("/Account/CambiarPassword",new FormUrlEncodedContent(new Dictionary<string,string>{
+            ["__RequestVerificationToken"]=csrf,
+            ["Input.ContrasenaActual"]=Password,
+            ["Input.NuevaContrasena"]="debil",
+            ["Input.ConfirmarContrasena"]="debil"
+        }));
+        Assert.Equal(HttpStatusCode.BadRequest,respuesta.StatusCode);
+        var contenido=await respuesta.Content.ReadAsStringAsync();
+        Assert.Contains("al menos 8 caracteres",WebUtility.HtmlDecode(contenido));
+        Assert.DoesNotContain("debil",contenido);
+        Assert.Empty(h.Api.Cambios);
+
+        html=await c.GetStringAsync("/Account/CambiarPassword");
+        respuesta=await c.PostAsync("/Account/CambiarPassword",new FormUrlEncodedContent(new Dictionary<string,string>{
+            ["__RequestVerificationToken"]=Csrf(html),
+            ["Input.ContrasenaActual"]=Password,
+            ["Input.NuevaContrasena"]="CambioSeguro2!",
+            ["Input.ConfirmarContrasena"]="CambioSeguro3!"
+        }));
+        Assert.Equal(HttpStatusCode.BadRequest,respuesta.StatusCode);
+        Assert.Contains("no coinciden",WebUtility.HtmlDecode(await respuesta.Content.ReadAsStringAsync()));
+        Assert.Empty(h.Api.Cambios);
+    }
+
+    [Fact]
+    public async Task Cambio_password_llama_a_Usuarios_y_cierra_sesion_para_el_proximo_login()
+    {
+        await using var h=await Host.Crear(); using var c=h.Cliente();
+        var login=await h.Login(c);
+        var ticket=h.Ticket(login);
+        var id=ticket.Principal.FindFirst(AccesoUsuariosPreparado.ClaimSesion)!.Value;
+        var html=await c.GetStringAsync("/Account/CambiarPassword");
+        var nueva="CambioSeguro2!";
+        var respuesta=await c.PostAsync("/Account/CambiarPassword",new FormUrlEncodedContent(new Dictionary<string,string>{
+            ["__RequestVerificationToken"]=Csrf(html),
+            ["Input.ContrasenaActual"]=Password,
+            ["Input.NuevaContrasena"]=nueva,
+            ["Input.ConfirmarContrasena"]=nueva
+        }));
+        Assert.Equal(HttpStatusCode.Redirect,respuesta.StatusCode);
+        Assert.Equal("/Account/Login",respuesta.Headers.Location!.OriginalString);
+        Assert.Single(h.Api.Cambios);
+        Assert.Equal((h.Jwt,Password,nueva),h.Api.Cambios.Single());
+        Assert.False(h.App.Services.GetRequiredService<SesionesUsuario>().Existe(id));
+        Assert.Contains(respuesta.Headers.GetValues("Set-Cookie"),x=>x.StartsWith(AccesoUsuariosPreparado.Cookie+"=;"));
+        var paginaLogin=await c.GetStringAsync("/Account/Login");
+        Assert.Contains("La contraseña se cambió correctamente",WebUtility.HtmlDecode(paginaLogin));
+        Assert.DoesNotContain(nueva,paginaLogin);
+        Assert.DoesNotContain(nueva,h.Logs.Texto);
+        Assert.DoesNotContain(h.Jwt,h.Logs.Texto);
+    }
+
+    [Fact]
+    public async Task Login_con_cambio_obligatorio_solo_permite_cambiar_password_o_salir()
+    {
+        await using var h=await Host.Crear(modo:"password-pendiente"); using var c=h.Cliente();
+        var login=await h.Login(c);
+        Assert.Equal(HttpStatusCode.Redirect,login.StatusCode);
+        Assert.Equal("/Account/CambiarPassword",login.Headers.Location!.OriginalString);
+        Assert.Equal(HttpStatusCode.Redirect,(await c.GetAsync("/Sales/Index")).StatusCode);
+        var html=await c.GetStringAsync("/Account/CambiarPassword");
+        Assert.Contains("Cambiar contraseña",WebUtility.HtmlDecode(html));
+
+        var nueva="CambioSeguro2!";
+        var respuesta=await c.PostAsync("/Account/CambiarPassword",new FormUrlEncodedContent(new Dictionary<string,string>{
+            ["__RequestVerificationToken"]=Csrf(html),
+            ["Input.ContrasenaActual"]=Password,
+            ["Input.NuevaContrasena"]=nueva,
+            ["Input.ConfirmarContrasena"]=nueva
+        }));
+        Assert.Equal(HttpStatusCode.Redirect,respuesta.StatusCode);
+        Assert.Single(h.Api.Cambios);
+        Assert.DoesNotContain(nueva,await respuesta.Content.ReadAsStringAsync());
     }
     [Fact]
     public async Task Login_invalido_no_invoca_API_ni_rellena_password()
@@ -261,6 +356,35 @@ public sealed class AccountUsuariosTests
             var codigo=File.ReadAllText(f);Assert.DoesNotContain("WriteToken(",codigo);Assert.DoesNotContain("HMACSHA256.HashData",codigo);
         }
     }
+    [Fact]
+    public async Task Cliente_Usuarios_envia_cambio_como_Bearer_y_solo_las_dos_contrasenas_requeridas()
+    {
+        string? ruta=null; string? esquema=null; string? token=null; string? cuerpo=null;
+        using var clienteHttp=new HttpClient(new DelegatingHandlerFalso(async (solicitud,ct) => {
+            ruta=solicitud.RequestUri!.PathAndQuery;
+            esquema=solicitud.Headers.Authorization?.Scheme;
+            token=solicitud.Headers.Authorization?.Parameter;
+            cuerpo=await solicitud.Content!.ReadAsStringAsync(ct);
+            return new HttpResponseMessage(HttpStatusCode.OK) {
+                Content=new StringContent("{\"cambiada\":true}",Encoding.UTF8,"application/json")
+            };
+        })) { BaseAddress=new Uri("http://127.0.0.1:5003/") };
+        var api=new UsuariosApiClient(clienteHttp);
+
+        await api.CambiarPassword("jwt-fixture","Actual2!Segura","Nueva2!Segura",CancellationToken.None);
+
+        Assert.Equal("/api/autenticacion/cambiar-password",ruta);
+        Assert.Equal("Bearer",esquema);
+        Assert.Equal("jwt-fixture",token);
+        using var json=JsonDocument.Parse(cuerpo!);
+        Assert.Equal("Actual2!Segura",json.RootElement.GetProperty("contrasenaActual").GetString());
+        Assert.Equal("Nueva2!Segura",json.RootElement.GetProperty("nuevaContrasena").GetString());
+        Assert.Equal(2,json.RootElement.EnumerateObject().Count());
+    }
+
+    private sealed class DelegatingHandlerFalso(Func<HttpRequestMessage,CancellationToken,Task<HttpResponseMessage>> enviar) : HttpMessageHandler {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,CancellationToken cancellationToken)=>enviar(request,cancellationToken);
+    }
     private sealed class Remoto {
         public int Codigo {get;set;}=200;
         public System.Collections.Concurrent.ConcurrentQueue<(string Url,string? Token,HttpMethod Metodo)> Llamadas {get;}=new();
@@ -283,7 +407,12 @@ public sealed class AccountUsuariosTests
     private sealed class ApiFalsa(string token,bool rechazar) : IUsuariosApiClient {
         public string Token {get;set;}=token;
         public int Llamadas {get;private set;}
+        public System.Collections.Concurrent.ConcurrentQueue<(string Token,string Actual,string Nueva)> Cambios {get;}=new();
         public Task<string> IniciarSesion(string correo,string contrasena,CancellationToken ct) { Llamadas++; Assert.Equal(Password,contrasena); if(rechazar) throw new UsuariosApiException(401); return Task.FromResult(Token); }
+        public Task CambiarPassword(string token,string contrasenaActual,string nuevaContrasena,CancellationToken ct) {
+            Cambios.Enqueue((token,contrasenaActual,nuevaContrasena));
+            return Task.CompletedTask;
+        }
     }
     private sealed class Logs : ILoggerProvider {
         private readonly System.Collections.Concurrent.ConcurrentQueue<string> _lineas=new();

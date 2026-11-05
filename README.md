@@ -228,6 +228,8 @@ No pegar enlaces de activación o JWT en terminales, Swagger, capturas o inciden
 
 Administrador tiene acceso a reportes, usuarios y anulaciones. Cajero tiene acceso operativo a ventas e historial. Un JWT vencido requiere nuevo login; HTTP 403 conserva la sesión, mientras HTTP 401 la invalida. La condición debeCambiarPassword impide entrar a páginas operativas.
 
+Con una sesión iniciada, ambos roles tienen la opción **Cambiar contraseña** en el menú. La página solicita la contraseña actual y la nueva contraseña dos veces; Usuarios vuelve a validar la política y persiste el cambio. Al completarlo, se cierra la sesión para que el siguiente inicio use la nueva contraseña. Si el JWT exige cambio obligatorio, el frontend permite únicamente abrir esa página o cerrar sesión hasta completar el cambio.
+
 ## Pruebas y compilación
 
 ~~~powershell

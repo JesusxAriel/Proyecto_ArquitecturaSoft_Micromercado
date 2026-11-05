@@ -425,6 +425,7 @@ public sealed class ConsultasRazorTests
     }
     private sealed class UsuariosFixture : IUsuariosApiClient {
         public Task<string> IniciarSesion(string correo,string contrasena,CancellationToken ct)=>Task.FromResult(SesionRealPrueba.Token(Clave,correo.StartsWith("admin",StringComparison.Ordinal)?"Administrador":"Cajero"));
+        public Task CambiarPassword(string token,string contrasenaActual,string nuevaContrasena,CancellationToken ct)=>Task.FromException(new NotSupportedException());
     }
     private sealed class Host(WebApplication app, Uri direccion) : IAsyncDisposable
     {

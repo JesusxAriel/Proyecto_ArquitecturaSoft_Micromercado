@@ -54,6 +54,17 @@ public static class FrontendBootstrap
                 await Microsoft.AspNetCore.Authentication.AuthenticationHttpContextExtensions.SignOutAsync(context, AccesoUsuariosPreparado.Esquema);
             await next();
         });
+        app.Use(async (context, next) => {
+            if (context.User.Identity?.IsAuthenticated == true &&
+                context.User.HasClaim("debeCambiarPassword", "true") &&
+                !context.Request.Path.Equals("/Account/CambiarPassword", StringComparison.OrdinalIgnoreCase) &&
+                !context.Request.Path.Equals("/Account/Logout", StringComparison.OrdinalIgnoreCase))
+            {
+                context.Response.Redirect("/Account/CambiarPassword");
+                return;
+            }
+            await next();
+        });
         app.UseAuthorization();
         app.MapRazorPages();
         return app;

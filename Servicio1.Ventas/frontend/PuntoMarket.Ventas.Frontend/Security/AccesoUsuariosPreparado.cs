@@ -34,11 +34,11 @@ public static class AccesoUsuariosPreparado
                 string? Unico(string tipo) { var valores=p?.FindAll(tipo).ToArray(); return valores?.Length == 1 ? valores[0].Value : null; }
                 var id = Unico(ClaimSesion);
                 var identidad = sesiones.Identidad(id);
-                if (identidad is null || identidad.DebeCambiarPassword || p!.HasClaim(x => x.Type == "demo_session") ||
+                if (identidad is null || p!.HasClaim(x => x.Type == "demo_session") ||
                     p?.Identity?.AuthenticationType != Esquema ||
                     Unico(ClaimTypes.NameIdentifier) != identidad.Id.ToString(CultureInfo.InvariantCulture) ||
                     Unico(ClaimTypes.Name) != identidad.Usuario || Unico(ClaimTypes.Role) != identidad.Rol ||
-                    Unico("debeCambiarPassword") != "false" ||
+                    !string.Equals(Unico("debeCambiarPassword"), identidad.DebeCambiarPassword.ToString(), StringComparison.OrdinalIgnoreCase) ||
                     c.Properties.ExpiresUtc is not { } exp || exp > identidad.VenceEn || exp <= reloj.GetUtcNow() ||
                     c.Properties.AllowRefresh != false || c.Properties.IsPersistent)
                 {

@@ -25,6 +25,7 @@ public sealed class LoginModel(IUsuariosApiClient api, ValidadorTokenUsuarios va
     public string? ErrorLogin { get; private set; }
     public string? UsuarioPreparado { get; private set; }
     public string? RolPreparado { get; private set; }
+    [TempData] public string? CambioPasswordCompletado { get; set; }
     private bool RetornoSeguro() => string.IsNullOrEmpty(ReturnUrl) || Url.IsLocalUrl(ReturnUrl);
     public async Task<IActionResult> OnGetAsync()
     {
@@ -50,17 +51,19 @@ public sealed class LoginModel(IUsuariosApiClient api, ValidadorTokenUsuarios va
             HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity());
             jwt = await api.IniciarSesion(Input.Correo, contrasena!, ct);
             var identidad = validador.Validar(jwt);
-            if (identidad.DebeCambiarPassword) { ErrorLogin = "Debe cambiar su contraseña antes de acceder. El cambio de contraseña estará disponible en una etapa posterior."; Response.StatusCode = 403; return Page(); }
             creada = sesiones.Crear(jwt);
             var principal = new ClaimsPrincipal(new ClaimsIdentity([
                 new Claim(ClaimTypes.NameIdentifier, identidad.Id.ToString(CultureInfo.InvariantCulture)),
                 new Claim(ClaimTypes.Name, identidad.Usuario), new Claim(ClaimTypes.Role, identidad.Rol),
-                new Claim(AccesoUsuariosPreparado.ClaimSesion, creada), new Claim("debeCambiarPassword", "false")
+                new Claim(AccesoUsuariosPreparado.ClaimSesion, creada),
+                new Claim("debeCambiarPassword", identidad.DebeCambiarPassword ? "true" : "false")
             ], AccesoUsuariosPreparado.Esquema));
             await HttpContext.SignInAsync(AccesoUsuariosPreparado.Esquema, principal, new AuthenticationProperties {
                 ExpiresUtc = identidad.VenceEn, IsPersistent = false, AllowRefresh = false
             });
             creada = null;
+            if (identidad.DebeCambiarPassword)
+                return RedirectToPage("/Account/CambiarPassword");
             return string.IsNullOrEmpty(ReturnUrl) ? RedirectToPage("/Sales/Index") : LocalRedirect(ReturnUrl);
         }
         catch (UsuariosApiException e) { ErrorLogin = e.Message; Response.StatusCode = e.Estado; return Page(); }

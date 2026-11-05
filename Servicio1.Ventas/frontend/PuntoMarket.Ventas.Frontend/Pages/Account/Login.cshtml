@@ -4,6 +4,7 @@
 <section class="card sale-panel mx-auto" style="max-width:640px"><div class="card-body p-4">
 <h1 class="h3">Iniciar sesión</h1>
 <p>Ingrese sus credenciales para acceder a PuntoMarket.</p>
+@if (Model.CambioPasswordCompletado is not null) { <p class="alert alert-success" role="status">@Model.CambioPasswordCompletado</p> }
 @if (Model.UsuarioPreparado is not null) {
     <p class="alert alert-success">Sesión activa: @Model.UsuarioPreparado · @Model.RolPreparado.</p>
     <a asp-page="/Account/Logout" class="btn btn-outline-secondary">Cerrar sesión de Usuarios</a>
