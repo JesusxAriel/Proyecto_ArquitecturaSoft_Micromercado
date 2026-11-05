@@ -23,6 +23,7 @@ public sealed class LoginModel(IUsuariosApiClient api, ValidadorTokenUsuarios va
     [BindProperty] public EntradaLogin Input { get; set; } = new();
     [BindProperty(SupportsGet = true)] public string? ReturnUrl { get; set; }
     public string? ErrorLogin { get; private set; }
+    [TempData(Key = MensajeInformativoLogin.Clave)] public string? MensajeInformativo { get; set; }
     public string? UsuarioPreparado { get; private set; }
     public string? RolPreparado { get; private set; }
     private bool RetornoSeguro() => string.IsNullOrEmpty(ReturnUrl) || Url.IsLocalUrl(ReturnUrl);

@@ -8,6 +8,7 @@
     <p class="alert alert-success">Sesión activa: @Model.UsuarioPreparado · @Model.RolPreparado.</p>
     <a asp-page="/Account/Logout" class="btn btn-outline-secondary">Cerrar sesión de Usuarios</a>
 }
+@if (!string.IsNullOrWhiteSpace(Model.MensajeInformativo)) { <p class="alert alert-success" role="status">@Model.MensajeInformativo</p> }
 @if (Model.ErrorLogin is not null) { <p class="alert alert-danger" role="alert">@Model.ErrorLogin</p> }
 <form method="post">
     <div asp-validation-summary="All" class="text-danger"></div>
