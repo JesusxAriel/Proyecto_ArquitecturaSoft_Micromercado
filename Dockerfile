@@ -1,5 +1,4 @@
 
-# Etapa 1: compilar y publicar
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
@@ -12,7 +11,6 @@ COPY Proyecto_Arquitectura_Micromercado/ Proyecto_Arquitectura_Micromercado/
 WORKDIR /src/Proyecto_Arquitectura_Micromercado
 RUN dotnet publish Proyecto_Arquitectura_Micromercado.csproj -c Release -o /app/publish
 
-# Etapa 2: ejecutar la aplicación
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 

@@ -23,7 +23,6 @@ CREATE TABLE `USUARIO` (
   `username` VARCHAR(50) NOT NULL,
   `passwordHash` VARCHAR(255) NOT NULL,
   `nombreCompleto` VARCHAR(150) NOT NULL,
-  -- Se conservan los nombres originales para compatibilidad con autenticacion y cuentas previas.
   `nombre` VARCHAR(150) DEFAULT NULL,
   `apellido` VARCHAR(150) DEFAULT NULL,
   `correo` VARCHAR(150) DEFAULT NULL,
