@@ -18,3 +18,7 @@ main { flex: 1; }
 body.pagina-minima { padding-top: 0; justify-content: center; }
 body.pagina-minima main { flex: 0 1 auto; width: 100%; }
 .login-minimo { max-width: 460px; }
+.marca-instancia { grid-column: 1; grid-row: 1; min-width: 0; overflow: hidden; }
+.marca-instancia .navbar-brand { flex-shrink: 0; }
+.marca-instancia .badge { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 991.98px) { .marca-instancia { flex: 1 1 0; } .marca-instancia .badge { font-size: .7rem; } }
