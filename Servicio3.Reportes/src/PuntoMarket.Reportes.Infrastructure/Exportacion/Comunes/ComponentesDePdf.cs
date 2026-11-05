@@ -43,6 +43,7 @@ public static class ComponentesDePdf
 
     public static void TarjetaDeGrafico(IContainer contenedor, ImagenDeGrafico grafico) =>
         contenedor
+            .ShowEntire()
             .Border(1).BorderColor(EstilosDeReporte.Borde)
             .Padding(6)
             .Column(columna =>

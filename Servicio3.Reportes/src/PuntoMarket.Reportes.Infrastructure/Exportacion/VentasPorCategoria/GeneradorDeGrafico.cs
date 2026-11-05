@@ -39,7 +39,7 @@ public class GeneradorDeGrafico
     {
         var datos = productos.Select(p => (p.NombreProducto, p.MontoVendido)).ToList();
 
-        return GraficoDeBarrasHorizontales.Generar("Los 5 productos más vendidos", "Monto vendido (Bs)", datos);
+        return GraficoDeBarrasHorizontales.Generar("Los 5 productos más vendidos", "Monto vendido (Bs)", datos, EstiloDeGrafico.AnchoCompleto);
     }
 
     public ImagenDeGrafico MontoPorDia(IReadOnlyList<PuntoDeTendencia> puntos) =>

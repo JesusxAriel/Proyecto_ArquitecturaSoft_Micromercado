@@ -2,12 +2,14 @@ using PuntoMarket.Reportes.Domain.Tendencias;
 using PuntoMarket.Reportes.Domain.ValueObjects;
 using PuntoMarket.Reportes.Infrastructure.Exportacion.Comunes;
 using ScottPlot;
+using ScottPlot.TickGenerators;
 
 namespace PuntoMarket.Reportes.Infrastructure.Exportacion.Graficos;
 
 internal static class GraficoDeTendencia
 {
     private const int MaximoDePuntosEtiquetados = 14;
+    private const int MaximoDeMarcas = 12;
     private const int Alto = 440;
 
     public static ImagenDeGrafico Generar(string titulo, TendenciaDeVentas tendencia)
@@ -26,8 +28,7 @@ internal static class GraficoDeTendencia
         linea.FillYColor = EstiloDeGrafico.Color(EstilosDeReporte.AmbarClaro).WithAlpha(0.45);
 
         EtiquetarPuntos(grafico, tendencia, fechas, montos);
-        grafico.Axes.DateTimeTicksBottom();
-        FormatearFechas(grafico);
+        grafico.Axes.Bottom.TickGenerator = new NumericManual(CrearMarcas(tendencia));
         grafico.Axes.Bottom.Label.FontSize = EstiloDeGrafico.TamanoDeEtiqueta;
         grafico.Axes.Bottom.Label.Text = tendencia.Agrupacion == AgrupacionDeTendencia.Diaria ? "Día" : "Semana (inicio en lunes)";
         grafico.Axes.Left.Label.Text = "Monto (Bs)";
@@ -37,11 +38,14 @@ internal static class GraficoDeTendencia
         return new ImagenDeGrafico(titulo, contenido, EstiloDeGrafico.AnchoCompleto, Alto);
     }
 
-    private static void FormatearFechas(Plot grafico)
+    private static Tick[] CrearMarcas(TendenciaDeVentas tendencia)
     {
-        grafico.Axes.Bottom.TickLabelStyle.FontSize = EstiloDeGrafico.TamanoDeEtiqueta - 2;
-        if (grafico.Axes.Bottom.TickGenerator is ScottPlot.TickGenerators.DateTimeAutomatic fechas)
-            fechas.LabelFormatter = fecha => fecha.ToString("dd/MM");
+        var paso = (int)Math.Ceiling(tendencia.Puntos.Count / (double)MaximoDeMarcas);
+
+        return tendencia.Puntos
+            .Where((punto, indice) => indice % paso == 0)
+            .Select(punto => new Tick(punto.Fecha.ToDateTime(TimeOnly.MinValue).ToOADate(), punto.Fecha.ToString("dd/MM")))
+            .ToArray();
     }
 
     private static void EtiquetarPuntos(Plot grafico, TendenciaDeVentas tendencia, double[] fechas, double[] montos)
@@ -53,7 +57,8 @@ internal static class GraficoDeTendencia
         }
 
         for (var indice = 0; indice < montos.Length; indice++)
-            AgregarEtiqueta(grafico, fechas[indice], montos[indice], tendencia.Puntos[indice].Monto);
+            if (montos[indice] > 0)
+                AgregarEtiqueta(grafico, fechas[indice], montos[indice], tendencia.Puntos[indice].Monto);
     }
 
     private static void EtiquetarMaximo(Plot grafico, TendenciaDeVentas tendencia, double[] fechas, double[] montos)

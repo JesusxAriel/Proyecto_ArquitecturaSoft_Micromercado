@@ -8,6 +8,8 @@ internal static class EstiloDeGrafico
     public const int AnchoMedio = 760;
     public const int AnchoCompleto = 1560;
     public const int AltoMinimo = 360;
+    public const int AltoMinimoDeBarrasAnchas = 380;
+    public const int AltoMinimoDeBarrasEstrechas = 560;
     public const int AltoPorBarra = 52;
     public const int AltoFijoDeBarras = 130;
     public const int TamanoDeEtiqueta = 22;
@@ -31,6 +33,8 @@ internal static class EstiloDeGrafico
         return grafico;
     }
 
-    public static int AltoParaBarras(int cantidad) =>
-        Math.Max(AltoMinimo, AltoFijoDeBarras + AltoPorBarra * cantidad);
+    public static int AltoParaBarras(int cantidad, int ancho) =>
+        Math.Max(
+            ancho >= AnchoCompleto ? AltoMinimoDeBarrasAnchas : AltoMinimoDeBarrasEstrechas,
+            AltoFijoDeBarras + AltoPorBarra * cantidad);
 }
