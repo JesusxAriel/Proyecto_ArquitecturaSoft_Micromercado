@@ -12,6 +12,8 @@ public static class AgregarInfraestructuraVentasPorCategoria
     public static IServiceCollection AgregarInfraestructuraDeVentasPorCategoria(this IServiceCollection servicios) =>
         servicios
             .AddScoped<IConsultaVentasPorCategoria, MySqlConsultaVentasPorCategoria>()
+            .AddScoped<IConsultaTendenciaDeVentas, MySqlConsultaTendenciaDeVentas>()
+            .AddScoped<IConsultaProductosMasVendidos, MySqlConsultaProductosMasVendidos>()
             .AddSingleton<GeneradorDeGrafico>()
             .AddSingleton<IExportadorDeReporte<ReporteVentasPorCategoria>, VentasPorCategoriaPdf>()
             .AddSingleton<IExportadorDeReporte<ReporteVentasPorCategoria>, VentasPorCategoriaExcel>()

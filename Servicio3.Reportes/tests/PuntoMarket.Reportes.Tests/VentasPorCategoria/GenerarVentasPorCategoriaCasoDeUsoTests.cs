@@ -1,6 +1,7 @@
 using PuntoMarket.Reportes.Application.Common;
 using PuntoMarket.Reportes.Application.UseCases.VentasPorCategoria.GenerarVentasPorCategoria;
 using PuntoMarket.Reportes.Domain.Exceptions;
+using PuntoMarket.Reportes.Domain.ValueObjects;
 using PuntoMarket.Reportes.Domain.VentasPorCategoria;
 
 namespace PuntoMarket.Reportes.Tests.VentasPorCategoria;
@@ -11,10 +12,17 @@ public class GenerarVentasPorCategoriaCasoDeUsoTests
         new FilaDeCategoria(1, "Bebidas", 10, 100m),
         new FilaDeCategoria(2, "Lácteos", 4, 60m));
 
+    private readonly ConsultaDeTendenciaFalsa _tendencia = new(
+        new PuntoDeTendencia(new DateOnly(2026, 5, 1), 40m),
+        new PuntoDeTendencia(new DateOnly(2026, 5, 3), 120m));
+
+    private readonly ConsultaDeProductosFalsa _productos = new(
+        new FilaDeProducto(9, "Leche entera 1 L", 6, 39m));
+
     private readonly ExportadorFalso _exportadorPdf = new(FormatoDeExportacion.Pdf);
 
     private GenerarVentasPorCategoriaCasoDeUso CrearCasoDeUso() =>
-        new(_consulta, new CreadorFalso(_exportadorPdf), new RelojFalso(), new UsuarioFalso());
+        new(_consulta, _tendencia, _productos, new CreadorFalso(_exportadorPdf), new RelojFalso(), new UsuarioFalso());
 
     private static GenerarVentasPorCategoriaEntrada Entrada(
         DateOnly? desde = null,
@@ -23,6 +31,39 @@ public class GenerarVentasPorCategoriaCasoDeUsoTests
         int? top = null,
         FormatoDeExportacion formato = FormatoDeExportacion.Pdf) =>
         new(desde, hasta, idCategoria, top, formato);
+
+    [Fact]
+    public async Task Al_exportar_agrega_la_tendencia_y_los_productos_de_las_categorias_del_reporte()
+    {
+        await CrearCasoDeUso().EjecutarAsync(Entrada(), CancellationToken.None);
+
+        Assert.Equal([1, 2], _tendencia.CategoriasRecibidas);
+        Assert.Equal(GenerarVentasPorCategoriaCasoDeUso.ProductosMasVendidosMaximo, _productos.LimiteRecibido);
+        var reporte = _exportadorPdf.ReporteRecibido!;
+        Assert.Equal(3, reporte.Tendencia!.Puntos.Count);
+        Assert.Single(reporte.ProductosMasVendidos!);
+    }
+
+    [Fact]
+    public async Task En_formato_json_no_consulta_la_tendencia_ni_los_productos()
+    {
+        await CrearCasoDeUso().EjecutarAsync(Entrada(formato: FormatoDeExportacion.Json), CancellationToken.None);
+
+        Assert.Equal(0, _tendencia.Llamadas);
+        Assert.Equal(0, _productos.Llamadas);
+    }
+
+    [Fact]
+    public async Task Sin_categorias_no_consulta_la_tendencia_ni_los_productos()
+    {
+        var vacio = new GenerarVentasPorCategoriaCasoDeUso(
+            new ConsultaFalsa(), _tendencia, _productos, new CreadorFalso(_exportadorPdf), new RelojFalso(), new UsuarioFalso());
+
+        await vacio.EjecutarAsync(Entrada(), CancellationToken.None);
+
+        Assert.Equal(0, _tendencia.Llamadas);
+        Assert.Equal(0, _productos.Llamadas);
+    }
 
     [Fact]
     public async Task Un_rango_invertido_lanza_excepcion_y_no_consulta()
