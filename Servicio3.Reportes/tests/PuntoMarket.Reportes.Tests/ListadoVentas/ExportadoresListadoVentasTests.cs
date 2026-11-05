@@ -4,6 +4,7 @@ using PuntoMarket.Reportes.Application.Common;
 using PuntoMarket.Reportes.Domain.ListadoVentas;
 using PuntoMarket.Reportes.Domain.ValueObjects;
 using PuntoMarket.Reportes.Infrastructure.Exportacion.ListadoVentas;
+using PuntoMarket.Reportes.Infrastructure.Exportacion.VentasPorCategoria;
 
 namespace PuntoMarket.Reportes.Tests.ListadoVentas;
 
@@ -38,7 +39,7 @@ public class ExportadoresListadoVentasTests
     [Fact]
     public void El_pdf_con_datos_comienza_con_la_firma_de_pdf()
     {
-        var exportador = new ListadoVentasPdf();
+        var exportador = new ListadoVentasPdf(new GeneradorDeGrafico());
 
         var archivo = exportador.Exportar(ReporteConDatos());
 
@@ -51,7 +52,7 @@ public class ExportadoresListadoVentasTests
     [Fact]
     public void El_pdf_sin_datos_se_genera_sin_romperse()
     {
-        var archivo = new ListadoVentasPdf().Exportar(CrearReporte());
+        var archivo = new ListadoVentasPdf(new GeneradorDeGrafico()).Exportar(CrearReporte());
 
         Assert.StartsWith("%PDF", Encoding.ASCII.GetString(archivo.Contenido, 0, 4));
     }
@@ -106,7 +107,7 @@ public class ExportadoresListadoVentasTests
     [Fact]
     public void El_creador_devuelve_el_exportador_que_corresponde_al_formato()
     {
-        var creador = new CreadorExportadorListadoVentas([new ListadoVentasPdf(), new ListadoVentasExcel()]);
+        var creador = new CreadorExportadorListadoVentas([new ListadoVentasPdf(new GeneradorDeGrafico()), new ListadoVentasExcel()]);
 
         Assert.Equal("application/pdf", creador.Exportar(ReporteConDatos(), FormatoDeExportacion.Pdf).TipoDeContenido);
         Assert.EndsWith(".xlsx", creador.Exportar(ReporteConDatos(), FormatoDeExportacion.Xlsx).NombreDeArchivo);
@@ -115,7 +116,7 @@ public class ExportadoresListadoVentasTests
     [Fact]
     public void El_creador_rechaza_un_formato_no_soportado()
     {
-        var creador = new CreadorExportadorListadoVentas([new ListadoVentasPdf(), new ListadoVentasExcel()]);
+        var creador = new CreadorExportadorListadoVentas([new ListadoVentasPdf(new GeneradorDeGrafico()), new ListadoVentasExcel()]);
 
         Assert.Throws<FormatoDeExportacionNoSoportadoException>(
             () => creador.Exportar(ReporteConDatos(), FormatoDeExportacion.Json));

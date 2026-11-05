@@ -33,6 +33,13 @@ public static class ComponentesDePdf
                 columna.Item().Text(linea).FontSize(9);
         });
 
+    public static void FiltrosCompactos(IContainer contenedor, IEnumerable<string> lineas) =>
+        contenedor.Column(columna =>
+        {
+            columna.Item().Text("Filtros aplicados").Bold().FontSize(10).FontColor(EstilosDeReporte.AmbarOscuro);
+            columna.Item().Text(string.Join("   |   ", lineas)).FontSize(9);
+        });
+
     public static void Tarjetas(IContainer contenedor, IReadOnlyList<Indicador> indicadores) =>
         contenedor.Row(fila =>
         {
@@ -74,12 +81,14 @@ public static class ComponentesDePdf
 
     public static IContainer CeldaDeFila(IContainer contenedor, int indice) =>
         contenedor
+            .ShowEntire()
             .Background(indice % 2 == 0 ? EstilosDeReporte.Blanco : EstilosDeReporte.FondoSuave)
             .Padding(5)
             .DefaultTextStyle(estilo => estilo.FontSize(9));
 
     public static IContainer CeldaDeTotales(IContainer contenedor) =>
         contenedor
+            .ShowEntire()
             .Background(EstilosDeReporte.Ambar)
             .BorderTop(1).BorderColor(EstilosDeReporte.AzulOscuro)
             .Padding(5)

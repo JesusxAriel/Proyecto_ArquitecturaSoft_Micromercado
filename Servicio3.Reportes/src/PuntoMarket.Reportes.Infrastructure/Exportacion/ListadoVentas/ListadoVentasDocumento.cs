@@ -8,15 +8,18 @@ namespace PuntoMarket.Reportes.Infrastructure.Exportacion.ListadoVentas;
 
 public class ListadoVentasDocumento : IDocument
 {
-    private const string FondoFilaAlterna = "#F1F5F9";
-    private const int MargenDePagina = 30;
+    private const int MargenDePagina = 28;
+    private const int EspacioEntreBloques = 8;
+    private const int ColumnasDeLaTabla = 8;
 
     private readonly ReporteListadoVentas _reporte;
+    private readonly GraficosDeListadoVentas? _graficos;
     private readonly byte[] _logo;
 
-    public ListadoVentasDocumento(ReporteListadoVentas reporte, byte[] logo)
+    public ListadoVentasDocumento(ReporteListadoVentas reporte, GraficosDeListadoVentas? graficos, byte[] logo)
     {
         _reporte = reporte;
+        _graficos = graficos;
         _logo = logo;
     }
 
@@ -27,144 +30,170 @@ public class ListadoVentasDocumento : IDocument
         {
             pagina.Size(PageSizes.A4.Landscape());
             pagina.Margin(MargenDePagina);
-            pagina.DefaultTextStyle(estilo => estilo.FontSize(9).FontColor(EstilosDeReporte.AzulOscuro));
+            pagina.DefaultTextStyle(estilo => estilo.FontSize(10).FontColor(EstilosDeReporte.AzulOscuro));
             pagina.Header().Element(ComponerEncabezado);
-            pagina.Content().PaddingVertical(12).Element(ComponerContenido);
+            pagina.Content().PaddingVertical(8).Element(ComponerContenido);
             pagina.Footer().Element(ComponerPie);
         });
 
     private void ComponerEncabezado(IContainer contenedor) =>
-        contenedor
-            .Background(EstilosDeReporte.AzulOscuro)
-            .BorderBottom(4).BorderColor(EstilosDeReporte.Ambar)
-            .Padding(10)
-            .Row(fila =>
-            {
-                fila.ConstantItem(56).Height(56).Image(_logo).FitArea();
-                fila.RelativeItem().PaddingLeft(12).AlignMiddle().Column(columna =>
-                {
-                    columna.Item().Text("PuntoMarket").FontSize(10).FontColor(EstilosDeReporte.Ambar).Bold();
-                    columna.Item().Text(TextosDelListadoVentas.Titulo).FontSize(22).FontColor(EstilosDeReporte.Blanco).Bold();
-                });
-            });
+        ComponentesDePdf.Encabezado(
+            contenedor,
+            _logo,
+            TextosDelListadoVentas.Titulo,
+            $"Período: {FormatosDeTexto.Periodo(_reporte.Filtros.Rango)}");
 
     private void ComponerContenido(IContainer contenedor) =>
         contenedor.Column(columna =>
         {
-            columna.Spacing(12);
-            columna.Item().Element(ComponerFiltros);
-            columna.Item().Element(ComponerCuerpo);
+            columna.Spacing(EspacioEntreBloques);
+            columna.Item().Element(c => ComponentesDePdf.FiltrosCompactos(c, LineasDeFiltros()));
+            if (_reporte.Filas.Count == 0)
+            {
+                columna.Item().Element(ComponerSinResultados);
+                return;
+            }
+
+            columna.Item().Element(c => ComponentesDePdf.Tarjetas(c, CrearIndicadores()));
+            if (_graficos is not null)
+            {
+                columna.Item().Element(ComponerGraficos);
+                columna.Item().PageBreak();
+            }
+
+            columna.Item().Element(ComponerTabla);
         });
 
-    private void ComponerFiltros(IContainer contenedor) =>
-        contenedor.Column(columna =>
-        {
-            columna.Item().Text("Filtros aplicados").Bold().FontSize(12).FontColor(EstilosDeReporte.AmbarOscuro);
-            columna.Item().Text($"Período: {FormatosDeTexto.Periodo(_reporte.Filtros.Rango)}");
-            columna.Item().Text($"Estado: {TextosDelListadoVentas.EstadoFiltrado(_reporte.Filtros)}");
-            columna.Item().Text($"Cliente: {TextosDelListadoVentas.ClienteFiltrado(_reporte.Filtros)}");
-            columna.Item().Text($"Cantidad de ventas: {TextosDelListadoVentas.Limite(_reporte.Filtros)}");
-        });
+    private IEnumerable<string> LineasDeFiltros() =>
+    [
+        $"Período: {FormatosDeTexto.Periodo(_reporte.Filtros.Rango)}",
+        $"Estado: {TextosDelListadoVentas.EstadoFiltrado(_reporte.Filtros)}",
+        $"Cliente: {TextosDelListadoVentas.ClienteFiltrado(_reporte.Filtros)}",
+        $"Cantidad de ventas: {TextosDelListadoVentas.Limite(_reporte.Filtros)}"
+    ];
 
-    private void ComponerCuerpo(IContainer contenedor)
+    private IReadOnlyList<Indicador> CrearIndicadores()
     {
-        if (_reporte.Filas.Count == 0)
-        {
-            contenedor.PaddingVertical(30).AlignCenter().Text(FormatosDeTexto.SinResultados).FontSize(13).Italic();
-            return;
-        }
+        var totales = _reporte.Totales;
 
-        contenedor.Element(ComponerTabla);
+        return
+        [
+            new Indicador("VENTAS COMPLETADAS", FormatosDeTexto.Entero(totales.CantidadDeCompletadas)),
+            new Indicador("MONTO TOTAL", FormatosDeTexto.Bolivianos(totales.MontoTotalDeCompletadas)),
+            new Indicador("PROMEDIO POR VENTA", FormatosDeTexto.Bolivianos(totales.PromedioPorVenta)),
+            new Indicador("VENTA MÁS ALTA", FormatosDeTexto.Bolivianos(totales.VentaMasAlta)),
+            new Indicador("VENTAS ANULADAS", FormatosDeTexto.Entero(totales.CantidadDeAnuladas))
+        ];
     }
 
-    private void ComponerTabla(IContainer contenedor) =>
-        contenedor.Table(tabla =>
+    private void ComponerGraficos(IContainer contenedor) =>
+        contenedor.Row(fila =>
         {
-            DefinirColumnas(tabla);
-            tabla.Header(ComponerEncabezadoDeTabla);
-            for (var indice = 0; indice < _reporte.Filas.Count; indice++)
-                ComponerFila(tabla, _reporte.Filas[indice], indice);
+            fila.Spacing(EspacioEntreBloques);
+            fila.RelativeItem().Element(c => ComponentesDePdf.TarjetaDeGrafico(c, _graficos!.MontoPorDia));
+            fila.RelativeItem().Element(c => ComponentesDePdf.TarjetaDeGrafico(c, _graficos!.ParticipacionPorCliente));
+        });
+
+    private static void ComponerSinResultados(IContainer contenedor) =>
+        contenedor.PaddingVertical(30).AlignCenter().Text(FormatosDeTexto.SinResultados).FontSize(13).Italic();
+
+    private void ComponerTabla(IContainer contenedor) =>
+        contenedor.Column(columna =>
+        {
+            columna.Item().PaddingBottom(4).Text("Detalle de ventas").Bold().FontSize(11).FontColor(EstilosDeReporte.AmbarOscuro);
+            columna.Item().Table(tabla =>
+            {
+                DefinirColumnas(tabla);
+                tabla.Header(ComponerEncabezadoDeTabla);
+                for (var indice = 0; indice < _reporte.Filas.Count; indice++)
+                    ComponerFila(tabla, _reporte.Filas[indice], indice);
+
+                ComponerTotales(tabla);
+            });
         });
 
     private static void DefinirColumnas(TableDescriptor tabla) =>
         tabla.ColumnsDefinition(columnas =>
         {
-            columnas.ConstantColumn(26);
+            columnas.ConstantColumn(30);
             columnas.RelativeColumn(1.6f);
-            columnas.RelativeColumn(1.6f);
-            columnas.RelativeColumn(1.3f);
+            columnas.RelativeColumn(1.7f);
+            columnas.RelativeColumn(1.4f);
             columnas.RelativeColumn(3);
             columnas.RelativeColumn(1.4f);
             columnas.RelativeColumn(1.2f);
-            columnas.RelativeColumn(1.5f);
+            columnas.RelativeColumn(1.6f);
         });
 
     private static void ComponerEncabezadoDeTabla(TableCellDescriptor encabezado)
     {
-        encabezado.Cell().Element(CeldaDeEncabezado).Text("N.º");
-        encabezado.Cell().Element(CeldaDeEncabezado).Text("Comprobante");
-        encabezado.Cell().Element(CeldaDeEncabezado).Text("Fecha y hora");
-        encabezado.Cell().Element(CeldaDeEncabezado).Text("NIT/CI");
-        encabezado.Cell().Element(CeldaDeEncabezado).Text("Razón social");
-        encabezado.Cell().Element(CeldaDeEncabezado).Text("Cajero");
-        encabezado.Cell().Element(CeldaDeEncabezado).Text("Estado");
-        encabezado.Cell().Element(CeldaDeEncabezado).AlignRight().Text("Monto (Bs)");
+        encabezado.Cell().Element(ComponentesDePdf.CeldaDeEncabezado).Text("N.º");
+        encabezado.Cell().Element(ComponentesDePdf.CeldaDeEncabezado).Text("Comprobante");
+        encabezado.Cell().Element(ComponentesDePdf.CeldaDeEncabezado).Text("Fecha y hora");
+        encabezado.Cell().Element(ComponentesDePdf.CeldaDeEncabezado).Text("NIT/CI");
+        encabezado.Cell().Element(ComponentesDePdf.CeldaDeEncabezado).Text("Cliente");
+        encabezado.Cell().Element(ComponentesDePdf.CeldaDeEncabezado).Text("Usuario");
+        encabezado.Cell().Element(ComponentesDePdf.CeldaDeEncabezado).Text("Estado");
+        encabezado.Cell().Element(ComponentesDePdf.CeldaDeEncabezado).AlignRight().Text("Monto (Bs)");
     }
 
-    private void ComponerFila(TableDescriptor tabla, FilaDeVenta fila, int indice)
+    private static void ComponerFila(TableDescriptor tabla, FilaDeVenta fila, int indice)
     {
-        var fondo = indice % 2 == 0 ? EstilosDeReporte.Blanco : FondoFilaAlterna;
-        IContainer Celda(IContainer contenedor) => contenedor.Background(fondo).Padding(4);
+        var anulada = fila.Estado == EstadoDeVenta.Anulada;
+        IContainer Celda(IContainer c) => ComponentesDePdf.CeldaDeFila(c, indice);
 
-        tabla.Cell().Element(Celda).Text((indice + 1).ToString());
-        tabla.Cell().Element(Celda).Text(fila.NroComprobante);
-        tabla.Cell().Element(Celda).Text(FormatosDeTexto.FechaYHora(fila.FechaVenta));
-        tabla.Cell().Element(Celda).Text(fila.NitCi);
-        tabla.Cell().Element(Celda).Text(fila.RazonSocial);
-        tabla.Cell().Element(Celda).Text(fila.Cajero);
-        tabla.Cell().Element(Celda).Text(TextosDelListadoVentas.Estado(fila.Estado)).FontColor(ColorDelEstado(fila.Estado));
-        tabla.Cell().Element(Celda).AlignRight().Text(FormatosDeTexto.Moneda(fila.MontoTotal));
+        Texto(tabla.Cell().Element(Celda), (indice + 1).ToString(), anulada);
+        Texto(tabla.Cell().Element(Celda), fila.NroComprobante, anulada);
+        Texto(tabla.Cell().Element(Celda), FormatosDeTexto.FechaYHora(fila.FechaVenta), anulada);
+        Texto(tabla.Cell().Element(Celda), fila.NitCi, anulada);
+        Texto(tabla.Cell().Element(Celda), fila.RazonSocial, anulada);
+        Texto(tabla.Cell().Element(Celda), fila.Cajero, anulada);
+        ComponerEstado(tabla.Cell().Element(Celda), fila.Estado);
+        Texto(tabla.Cell().Element(Celda).AlignRight(), FormatosDeTexto.Moneda(fila.MontoTotal), anulada);
     }
 
-    private static string ColorDelEstado(EstadoDeVenta estado) =>
-        estado == EstadoDeVenta.Anulada ? EstilosDeReporte.AmbarOscuro : EstilosDeReporte.AzulOscuro;
+    private static void Texto(IContainer contenedor, string texto, bool anulada)
+    {
+        var descriptor = contenedor.Text(texto);
+        if (anulada)
+            descriptor.FontColor(EstilosDeReporte.TextoAtenuado).Italic().Strikethrough();
+    }
 
-    private void ComponerPie(IContainer contenedor) =>
-        contenedor
-            .BorderTop(2).BorderColor(EstilosDeReporte.Ambar)
-            .PaddingTop(6)
-            .Column(columna =>
-            {
-                columna.Item().DefaultTextStyle(estilo => estilo.FontSize(9).Bold()).Text(ComponerSumariados);
-                columna.Item().Row(fila =>
-                {
-                    fila.RelativeItem().Text(
-                        FormatosDeTexto.ReporteGenerado(_reporte.GeneradoPor, _reporte.GeneradoEn))
-                        .FontSize(8);
-                    fila.ConstantItem(120).AlignRight().DefaultTextStyle(estilo => estilo.FontSize(8)).Text(ComponerNumeroDePagina);
-                });
-            });
+    private static void ComponerEstado(IContainer contenedor, EstadoDeVenta estado)
+    {
+        var descriptor = contenedor.Text(TextosDelListadoVentas.Estado(estado));
+        if (estado == EstadoDeVenta.Anulada)
+            descriptor.FontColor(EstilosDeReporte.AmbarOscuro).Bold();
+    }
 
-    private void ComponerSumariados(TextDescriptor texto)
+    private void ComponerTotales(TableDescriptor tabla)
     {
         var totales = _reporte.Totales;
-        texto.Span($"Ventas completadas: {FormatosDeTexto.Entero(totales.CantidadDeCompletadas)}   |   ");
-        texto.Span($"Ventas anuladas: {FormatosDeTexto.Entero(totales.CantidadDeAnuladas)}   |   ");
-        texto.Span($"Monto total de las completadas: Bs {FormatosDeTexto.Moneda(totales.MontoTotalDeCompletadas)}   |   ");
-        texto.Span($"Promedio por venta completada: Bs {FormatosDeTexto.Moneda(totales.PromedioPorVenta)}");
+
+        for (var columna = 0; columna < ColumnasDeLaTabla - 1; columna++)
+            tabla.Cell().Element(ComponentesDePdf.CeldaDeTotales).Text(TextoDeTotales(columna, totales));
+
+        tabla.Cell().Element(ComponentesDePdf.CeldaDeTotales).AlignRight()
+            .Text(FormatosDeTexto.Moneda(totales.MontoTotalDeCompletadas));
     }
 
-    private static void ComponerNumeroDePagina(TextDescriptor texto)
+    private static string TextoDeTotales(int columna, TotalesListadoVentas totales) =>
+        columna switch
+        {
+            1 => "Totales",
+            4 => $"{FormatosDeTexto.Entero(totales.CantidadDeCompletadas)} ventas completadas",
+            _ => string.Empty
+        };
+
+    private void ComponerPie(IContainer contenedor)
     {
-        texto.Span("Página ");
-        texto.CurrentPageNumber();
-        texto.Span(" de ");
-        texto.TotalPages();
+        var totales = _reporte.Totales;
+        ComponentesDePdf.Pie(
+            contenedor,
+            $"Ventas completadas: {FormatosDeTexto.Entero(totales.CantidadDeCompletadas)}   |   " +
+            $"Ventas anuladas: {FormatosDeTexto.Entero(totales.CantidadDeAnuladas)}   |   " +
+            $"Monto total de las completadas: {FormatosDeTexto.Bolivianos(totales.MontoTotalDeCompletadas)}   |   " +
+            $"Promedio por venta completada: {FormatosDeTexto.Bolivianos(totales.PromedioPorVenta)}",
+            FormatosDeTexto.ReporteGenerado(_reporte.GeneradoPor, _reporte.GeneradoEn));
     }
-
-    private static IContainer CeldaDeEncabezado(IContainer contenedor) =>
-        contenedor
-            .Background(EstilosDeReporte.AzulGrisaceo)
-            .Padding(4)
-            .DefaultTextStyle(estilo => estilo.FontColor(EstilosDeReporte.Blanco).Bold().FontSize(9));
 }

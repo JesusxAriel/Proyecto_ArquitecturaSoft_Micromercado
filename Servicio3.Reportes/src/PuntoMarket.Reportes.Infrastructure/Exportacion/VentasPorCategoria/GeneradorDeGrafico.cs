@@ -46,7 +46,7 @@ public class GeneradorDeGrafico
         GraficoDeColumnas.Generar("Monto de ventas por día", puntos);
 
     public ImagenDeGrafico ParticipacionPorCliente(IReadOnlyList<ParteDelTotal> partes) =>
-        GraficoDeDona.Generar("Participación por cliente", partes);
+        GraficoDeDona.GenerarConLeyendaLateral("Participación por cliente", partes);
 
     private static IReadOnlyList<ParteDelTotal> AParteDelTotal(IReadOnlyList<FilaDeCategoria> filas) =>
         filas
